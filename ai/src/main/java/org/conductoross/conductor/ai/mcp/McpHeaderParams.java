@@ -44,6 +44,10 @@ public final class McpHeaderParams {
             Set.of("default", "examples", "example", "const", "enum");
 
     private static final BigInteger MAX_SAFE_INTEGER = BigInteger.valueOf(9007199254740991L);
+
+    /** The symbols a header-name token may hold besides letters and digits (RFC 9110 tchar). */
+    private static final String TOKEN_SYMBOLS = "!#$%&'*+-.^_`|~";
+
     private static final BigInteger MIN_SAFE_INTEGER = MAX_SAFE_INTEGER.negate();
 
     private McpHeaderParams() {}
@@ -223,7 +227,7 @@ public final class McpHeaderParams {
             char c = name.charAt(i);
             boolean alphaNumeric =
                     (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');
-            if (!alphaNumeric && "!#$%&'*+-.^_`|~".indexOf(c) < 0) {
+            if (!alphaNumeric && TOKEN_SYMBOLS.indexOf(c) < 0) {
                 return false;
             }
         }

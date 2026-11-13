@@ -12,10 +12,23 @@
  */
 package org.conductoross.conductor.ai.mcp;
 
+import java.net.HttpURLConnection;
 import java.util.Set;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+
+import static java.net.HttpURLConnection.HTTP_BAD_METHOD;
+import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
+import static java.net.HttpURLConnection.HTTP_CLIENT_TIMEOUT;
+import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
+import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
+import static java.net.HttpURLConnection.HTTP_MULT_CHOICE;
+import static java.net.HttpURLConnection.HTTP_NOT_ACCEPTABLE;
+import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
+import static java.net.HttpURLConnection.HTTP_OK;
+import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
+import static java.net.HttpURLConnection.HTTP_UNSUPPORTED_TYPE;
 
 /**
  * An HTTP or JSON-RPC error on a request in the MCP {@code 2026-07-28} form (calls that select
@@ -24,12 +37,25 @@ import tools.jackson.databind.ObjectMapper;
  */
 public class McpRequestException extends RuntimeException {
 
+    // JSON-RPC error codes, sorted by number.
+    // Defined by MCP:
+    private static final int RESOURCE_NOT_FOUND = -32002;
     public static final int HEADER_MISMATCH = -32020;
     public static final int MISSING_REQUIRED_CLIENT_CAPABILITY = -32021;
     public static final int UNSUPPORTED_PROTOCOL_VERSION = -32022;
+    private static final int URL_ELICITATION_REQUIRED = -32042;
+    // Defined by JSON-RPC 2.0:
+    private static final int INVALID_REQUEST = -32600;
     public static final int METHOD_NOT_FOUND = -32601;
     public static final int INVALID_PARAMS = -32602;
     public static final int INTERNAL_ERROR = -32603;
+    private static final int PARSE_ERROR = -32700;
+
+    /** Too Many Requests (RFC 6585); {@link HttpURLConnection} has no constant for it. */
+    private static final int HTTP_TOO_MANY_REQUESTS = 429;
+
+    /** The last status of the {@code 5xx} (server error) class. */
+    private static final int HTTP_LAST_SERVER_ERROR = 599;
 
     private static final Set<Integer> PROTOCOL_ERROR_CODES =
             Set.of(
@@ -38,7 +64,7 @@ public class McpRequestException extends RuntimeException {
                     UNSUPPORTED_PROTOCOL_VERSION);
     private static final int MAX_BODY_IN_MESSAGE = 500;
 
-    private final String method;
+    private final McpMethod method;
     private final int httpStatus;
     private final Integer code;
     private final String rpcMessage;
@@ -46,7 +72,7 @@ public class McpRequestException extends RuntimeException {
     private final String body;
 
     McpRequestException(
-            String method,
+            McpMethod method,
             int httpStatus,
             Integer code,
             String rpcMessage,
@@ -66,7 +92,7 @@ public class McpRequestException extends RuntimeException {
      * response when possible; an empty or non-JSON body gives an exception without a code.
      */
     static McpRequestException fromHttpError(
-            String method, int httpStatus, String body, ObjectMapper objectMapper) {
+            McpMethod method, int httpStatus, String body, ObjectMapper objectMapper) {
         JsonNode error = null;
         try {
             if (body != null && !body.isBlank()) {
@@ -82,26 +108,15 @@ public class McpRequestException extends RuntimeException {
     }
 
     /** Builds the exception for a JSON-RPC {@code error} object. */
-    static McpRequestException fromRpcError(String method, int httpStatus, JsonNode error) {
+    static McpRequestException fromRpcError(McpMethod method, int httpStatus, JsonNode error) {
         return withError(method, httpStatus, error, error.toString());
     }
 
     private static McpRequestException withError(
-            String method, int httpStatus, JsonNode error, String body) {
-        JsonNode codeNode = error.get("code");
-        // canConvertToInt: an integer outside the int range is kept as no code, not thrown on.
-        Integer code =
-                codeNode != null && codeNode.isIntegralNumber() && codeNode.canConvertToInt()
-                        ? codeNode.asInt()
-                        : null;
-        JsonNode messageNode = error.get("message");
-        // A conforming server sends a string; any other JSON is kept as text, not thrown on.
-        String rpcMessage =
-                messageNode == null || messageNode.isNull()
-                        ? null
-                        : messageNode.isString() ? messageNode.asString() : messageNode.toString();
-        JsonNode data = error.get("data");
-        return new McpRequestException(method, httpStatus, code, rpcMessage, data, body);
+            McpMethod method, int httpStatus, JsonNode error, String body) {
+        McpRpcError rpcError = McpRpcError.from(error);
+        return new McpRequestException(
+                method, httpStatus, rpcError.code(), rpcError.message(), rpcError.data(), body);
     }
 
     /**
@@ -116,28 +131,22 @@ public class McpRequestException extends RuntimeException {
         if (PROTOCOL_ERROR_CODES.contains(code)) {
             return true;
         }
-        return (code == METHOD_NOT_FOUND && httpStatus == 404)
-                || (code == INVALID_PARAMS && httpStatus == 400);
+        return (code == METHOD_NOT_FOUND && httpStatus == HTTP_NOT_FOUND)
+                || (code == INVALID_PARAMS && httpStatus == HTTP_BAD_REQUEST);
     }
 
-    /**
-     * The JSON-RPC 2.0 codes with a meaning the specification defines: parse error, invalid
-     * request, method not found, invalid params and internal error.
-     */
+    /** The JSON-RPC 2.0 codes with a meaning the specification defines. */
     private static final Set<Integer> JSON_RPC_DEFINED_CODES =
-            Set.of(-32700, -32600, METHOD_NOT_FOUND, INVALID_PARAMS, INTERNAL_ERROR);
+            Set.of(PARSE_ERROR, INVALID_REQUEST, METHOD_NOT_FOUND, INVALID_PARAMS, INTERNAL_ERROR);
 
-    /**
-     * The codes MCP defines: {@code -32002} (resource not found), {@code -32020} to {@code -32022}
-     * (see above) and {@code -32042} (URL elicitation required).
-     */
+    /** The codes MCP defines. */
     private static final Set<Integer> MCP_DEFINED_CODES =
             Set.of(
-                    -32002,
+                    RESOURCE_NOT_FOUND,
                     HEADER_MISMATCH,
                     MISSING_REQUIRED_CLIENT_CAPABILITY,
                     UNSUPPORTED_PROTOCOL_VERSION,
-                    -32042);
+                    URL_ELICITATION_REQUIRED);
 
     /** True if the server reports an internal error: JSON-RPC {@code -32603}. */
     public boolean isInternalError() {
@@ -169,16 +178,51 @@ public class McpRequestException extends RuntimeException {
      * credentials or limits, not the request form.
      */
     public boolean isOlderServerRejection() {
-        return ("tools/list".equals(method) || "tools/call".equals(method))
+        return (method == McpMethod.TOOLS_LIST || method == McpMethod.TOOLS_CALL)
                 && REQUEST_FORM_REJECTION_STATUSES.contains(httpStatus)
                 && !isRecognizedProtocolError();
     }
 
     /** HTTP statuses that a server uses for a request whose form it does not accept. */
     private static final Set<Integer> REQUEST_FORM_REJECTION_STATUSES =
-            Set.of(400, 404, 405, 406, 415);
+            Set.of(
+                    HTTP_BAD_REQUEST,
+                    HTTP_NOT_FOUND,
+                    HTTP_BAD_METHOD,
+                    HTTP_NOT_ACCEPTABLE,
+                    HTTP_UNSUPPORTED_TYPE);
 
-    public String getMethod() {
+    /**
+     * True if the HTTP status rejects the credentials: {@code 401} or {@code 403}. Looks at the
+     * HTTP status only, so check {@link #hasDefinedMeaning()} first: a JSON-RPC code with a defined
+     * meaning decides on its own, whatever the status.
+     */
+    public boolean isAuthRejection() {
+        return AUTH_REJECTION_STATUSES.contains(httpStatus);
+    }
+
+    /**
+     * True if the HTTP status reports a condition that can pass: {@code 5xx}, {@code 408} or {@code
+     * 429}. Looks at the HTTP status only, so check {@link #hasDefinedMeaning()} first.
+     */
+    public boolean isTransientHttpError() {
+        return (httpStatus >= HTTP_INTERNAL_ERROR && httpStatus <= HTTP_LAST_SERVER_ERROR)
+                || TRANSIENT_STATUSES.contains(httpStatus);
+    }
+
+    /** True if the HTTP status is a success: the {@code 2xx} class. */
+    public static boolean isSuccessStatus(int status) {
+        return status >= HTTP_OK && status < HTTP_MULT_CHOICE;
+    }
+
+    private static final Set<Integer> AUTH_REJECTION_STATUSES =
+            Set.of(HTTP_UNAUTHORIZED, HTTP_FORBIDDEN);
+
+    /** Request timeout and too many requests; every {@code 5xx} is transient as well. */
+    private static final Set<Integer> TRANSIENT_STATUSES =
+            Set.of(HTTP_CLIENT_TIMEOUT, HTTP_TOO_MANY_REQUESTS);
+
+    public McpMethod getMethod() {
         return method;
     }
 
@@ -208,21 +252,21 @@ public class McpRequestException extends RuntimeException {
      * {@code error} object.
      */
     public String synchronousDetail() {
-        if (httpStatus < 200 || httpStatus >= 300) {
+        if (!isSuccessStatus(httpStatus)) {
             return String.format("HTTP %d error from MCP server: %s", httpStatus, body);
         }
         return body;
     }
 
     private static String message(
-            String method,
+            McpMethod method,
             int httpStatus,
             Integer code,
             String rpcMessage,
             JsonNode data,
             String body) {
         StringBuilder sb = new StringBuilder("MCP ").append(method).append(" failed");
-        if (httpStatus < 200 || httpStatus >= 300) {
+        if (!isSuccessStatus(httpStatus)) {
             sb.append(" with HTTP ").append(httpStatus);
         }
         if (code != null) {

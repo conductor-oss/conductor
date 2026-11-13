@@ -73,7 +73,7 @@ class McpProtocolHeadersTest {
 
     @Test
     void asciiToolName() {
-        Request request = build("tools/call", "get_weather");
+        Request request = build(McpMethod.TOOLS_CALL, "get_weather");
 
         assertEquals("2026-07-28", request.header("MCP-Protocol-Version"));
         assertEquals("tools/call", request.header("Mcp-Method"));
@@ -83,7 +83,8 @@ class McpProtocolHeadersTest {
 
     @Test
     void nonAsciiToolName() {
-        assertEquals("=?base64?bcOpdMOpbw==?=", build("tools/call", "météo").header("Mcp-Name"));
+        assertEquals(
+                "=?base64?bcOpdMOpbw==?=", build(McpMethod.TOOLS_CALL, "météo").header("Mcp-Name"));
     }
 
     @Test
@@ -92,7 +93,7 @@ class McpProtocolHeadersTest {
         assertEquals("=?base64?PT9iYXNlNjQ/eD89?=", McpProtocolHeaders.encodeHeaderValue(name));
         assertEquals(
                 McpProtocolHeaders.encodeHeaderValue(name),
-                build("tools/call", name).header("Mcp-Name"));
+                build(McpMethod.TOOLS_CALL, name).header("Mcp-Name"));
     }
 
     @Test
@@ -119,16 +120,16 @@ class McpProtocolHeadersTest {
     @Test
     void taskRequestsUseTheTaskIdAsMcpName() {
         String taskId = "786512e2-9e0d-44bd-8f29-789f320fe840";
-        for (String method : new String[] {"tasks/get", "tasks/cancel"}) {
+        for (McpMethod method : new McpMethod[] {McpMethod.TASKS_GET, McpMethod.TASKS_CANCEL}) {
             Request request = build(method, taskId);
-            assertEquals(method, request.header("Mcp-Method"));
+            assertEquals(method.value(), request.header("Mcp-Method"));
             assertEquals(taskId, request.header("Mcp-Name"));
         }
     }
 
     @Test
     void mcpNameIsOmittedWhenNull() {
-        assertNull(build("tools/list", null).header("Mcp-Name"));
+        assertNull(build(McpMethod.TOOLS_LIST, null).header("Mcp-Name"));
     }
 
     @Test
@@ -138,7 +139,7 @@ class McpProtocolHeadersTest {
         builder.header("Authorization", "Bearer t");
         builder.header("Accept", "text/plain");
 
-        McpProtocolHeaders.apply(builder, "tools/call", "get_weather");
+        McpProtocolHeaders.apply(builder, McpMethod.TOOLS_CALL, "get_weather");
         Request request = builder.build();
 
         assertEquals(1, request.headers("MCP-Protocol-Version").size());
@@ -148,7 +149,7 @@ class McpProtocolHeadersTest {
         assertTrue(request.headers("Accept").size() == 1);
     }
 
-    private static Request build(String method, String name) {
+    private static Request build(McpMethod method, String name) {
         Request.Builder builder = new Request.Builder().url("http://localhost/mcp");
         McpProtocolHeaders.apply(builder, method, name);
         return builder.build();

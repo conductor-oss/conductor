@@ -180,7 +180,7 @@ class MCPServiceListToolsPagedTest {
                 assertThrows(
                         McpRequestException.class,
                         () -> service.listToolsPaged(url, "echo", Map.of()));
-        assertEquals("tools/list", e.getMethod());
+        assertEquals(McpMethod.TOOLS_LIST, e.getMethod());
         assertEquals(400, e.getHttpStatus());
         assertEquals(-32022, e.getCode());
         assertTrue(e.isRecognizedProtocolError());

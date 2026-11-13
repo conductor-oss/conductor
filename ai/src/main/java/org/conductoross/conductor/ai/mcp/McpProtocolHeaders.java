@@ -44,6 +44,11 @@ public final class McpProtocolHeaders {
     static final String CLIENT_NAME = "conductor";
 
     private static final String SENTINEL_PREFIX = "=?base64?";
+
+    /** The printable ASCII range ({@code 0x20} space to {@code 0x7E} tilde) of a plain value. */
+    private static final char FIRST_VISIBLE_CHAR = 0x20;
+
+    private static final char LAST_VISIBLE_CHAR = 0x7E;
     private static final String SENTINEL_SUFFIX = "?=";
 
     private static final String CLIENT_VERSION = resolveClientVersion();
@@ -80,9 +85,9 @@ public final class McpProtocolHeaders {
      * @param method the JSON-RPC method, sent as {@code Mcp-Method}
      * @param name the tool name or task ID, sent as {@code Mcp-Name}; {@code null} to omit it
      */
-    public static void apply(Request.Builder builder, String method, String name) {
+    public static void apply(Request.Builder builder, McpMethod method, String name) {
         builder.header(HEADER_PROTOCOL_VERSION, PROTOCOL_VERSION);
-        builder.header(HEADER_METHOD, encodeHeaderValue(method));
+        builder.header(HEADER_METHOD, encodeHeaderValue(method.value()));
         if (name != null) {
             builder.header(HEADER_NAME, encodeHeaderValue(name));
         }
@@ -120,7 +125,7 @@ public final class McpProtocolHeaders {
         }
         for (int i = 0; i < value.length(); i++) {
             char c = value.charAt(i);
-            if (c != '\t' && (c < 0x20 || c > 0x7E)) {
+            if (c != '\t' && (c < FIRST_VISIBLE_CHAR || c > LAST_VISIBLE_CHAR)) {
                 return true;
             }
         }

@@ -12,9 +12,10 @@
  */
 package org.conductoross.conductor.ai.mcp;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.SortedSet;
 import java.util.TreeSet;
 
 /**
@@ -26,13 +27,15 @@ import java.util.TreeSet;
  */
 public final class McpOptions {
 
-    public static final String PROTOCOL_VERSION = "protocolVersion";
+    public static final String PROTOCOL_VERSION_KEY = "protocolVersion";
 
     /** The protocol versions that can be selected. */
     public static final List<String> SUPPORTED_PROTOCOL_VERSIONS =
             List.of(McpProtocolHeaders.PROTOCOL_VERSION);
 
-    private static final Set<String> KNOWN_KEYS = Set.of(PROTOCOL_VERSION);
+    /** The known option keys, sorted so that error messages list them in a stable order. */
+    private static final SortedSet<String> KNOWN_KEYS =
+            Collections.unmodifiableSortedSet(new TreeSet<>(List.of(PROTOCOL_VERSION_KEY)));
 
     private McpOptions() {}
 
@@ -57,7 +60,7 @@ public final class McpOptions {
                             + "\"}");
         }
 
-        Set<String> unknown = new TreeSet<>();
+        SortedSet<String> unknown = new TreeSet<>();
         for (Object key : options.keySet()) {
             if (!KNOWN_KEYS.contains(String.valueOf(key))) {
                 unknown.add(String.valueOf(key));
@@ -68,10 +71,10 @@ public final class McpOptions {
                     "Invalid mcpOptions: unknown option(s) "
                             + unknown
                             + "; supported options: "
-                            + new TreeSet<>(KNOWN_KEYS));
+                            + KNOWN_KEYS);
         }
 
-        Object version = options.get(PROTOCOL_VERSION);
+        Object version = options.get(PROTOCOL_VERSION_KEY);
         if (version == null) {
             return null;
         }

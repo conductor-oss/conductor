@@ -526,7 +526,7 @@ class MCPServiceTasksRequestsTest {
                         McpRequestException.class, () -> service.getTask(url, "t-1", Map.of()));
 
         assertEquals(-32602, e.getCode());
-        assertEquals("tasks/get", e.getMethod());
+        assertEquals(McpMethod.TASKS_GET, e.getMethod());
     }
 
     // ---- helpers --------------------------------------------------------------------------------
