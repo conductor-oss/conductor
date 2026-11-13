@@ -56,6 +56,11 @@ mcp-testkit --transport http
 
 The server will be available at `http://localhost:3001/mcp`.
 
+> **Note:** `mcp-testkit` speaks the earlier MCP protocol only. It does not support MCP
+> `2026-07-28` or the Tasks extension, so it does not work with the `37` and `38` examples, or
+> with any `CALL_MCP_TOOL` that sets `mcpOptions.protocolVersion`. For those, use Conductor's own
+> MCP server: see [MCP 2026-07-28 examples](#mcp-2026-07-28-examples).
+
 ---
 
 ## Available Examples
@@ -85,6 +90,22 @@ The server will be available at `http://localhost:3001/mcp`.
 | `21-web-search-research-agent.json` | Research agent: web search → synthesize → PDF | OpenAI, Anthropic |
 | `22-multi-turn-chain.json` | Multi-turn conversation chaining with previousResponseId | OpenAI |
 | `36-ai-workflow-routing.json` | LLM selects an approved child workflow, then runs it as a dynamic sub-workflow | OpenAI; register the paired `36a`–`36c` child workflows |
+
+### MCP 2026-07-28 examples
+
+Conductor as an MCP **server** (a workflow exposed as an MCP tool at `POST /api/mcp`) and an MCP
+**client** that calls it with MCP `2026-07-28` and the Tasks extension. A long tool call becomes a
+task that the `CALL_MCP_TOOL` task polls, and terminating the client workflow cancels the remote
+work. Both examples run on one Conductor started with the MCP server on:
+
+```bash
+./gradlew bootRun --args='--conductor.mcp.server.enabled=true'
+```
+
+| File | Description | Requirements |
+|------|-------------|--------------|
+| `37-mcp-server-expose-workflow.json` | Expose a workflow as the MCP tool `generate_report` (server) | `conductor.mcp.server.enabled=true` |
+| `38-mcp-call-tool-tasks.json` | Call that tool with `mcpOptions.protocolVersion: "2026-07-28"` (client) | `37` registered on the same Conductor |
 
 ### A2A (Agent2Agent) examples
 
@@ -547,6 +568,32 @@ curl -X POST 'http://localhost:8080/api/workflow/conductor_agent_cancel' \
   -H 'Content-Type: application/json' \
   -d '{"prompt": "Begin a long-running research job"}'
 ```
+
+### 37–38. MCP 2026-07-28: server and Tasks client
+
+```bash
+# Start Conductor with the MCP server on (see "MCP 2026-07-28 examples")
+
+# Register the tool (server) and the caller (client)
+curl -X POST 'http://localhost:8080/api/metadata/workflow' \
+  -H 'Content-Type: application/json' \
+  -d @37-mcp-server-expose-workflow.json
+curl -X POST 'http://localhost:8080/api/metadata/workflow' \
+  -H 'Content-Type: application/json' \
+  -d @38-mcp-call-tool-tasks.json
+
+# Execute — the tool takes 30 seconds, so the server answers with a task and the
+# call_report_tool task polls it with tasks/get
+curl -X POST 'http://localhost:8080/api/workflow/mcp_call_tool_tasks_workflow' \
+  -H 'Content-Type: application/json' \
+  -d '{"topic": "Q3 sales", "seconds": 30}'
+```
+
+While it runs, `call_report_tool` is `IN_PROGRESS` and its output holds `mcpTask` (the remote
+`taskId`, which is the id of the `generate_report` execution). When it completes, the output has
+the tool result, and the task's `pollCount` shows the checks: one `tools/call`, then one
+`tasks/get` every 5 seconds. Terminate the client workflow while it runs to see the
+`generate_report` execution end as `TERMINATED`, "Cancelled by MCP client".
 
 ---
 

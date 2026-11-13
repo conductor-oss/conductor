@@ -1,0 +1,25 @@
+{
+  "name": "generate_report",
+  "description": "Builds a report on a topic. Takes about as many seconds as asked.",
+  "version": 1,
+  "schemaVersion": 2,
+  "inputParameters": ["topic", "seconds"],
+  "tasks": [
+    {
+      "name": "build_report",
+      "taskReferenceName": "build_report",
+      "type": "WAIT",
+      "inputParameters": {
+        "duration": "${workflow.input.seconds} seconds"
+      }
+    }
+  ],
+  "outputParameters": {
+    "report": "Report on ${workflow.input.topic}",
+    "seconds": "${workflow.input.seconds}"
+  },
+  "metadata": {
+    "mcp.enabled": true,
+    "mcp.syncWaitSeconds": 0
+  }
+}

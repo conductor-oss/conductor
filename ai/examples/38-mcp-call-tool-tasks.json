@@ -1,0 +1,28 @@
+{
+  "name": "mcp_call_tool_tasks_workflow",
+  "description": "Calls the generate_report MCP tool with MCP 2026-07-28 and the Tasks extension.",
+  "version": 1,
+  "schemaVersion": 2,
+  "inputParameters": ["topic", "seconds"],
+  "tasks": [
+    {
+      "name": "call_report_tool",
+      "taskReferenceName": "call_report_tool",
+      "type": "CALL_MCP_TOOL",
+      "inputParameters": {
+        "mcpServer": "http://localhost:8080/api/mcp",
+        "method": "generate_report",
+        "arguments": {
+          "topic": "${workflow.input.topic}",
+          "seconds": "${workflow.input.seconds}"
+        },
+        "mcpOptions": {
+          "protocolVersion": "2026-07-28"
+        }
+      }
+    }
+  ],
+  "outputParameters": {
+    "result": "${call_report_tool.output}"
+  }
+}
