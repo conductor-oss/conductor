@@ -1399,12 +1399,22 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                                     + "re-queuing for continued processing",
                             workflow.getWorkflowId(),
                             decideWatch.getTime());
+                    WorkflowModel finished = storedWorkflowIfTerminal(workflow);
+                    if (finished != null) {
+                        return finished;
+                    }
                     executionDAOFacade.updateWorkflow(workflow);
                     queueDAO.push(DECIDER_QUEUE, workflow.getWorkflowId(), 0);
                     return workflow;
                 }
 
                 if (!outcome.tasksToBeUpdated.isEmpty() || !tasksToBeScheduled.isEmpty()) {
+                    if (decideWatch.getTime() >= maxRuntime) {
+                        WorkflowModel finished = storedWorkflowIfTerminal(workflow);
+                        if (finished != null) {
+                            return finished;
+                        }
+                    }
                     executionDAOFacade.updateWorkflow(workflow);
                 }
 
@@ -1451,6 +1461,44 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             LOGGER.error("Error deciding workflow: {}", workflow.getWorkflowId(), e);
             throw e;
         }
+    }
+
+    /**
+     * Guards the workflow write of a decide pass that ran close to or past its lock lease.
+     *
+     * <p>Once the lease has expired, the lock may belong to another decide (for example the
+     * sweeper), which can complete or terminate the workflow while this pass is still running.
+     * Writing this pass's in-memory copy afterwards would set the stored status back to RUNNING and
+     * leave a finished workflow that nothing decides again. The check re-reads the primary store
+     * and returns the stored workflow if it is already terminal, so the caller can skip the write.
+     * It only runs on the slow path (the pass took at least lease time - 100 ms), so normal decides
+     * pay no extra read.
+     *
+     * <p>This narrows the race to the time between the read and the write. Closing it fully needs a
+     * conditional write in the execution DAO, which is out of scope here.
+     *
+     * @return the stored workflow if it is terminal, otherwise {@code null}
+     */
+    private WorkflowModel storedWorkflowIfTerminal(WorkflowModel workflow) {
+        WorkflowModel stored;
+        try {
+            stored =
+                    executionDAOFacade.getWorkflowModelFromExecutionDAO(
+                            workflow.getWorkflowId(), true);
+        } catch (NotFoundException e) {
+            return null;
+        }
+        if (stored == null || !stored.getStatus().isTerminal()) {
+            return null;
+        }
+        LOGGER.warn(
+                "Workflow {} was finished with status {} by another decide while this decide held"
+                        + " an expired lock; skipping the stale write of status {}",
+                workflow.getWorkflowId(),
+                stored.getStatus(),
+                workflow.getStatus());
+        Monitors.recordStaleDecideWriteSkipped(workflow.getWorkflowName());
+        return stored;
     }
 
     private void adjustStateIfSubWorkflowChanged(WorkflowModel workflow) {

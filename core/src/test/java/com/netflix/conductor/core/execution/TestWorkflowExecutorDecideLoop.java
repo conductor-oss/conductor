@@ -17,12 +17,19 @@ import java.lang.reflect.Field;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.conductoross.conductor.service.SchemaService;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.stubbing.Answer;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.config.ConductorProperties;
@@ -32,6 +39,7 @@ import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.listener.TaskStatusListener;
 import com.netflix.conductor.core.listener.WorkflowStatusListener;
 import com.netflix.conductor.core.metadata.MetadataMapperService;
+import com.netflix.conductor.core.sync.local.LocalOnlyLock;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
@@ -88,22 +96,25 @@ public class TestWorkflowExecutorDecideLoop {
         // start() leaves the task in SCHEDULED (non-terminal) so execute() is also called.
         when(mockSyncTask.execute(any(), any(), any())).thenReturn(true);
 
-        workflowExecutor =
-                new WorkflowExecutorOps(
-                        deciderService,
-                        mock(MetadataDAO.class),
-                        queueDAO,
-                        mock(MetadataMapperService.class),
-                        mock(WorkflowStatusListener.class),
-                        mock(TaskStatusListener.class),
-                        executionDAOFacade,
-                        properties,
-                        executionLockService,
-                        systemTaskRegistry,
-                        mock(ParametersUtils.class),
-                        mock(IDGenerator.class),
-                        Optional.empty(),
-                        mock(SchemaService.class));
+        workflowExecutor = newExecutor(executionLockService);
+    }
+
+    private WorkflowExecutorOps newExecutor(ExecutionLockService lockService) {
+        return new WorkflowExecutorOps(
+                deciderService,
+                mock(MetadataDAO.class),
+                queueDAO,
+                mock(MetadataMapperService.class),
+                mock(WorkflowStatusListener.class),
+                mock(TaskStatusListener.class),
+                executionDAOFacade,
+                properties,
+                lockService,
+                systemTaskRegistry,
+                mock(ParametersUtils.class),
+                mock(IDGenerator.class),
+                Optional.empty(),
+                mock(SchemaService.class));
     }
 
     /**
@@ -181,6 +192,138 @@ public class TestWorkflowExecutorDecideLoop {
                 .push(eq(DECIDER_QUEUE), eq(workflow.getWorkflowId()), eq(0L));
     }
 
+    /**
+     * A decide() pass that outlives its lock lease must not overwrite the result of a decide that
+     * took the lock after the lease expired.
+     *
+     * <p>Lease-guard path: decide A takes the lock and runs a synchronous system task that blocks
+     * past the lease. The lease expires, decide B takes the lock and completes the workflow. A then
+     * resumes, hits the lease guard and would persist its own in-memory copy, which still says
+     * RUNNING. The stored workflow must stay COMPLETED.
+     */
+    @Test
+    public void testLeaseGuardDoesNotOverwriteConcurrentCompletion() throws Exception {
+        String workflowId = "test-wf-stale-lease-guard-" + System.nanoTime();
+        LeaseRace race = new LeaseRace(workflowId);
+        when(deciderService.decide(any(WorkflowModel.class)))
+                .thenAnswer(
+                        inv ->
+                                race.deciderCalls.incrementAndGet() == 1
+                                        ? schedulingOutcome("task-1", "task-ref-1")
+                                        : completeOutcome());
+        when(mockSyncTask.execute(any(), any(), any()))
+                .thenAnswer(
+                        inv -> {
+                            race.blockFirstDecide();
+                            return true;
+                        });
+
+        race.run();
+    }
+
+    /**
+     * Same race on the regular write at the end of a pass: decide A schedules a worker task and the
+     * task write blocks past the lease (as a slow database would). No synchronous system task runs,
+     * so the lease guard does not fire, but A still writes its stale copy afterwards.
+     */
+    @Test
+    public void testSlowPassDoesNotOverwriteConcurrentCompletion() throws Exception {
+        String workflowId = "test-wf-stale-slow-pass-" + System.nanoTime();
+        LeaseRace race = new LeaseRace(workflowId);
+        when(properties.getMaxPostponeDurationSeconds()).thenReturn(Duration.ofSeconds(3600));
+        when(deciderService.decide(any(WorkflowModel.class)))
+                .thenAnswer(
+                        inv ->
+                                race.deciderCalls.incrementAndGet() == 1
+                                        ? workerTaskOutcome("task-1", "task-ref-1")
+                                        : completeOutcome());
+        doAnswer(
+                        inv -> {
+                            race.blockFirstDecide();
+                            return inv.getArgument(0);
+                        })
+                .when(executionDAOFacade)
+                .createTasks(anyList());
+
+        race.run();
+    }
+
+    /**
+     * Drives two decides on one workflow across an expired lock lease, with a real {@link
+     * LocalOnlyLock} and a minimal stand-in for the persistence layer: every read returns a fresh
+     * copy of the stored state, as a real DAO would, and every workflow write is recorded in order.
+     */
+    private class LeaseRace {
+        private static final long LEASE_MILLIS = 1_000;
+
+        final String workflowId;
+        final AtomicInteger deciderCalls = new AtomicInteger();
+        final AtomicReference<WorkflowModel.Status> storedStatus =
+                new AtomicReference<>(WorkflowModel.Status.RUNNING);
+        final List<WorkflowModel.Status> writes = new CopyOnWriteArrayList<>();
+        final CountDownLatch aBlocked = new CountDownLatch(1);
+        final CountDownLatch bDone = new CountDownLatch(1);
+        final WorkflowExecutorOps executor;
+
+        LeaseRace(String workflowId) {
+            this.workflowId = workflowId;
+            when(properties.isWorkflowExecutionLockEnabled()).thenReturn(true);
+            when(properties.getLockLeaseTime()).thenReturn(Duration.ofMillis(LEASE_MILLIS));
+            when(properties.getLockTimeToTry()).thenReturn(Duration.ofMillis(100));
+            executor = newExecutor(new ExecutionLockService(properties, new LocalOnlyLock()));
+
+            Answer<WorkflowModel> readStored =
+                    inv -> {
+                        WorkflowModel copy = runningWorkflow(workflowId);
+                        copy.setStatus(storedStatus.get());
+                        return copy;
+                    };
+            when(executionDAOFacade.getWorkflowModel(workflowId, true)).thenAnswer(readStored);
+            when(executionDAOFacade.getWorkflowModelFromExecutionDAO(eq(workflowId), anyBoolean()))
+                    .thenAnswer(readStored);
+            doAnswer(
+                            inv -> {
+                                WorkflowModel.Status status =
+                                        inv.<WorkflowModel>getArgument(0).getStatus();
+                                writes.add(status);
+                                storedStatus.set(status);
+                                return null;
+                            })
+                    .when(executionDAOFacade)
+                    .updateWorkflow(any(WorkflowModel.class));
+        }
+
+        /** Called from inside decide A: holds it until decide B has finished. */
+        void blockFirstDecide() throws InterruptedException {
+            aBlocked.countDown();
+            assertTrue("decide B did not finish", bDone.await(10, TimeUnit.SECONDS));
+        }
+
+        void run() throws Exception {
+            CompletableFuture<WorkflowModel> decideA =
+                    CompletableFuture.supplyAsync(() -> executor.decide(workflowId));
+            assertTrue("decide A did not block", aBlocked.await(5, TimeUnit.SECONDS));
+
+            // Let the lease of decide A run out, then decide B takes the lock and completes.
+            Thread.sleep(LEASE_MILLIS + 500);
+            WorkflowModel resultB = executor.decide(workflowId);
+            assertNotNull("decide B could not acquire the lock after the lease expired", resultB);
+            assertEquals(WorkflowModel.Status.COMPLETED, resultB.getStatus());
+            bDone.countDown();
+
+            WorkflowModel resultA = decideA.get(10, TimeUnit.SECONDS);
+
+            assertEquals(
+                    "stored status after both decides, writes in order: " + writes,
+                    WorkflowModel.Status.COMPLETED,
+                    storedStatus.get());
+            assertEquals(
+                    "decide A should report the finished workflow",
+                    WorkflowModel.Status.COMPLETED,
+                    resultA.getStatus());
+        }
+    }
+
     // ── helpers ──────────────────────────────────────────────────────────────
 
     private static WorkflowModel runningWorkflow(String id) {
@@ -216,6 +359,19 @@ public class TestWorkflowExecutorDecideLoop {
         task.setReferenceTaskName(refName);
         task.setStatus(TaskModel.Status.SCHEDULED);
         task.setTaskType(SYNC_TASK_TYPE);
+        ((LinkedList<TaskModel>) getField(outcome, "tasksToBeScheduled")).add(task);
+        return outcome;
+    }
+
+    /** Creates a DeciderOutcome that schedules one worker (non-system) task. */
+    private static DeciderService.DeciderOutcome workerTaskOutcome(String taskId, String refName)
+            throws Exception {
+        DeciderService.DeciderOutcome outcome = newOutcome();
+        TaskModel task = new TaskModel();
+        task.setTaskId(taskId);
+        task.setReferenceTaskName(refName);
+        task.setStatus(TaskModel.Status.SCHEDULED);
+        task.setTaskType("SIMPLE");
         ((LinkedList<TaskModel>) getField(outcome, "tasksToBeScheduled")).add(task);
         return outcome;
     }
