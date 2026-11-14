@@ -27,6 +27,7 @@ import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.mysql.util.ExecutorsUtil;
 import com.netflix.conductor.mysql.util.Query;
 
 import com.google.common.collect.ImmutableMap;
@@ -42,9 +43,10 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
             RetryTemplate retryTemplate, ObjectMapper objectMapper, DataSource dataSource) {
         super(retryTemplate, objectMapper, dataSource);
 
-        Executors.newSingleThreadScheduledExecutor()
+        Executors.newSingleThreadScheduledExecutor(
+                        ExecutorsUtil.newNamedThreadFactory("mysql-queue-"))
                 .scheduleAtFixedRate(
-                        this::processAllUnacks,
+                        this::runScheduledProcessAllUnacks,
                         UNACK_SCHEDULE_MS,
                         UNACK_SCHEDULE_MS,
                         TimeUnit.MILLISECONDS);
@@ -254,6 +256,30 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
                                     }
                                     return result;
                                 }));
+    }
+
+    /**
+     * Scheduled entry point for {@link #processAllUnacks()}.
+     *
+     * <p>An exception that escapes a {@code scheduleAtFixedRate} task cancels every later run of
+     * it, and the executor keeps that exception in the task's future instead of logging it. One
+     * failed run, for example a dropped connection (the retry template only retries deadlocks),
+     * would therefore stop un-popping messages for the life of the process, silently. The sweeper
+     * leaves a workflow's decider message popped after a sweep that does not re-arm it, so a
+     * workflow that only the sweeper can move (such as one whose worker polled a task and died)
+     * would then never be decided again: its task stays IN_PROGRESS past both
+     * responseTimeoutSeconds and timeoutSeconds. Logging the failure here keeps the schedule alive,
+     * so the next run picks the work up once the database is reachable again.
+     */
+    void runScheduledProcessAllUnacks() {
+        try {
+            processAllUnacks();
+        } catch (Exception e) {
+            logger.error(
+                    "processAllUnacks failed; popped messages are re-checked in {} ms",
+                    UNACK_SCHEDULE_MS,
+                    e);
+        }
     }
 
     /**
