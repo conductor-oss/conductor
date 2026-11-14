@@ -22,6 +22,7 @@ import { isSideTaskOf } from "pages/execution/state/detachedTasks";
 import {
   DoWhileSelection,
   ExecutionTask,
+  WorkflowExecution,
   WorkflowExecutionStatus,
 } from "types/Execution";
 import { TaskStatus } from "types/TaskStatus";
@@ -48,6 +49,7 @@ import TaskSummary from "../TaskSummary";
 import { pluginRegistry } from "plugins/registry";
 import { RightPanelContextEventTypes, RightPanelEvents } from "./state";
 import { useRightPanelActor } from "./state/hook";
+import { HeldStepPanel } from "./HeldStepPanel";
 import { SummaryTask } from "./SummaryTask";
 import { dropdownIcon } from "./dropdownIcon";
 import { SecondaryActions } from "./SecondaryActions";
@@ -69,6 +71,8 @@ export interface RightPanelProps {
   doWhileSelection?: DoWhileSelection[];
   /** Needed to tell a task the engine attached to a node from a step of the workflow. */
   workflowDefinition?: Partial<WorkflowDef>;
+  /** The latest execution, for explaining a held step while it refreshes. */
+  execution?: WorkflowExecution;
 }
 
 export const RightPanel: FunctionComponent<RightPanelProps> = ({
@@ -77,6 +81,7 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
   workflowStatus,
   doWhileSelection,
   workflowDefinition,
+  execution,
 }) => {
   const [containerQueryState, containerRef] = useContainerQuery(
     executionTaskHeaderContainerQuery,
@@ -175,6 +180,15 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
   // If the summary task is selected just show a small summary
   if (selectedTask?.taskType === "TASK_SUMMARY")
     return <SummaryTask selectedTask={selectedTask} onClose={onClosePanel!} />;
+
+  if (selectedTask?.workflowTask?.type === TaskType.HELD_STEP)
+    return (
+      <HeldStepPanel
+        pausedOn={(selectedTask as any).pausedOn}
+        execution={execution}
+        onClose={onClosePanel!}
+      />
+    );
 
   const isKeptLastNPruned = (selectedTask as any)?._summarized === true;
 
@@ -410,7 +424,10 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
                 maxHeight: "calc(100vh - 100px)",
               }}
             >
-              <TaskSummary taskResult={selectedTask} />
+              <TaskSummary
+                taskResult={selectedTask}
+                workflowStatus={workflowStatus}
+              />
               {maybeStatusForm}
             </Box>
           )}

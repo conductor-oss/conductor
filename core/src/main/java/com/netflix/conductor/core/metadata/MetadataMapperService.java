@@ -111,13 +111,29 @@ public class MetadataMapperService {
     }
 
     public WorkflowDef populateTaskDefinitions(WorkflowDef workflowDefinition) {
+        return populateTaskDefinitions(workflowDefinition, null);
+    }
+
+    /**
+     * As {@link #populateTaskDefinitions(WorkflowDef)}, with the timeout policy to give a task that
+     * has no registered definition; null keeps the global default.
+     */
+    public WorkflowDef populateTaskDefinitions(
+            WorkflowDef workflowDefinition, TaskDef.TimeoutPolicy adHocTimeoutPolicy) {
         Utils.checkNotNull(workflowDefinition, "workflowDefinition cannot be null");
-        workflowDefinition.collectTasks().forEach(this::populateWorkflowTaskWithDefinition);
+        workflowDefinition
+                .collectTasks()
+                .forEach(task -> populateWorkflowTaskWithDefinition(task, adHocTimeoutPolicy));
         checkNotEmptyDefinitions(workflowDefinition);
         return workflowDefinition;
     }
 
     private void populateWorkflowTaskWithDefinition(WorkflowTask workflowTask) {
+        populateWorkflowTaskWithDefinition(workflowTask, null);
+    }
+
+    private void populateWorkflowTaskWithDefinition(
+            WorkflowTask workflowTask, TaskDef.TimeoutPolicy adHocTimeoutPolicy) {
         Utils.checkNotNull(workflowTask, "WorkflowTask cannot be null");
         if (shouldPopulateTaskDefinition(workflowTask)) {
             workflowTask.setTaskDefinition(metadataDAO.getTaskDef(workflowTask.getName()));
@@ -126,6 +142,9 @@ public class MetadataMapperService {
                 // SET_VARIABLE, etc.) disable retries and response-timeout so they are
                 // not inadvertently timed-out or retried by the decider
                 TaskDef adHocDef = new TaskDef(workflowTask.getName());
+                if (adHocTimeoutPolicy != null) {
+                    adHocDef.setTimeoutPolicy(adHocTimeoutPolicy);
+                }
                 if (!workflowTask.getType().equals(TaskType.SIMPLE.name())) {
                     adHocDef.setRetryCount(0);
                     adHocDef.setResponseTimeoutSeconds(0);

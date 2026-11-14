@@ -66,6 +66,9 @@ Your workflow accesses the user data via `output.messages[0].payload`. The `id` 
 - `404 Not Found` — the workflow ID does not exist, or the WMQ feature is disabled.
 - `409 Conflict` — workflow is not in `RUNNING` state (completed, failed, terminated, etc.). The message is not stored.
 - `429 Too Many Requests` — queue is full (`maxQueueSize` reached). Caller must back off and retry.
+- `503 Service Unavailable` — the workflow is busy: another evaluation holds its execution lock. The message is not stored. Retry the push.
+
+A `200 OK` means the message was queued while the workflow was `RUNNING`. The push runs inside a workflow evaluation that holds the execution lock, so it cannot race with the workflow completing, and the same evaluation wakes a waiting `PULL_WORKFLOW_MESSAGES` task.
 
 ### Event loop pattern
 

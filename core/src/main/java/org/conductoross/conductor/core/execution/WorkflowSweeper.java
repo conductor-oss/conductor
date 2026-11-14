@@ -30,6 +30,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.core.LifecycleAwareComponent;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.NotFoundException;
+import com.netflix.conductor.core.execution.NativeContinuationService;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
@@ -228,9 +229,19 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
                                             Monitors.recordQueueMessageRepushFromRepairService(
                                                     task.getTaskDefName());
                                             // Another repair path can restore the message between
-                                            // detection and repush; avoid duplicating it.
-                                            if (!queueDAO.containsMessage(
-                                                    queueName, task.getTaskId())) {
+                                            // detection and repush; avoid duplicating it. Re-read
+                                            // the task too: the status above comes from the
+                                            // snapshot loaded for decide, and a worker may have
+                                            // polled the task since, removing its message and
+                                            // moving it to IN_PROGRESS. Re-queueing it then hands
+                                            // it to a second worker (Jepsen's concurrent task
+                                            // execution in Orkes Conductor 5.3.2).
+                                            TaskModel latest =
+                                                    executionDAO.getTask(task.getTaskId());
+                                            if (latest != null
+                                                    && isTaskRepairable.test(latest)
+                                                    && !queueDAO.containsMessage(
+                                                            queueName, task.getTaskId())) {
                                                 queueDAO.push(
                                                         queueName,
                                                         task.getTaskId(),
@@ -276,7 +287,9 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
             // (scheduled, in progress)
             boolean hasRunningTasks =
                     workflow.getTasks().stream().anyMatch(task -> !task.getStatus().isTerminal());
-            if (!hasRunningTasks) {
+            // a native workflow's running work may be a queued or leased continuation, which
+            // decide re-pushes; its tasks all being terminal is normal
+            if (!hasRunningTasks && !NativeContinuationService.isNative(workflow)) {
                 // Workflow is in RUNNING status but there are no tasks that are running
                 // This can happen in case of the database failures where the task scheduling failed
                 // after the last task was completed

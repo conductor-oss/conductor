@@ -26,6 +26,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.events.ScriptEvaluator;
+import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.model.TaskModel;
@@ -161,6 +162,7 @@ public class DoWhile extends WorkflowSystemTask {
         // if we are here, the iteration is complete, and we need to check if there is a next
         // iteration by evaluating the loopCondition
         boolean shouldContinue;
+        int iterationBefore = doWhileTaskModel.getIteration();
         try {
             shouldContinue = evaluateCondition(workflow, doWhileTaskModel);
             LOGGER.debug(
@@ -182,6 +184,14 @@ public class DoWhile extends WorkflowSystemTask {
                         doWhileTaskModel.getIteration() + 1);
                 return markTaskSuccess(doWhileTaskModel);
             }
+        } catch (TransientException e) {
+            // Scheduling the next iteration failed because storage was briefly unavailable. That
+            // is not the loop's fault: leave it as it was and let the decide be retried, rather
+            // than failing the loop and its workflow. Found by the durability bench: a database
+            // kill failed a native workflow's handler loop.
+            doWhileTaskModel.setIteration(iterationBefore);
+            doWhileTaskModel.addOutput("iteration", iterationBefore);
+            throw e;
         } catch (Exception e) {
             String message =
                     String.format(

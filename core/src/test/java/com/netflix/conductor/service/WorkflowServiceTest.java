@@ -387,6 +387,22 @@ public class WorkflowServiceTest {
     }
 
     @Test
+    public void testTerminateRemoveRemovesAWorkflowThatAlreadyEnded() {
+        // terminating it is refused (DECIDER_BUGS item 10); there is nothing to terminate
+        org.mockito.Mockito.doThrow(
+                        new com.netflix.conductor.core.exception.ConflictException(
+                                "Cannot terminate a FAILED workflow."))
+                .when(workflowExecutor)
+                .terminateWorkflow("w-ended", "cleanup");
+
+        workflowService.terminateRemove("w-ended", "cleanup", false);
+
+        verify(executionService).removeWorkflow("w-ended", false);
+        // the mocks are shared with the other tests, which count calls
+        org.mockito.Mockito.reset(workflowExecutor, executionService);
+    }
+
+    @Test
     public void testTerminateWorkflow() {
         workflowService.terminateWorkflow("w123", "test");
         verify(workflowExecutor, times(1)).terminateWorkflow(anyString(), anyString());

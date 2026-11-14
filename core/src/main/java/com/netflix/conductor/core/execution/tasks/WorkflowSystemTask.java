@@ -84,6 +84,18 @@ public abstract class WorkflowSystemTask {
     /**
      * @return True if the task is supposed to be started asynchronously using internal queues.
      */
+    /**
+     * Whether {@link #execute} can run again, or twice at once, without harm. The async executor
+     * then reserves the task's queue message only briefly, so a task whose server died mid-run is
+     * picked up again in about a minute instead of after its response timeout.
+     */
+    public boolean isExecuteIdempotent() {
+        return false;
+    }
+
+    /**
+     * @return whether the task is executed asynchronously by the system task workers
+     */
     public boolean isAsync() {
         return false;
     }

@@ -14,6 +14,7 @@ package org.conductoross.conductor.core.execution;
 
 import java.time.Duration;
 
+import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.model.TaskModel;
@@ -85,6 +86,31 @@ public class ExecutorUtils {
      *     negative)
      * @return the duration to wait before the next workflow sweep, never negative
      */
+    /**
+     * The domain a message of this task type goes to, from a {@code taskToDomain} fallback list:
+     * the first domain with an active poller; when there is none, the last entry, where {@code
+     * NO_DOMAIN} means the shared queue (null).
+     */
+    public static String activeDomain(
+            String[] domains,
+            java.util.function.Function<String, PollData> pollData,
+            java.util.function.Predicate<PollData> active) {
+        if (domains == null || domains.length == 0) {
+            return null;
+        }
+        return java.util.Arrays.stream(domains)
+                .filter(domain -> !domain.trim().equalsIgnoreCase("NO_DOMAIN"))
+                .map(domain -> pollData.apply(domain.trim()))
+                .filter(java.util.Objects::nonNull)
+                .filter(active)
+                .findFirst()
+                .map(PollData::getDomain)
+                .orElse(
+                        domains[domains.length - 1].trim().equalsIgnoreCase("NO_DOMAIN")
+                                ? null
+                                : domains[domains.length - 1].trim());
+    }
+
     public static Duration computePostpone(
             WorkflowModel workflowModel,
             Duration workflowOffsetTimeout,

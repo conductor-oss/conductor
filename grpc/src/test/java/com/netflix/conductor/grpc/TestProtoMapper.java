@@ -15,11 +15,16 @@ package com.netflix.conductor.grpc;
 import java.util.List;
 import java.util.Map;
 
+import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskContinuation;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.common.run.NativeState;
+import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.proto.WorkflowTaskPb;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -80,5 +85,107 @@ public class TestProtoMapper {
     WorkflowTask decoded = mapper.fromProto(WorkflowTaskPb.WorkflowTask.newBuilder().build());
 
     assertTrue(decoded.getMetadata().isEmpty());
+  }
+
+  private static TaskContinuation marker() {
+    TaskContinuation marker = new TaskContinuation("main", 3);
+    marker.setState(TaskContinuation.LEASED);
+    marker.setEpoch(7);
+    marker.setWorker("host-a");
+    marker.setQueue("build-7:greet.v1.code");
+    marker.setQueuedAt(100);
+    marker.setLeasedAt(200);
+    marker.setAppliedAt(300);
+    marker.setAttempts(2);
+    marker.setDeferred("diverged: the code changed");
+    marker.setStep(9);
+    marker.setRecorded(Map.of("random_0", 0.5));
+    marker.setResumedWith(Map.of("count", 4.0));
+    marker.setDone(true);
+    marker.setResult(Map.of("greeting", "hi"));
+    marker.setError(Map.of("message", "boom"));
+    return marker;
+  }
+
+  private static void assertSameMarker(TaskContinuation expected, TaskContinuation actual) {
+    assertEquals(expected.getLane(), actual.getLane());
+    assertEquals(expected.getN(), actual.getN());
+    assertEquals(expected.getState(), actual.getState());
+    assertEquals(expected.getEpoch(), actual.getEpoch());
+    assertEquals(expected.getWorker(), actual.getWorker());
+    assertEquals(expected.getQueue(), actual.getQueue());
+    assertEquals(expected.getQueuedAt(), actual.getQueuedAt());
+    assertEquals(expected.getLeasedAt(), actual.getLeasedAt());
+    assertEquals(expected.getAppliedAt(), actual.getAppliedAt());
+    assertEquals(expected.getAttempts(), actual.getAttempts());
+    assertEquals(expected.getDeferred(), actual.getDeferred());
+    assertEquals(expected.getStep(), actual.getStep());
+    assertEquals(expected.getRecorded(), actual.getRecorded());
+    assertEquals(expected.getResumedWith(), actual.getResumedWith());
+    assertEquals(expected.isDone(), actual.isDone());
+    assertEquals(expected.getResult(), actual.getResult());
+    assertEquals(expected.getError(), actual.getError());
+  }
+
+  @Test
+  public void aTaskKeepsItsContinuationOverGrpc() {
+    Task task = new Task();
+    task.setContinuation(marker());
+    assertSameMarker(marker(), mapper.fromProto(mapper.toProto(task)).getContinuation());
+  }
+
+  @Test
+  public void aMarkerThatHasNotRunYetGoesOverGrpc() {
+    // a waiting marker, and one whose result and error the code cleared: no result, no error
+    TaskContinuation waiting = new TaskContinuation("main", 1);
+    TaskContinuation cleared = marker();
+    cleared.setResult(null);
+    cleared.setError(null);
+    for (TaskContinuation marker : List.of(waiting, cleared)) {
+      Task task = new Task();
+      task.setContinuation(marker);
+      TaskContinuation back = mapper.fromProto(mapper.toProto(task)).getContinuation();
+      assertTrue(back.getResult().isEmpty());
+      assertTrue(back.getError().isEmpty());
+      assertFalse(back.hasError());
+    }
+  }
+
+  @Test
+  public void aTaskWithoutAContinuationStaysWithoutOne() {
+    assertNull(mapper.fromProto(mapper.toProto(new Task())).getContinuation());
+  }
+
+  @Test
+  public void aWorkflowKeepsItsNativeStateOverGrpc() {
+    NativeState state = new NativeState();
+    state.setCodeType("greet.v1.code");
+    state.setContinuationTimeoutSeconds(30);
+    state.setStep(9);
+    state.setBootstrap(marker());
+    state.setHandlers(marker());
+    state.setReplies(Map.of("u1", Map.of("value", 1.0)));
+    state.setSeen(List.of("m1", "m2"));
+    state.setActiveContinuation("wf|main");
+    state.setActiveUntil(500);
+    Workflow workflow = new Workflow();
+    workflow.setNativeState(state);
+
+    NativeState back = mapper.fromProto(mapper.toProto(workflow)).getNativeState();
+
+    assertEquals("greet.v1.code", back.getCodeType());
+    assertEquals(30, back.getContinuationTimeoutSeconds());
+    assertEquals(9, back.getStep());
+    assertSameMarker(marker(), back.getBootstrap());
+    assertSameMarker(marker(), back.getHandlers());
+    assertEquals(state.getReplies(), back.getReplies());
+    assertEquals(state.getSeen(), back.getSeen());
+    assertEquals("wf|main", back.getActiveContinuation());
+    assertEquals(500, back.getActiveUntil());
+  }
+
+  @Test
+  public void aWorkflowWithoutNativeStateStaysWithoutOne() {
+    assertNull(mapper.fromProto(mapper.toProto(new Workflow())).getNativeState());
   }
 }

@@ -1,0 +1,21 @@
+syntax = "proto3";
+package conductor.proto;
+
+import "google/protobuf/struct.proto";
+import "model/taskcontinuation.proto";
+
+option java_package = "com.netflix.conductor.proto";
+option java_outer_classname = "NativeStatePb";
+option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/model";
+
+message NativeState {
+    string code_type = 2;
+    int32 continuation_timeout_seconds = 3;
+    int64 step = 4;
+    TaskContinuation bootstrap = 5;
+    TaskContinuation handlers = 6;
+    map<string, google.protobuf.Value> replies = 7;
+    repeated string seen = 8;
+    string active_continuation = 9;
+    int64 active_until = 10;
+}

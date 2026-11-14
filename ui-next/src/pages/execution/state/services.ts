@@ -12,15 +12,59 @@ import {
 } from "commonServices";
 import { toMaybeQueryString } from "utils/toMaybeQueryString";
 import { maybeTriggerFailureWorkflow } from "utils/maybeTriggerWorkflow";
+import { codeLoopsAsIterations } from "./codeLoops";
+import { canBeHeld } from "../held";
+
+/**
+ * A native execution whose code has not run yet has an empty definition of its own: the
+ * registered one, which the SDK read from the code, is shown instead as a preview.
+ */
+export const withCodePreview = async (
+  execution: any,
+  fetchDefinition: (name: string, version: number) => Promise<any>,
+) => {
+  const own = execution?.workflowDefinition;
+  if (
+    !own?.metadata?.native ||
+    (own.tasks ?? []).length > 0 ||
+    !canBeHeld(execution)
+  ) {
+    return execution;
+  }
+  try {
+    const registered = await fetchDefinition(
+      execution.workflowName ?? own.name,
+      execution.workflowVersion ?? own.version,
+    );
+    if (!(registered?.tasks ?? []).length) {
+      return execution;
+    }
+    return {
+      ...execution,
+      codePreview: true,
+      workflowDefinition: { ...own, tasks: registered.tasks },
+    };
+  } catch {
+    return execution; // no preview: the execution is shown as it is
+  }
+};
 
 export const fetchExecution = (context: ExecutionMachineContext) => {
   const request = {
     executionId: context.executionId!,
     authHeaders: context.authHeaders ?? {},
   };
+  const fetchDefinition = (name: string, version: number) =>
+    fetchWithContext(
+      `/metadata/workflow/${encodeURIComponent(name)}?version=${version}`,
+      {},
+      { headers: request.authHeaders },
+    );
   return context.agentExecution
     ? fetchAgentExecution(request)
-    : fetchWorkflowExecution(request);
+    : fetchWorkflowExecution(request)
+        .then((execution) => withCodePreview(execution, fetchDefinition))
+        .then(codeLoopsAsIterations);
 };
 
 export const restartExecution = async (

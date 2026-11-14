@@ -127,6 +127,28 @@ public class WorkflowSweeperTest {
     }
 
     @Test
+    public void sweepDoesNotRequeueATaskAWorkerPolledInTheMeantime() {
+        // The decide snapshot says SCHEDULED, but a worker polled the task since: its message is
+        // gone and it is IN_PROGRESS. Re-queueing it would hand it to a second worker.
+        TaskModel scheduledTask =
+                newTask("polled-task", TaskType.TASK_TYPE_SIMPLE, TaskModel.Status.SCHEDULED);
+        WorkflowModel workflow = newWorkflow(List.of(scheduledTask));
+        TaskModel polled =
+                newTask("polled-task", TaskType.TASK_TYPE_SIMPLE, TaskModel.Status.IN_PROGRESS);
+
+        when(executionLockService.acquireLock(WORKFLOW_ID)).thenReturn(true);
+        when(workflowExecutor.getWorkflow(WORKFLOW_ID, true)).thenReturn(workflow);
+        when(workflowExecutor.decide(WORKFLOW_ID)).thenReturn(workflow);
+        when(systemTaskRegistry.isSystemTask(anyString())).thenReturn(false);
+        when(queueDAO.containsMessage(TaskType.TASK_TYPE_SIMPLE, "polled-task")).thenReturn(false);
+        when(executionDAO.getTask("polled-task")).thenReturn(polled);
+
+        workflowSweeper.sweep(WORKFLOW_ID);
+
+        verify(queueDAO, never()).push(anyString(), anyString(), anyLong());
+    }
+
+    @Test
     public void sweepRepushesRepairableScheduledTaskWhenMessageMissing() {
         TaskModel scheduledTask =
                 newTask("scheduled-task", TaskType.TASK_TYPE_SIMPLE, TaskModel.Status.SCHEDULED);
@@ -139,6 +161,7 @@ public class WorkflowSweeperTest {
         when(systemTaskRegistry.isSystemTask(anyString())).thenReturn(false);
         when(queueDAO.containsMessage(TaskType.TASK_TYPE_SIMPLE, scheduledTask.getTaskId()))
                 .thenReturn(false);
+        when(executionDAO.getTask(scheduledTask.getTaskId())).thenReturn(scheduledTask);
 
         workflowSweeper.sweep(WORKFLOW_ID);
 

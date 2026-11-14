@@ -5,6 +5,7 @@ import _initial from "lodash/initial";
 import { extractVariablesFromTask } from "../helpers";
 import { ActorRef } from "xstate";
 import { WorkflowDefinitionEvents } from "./types";
+import { definitionAsDrawn } from "pages/execution/state/codeLoops";
 
 export const useGetVariablesForSelectedTasks = (
   workflowDefinitionActor: ActorRef<WorkflowDefinitionEvents> | undefined,
@@ -14,9 +15,14 @@ export const useGetVariablesForSelectedTasks = (
     (state) => state.context.selectedTaskCrumbs,
   );
 
-  const editorTasks = useSelector(
+  // the definition as drawn: a native one has loop nodes the selected crumbs go through
+  const workflowChanges = useSelector(
     workflowDefinitionActor!,
-    (state) => state.context.workflowChanges.tasks,
+    (state) => state.context.workflowChanges,
+  );
+  const editorTasks = useMemo(
+    () => definitionAsDrawn(workflowChanges ?? {})?.tasks ?? [],
+    [workflowChanges],
   );
 
   const tasksInCrumbBranch = useMemo(() => {

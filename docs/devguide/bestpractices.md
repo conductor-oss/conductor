@@ -57,16 +57,18 @@ Every task definition should have explicit timeouts. A task without timeouts can
 | Batch processing | 600 | 3600 | `TIME_OUT_WF` | 0 |
 | Quick data transform | 5 | 15 | `RETRY` | 3 |
 
+Both `timeoutSeconds` and `responseTimeoutSeconds` apply `timeoutPolicy`. A pattern that should retry when a worker goes silent needs `RETRY`; under `TIME_OUT_WF`, a response timeout times the workflow out.
+
 ### Timeout policies
 
 | Policy | Behavior | Use when |
 | :--- | :--- | :--- |
-| `RETRY` | Retries the task up to `retryCount` times. | Transient failures are expected (network calls, external APIs). |
-| `TIME_OUT_WF` | Fails the entire workflow immediately. | The task is critical and retrying won't help (e.g., expired batch window). |
-| `ALERT_ONLY` | Marks the task as timed out but keeps the workflow running. | Human-in-the-loop tasks or tasks with external completion signals. |
+| `RETRY` | Marks the task `TIMED_OUT` and retries it up to `retryCount` times, then times the workflow out. | Transient failures are expected (network calls, external APIs). |
+| `TIME_OUT_WF` (default) | Marks the task and the entire workflow `TIMED_OUT` immediately. | The task is critical and retrying won't help (e.g., expired batch window). |
+| `ALERT_ONLY` | Logs the timeout and increments the `task_timeout` counter. The task's status is unchanged and the workflow keeps running. | Human-in-the-loop tasks or tasks with external completion signals. |
 
 !!! warning
-    Setting `responseTimeoutSeconds` to 0 disables the response timeout. Only do this for tasks that are completed externally (e.g., [WAIT](../documentation/configuration/workflowdef/systemtasks/wait-task.md) or [Human](../documentation/configuration/workflowdef/systemtasks/human-task.md) tasks).
+    Setting `responseTimeoutSeconds` to 0 disables the response timeout. Only do this for tasks that are completed externally (e.g., [WAIT](../documentation/configuration/workflowdef/systemtasks/wait-task.md) or [Human](../documentation/configuration/workflowdef/systemtasks/human-task.md) tasks). A registered task definition must have `responseTimeoutSeconds` of at least 1, so registration rejects 0. System tasks with no registered task definition already get 0, and a task definition embedded in the workflow task (`taskDefinition`) is accepted with 0.
 
 See [Task Definitions](../documentation/configuration/taskdef.md) for the full parameter reference.
 

@@ -167,6 +167,15 @@ During execution, the Sub Workflow task will be marked as COMPLETED only upon th
 
 If the Sub Workflow task is defined as optional in the parent workflow definition, the Sub Workflow task will not be retried if sub-workflow fails or terminates. In addition, even if the sub-workflow is retried/rerun/restarted after reaching to a terminal status, the parent workflow task status will remain as it is.
 
+### Rerun and retry
+
+Conductor derives the child workflow's ID from the parent workflow ID, the Sub Workflow task ID, and the task's retry count. When the task starts and a child with that ID already exists, Conductor reuses it unless the child has ended unsuccessfully (`FAILED`, `TIMED_OUT`, or `TERMINATED`) or was created before the task was last scheduled. In either case, it starts a fresh child with a new random ID.
+
+As a result:
+
+* **Rerunning the Sub Workflow task**, or rerunning the parent from a task before it, starts a new child workflow. The previous child's result is not reused.
+* **Rerunning from a task inside the child** (pass the child's task ID as `reRunFromTaskId` on the parent's [rerun](../../../api/workflow.md#rerun)) reruns the existing child from that task, and the parent's Sub Workflow task goes back to `IN_PROGRESS` while it runs.
+
 
 ## Examples
 

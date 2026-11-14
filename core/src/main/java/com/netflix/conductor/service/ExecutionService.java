@@ -19,6 +19,7 @@ import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.netflix.conductor.annotations.Trace;
@@ -33,6 +34,7 @@ import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.exception.NotFoundException;
+import com.netflix.conductor.core.execution.NativeContinuationService;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.listener.TaskStatusListener;
@@ -66,6 +68,13 @@ public class ExecutionService {
     private static final int MAX_POLL_TIMEOUT_MS = 5000;
     private static final int POLL_COUNT_ONE = 1;
     private static final int POLLING_TIMEOUT_IN_MS = 100;
+
+    private NativeContinuationService nativeContinuationService;
+
+    @Autowired(required = false)
+    public void setNativeContinuationService(NativeContinuationService nativeContinuationService) {
+        this.nativeContinuationService = nativeContinuationService;
+    }
 
     public ExecutionService(
             WorkflowExecutor workflowExecutor,
@@ -134,7 +143,26 @@ public class ExecutionService {
 
         for (String taskId : taskIds) {
             try {
-                TaskModel taskModel = executionDAOFacade.getTaskModel(taskId);
+                TaskModel taskModel =
+                        NativeContinuationService.isSyntheticId(taskId)
+                                ? null
+                                : executionDAOFacade.getTaskModel(taskId);
+                // Native workflows: a continuation message is either for the bootstrap or handler
+                // lane, or names the task the code paused on, which is of another type than the
+                // code type being polled. The continuation is leased and the task handed to the
+                // worker without touching the task's own status.
+                if (nativeContinuationService != null
+                        && (NativeContinuationService.isSyntheticId(taskId)
+                                || (taskModel != null
+                                        && taskModel.getContinuation() != null
+                                        && !taskType.equals(taskModel.getTaskType())))) {
+                    Task leased =
+                            nativeContinuationService.lease(queueName, taskId, taskModel, workerId);
+                    if (leased != null) {
+                        tasks.add(leased);
+                    }
+                    continue;
+                }
                 if (taskModel == null || taskModel.getStatus().isTerminal()) {
                     // Remove taskId(s) without a valid Task/terminal state task from the queue
                     queueDAO.remove(queueName, taskId);
@@ -176,6 +204,7 @@ public class ExecutionService {
                     continue;
                 }
 
+                TaskModel.Status readStatus = taskModel.getStatus();
                 taskModel.setStatus(TaskModel.Status.IN_PROGRESS);
                 if (taskModel.getStartTime() == 0) {
                     taskModel.setStartTime(System.currentTimeMillis());
@@ -186,7 +215,12 @@ public class ExecutionService {
                         0); // reset callbackAfterSeconds when giving the task to the worker
                 taskModel.setWorkerId(workerId);
                 taskModel.incrementPollCount();
-                executionDAOFacade.updateTask(taskModel);
+                if (!executionDAOFacade.updateTaskIfStatus(taskModel, readStatus)) {
+                    // changed since it was read, e.g. cancelled when its workflow ended: a write
+                    // now would overwrite that, so the task is not handed out
+                    queueDAO.remove(queueName, taskId);
+                    continue;
+                }
                 adjustDeciderQueuePostpone(taskModel, taskDef);
                 Task task = taskModel.toTask();
                 // Secrets substitution only sees taskModel.getInputData(); when input has been

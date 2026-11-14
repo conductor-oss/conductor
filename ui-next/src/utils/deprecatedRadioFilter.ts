@@ -12,10 +12,19 @@ const options = [
     value: "value-param",
     label: "Value-Param",
   },
+  {
+    // a native workflow's switch: its code decided, so it is shown, never chosen
+    value: "native-code",
+    label: "Native code",
+    disabled: true,
+  },
 ];
+
+const shownOnlyWhenSet = new Set(["javascript", "native-code"]);
 
 export const filterOptionByEvaluatorType = (evaluatorType?: string) => {
   return options.filter(
-    (option) => option.value !== "javascript" || evaluatorType === "javascript",
+    (option) =>
+      !shownOnlyWhenSet.has(option.value) || evaluatorType === option.value,
   );
 };

@@ -99,6 +99,24 @@ public class MetadataMapperServiceTest {
     }
 
     @Test
+    public void aTaskWithNoDefinitionTakesTheGivenPolicyAndOtherwiseTheGlobalDefault() {
+        when(metadataDAO.getTaskDef("adhoc")).thenReturn(null);
+        WorkflowDef chosen = createWorkflowDefinition("chosen");
+        chosen.setTasks(List.of(createWorkflowTask("adhoc")));
+        metadataMapperService.populateTaskDefinitions(chosen, TaskDef.TimeoutPolicy.RETRY);
+        assertEquals(
+                TaskDef.TimeoutPolicy.RETRY,
+                chosen.getTasks().get(0).getTaskDefinition().getTimeoutPolicy());
+
+        WorkflowDef global = createWorkflowDefinition("global");
+        global.setTasks(List.of(createWorkflowTask("adhoc")));
+        metadataMapperService.populateTaskDefinitions(global);
+        assertEquals(
+                TaskDef.TimeoutPolicy.TIME_OUT_WF,
+                global.getTasks().get(0).getTaskDefinition().getTimeoutPolicy());
+    }
+
+    @Test
     public void testNoMetadataPopulationOnEmbeddedTaskDefinition() {
         String nameTaskDefinition = "task2";
         TaskDef taskDefinition = createTaskDefinition(nameTaskDefinition);

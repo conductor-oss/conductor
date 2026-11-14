@@ -5,9 +5,12 @@ import { NavLink, KeyValueTable } from "components";
 import { Link, Paper } from "@mui/material";
 import { ExecutionTask, TaskType } from "types";
 import { ReactNode, useMemo } from "react";
+import { canBeHeld, heldReasonOfMarker } from "./held";
 
 interface TaskSummaryProps {
   taskResult: ExecutionTask;
+  /** Whether a held continuation still applies: a finished execution is no longer held. */
+  workflowStatus?: string;
 }
 
 type DataType = {
@@ -16,7 +19,10 @@ type DataType = {
   type?: string;
 };
 
-export default function TaskSummary({ taskResult }: TaskSummaryProps) {
+export default function TaskSummary({
+  taskResult,
+  workflowStatus,
+}: TaskSummaryProps) {
   const shouldDisplayEvaluatedCase = useMemo(
     () => ["DECISION", "SWITCH"].includes(taskResult.taskType),
     [taskResult.taskType],
@@ -37,8 +43,48 @@ export default function TaskSummary({ taskResult }: TaskSummaryProps) {
     },
   ] as DataType[];
 
+  // Native workflows record where in the source each task was called.
+  const site = (
+    taskResult.workflowTask as { metadata?: Record<string, unknown> }
+  )?.metadata?.site;
+  if (typeof site === "string" && site.length > 0) {
+    data.push({ label: "Source", value: site });
+  }
   if (taskResult.domain) {
     data.push({ label: "Domain", value: taskResult.domain });
+  }
+  // Native workflows: the code paused on this task; when it finishes, the server hands the
+  // continuation to a host of the code, which appends what comes next.
+  const continuation = taskResult.continuation;
+  if (continuation) {
+    const held = canBeHeld({ status: workflowStatus })
+      ? heldReasonOfMarker(continuation)
+      : undefined;
+    if (held) {
+      data.push({
+        label: "Waiting for compatible code",
+        value: `This task finished; the code after it is waiting. ${held}`,
+        type: "error",
+      });
+    }
+    data.push({
+      label: "Continuation",
+      value: `${continuation.lane} #${continuation.n} — ${continuation.state.toLowerCase()}${
+        continuation.deferred && !held
+          ? ` (deferred: ${continuation.deferred})`
+          : ""
+      }`,
+    });
+    if (continuation.worker) {
+      data.push({ label: "Continuation worker", value: continuation.worker });
+    }
+    if (continuation.appliedAt) {
+      data.push({
+        label: "Continuation applied",
+        value: continuation.appliedAt,
+        type: "date",
+      });
+    }
   }
 
   if (taskResult.taskId) {

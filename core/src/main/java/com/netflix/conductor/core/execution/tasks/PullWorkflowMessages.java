@@ -15,6 +15,8 @@ package com.netflix.conductor.core.execution.tasks;
 import java.util.List;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -50,6 +52,8 @@ import com.netflix.conductor.model.WorkflowModel;
 @ConditionalOnProperty(name = "conductor.workflow-message-queue.enabled", havingValue = "true")
 public class PullWorkflowMessages extends WorkflowSystemTask {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(PullWorkflowMessages.class);
+
     public static final String TASK_TYPE = "PULL_WORKFLOW_MESSAGES";
     static final String INPUT_BATCH_SIZE = "batchSize";
     static final String INPUT_BLOCKING = "blocking";
@@ -74,7 +78,26 @@ public class PullWorkflowMessages extends WorkflowSystemTask {
     @Override
     public boolean execute(WorkflowModel workflow, TaskModel task, WorkflowExecutor executor) {
         int batchSize = getBatchSize(task);
-        List<WorkflowMessage> messages = dao.pop(workflow.getWorkflowId(), batchSize);
+        List<WorkflowMessage> messages;
+        try {
+            // claimed under the task's reference name (unique per loop iteration), so running
+            // this task again returns the same messages rather than losing the first run's
+            // fenced by the loop iteration: a stale run of an older pull takes nothing new
+            messages =
+                    dao.claim(
+                            workflow.getWorkflowId(),
+                            batchSize,
+                            task.getReferenceTaskName(),
+                            task.getIteration());
+        } catch (RuntimeException e) {
+            // The pop rolled back, so the messages are still queued. Stay IN_PROGRESS and try
+            // again on the next poll instead of leaving the task unscheduled.
+            LOGGER.warn(
+                    "Could not pull messages for workflow {}; will retry",
+                    workflow.getWorkflowId(),
+                    e);
+            return false;
+        }
         if (messages.isEmpty()) {
             if (isBlocking(task)) {
                 // No messages yet — stay IN_PROGRESS; SystemTaskWorker will re-poll
@@ -91,6 +114,12 @@ public class PullWorkflowMessages extends WorkflowSystemTask {
     @Override
     public boolean isAsync() {
         return true;
+    }
+
+    /** With claims, running this task twice returns the same messages, so a re-run is safe. */
+    @Override
+    public boolean isExecuteIdempotent() {
+        return dao.supportsClaims();
     }
 
     @Override

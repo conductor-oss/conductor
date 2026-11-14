@@ -236,6 +236,12 @@ public class Task {
     @ProtoField(id = 46)
     private Map<String, String> runtimeMetadata = new HashMap<>();
 
+    /**
+     * Set on a task native workflow code paused on: the continuation that runs when it finishes.
+     */
+    @ProtoField(id = 48)
+    private TaskContinuation continuation;
+
     public Task() {}
 
     /**
@@ -923,6 +929,7 @@ public class Task {
         copy.setParentTaskReferenceName(parentTaskReferenceName);
         copy.setFirstStartTime(firstStartTime);
         copy.setExecutionMetadata(executionMetadata);
+        copy.setContinuation(continuation);
         return copy;
     }
 
@@ -1149,5 +1156,13 @@ public class Task {
                 getExecutionNameSpace(),
                 getParentTaskId(),
                 getFirstStartTime());
+    }
+
+    public TaskContinuation getContinuation() {
+        return continuation;
+    }
+
+    public void setContinuation(TaskContinuation continuation) {
+        this.continuation = continuation;
     }
 }

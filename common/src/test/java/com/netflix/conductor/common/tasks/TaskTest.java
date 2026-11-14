@@ -24,6 +24,7 @@ import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.tasks.ExecutionMetadata;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
+import com.netflix.conductor.common.metadata.tasks.TaskContinuation;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
@@ -104,7 +105,7 @@ public class TaskTest {
         // NOTE: `runtimeMetadata` (wire-only resolved secret values, injected at poll time) is
         // intentionally NOT propagated by copy()/deepCopy() - see
         // testRuntimeMetadataExcludedFromCopy.
-        final int expectedTaskFieldsNumber = 45;
+        final int expectedTaskFieldsNumber = 46;
         final int declaredFieldsNumber = task.getClass().getDeclaredFields().length;
 
         final ExecutionMetadata executionMetadata = new ExecutionMetadata();
@@ -119,6 +120,7 @@ public class TaskTest {
 
         assertEquals(expectedTaskFieldsNumber, declaredFieldsNumber);
 
+        task.setContinuation(new TaskContinuation("main", 3));
         task.setCallbackAfterSeconds(111L);
         task.setCallbackFromWorker(false);
         task.setCorrelationId("correlation_id");
@@ -179,6 +181,7 @@ public class TaskTest {
                 Long.valueOf(6000L), copy.getOrCreateExecutionMetadata().getPollNetworkLatency());
         assertEquals(
                 Long.valueOf(7000L), copy.getOrCreateExecutionMetadata().getUpdateNetworkLatency());
+        assertEquals(task.getContinuation(), copy.getContinuation());
     }
 
     @Test

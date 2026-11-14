@@ -68,6 +68,7 @@ export enum TaskType {
   HTTP_POLL = "HTTP_POLL",
   JDBC = "JDBC",
   SWITCH_JOIN = "SWITCH_JOIN", // Pseudo task. doesn't really exist on the workflow
+  HELD_STEP = "HELD_STEP", // Pseudo task. where held native workflow code would continue
   IA_TASK = "_ai_tc",
   LLM_TEXT_COMPLETE = "LLM_TEXT_COMPLETE",
   LLM_GENERATE_EMBEDDINGS = "LLM_GENERATE_EMBEDDINGS",
