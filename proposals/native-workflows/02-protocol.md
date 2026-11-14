@@ -39,16 +39,19 @@ present, which the test harness uses. Shown with the shape of the `DiscoveryTest
   "metadata": {
     "native": {
       "sdk": "java",
-      "protocol": 2,
       "class": "…DiscoveryTest$Fulfilment",
       "method": "run",
       "codeType": "fulfilment.v1.code",
       "continuationTimeoutSeconds": 30,
       "handlers": true,
       "signals": ["cancel"], "updates": [], "queries": [],
-      "discovered": true
+      "discovered": true,
+      "codeVersion": "f89c6f14fcf2"
     }
   },
+  "inputSchema": { "name": "fulfilment_input", "version": 1, "type": "JSON" },
+  "outputSchema": { "name": "fulfilment_output", "version": 1, "type": "JSON" },
+  "enforceSchema": false,
   "tasks": [
     { "name": "pick", "taskReferenceName": "pick", "type": "SIMPLE", "inputParameters": { "item": "" },
       "optional": true, "taskDefinition": { "name": "pick", "retryCount": 3, "timeoutSeconds": 0,
@@ -59,7 +62,7 @@ present, which the test harness uses. Shown with the shape of the `DiscoveryTest
                      [ { "taskReferenceName": "pack_2", "type": "SIMPLE", "…": "…" } ] ], "…": "…" },
     { "name": "fork_join", "taskReferenceName": "fork_join", "type": "JOIN", "joinOn": [], "…": "…" },
     { "name": "sleep", "taskReferenceName": "sleep", "type": "WAIT", "…": "…" },
-    { "name": "region", "taskReferenceName": "region", "type": "SWITCH", "evaluatorType": "value-param",
+    { "name": "region", "taskReferenceName": "region", "type": "SWITCH", "evaluatorType": "native-code",
       "expression": "switchCaseValue", "inputParameters": { "switchCaseValue": "" },
       "decisionCases": { "eu": [ { "taskReferenceName": "ship", "…": "…" } ],
                          "us": [ { "taskReferenceName": "ship_2", "…": "…" } ] },
@@ -73,6 +76,8 @@ present, which the test harness uses. Shown with the shape of the `DiscoveryTest
 | `inputParameters` | `Registration.inputParameters` | the components of the method's single record parameter, or the parameter names when there are several; empty for a single non-record parameter or none |
 | `metadata.native.signals`, `updates`, `queries` | `Registration.skeleton` from `WorkflowSpec` | the handler inventory: the names of the `@Signal`, `@Update` and `@Query` methods |
 | `metadata.native.discovered`, `discoveryError` | `Registration.skeleton` | `true` when `Replayer.discover` returned; `false` with the exception's `toString()` when it threw, and `tasks` is then `[]` |
+| `metadata.native.codeVersion` | `Registration.codeVersion` | a short hash of the discovered graph: which structure of the code the definition was read from |
+| `inputSchema`, `outputSchema`, `enforceSchema` | `Registration.Schemas` from `JsonSchemas` | the workflow method's input and output as JSON Schemas, registered by name (`<workflow>_input`, `_output`) and versioned by content; never enforced. Each worker task's definition, and the inline one in `tasks`, references its own (`<task>_input`, `_output`) the same way |
 | `tasks` | `Replayer.discover` + `Registration.inlineTaskDefinitions` | the discovered graph; every `SIMPLE` entry without a `taskDefinition` gets an inline one (`retryCount` 3, `timeoutSeconds` 0, `responseTimeoutSeconds` 120, `ownerEmail native@conductor.local`), at any depth, so registration validates |
 
 **Discovery** (`Replayer.discover(spec)`): `CodeReader.read` reads the compiled workflow method
@@ -337,7 +342,8 @@ message.
    definition and unique within the fragment.
 3. `type`: a type `DeciderService` has a mapper for. `TERMINATE` is refused: a native workflow ends
    through its code. The one exception is the entry that marks where the main lane's code threw,
-   in the completion that ends the lane with that error and names it in `error.ref`.
+   in the completion that ends the lane with that error and names it in `error.ref`. A `SWITCH`
+   is decided by the code: its `evaluatorType` must be `native-code`.
 4. `lane`: every entry carries `metadata.lane`.
 5. `continuation`: a `metadata.continuation` is `{ "lane": "<lane>", "n": <number> }`, and a lane
    pauses at most once in one fragment.
@@ -373,8 +379,8 @@ SDK obligations the server does not validate:
    continuation's own branches nothing is anchored: their entries go straight into the case list,
    and the entry after the body goes back to the list that holds the switch.
 7. A `SWITCH` entry declares every case the code declared, plus a `defaultCase`, and fixes
-   `inputParameters.switchCaseValue` to the key the code took, so the server's `value-param`
-   evaluation selects the case whose entries the code scheduled. The untaken cases (and
+   `inputParameters.switchCaseValue` to the key the code took, with `evaluatorType: native-code`
+   (the server rejects any other evaluator on a native `SWITCH`), so the evaluation selects the case whose entries the code scheduled. The untaken cases (and
    `defaultCase` when a declared case was taken and `otherwise` exists) hold preview entries.
 8. Preview entries (`metadata.preview: true`) sit only inside untaken switch cases. They carry
    `metadata.lane` and `metadata.site` like any entry, never `metadata.continuation` and never
@@ -412,7 +418,7 @@ What each SDK call emits (`Replayer`, `Entries`). "pauses" means the entry carri
 | `http(ref)…` | `HTTP` `ref` with `http_request` and an inline retrying definition; pauses |
 | `event(ref).to(sink).send(p)` | `EVENT` `ref` with `sink`, `optional: true`; no pause |
 | `llm(ref)…`, `mcp(ref)…`, `agent(ref)…` | `LLM_CHAT_COMPLETE`, `LIST_MCP_TOOLS` / `CALL_MCP_TOOL`, `AGENT`; pauses |
-| `switchOn(name, value).when(key, body)…otherwise(body).get()` / `.run()` | `SWITCH` `name` with `evaluatorType: value-param`, `expression: switchCaseValue`, `inputParameters: {switchCaseValue: "<value as a string>"}`, `decisionCases` with one list per declared case, `defaultCase`, `metadata.lane`; no `optional`, no pause of its own. The taken body runs inline and its entries go inside that case's list; the lane's marker sits on whatever it paused on in there. Every untaken case, and `defaultCase` when a declared case was taken and `otherwise` exists, holds the preview of its body (rule 8 above): the entries it would have emitted, named `<base>_if_<key>`, with `metadata.preview: true`. When the lane resumes inside the case and the body returns, the next entry carries `metadata.after: "<name>"` and the server inserts it after the switch. The value is written with `${` escaped, so it is never evaluated. No match and no `otherwise`: the `SWITCH` is still emitted with every case previewed, then `WorkflowFailedException`, the lane ends with `error` |
+| `switchOn(name, value).when(key, body)…otherwise(body).get()` / `.run()` | `SWITCH` `name` with `evaluatorType: native-code`, `expression: switchCaseValue`, `inputParameters: {switchCaseValue: "<value as a string>"}`, `decisionCases` with one list per declared case, `defaultCase`, `metadata.lane`; no `optional`, no pause of its own. The taken body runs inline and its entries go inside that case's list; the lane's marker sits on whatever it paused on in there. Every untaken case, and `defaultCase` when a declared case was taken and `otherwise` exists, holds the preview of its body (rule 8 above): the entries it would have emitted, named `<base>_if_<key>`, with `metadata.preview: true`. When the lane resumes inside the case and the body returns, the next entry carries `metadata.after: "<name>"` and the server inserts it after the switch. The value is written with `${` escaped, so it is never evaluated. No match and no `otherwise`: the `SWITCH` is still emitted with every case previewed, then `WorkflowFailedException`, the lane ends with `error` |
 | an `if` or `switch` whose arms call the server | the same `SWITCH` as `switchOn`, named after what it decides on (`if_<name>`, `switch_<name>`, numbered when repeated). An `if` has the case `"true"` and its else as `defaultCase`; a `switch` has a case per arm keyed by its labels and `"default"`. `switchCaseValue` is the arm taken. Emitted when the first call inside an arm is made (the SDK knows the arm from the call's line), or, when the code went past without a call and only one arm can be passed that way, with that arm and nothing inside it |
 | `return value` | empty fragment, `done: true`, `result` |
 | `throw` | `done: true`, `error`. For an uncaught `TaskFailure`, `error.ref` names the task, which the server puts back to the status it failed with (`outputData["conductor.failedStatus"]`) and makes the workflow's failed task (`failedTaskId` on the workflow returned by `GET /api/workflow/{workflowId}`; ui-next's "Jump to task" goes there). For any other exception, the fragment ends with a `TERMINATE` entry where the code threw (named after the exception, `metadata.site` the line it was thrown from) and `error.ref` names it: the server creates it as a `FAILED` task with the exception as its reason and makes it the failed task; it is never scheduled. The ifs and switches the code threw inside are drawn first, as at a call, so the entry lands in the arm it was in. After it come previews of what the code would have called had it not thrown (`<task>_if_no_error`, `metadata.preview`, `metadata.previewAfter: "<ref of the TERMINATE>"`), read from the compiled code: the rest of each arm in that arm's case, then the rest of each method up to the workflow method. A retry removes all the continuation that threw drew (that task, those previews, and any if, switch or lane it drew before throwing: the workflow failed in that same completion, so none of it ran) and runs the code again from that continuation |
@@ -425,7 +431,7 @@ empty):
 
 ```json
 { "name": "switch_oddEven", "taskReferenceName": "switch_oddEven", "type": "SWITCH",
-  "evaluatorType": "value-param", "expression": "switchCaseValue",
+  "evaluatorType": "native-code", "expression": "switchCaseValue",
   "inputParameters": { "switchCaseValue": "1" },
   "decisionCases": {
     "0": [ { "name": "task_4", "taskReferenceName": "task_4_if_0", "type": "SIMPLE",

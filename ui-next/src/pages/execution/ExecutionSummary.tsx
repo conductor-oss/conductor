@@ -3,6 +3,7 @@ import { type KeyValueTableRow } from "components/KeyValueTable";
 import { WorkflowExecution } from "types/Execution";
 import { useFetch } from "utils/query";
 import { heldReason } from "./held";
+import { useWaitingForWorker } from "./useWaitingForWorker";
 import {
   WorkflowSizeIndicator,
   type WorkflowSizeResponse,
@@ -30,6 +31,7 @@ export default function ExecutionSummary({
   );
 
   const held = heldReason(execution);
+  const waitingForWorker = useWaitingForWorker(execution);
 
   // To accommodate unexecuted tasks, read type & name out of workflowTask
   const data: KeyValueTableRow[] = (
@@ -45,6 +47,16 @@ export default function ExecutionSummary({
         label: "Waiting for compatible code",
         value: held,
         type: "error",
+      },
+      waitingForWorker && {
+        label: "Waiting for a worker",
+        value: waitingForWorker,
+        type: "error",
+      },
+      execution.codePreview && {
+        label: "Diagram",
+        value:
+          "A preview: the code has not run yet, so it shows what the code calls, read from the registered definition",
       },
       { label: "Version", value: execution.workflowVersion },
       { label: "Start time", value: execution.startTime, type: "date" },

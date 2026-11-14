@@ -321,7 +321,7 @@ public class NativeContinuationServiceTest {
 
         // an if the code went past without a call: a switch with the arm it took, no continuation
         Map<String, Object> passed = entry("check", "SWITCH", "main", null, 0);
-        passed.put("evaluatorType", "value-param");
+        passed.put("evaluatorType", "native-code");
         passed.put("expression", "switchCaseValue");
         passed.put("inputParameters", Map.of("switchCaseValue", "false"));
         passed.put("decisionCases", Map.of("true", List.of()));
@@ -722,8 +722,29 @@ public class NativeContinuationServiceTest {
     /** A SWITCH entry whose one case holds {@code children}. */
     private static Map<String, Object> switchOf(String ref, List<Map<String, Object>> children) {
         Map<String, Object> sw = entry(ref, "SWITCH", "main", null, 0);
+        sw.put("evaluatorType", "native-code");
+        sw.put("expression", "switchCaseValue");
+        sw.put("inputParameters", Map.of("switchCaseValue", "a"));
         sw.put("decisionCases", Map.of("a", children));
         return sw;
+    }
+
+    @Test
+    public void aSwitchTheServerWouldEvaluateIsRejected() {
+        // a native workflow's switches are decided by its code
+        WorkflowModel workflow = freshWorkflow(false);
+        lease(workflow.getNativeState().getBootstrap(), 1);
+        Map<String, Object> sw = switchOf("route", List.of(entry("a", "SIMPLE", "main", null, 0)));
+        sw.put("evaluatorType", "graaljs");
+        sw.put("expression", "$.region == 'eu' ? 'a' : 'b'");
+
+        NativeContinuationService.Completion completion =
+                completeHoldingSlot(workflow, null, result("wf-1|main", output(1, 1, List.of(sw))));
+
+        assertTrue(completion.finished);
+        assertTrue(
+                completion.reason, completion.reason.contains("evaluatorType must be native-code"));
+        assertTrue(workflow.getWorkflowDefinition().getTasks().isEmpty());
     }
 
     @Test

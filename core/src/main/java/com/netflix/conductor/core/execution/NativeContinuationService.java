@@ -37,6 +37,7 @@ import com.netflix.conductor.common.run.NativeState;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.exception.ConflictException;
+import com.netflix.conductor.core.execution.evaluators.NativeCodeEvaluator;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.metadata.MetadataMapperService;
 import com.netflix.conductor.core.utils.QueueUtils;
@@ -1324,6 +1325,15 @@ public class NativeContinuationService {
                 if (laneOf(nested) == null) {
                     throw new RejectedFragmentException(
                             "lane", "task " + ref + " does not name its lane in metadata");
+                }
+                if (TaskType.SWITCH.name().equals(type)
+                        && !NativeCodeEvaluator.NAME.equals(nested.getEvaluatorType())) {
+                    throw new RejectedFragmentException(
+                            "type",
+                            "switch "
+                                    + ref
+                                    + " is decided by the code: its evaluatorType must be "
+                                    + NativeCodeEvaluator.NAME);
                 }
                 if (nested.getMetadata().get(METADATA_CONTINUATION) != null) {
                     TaskContinuation marker = markerOf(nested);

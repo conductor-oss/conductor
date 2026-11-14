@@ -2624,7 +2624,7 @@ public class TestWorkflowExecutor {
         ifEntry.setName("if_x");
         ifEntry.setType(TaskType.SWITCH.name());
         ifEntry.setTaskReferenceName("if_x");
-        ifEntry.setEvaluatorType("value-param");
+        ifEntry.setEvaluatorType("native-code");
         ifEntry.setExpression("c");
         ifEntry.setDecisionCases(new HashMap<>(Map.of("true", new ArrayList<>(List.of(b)))));
         ifEntry.getMetadata().put(NativeContinuationService.APPENDED_BY, "main#2");

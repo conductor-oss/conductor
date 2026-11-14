@@ -325,9 +325,9 @@ the execution; a join on it raises the failure in the code that joins.
 - It does not detect divergence on replay; that is the SDK's job, using the markers and the task
   list. A `switchOn` that takes a different case than the recorded `switchCaseValue` is one such
   divergence.
-- It does not know that a `SWITCH` was decided in code. The entry arrives with
-  `evaluatorType: value-param` and `inputParameters.switchCaseValue` already fixed to the taken
-  key, so `SwitchTaskMapper` selects the case whose entries the code scheduled and records
+- It knows a `SWITCH` was decided in code only by its evaluator: the entry arrives with
+  `evaluatorType: native-code` and `inputParameters.switchCaseValue` already fixed to the taken
+  key; the `native-code` evaluator reads that value, so `SwitchTaskMapper` selects the case whose entries the code scheduled and records
   `outputData.selectedCase` and `evaluationResult` as for any switch. It does not know what
   `metadata.preview` means either: the preview entries in untaken cases are definition entries the
   switch never reaches, exactly like the untaken branches of a JSON switch.

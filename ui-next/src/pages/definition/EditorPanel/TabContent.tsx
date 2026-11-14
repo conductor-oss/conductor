@@ -1,3 +1,4 @@
+import { ReactNode } from "react";
 import { Box } from "@mui/material";
 import { FEATURES, featureFlags } from "utils";
 import { ActorRef, EventObject } from "xstate";
@@ -13,6 +14,7 @@ import {
 import { WorkflowDefinitionEvents } from "../state/types";
 import { WorkflowMetadataEvents } from "../WorkflowMetadata/state/types";
 import { CodeTab } from "./CodeEditorTab";
+import { useGeneratedFrom } from "../generatedFrom";
 import DependenciesTab from "./DependenciesTab/DependenciesTab";
 import { TaskForm } from "./TaskFormTab";
 import { WorkflowPropertiesForm } from "./WorkflowPropertiesFormTab";
@@ -37,6 +39,25 @@ interface TabContentProps {
   getTabContentHeight: () => string;
 }
 
+/** Disables every input inside, for a definition generated from code. */
+const ReadOnlyFields = ({
+  readOnly,
+  children,
+}: {
+  readOnly: boolean;
+  children: ReactNode;
+}) =>
+  readOnly ? (
+    <fieldset
+      disabled
+      style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}
+    >
+      {children}
+    </fieldset>
+  ) : (
+    <>{children}</>
+  );
+
 export const TabContent = ({
   openedTab,
   isReady,
@@ -45,6 +66,7 @@ export const TabContent = ({
   definitionActor,
   getTabContentHeight,
 }: TabContentProps) => {
+  const readOnly = useGeneratedFrom(definitionActor) != null;
   return (
     <Box
       id="editor-panel-tab-content"
@@ -66,10 +88,12 @@ export const TabContent = ({
             overflow: "hidden",
           }}
         >
-          <TaskForm
-            workflowDefinitionActor={definitionActor}
-            isInTaskFormState={isInTaskFormState}
-          />
+          <ReadOnlyFields readOnly={readOnly}>
+            <TaskForm
+              workflowDefinitionActor={definitionActor}
+              isInTaskFormState={isInTaskFormState}
+            />
+          </ReadOnlyFields>
         </Box>
       ) : null}
 
@@ -86,9 +110,11 @@ export const TabContent = ({
                 overflow: "auto",
               }}
             >
-              <WorkflowPropertiesForm
-                workflowMetadataActor={workflowMetadataActor}
-              />
+              <ReadOnlyFields readOnly={readOnly}>
+                <WorkflowPropertiesForm
+                  workflowMetadataActor={workflowMetadataActor}
+                />
+              </ReadOnlyFields>
             </Box>
           ) : null;
         })()}
@@ -111,6 +137,7 @@ export const TabContent = ({
             saveChangesActor={(
               definitionActor as ActorRefWithChildren<WorkflowDefinitionEvents>
             ).children?.get("saveChangesMachine")}
+            readOnly={readOnly}
           />
         </Box>
       ) : null}

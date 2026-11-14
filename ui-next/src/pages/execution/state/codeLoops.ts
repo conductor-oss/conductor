@@ -134,6 +134,8 @@ const loopNode = (
     taskReferenceName: ref,
     type: TaskType.DO_WHILE,
     inputParameters: {},
+    // the code decides when it repeats, as it decides its switches
+    evaluatorType: "native-code",
     loopCondition: "",
     metadata: { codeLoop: true },
   };
@@ -253,6 +255,44 @@ const statusOf = (statuses: (TaskStatus | undefined)[]): TaskStatus => {
 
 const CODE_LOOPS_SHOWN = "codeLoopsShown";
 
+/** Whether an entry, or one it holds, ran in a Java loop. */
+const tagged = (t: any): boolean =>
+  loopsOf(t).length > 0 ||
+  (t.forkTasks ?? []).some((b: any[]) => b.some(tagged)) ||
+  Object.values(t.decisionCases ?? {}).some((l: any) => l.some(tagged)) ||
+  (t.defaultCase ?? []).some(tagged) ||
+  (t.loopOver ?? []).some(tagged);
+
+const newContext = (): Context => ({
+  seen: new Map(),
+  runs: new Map(),
+  bodies: new Map(),
+  loops: [],
+});
+
+/**
+ * The definition as the editor draws it: a native workflow's with its Java loops as loop nodes,
+ * any other as it is. A selected node is looked up in this one, the one it was drawn from.
+ */
+export const definitionAsDrawn = <W extends { tasks?: any[]; metadata?: any }>(
+  workflow: W,
+): W =>
+  workflow?.metadata?.native != null
+    ? codeLoopsInDefinition(workflow)
+    : workflow;
+
+/**
+ * A native workflow's registered definition with its Java loops shown as loops: one loop node
+ * per loop, over the steps it holds. For drawing only: the definition itself is unchanged.
+ */
+export const codeLoopsInDefinition = <W extends { tasks?: any[] }>(
+  workflow: W,
+): W => {
+  const tasks: any[] = workflow?.tasks ?? [];
+  if (!tasks.some(tagged)) return workflow;
+  return { ...workflow, tasks: materialize(groupList(tasks, 0), newContext()) };
+};
+
 /**
  * The execution with its Java loops shown as loops: the definition gets one loop node per loop,
  * each step that ran becomes an iteration of its body entry, and each loop gets a DO_WHILE task
@@ -266,25 +306,10 @@ export const codeLoopsAsIterations = <
   if (!execution || (execution as any)[CODE_LOOPS_SHOWN]) return execution;
   const definition = execution.workflowDefinition;
   const defined: any[] = definition?.tasks ?? [];
-  if (
-    !defined.some(function tagged(t: any): boolean {
-      return (
-        loopsOf(t).length > 0 ||
-        (t.forkTasks ?? []).some((b: any[]) => b.some(tagged)) ||
-        Object.values(t.decisionCases ?? {}).some((l: any) => l.some(tagged)) ||
-        (t.defaultCase ?? []).some(tagged) ||
-        (t.loopOver ?? []).some(tagged)
-      );
-    })
-  ) {
+  if (!defined.some(tagged)) {
     return execution;
   }
-  const ctx: Context = {
-    seen: new Map(),
-    runs: new Map(),
-    bodies: new Map(),
-    loops: [],
-  };
+  const ctx = newContext();
   const tasksDef = materialize(groupList(defined, 0), ctx);
 
   const tasks: any[] = execution.tasks ?? [];

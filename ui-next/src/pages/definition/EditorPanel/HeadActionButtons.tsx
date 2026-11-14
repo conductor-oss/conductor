@@ -28,6 +28,7 @@ import { HOT_KEYS_WORKFLOW_DEFINITION } from "utils/constants/common";
 import { UnderlinedText } from "components/ui/UnderlinedText";
 import { useAuth } from "components/features/auth";
 import { RunWorkflowButton } from "./RunWorkflowButton";
+import { generatedFrom } from "../generatedFrom";
 
 export interface HeaderActionButtonsProps {
   definitionActor: ActorRef<WorkflowDefinitionEvents>;
@@ -56,10 +57,12 @@ export const HeadActionButtons: FunctionComponent<HeaderActionButtonsProps> = ({
   const handleDeleteRequest = () =>
     service.send({ type: DefinitionMachineEventTypes.DELETE_EVT });
 
-  const { madeChanges, isNewWorkflow, workflowChanges } =
+  const { madeChanges, isNewWorkflow, workflowChanges, currentWf } =
     useWorkflowChanges(service);
 
   const emptyTaskList = _isEmpty(workflowChanges?.tasks);
+  // generated from code: read only, the SDK registers it again from the code
+  const readOnly = generatedFrom(currentWf) != null;
 
   const handleDownloadFile = () => {
     exportObjToFile({
@@ -160,6 +163,9 @@ export const HeadActionButtons: FunctionComponent<HeaderActionButtonsProps> = ({
     (keyboardEvent, { keys }) => {
       keyboardEvent.preventDefault();
       const joinedKeys = keys?.join();
+      if (readOnly && joinedKeys !== [Key.Control, "W"].join().toLowerCase()) {
+        return; // only Download changes nothing
+      }
 
       switch (joinedKeys) {
         // 1. Save
@@ -246,23 +252,30 @@ export const HeadActionButtons: FunctionComponent<HeaderActionButtonsProps> = ({
           message={errorMessage}
         />
       )}
-      {buttons.map(({ id, ...props }) => (
-        <ButtonTooltip key={id} id={id} {...props} />
-      ))}
+      {buttons
+        .filter(({ id }) => !readOnly || id === "head-action-download-btn")
+        .map(({ id, ...props }) => (
+          <ButtonTooltip key={id} id={id} {...props} />
+        ))}
 
-      <RunWorkflowButton definitionActor={service} disabled={emptyTaskList} />
+      <RunWorkflowButton
+        definitionActor={service}
+        disabled={emptyTaskList && !readOnly}
+      />
 
-      <SplitButton
-        startIcon={<SaveIcon />}
-        disabled={!madeChanges || emptyTaskList || isTrialExpired}
-        id={"head-action-save-btn"}
-        options={saveSplitButtonOptions}
-        primaryOnClick={handleSaveRequest}
-        tooltip="Save this definition (Ctrl S)"
-        data-testid="workflow-definition-save-button"
-      >
-        <UnderlinedText text="Save" underlinedIndexes={[0]} />
-      </SplitButton>
+      {readOnly ? null : (
+        <SplitButton
+          startIcon={<SaveIcon />}
+          disabled={!madeChanges || emptyTaskList || isTrialExpired}
+          id={"head-action-save-btn"}
+          options={saveSplitButtonOptions}
+          primaryOnClick={handleSaveRequest}
+          tooltip="Save this definition (Ctrl S)"
+          data-testid="workflow-definition-save-button"
+        >
+          <UnderlinedText text="Save" underlinedIndexes={[0]} />
+        </SplitButton>
+      )}
     </Stack>
   );
 };

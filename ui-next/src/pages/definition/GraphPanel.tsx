@@ -17,6 +17,7 @@ import { RichAddTaskMenuEvents } from "components/features/flow/components/RichA
 import { FlowEvents } from "components/features/flow/state";
 import { useLocalCopyMachine } from "./ConfirmLocalCopyDialog/state/hook";
 import ProgressIcon from "./progressicons";
+import { useGeneratedFrom } from "./generatedFrom";
 
 type RichAddTaskMenuActorRef = ActorRef<RichAddTaskMenuEvents>;
 type FlowActorRef = ActorRef<FlowEvents> & {
@@ -30,6 +31,8 @@ const GraphPanel = ({
 }) => {
   const { leftPanelExpanded, setLeftPanelExpanded: _setLeftPanelExpanded } =
     usePanelChanges(definitionActor);
+  const fromCode = useGeneratedFrom(definitionActor);
+  const readOnly = fromCode != null;
   const localCopyMessage = useSelector(
     definitionActor,
     (state) => state.context.localCopyMessage,
@@ -118,6 +121,13 @@ const GraphPanel = ({
         </MuiAlert>
       ) : null}
 
+      {fromCode ? (
+        <MuiAlert severity="info" id="generated-from-code-alert">
+          Generated from code: {fromCode}. This definition is read only: change
+          the code, and the SDK registers it again.
+        </MuiAlert>
+      ) : null}
+
       {flowActor &&
         (openedEdge && menuType === "advanced" ? (
           <Box sx={{ display: "flex", flex: 1, overflow: "hidden" }}>
@@ -125,6 +135,7 @@ const GraphPanel = ({
               <Flow
                 flowActor={flowActor}
                 leftPanelExpanded={leftPanelExpanded}
+                readOnly={readOnly}
               />
             </Box>
 
@@ -136,7 +147,11 @@ const GraphPanel = ({
             />
           </Box>
         ) : (
-          <Flow flowActor={flowActor} leftPanelExpanded={leftPanelExpanded} />
+          <Flow
+            flowActor={flowActor}
+            leftPanelExpanded={leftPanelExpanded}
+            readOnly={readOnly}
+          />
         ))}
     </Box>
   );

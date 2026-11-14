@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { TaskStatus, TaskType } from "types";
-import { codeLoopStatus, codeLoopsAsIterations } from "./codeLoops";
+import {
+  codeLoopStatus,
+  codeLoopsAsIterations,
+  codeLoopsInDefinition,
+} from "./codeLoops";
 
 const step = (
   ref: string,
@@ -284,5 +288,55 @@ describe("codeLoopsAsIterations", () => {
       codeLoopStatus([of(TaskStatus.COMPLETED), of(TaskStatus.COMPLETED)]),
     ).toBe(TaskStatus.COMPLETED);
     expect(codeLoopStatus([of(TaskStatus.PENDING)])).toBe(TaskStatus.PENDING);
+  });
+});
+
+describe("codeLoopsInDefinition", () => {
+  it("draws each Java loop of a registered definition as one loop node", () => {
+    // while, do-while (its condition calls a task) and for (;;), each call site once
+    const definition = {
+      name: "loop_shapes",
+      tasks: [
+        step("loop_step", "LoopShapes.run:60", ["L59"]),
+        step("loop_step_2", "LoopShapes.run:68", ["L67"]),
+        step("loop_ready", "LoopShapes.run:69", ["L67"]),
+        step("loop_step_3", "LoopShapes.run:74", ["L74"]),
+        step("after", "LoopShapes.run:80"),
+      ],
+    };
+
+    const shown: any = codeLoopsInDefinition(definition);
+
+    expect(shown.tasks.map((t: any) => [t.taskReferenceName, t.type])).toEqual([
+      ["L59", TaskType.DO_WHILE],
+      ["L67", TaskType.DO_WHILE],
+      ["L74", TaskType.DO_WHILE],
+      ["after", "SIMPLE"],
+    ]);
+    expect(refs(shown.tasks[0].loopOver)).toEqual(["loop_step"]);
+    expect(refs(shown.tasks[1].loopOver)).toEqual([
+      "loop_step_2",
+      "loop_ready",
+    ]);
+    expect(refs(shown.tasks[2].loopOver)).toEqual(["loop_step_3"]);
+    expect(definition.tasks).toHaveLength(5); // the definition itself is unchanged
+  });
+
+  it("nests an inner loop in its outer one, and leaves an untagged definition as it is", () => {
+    const shown: any = codeLoopsInDefinition({
+      tasks: [
+        step("probe", "Fleet.run:18", ["outer", "inner"]),
+        step("report", "Fleet.run:56", ["outer"]),
+      ],
+    });
+    expect(refs(shown.tasks)).toEqual(["outer"]);
+    expect(shown.tasks[0].loopOver.map((t: any) => t.type)).toEqual([
+      TaskType.DO_WHILE,
+      "SIMPLE",
+    ]);
+    expect(refs(shown.tasks[0].loopOver[0].loopOver)).toEqual(["probe"]);
+
+    const plain = { tasks: [step("a", "X.run:1")] };
+    expect(codeLoopsInDefinition(plain)).toBe(plain);
   });
 });

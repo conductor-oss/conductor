@@ -1,4 +1,5 @@
 import { crumbsToTaskSteps } from "components/features/flow/nodes";
+import { definitionAsDrawn } from "pages/execution/state/codeLoops";
 import { FlowActionTypes } from "components/features/flow/state";
 import { flowMachine } from "components/features/flow/state/machine";
 import _flow from "lodash/flow";
@@ -434,9 +435,11 @@ export const workflowDefinitionMachine = createMachine<
                       }: DefinitionMachineContext) => {
                         const tasksBranch = _isEmpty(selectedTaskCrumbs)
                           ? []
-                          : crumbsToTaskSteps(
+                          : // looked up in the definition as drawn: a native one has loop nodes
+                            crumbsToTaskSteps(
                               selectedTaskCrumbs,
-                              workflowChanges?.tasks || [],
+                              definitionAsDrawn(workflowChanges ?? {})?.tasks ||
+                                [],
                             );
                         const crumbs = selectedTaskCrumbs;
                         const workflowInputParameters =

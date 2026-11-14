@@ -419,7 +419,7 @@ export const switchTaskSchema = {
     taskReferenceName: { $ref: taskReferenceName.$id },
     type: { const: TaskType.SWITCH },
     evaluatorType: {
-      enum: ["javascript", "value-param", "graaljs"],
+      enum: ["javascript", "value-param", "graaljs", "native-code"],
       type: "string",
     },
     expression: {
