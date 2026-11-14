@@ -69,4 +69,20 @@ public interface AdminService {
      * @return map of event queues
      */
     Map<String, ?> getEventQueues(boolean verbose);
+
+    /**
+     * Start an async reindex job. Returns immediately. Use getReindexStatus() to track progress.
+     *
+     * @param force if true, skip the pre-flight cluster health check. Use only when you know what
+     *     you are doing — a non-green cluster can be driven into a red state by bulk writes.
+     * @return initial status map
+     */
+    Map<String, Object> startReindex(boolean force);
+
+    /**
+     * Get the current reindex job status and progress.
+     *
+     * @return status map with state, processed, errors, total fields
+     */
+    Map<String, Object> getReindexStatus();
 }
