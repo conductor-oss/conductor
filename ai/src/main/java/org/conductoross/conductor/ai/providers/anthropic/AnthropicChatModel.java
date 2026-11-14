@@ -106,8 +106,10 @@ public class AnthropicChatModel implements ChatModel {
 
         if (opts != null) {
             Integer maxTokens = opts.getMaxTokens();
+            int effectiveMaxTokens =
+                    maxTokens != null && maxTokens > 0 ? maxTokens : DEFAULT_MAX_TOKENS;
             builder.model(opts.getModel())
-                    .maxTokens(maxTokens != null && maxTokens > 0 ? maxTokens : DEFAULT_MAX_TOKENS)
+                    .maxTokens(effectiveMaxTokens)
                     .temperature(opts.getTemperature())
                     .topP(opts.getTopP())
                     .topK(opts.getTopK())
@@ -133,6 +135,11 @@ public class AnthropicChatModel implements ChatModel {
                 }
             } else if (wantsThinking) {
                 builder.thinking(Thinking.enabled(budget));
+                // The API rejects the request (HTTP 400) unless budget_tokens < max_tokens, so
+                // leave room for the visible answer on top of the thinking budget.
+                if (effectiveMaxTokens <= budget) {
+                    builder.maxTokens(budget + DEFAULT_MAX_TOKENS);
+                }
             }
 
             if (effort != null && !effort.isBlank()) {
