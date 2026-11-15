@@ -101,7 +101,7 @@ describe("held native code on the execution definition", () => {
     taskType: TaskType.SIMPLE,
     workflowTask: def(taskReferenceName),
     status: TaskStatus.COMPLETED,
-    continuation: { deferred },
+    continuation: { reasonForIncompletion: deferred },
   });
   const execution = (status: string, deferred?: string) =>
     ({

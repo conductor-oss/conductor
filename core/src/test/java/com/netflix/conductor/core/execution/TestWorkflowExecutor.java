@@ -494,7 +494,7 @@ public class TestWorkflowExecutor {
         com.netflix.conductor.common.metadata.tasks.TaskContinuation marker =
                 new com.netflix.conductor.common.metadata.tasks.TaskContinuation("main", 2);
         marker.setState(com.netflix.conductor.common.metadata.tasks.TaskContinuation.LEASED);
-        marker.setEpoch(4);
+        marker.setRetryCount(4);
         awaited.setContinuation(marker);
         workflow.getTasks().add(awaited);
 
@@ -529,7 +529,7 @@ public class TestWorkflowExecutor {
         result.setStatus(TaskResult.Status.COMPLETED);
         result.getOutputData().put("protocol", 2);
         result.getOutputData().put("n", 2);
-        result.getOutputData().put("epoch", 4L);
+        result.getOutputData().put("retryCount", 4L);
         result.getOutputData()
                 .put(
                         "fragment",
@@ -574,7 +574,7 @@ public class TestWorkflowExecutor {
         t0.setStatus(taskStatus);
         TaskContinuation marker = new TaskContinuation("main", 2);
         marker.setState(state);
-        marker.setEpoch(4);
+        marker.setRetryCount(4);
         t0.setContinuation(marker);
         workflow.getTasks().add(t0);
         when(executionLockService.acquireLock(anyString())).thenReturn(true);
@@ -591,7 +591,7 @@ public class TestWorkflowExecutor {
         result.setStatus(status);
         result.getOutputData().put("protocol", 2);
         result.getOutputData().put("n", 2);
-        result.getOutputData().put("epoch", 4L);
+        result.getOutputData().put("retryCount", 4L);
         return result;
     }
 

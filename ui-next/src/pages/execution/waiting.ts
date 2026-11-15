@@ -1,6 +1,6 @@
 import { TaskContinuation, WorkflowExecution } from "types/Execution";
 import { PollData } from "utils/query";
-import { canBeHeld, heldReasonOfMarker } from "./held";
+import { canBeHeld, heldReasonOfMarker, markersOf } from "./held";
 
 /**
  * A native workflow runs only while something hosts its code. A continuation the server offered
@@ -32,12 +32,11 @@ export const codeTypeOf = (
   return def?.metadata?.native ? `${def.name}.v${def.version}.code` : undefined;
 };
 
-/** How many continuations of the code have applied: the bootstrap's and those on tasks. */
+/** How many continuations of the code have applied: the first one and those on tasks. */
 export const appliedContinuations = (execution?: WorkflowExecution): number =>
-  [
-    execution?.nativeState?.bootstrap,
-    ...(execution?.tasks ?? []).map((task) => task.continuation),
-  ].filter((marker) => marker?.state === "APPLIED").length;
+  markersOf(execution).filter(
+    (marker) => marker.lane !== "handlers" && marker.state === "APPLIED",
+  ).length;
 
 /** The oldest continuation offered to the code's workers and not yet applied, if any. */
 export const waitingCode = (
@@ -47,21 +46,17 @@ export const waitingCode = (
   if (!codeType || !canBeHeld(execution)) {
     return undefined;
   }
-  const markers = [
-    execution?.nativeState?.bootstrap,
-    execution?.nativeState?.handlers,
-    ...(execution?.tasks ?? []).map((task) => task.continuation),
-  ].filter(offered);
+  const markers = markersOf(execution).filter(offered);
   if (markers.length === 0) {
     return undefined;
   }
   const oldest = markers.reduce((a, b) =>
-    (b.queuedAt ?? Infinity) < (a.queuedAt ?? Infinity) ? b : a,
+    (b.scheduledTime ?? Infinity) < (a.scheduledTime ?? Infinity) ? b : a,
   );
   return {
     codeType,
     lane: oldest.lane,
-    since: oldest.queuedAt,
+    since: oldest.scheduledTime,
   };
 };
 

@@ -8,7 +8,9 @@ the code against what the server recorded, and submits a fragment of new tasks. 
 is its offer's: a marker that becomes runnable is offered at a new epoch, only while no marker is
 leased (the leased marker is the slot), and a lease that ran out is delivered again under the same
 offer, so two workers may run it and the first result applies; no other continuation takes the slot
-meanwhile. Workers can crash, report that they could not run a continuation (it is deferred and
+meanwhile. In the implementation the epoch is the marker's `retryCount`: 0-based, raised when an
+attempt ends without applying (deferred, retried, rerun or restarted) rather than at each offer, so a
+redelivered offer keeps it, and a completion must name it with `n`. Workers can crash, report that they could not run a continuation (it is deferred and
 offered again), and be slow past their lease; queue messages can be lost or delivered twice; and a
 deploy can change the code. A switch draws the cases it did not take as previews. When the main
 lane's code raises, the execution names where: the task whose
@@ -52,10 +54,17 @@ while another lane's task runs.
 rule and must be caught, and 27 outcomes the models must reach. It takes a few seconds.
 
 `check_runs.py` compares real native executions on a server with these promises, using what they
-stored: tasks, the definition that grew, and the markers with their lease and apply times. On the
-current build, 173 executions from the conformance suite and kitchen sink, and 80 run while workers
-were killed, paused and cut off from the server, showed no violation. It flags the stuck workflow
-from the kitchen sink (execution `e1ddf9a5`), so it can fail.
+stored: tasks, the definition that grew, and the markers with their states and end times. It checks
+`AsIfRunOnce`, `SequenceOrder`, `JoinWaitsForLanes`, `CompletedSound`, `EndedIsQuiet` and
+`NeverStuck`, and `AppliedInOrder`: every applied continuation on a task has its own `endTime`, the
+order replay follows, and none before its task's `endTime`. A marker no longer stores when it was
+leased or a count of its offers, so `AppliedOnce`, `AppliedAtLatestLease` and
+`OneContinuationAtATime` are checked in the model only. Before that change, 173 executions from the
+conformance suite and kitchen sink, and 80 run while workers were killed, paused and cut off from
+the server, showed no violation, and it flagged the stuck workflow from the kitchen sink (execution
+`e1ddf9a5`), so it can fail. With `AppliedInOrder`, the 719 executions of an end-to-end run on
+2026-11-14 (conformance, branches, operator checks, the kitchen sink and the drawing catalogue: 697
+completed, 22 failed) showed no violation.
 
 `check_paths.py` checks, for any native execution, that the workflow it built matches the path its
 code took: every task that ran is drawn and every drawn entry ran (a failed run may stop short), no

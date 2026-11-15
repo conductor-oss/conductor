@@ -70,15 +70,15 @@ export default function TaskSummary({
     data.push({
       label: "Continuation",
       value: `${continuation.lane} #${continuation.n} — ${continuation.state.toLowerCase()}${
-        continuation.deferred && !held
-          ? ` (deferred: ${continuation.deferred})`
+        continuation.reasonForIncompletion && !held
+          ? ` (deferred: ${continuation.reasonForIncompletion})`
           : ""
       }`,
     });
-    if (continuation.appliedAt) {
+    if (continuation.endTime) {
       data.push({
         label: "Continuation applied",
-        value: continuation.appliedAt,
+        value: continuation.endTime,
         type: "date",
       });
     }

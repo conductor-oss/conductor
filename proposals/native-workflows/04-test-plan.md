@@ -20,7 +20,7 @@ finished execution replays against its code. It exits non-zero on any failure. A
 | Area | Tests | Location |
 |---|---|---|
 | `NativeContinuationService.insertAfter`, `previousTask`, `removeAll` | top level; inside a `forkTasks` branch; inside `decisionCases` and `defaultCase`; inside `loopOver`; unknown reference returns false and changes nothing; `removeAll` removes at any depth | `core/src/test/java/.../execution/NativeDefinitionEditsTest` |
-| `NativeContinuationService` | `initialize` sets up the bootstrap and handler markers; the bootstrap completion appends the first entries and records the continuation; a completion on a task inserts after it and re-evaluates it; a fragment whose first entry names an anchor in `metadata.after` is inserted after that entry (after the switch, at its level, not inside the case the code paused in) and an anchor that names no entry is rejected and fails the workflow (`aFragmentAnchoredAfterASwitchLeavesTheCaseItPausedIn`); a stale completion is refused; the main lane returning completes the workflow; the main lane throwing fails the workflow with the cause; a diverged continuation fails the workflow; a worker error releases the lease for another run; completion is deferred while messages are pending; only changed variables are applied and a conflict defers; fragments that break the rules are rejected; handler completions carry replies, seen and releases; evaluation makes a waiting marker runnable and repair collects wake-ups; `lanesSettled` reads the markers; rerun resets the markers whose continuations must run again; the mapper copies the marker onto scheduled tasks | `core/src/test/java/.../execution/NativeContinuationServiceTest` |
+| `NativeContinuationService` | `initialize` sets up the bootstrap and handler markers; the bootstrap completion appends the first entries and records the continuation; a completion on a task inserts after it and re-evaluates it; a fragment whose first entry names an anchor in `metadata.after` is inserted after that entry (after the switch, at its level, not inside the case the code paused in) and an anchor that names no entry is rejected and fails the workflow (`aFragmentAnchoredAfterASwitchLeavesTheCaseItPausedIn`); a stale completion is refused; the main lane returning completes the workflow; the main lane throwing fails the workflow with the cause; a diverged continuation holds the execution and backs off, and the hold keeps its start time across retries (`aDivergedContinuationHoldsTheExecutionAndBacksOff`, `aHoldLastsAcrossRetriesUntilTheCodeMatches`); a worker error releases the lease for another run at `retryCount + 1`; completion is deferred while messages are pending; a runnable handler lane is offered before a continuation that waited longer (`theHandlerLaneGoesBeforeACodeContinuationThatWaitedLonger`); a restart counts as a retry of the bootstrap and handler markers (`aRestartIsARetryOfTheLanesWithoutATask`); a leased offer is pushed again at the same `retryCount` (`aLeasedOfferIsPushedAgainAtTheSameRetryCount`); only changed variables are applied and a conflict defers; fragments that break the rules are rejected; handler completions carry replies, seen and releases; evaluation makes a waiting marker runnable and repair collects wake-ups; `lanesSettled` reads the markers; rerun resets the markers whose continuations must run again; the mapper copies the marker onto scheduled tasks | `core/src/test/java/.../execution/NativeContinuationServiceTest` |
 | `DeciderService` | failure matrix for native workflows (FAILED, TIMED_OUT, FAILED_WITH_TERMINAL_ERROR become COMPLETED_WITH_ERRORS with the failure kind in the output; optional continues); a native workflow retries an optional task then completes it with errors; a native workflow with no tasks yet is not complete and schedules nothing | `core/src/test/java/.../execution/TestDeciderOutcomes` |
 | `Join` live targets | joins on the current last task of each branch, inside the taken case when a branch ends in a switch; waits while a branch lane still has a continuation to run; a detached join completes at once; a waiting join waits only for the lanes it names, for the forks they started, and for a lane not in the definition yet; waits when its fork is not in the definition yet | `core/src/test/java/.../tasks/NativeJoinTest` |
 | Idempotent start | key without id derives a stable id; `RETURN_EXISTING` returns the first id on a second call; `FAIL` conflicts | `core/src/test/java/.../execution/TestWorkflowExecutor` |
@@ -38,16 +38,16 @@ continuationTimeoutSeconds: 60 }`. The spec registers it with
 `workflowTestUtil.registerWorkflows(...)`, starts with `startWorkflow(...)`, polls the code type
 with `workflowExecutionService.poll(CODE_TYPE, workerId)`, and completes with
 `workflowExecutionService.updateTask(new TaskResult(task))` whose output is built by a helper,
-`completion(task, fragment, variables, done, result)`, that copies `n` and `epoch` from the
+`completion(task, fragment, variables, done, result)`, that copies `n` and `retryCount` from the
 polled task's marker and sets `protocol: 2`. Entries are built by `simple(name, input, lane)`
 (`SIMPLE`, `optional`, `metadata.lane`) and `paused(entry, lane, n)` (`metadata.continuation`).
 
 | # | Scenario | Asserts |
 |---|---|---|
-| 1 | Linear: poll the code type → the bootstrap (`taskId` `<workflowId>\|main`, `taskType` the code type, marker `main#1` `LEASED`) → complete with `[integration_task_1 (paused main#2)]`, variables → complete the task → poll the shared queue → complete with `done` and a result | after the bootstrap: one task, `SCHEDULED`, marker `main#2` `WAITING`, input evaluated from the workflow input, variables applied, `nativeState.bootstrap` `APPLIED` with `step` 1; the next poll returns the finished task itself, `COMPLETED` with its output, marker `main#2` `LEASED`, `continuation.queue` `native_skeleton.v1.code`; at the end the workflow is `COMPLETED` with the result as output, still one task, its marker `APPLIED` and `done` |
+| 1 | Linear: poll the code type → the bootstrap (`taskId` `<workflowId>\|main`, `taskType` the code type, marker `main#1` `LEASED`) → complete with `[integration_task_1 (paused main#2)]`, variables → complete the task → poll the shared queue → complete with `done` and a result | after the bootstrap: one task, `SCHEDULED`, marker `main#2` `WAITING`, input evaluated from the workflow input, variables applied, `nativeState.bootstrap` `APPLIED` with no `endTime` (the first to apply needs none); the next poll returns the finished task itself, `COMPLETED` with its output, marker `main#2` `LEASED`; at the end the workflow is `COMPLETED` with the result as output, still one task, its marker `APPLIED` and `done` |
 | 2 | Fork with independent branches: the bootstrap completes with `FORK_JOIN fork_1` of `[integration_task_1 (paused fork_1.0#1)]` and `[integration_task_2 (paused fork_1.1#1)]`, `JOIN join_1` with `joinOn: []` paused `main#2` | both branch tasks `SCHEDULED`, the join `IN_PROGRESS`; completing only `integration_task_1` offers branch 0's continuation on the shared queue while `integration_task_2` is still `SCHEDULED`; completing it with `[integration_task_3 (paused fork_1.0#2)]` lands inside branch 0 only, `integration_task_3` is `SCHEDULED` before branch 1 moved, and the execution holds five tasks: fork, join and the three the code called |
-| 3 | Stale completion: complete the bootstrap with an `epoch` the server never handed out | `ConflictException`; no task, no definition entry, no variable applied. The lease holder's completion is then applied; the same completion delivered again (a retried update after a lost response) is refused and the execution still holds one task |
-| 4 | A continuation fails for a reason unrelated to the task: the worker completes it `FAILED` with `protocol`, `n` and `epoch` | the workflow stays `RUNNING`, the task keeps its `COMPLETED` status and output, the marker returns to `RUNNABLE`; after the 1 s backoff a poll hands it out again with `epoch + 1` |
+| 3 | Stale completion: complete the bootstrap with a `retryCount` the server never handed out | `ConflictException`; no task, no definition entry, no variable applied. The lease holder's completion is then applied; the same completion delivered again (a retried update after a lost response) is refused and the execution still holds one task |
+| 4 | A continuation fails for a reason unrelated to the task: the worker completes it `FAILED` with `protocol`, `n` and `retryCount` | the workflow stays `RUNNING`, the task keeps its `COMPLETED` status and output, the marker is offered again at once (`LEASED`) at `retryCount + 1` with `reasonForIncompletion` `worker reported FAILED`; no poll gets it within the 1 s backoff, and after it a poll hands it out at `retryCount + 1` |
 
 Scenario 2 is the acceptance test for the design: it is the kitchensink's `forkx` branch.
 
@@ -75,7 +75,7 @@ sleep, region]` with no `metadata.preview`, an inline `taskDefinition` on `pick`
 `discoveryReadsCodeThatWouldNeedARealValue`: `[pick, ship]`; `codeThatLoopsForeverIsReadWithoutRunningIt`), and reading compiled code by `CodeReaderTest` (code that would need real values is read to the end, both sides of an `if` and a loop body are seen, no plain Java runs, a finally block copied to every exit is one step, lambdas and helpers are followed, recursion ends, every kind of constant case key is read). Not covered by any
 server-only test: that `initialize` clears a discovered task list from the execution's copy
 (verified live, see 06). Not covered by any
-server-only test: a lease expiring and being re-leased with `epoch + 1`; the handler lane through
+server-only test: a lease expiring and the queue redelivering the same offer at the same `retryCount`; the handler lane through
 the harness; rerun from a task inside a fork branch through the harness (covered against a live
 server by `operator.OperatorChecks`).
 
@@ -91,7 +91,7 @@ SDK's `native-examples/DURABILITY-BENCH.md`. Server mutants:
 |---|---|---|
 | `no-completion-deferral` | the completion guard while handler messages are pending | `NativeContinuationService.pendingMessages` |
 | `no-variable-fencing` | applying only changed variables and the conflict check | `NativeContinuationService.applyVariables`, `variableConflict` |
-| `ignore-epoch` | the epoch check on completion | `NativeContinuationService.complete` |
+| `ignore-epoch` | the `retryCount` check on completion (named for the counter's earlier name, `epoch`) | `NativeContinuationService.complete` |
 | `join-ignores-lanes` | `lanesSettled` | `NativeContinuationService.lanesSettled` |
 | `workflow-saved-last` | the workflow-row-then-tasks write order | `WorkflowExecutorOps.completeContinuation` |
 | `no-claim-fence` | the ordinal fence on message claims | `JdbcWorkflowMessageQueueDAO` |
@@ -118,8 +118,11 @@ Run on Postgres with the `test-harness` functional profile:
 ## UI checks (manual until `ui-next` has component tests)
 
 - An execution shows exactly the tasks the code called; nothing to fold.
-- The task panel shows the continuation row (`lane #n — state`, deferred reason, worker,
-  applied time) on a task the code paused on, and the source line from `metadata.site`.
+- The task panel shows the continuation row (`lane #n — state`, the deferral reason from
+  `reasonForIncompletion`) and the applied time from `endTime` on a task the code paused on, and
+  the source line from `metadata.site`.
+- A held execution's panel shows "Waiting since" from the held marker's `scheduledTime` and
+  "Retries so far" from its `retryCount`.
 - The execution summary shows the code type, the number of continuations
   applied, the bootstrap state while it is pending, and the handler lane's run number and state.
 - An appended `FORK_JOIN` renders with both branches and status overlay.

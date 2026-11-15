@@ -128,11 +128,11 @@ export const HeldStepPanel: FunctionComponent<HeldStepPanelProps> = ({
                     { label: "Last finished task", value: pausedOn },
                     {
                       label: "Waiting since",
-                      value: marker?.queuedAt
-                        ? new Date(marker.queuedAt).toLocaleString()
+                      value: marker?.scheduledTime
+                        ? new Date(marker.scheduledTime).toLocaleString()
                         : "Unknown",
                     },
-                    { label: "Attempts so far", value: marker?.epoch ?? 0 },
+                    { label: "Retries so far", value: marker?.retryCount ?? 0 },
                     {
                       label: "Next attempt",
                       value: "Offered to workers again, up to a minute apart",

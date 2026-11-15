@@ -28,14 +28,21 @@ const execution = (bootstrap: any, extra: object = {}): any => ({
 });
 
 describe("waitingCode", () => {
+  it("reads the first continuation as the server stores it, without its lane and number", () => {
+    expect(
+      waitingCode(execution({ state: "RUNNABLE", scheduledTime: 100 })),
+    ).toEqual({ codeType: "kitchensink.v1.code", lane: "main", since: 100 });
+    expect(appliedContinuations(execution({ state: "APPLIED" }))).toBe(1);
+  });
+
   it("names the code type and lane of a continuation offered and not yet run", () => {
-    expect(waitingCode(execution(marker("LEASED", { queuedAt: 100 })))).toEqual(
-      {
-        codeType: "kitchensink.v1.code",
-        lane: "main",
-        since: 100,
-      },
-    );
+    expect(
+      waitingCode(execution(marker("LEASED", { scheduledTime: 100 }))),
+    ).toEqual({
+      codeType: "kitchensink.v1.code",
+      lane: "main",
+      since: 100,
+    });
   });
 
   it("names the code type after the workflow and its version, as the server does", () => {
@@ -50,7 +57,11 @@ describe("waitingCode", () => {
     expect(waitingCode(execution(marker("APPLIED")))).toBeUndefined();
     expect(
       waitingCode(
-        execution(marker("RUNNABLE", { deferred: "diverged: changed code" })),
+        execution(
+          marker("RUNNABLE", {
+            reasonForIncompletion: "diverged: changed code",
+          }),
+        ),
       ),
     ).toBeUndefined();
     expect(
@@ -68,10 +79,12 @@ describe("waitingCode", () => {
           {
             continuation: marker("RUNNABLE", {
               lane: "fork_1.0",
-              queuedAt: 50,
+              scheduledTime: 50,
             }),
           },
-          { continuation: marker("LEASED", { lane: "main", queuedAt: 70 }) },
+          {
+            continuation: marker("LEASED", { lane: "main", scheduledTime: 70 }),
+          },
         ],
       }),
     );

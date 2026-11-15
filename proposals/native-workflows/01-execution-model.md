@@ -110,8 +110,8 @@ Marker states:
 | State | Meaning | Leaves it when |
 |---|---|---|
 | `WAITING` | the task is not terminal yet | the decide that evaluates the terminal task (`repairAndWake`) |
-| `RUNNABLE` | the code must run; one queue message with the task's id is outstanding | a poll leases it |
-| `LEASED` | a worker holds it under `epoch` until the continuation timeout | a completion with that `n` and `epoch`, or the lease expires and a poll re-leases it with `epoch + 1` |
+| `RUNNABLE` | the code must run; it waits for the execution's slot | a decide offers it (`repairAndWake`) |
+| `LEASED` | offered at its `retryCount`; a worker holds its message until the continuation timeout, then the queue redelivers the same offer | a completion with that `n` and `retryCount`: it applies, or the attempt is deferred (`RUNNABLE`, `retryCount + 1`) |
 | `APPLIED` | the continuation ran and its fragment was appended after this task | never; a rerun resets it to `WAITING` |
 
 Guarantees:
@@ -141,20 +141,23 @@ Failover:
 
 1. A worker dies while holding a lease. On the shared queue the message was left unacknowledged
    for `continuationTimeoutSeconds` (default 30), so the queue redelivers it when the lease expires
-   and the next poll re-leases with `epoch + 1`.
-2. A worker is alive but slow. Same as 1 for that continuation. When it later completes under the
-   old epoch, `complete` refuses it with `ConflictException` (HTTP 409): the marker is not `LEASED`
-   at that `n` and `epoch`.
+   and the next poll is handed the same offer, at the same `retryCount`.
+2. A worker is alive but slow. Same as 1 for that continuation: both workers run the same offer.
+   The first completion applies (or is deferred, which adds one to `retryCount`); `complete`
+   refuses the later one with `ConflictException` (HTTP 409): the marker is no longer `LEASED`
+   at that `n` and `retryCount`.
 
 Whichever worker leases a continuation replays the method from the top (an SDK mechanism) against
 the applied markers and the task list. For the replay to be exact the server keeps every applied
-continuation's record on its marker (`appliedAt`, `recorded`, `resumedWith`, `done`),
-every task's output, and the bootstrap's record on the workflow. Handler runs are not replayed;
+continuation's record on its marker (`endTime`, the order replay follows, `recorded`,
+`resumedWith`, `done`), every task's output, and the bootstrap's record on the workflow, which
+needs no `endTime`: it always applies first. Handler runs are not replayed;
 their effect is in the variables.
 
 Exactly-one-writer per continuation is provided by the offer: only a decide, under the lock it
-already holds, offers a continuation (marker `LEASED`, `epoch + 1`), and a completion must name the
-offer's `n` and `epoch` and find the marker still `LEASED`. The poll takes no lock and writes
+already holds, offers a continuation (marker `LEASED` at its `retryCount`, which goes up each time
+an attempt ends without applying), and a completion must name the offer's `n` and `retryCount`
+and find the marker still `LEASED`. The poll takes no lock and writes
 nothing. Two workers handed the same offer (a redelivery) run the same replay; the first completion
 applies, the other gets 409 and stops.
 
@@ -173,8 +176,8 @@ redelivery after the continuation timeout, and the next worker runs the same off
 server applies only the variables that differ from `resumedWith`, under the same size limit
 `SetVariable` enforces (`maxWorkflowVariablesPayloadSizeThreshold`, 256 KB). If another completion
 changed one of those variables since this continuation read them, the completion is deferred: the
-marker goes back to `RUNNABLE` with `deferred` naming the variable, a wake-up is pushed, and the
-continuation runs again on the current values. The applied `resumedWith` is kept on the marker, so
+marker goes back to `RUNNABLE` with `retryCount + 1` and `reasonForIncompletion` naming the
+variable, it is offered again, and the continuation runs again on the current values. The applied `resumedWith` is kept on the marker, so
 a replay restores each continuation's variables to what it saw the first time.
 
 The handler lane runs on an instance restored from the current variables and completes with
@@ -210,10 +213,11 @@ Guarantees:
   inside the decide that applies the completion.
 - A main-lane completion that would end the execution successfully is deferred while the handler
   marker is `RUNNABLE` or `LEASED` or messages are still queued, so an acknowledged signal is
-  never discarded by a completion. Its `deferred` starts with `waiting for handlers: ` and it is
-  not re-queued (`Completion.waitsForHandlers`): competing for the one-continuation slot, it could
-  win every time and the signal would never run. `repairAndWake` skips it while the handler marker
-  is `RUNNABLE` or `LEASED` and wakes it once that lane has settled.
+  never discarded by a completion. Its `reasonForIncompletion` starts with
+  `waiting for handlers: ` and it is not re-queued (`Completion.waitsForHandlers`): competing for
+  the one-continuation slot, it could win every time and the signal would never run.
+  `repairAndWake` offers a runnable handler lane before any other continuation, so the main lane
+  is offered again once that lane is neither runnable nor leased.
 
 The handler lane requires `conductor.workflow-message-queue.enabled=true`. Without handlers,
 `nativeState.handlers` is null and no message is ever claimed.
@@ -273,7 +277,7 @@ the execution; a join on it raises the failure in the code that joins.
 - Fire-and-forget tasks (`EVENT`, `START_WORKFLOW`) are optional too; their failure is visible in
   the UI but never reaches the code, which has moved on.
 - A replay that diverged from the recording holds the execution: the worker completes with
-  `FAILED_WITH_TERMINAL_ERROR`, the marker returns to `RUNNABLE` with `deferred` set to
+  `FAILED_WITH_TERMINAL_ERROR`, the marker returns to `RUNNABLE` with `reasonForIncompletion` set to
   `diverged: ...`, and it is offered again with backoff until a compatible build runs it.
 - An invalid completion fails the workflow: the server rejects it (unknown protocol, duplicate reference name, unsupported type, size limit,
   missing lane, malformed marker, two markers for one lane). The marker is recorded `APPLIED` with

@@ -8,7 +8,7 @@ const held = {
   lane: "main",
   n: 1,
   state: "RUNNABLE",
-  deferred: "diverged: the code changed",
+  reasonForIncompletion: "diverged: the code changed",
 };
 
 describe("heldReason", () => {
@@ -25,7 +25,10 @@ describe("heldReason", () => {
   });
 
   it("ignores other deferrals", () => {
-    const waiting = { ...held, deferred: "waiting for handlers: 1 message" };
+    const waiting = {
+      ...held,
+      reasonForIncompletion: "waiting for handlers: 1 message",
+    };
     expect(
       heldReason(execution("RUNNING", { tasks: [{ continuation: waiting }] })),
     ).toBeUndefined();

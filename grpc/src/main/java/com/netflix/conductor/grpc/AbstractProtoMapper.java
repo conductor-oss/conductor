@@ -1036,12 +1036,11 @@ public abstract class AbstractProtoMapper {
         if (from.getState() != null) {
             to.setState( from.getState() );
         }
-        to.setEpoch( from.getEpoch() );
-        to.setQueuedAt( from.getQueuedAt() );
-        to.setLeasedAt( from.getLeasedAt() );
-        to.setAppliedAt( from.getAppliedAt() );
-        if (from.getDeferred() != null) {
-            to.setDeferred( from.getDeferred() );
+        to.setRetryCount( from.getRetryCount() );
+        to.setScheduledTime( from.getScheduledTime() );
+        to.setEndTime( from.getEndTime() );
+        if (from.getReasonForIncompletion() != null) {
+            to.setReasonForIncompletion( from.getReasonForIncompletion() );
         }
         for (Map.Entry<String, Object> pair : from.getRecorded().entrySet()) {
             to.putRecorded( pair.getKey(), toProto( pair.getValue() ) );
@@ -1058,11 +1057,10 @@ public abstract class AbstractProtoMapper {
         to.setLane( from.getLane() );
         to.setN( from.getN() );
         to.setState( from.getState() );
-        to.setEpoch( from.getEpoch() );
-        to.setQueuedAt( from.getQueuedAt() );
-        to.setLeasedAt( from.getLeasedAt() );
-        to.setAppliedAt( from.getAppliedAt() );
-        to.setDeferred( from.getDeferred() );
+        to.setRetryCount( from.getRetryCount() );
+        to.setScheduledTime( from.getScheduledTime() );
+        to.setEndTime( from.getEndTime() );
+        to.setReasonForIncompletion( from.getReasonForIncompletion() );
         Map<String, Object> recordedMap = new HashMap<String, Object>();
         for (Map.Entry<String, Value> pair : from.getRecordedMap().entrySet()) {
             recordedMap.put( pair.getKey(), fromProto( pair.getValue() ) );

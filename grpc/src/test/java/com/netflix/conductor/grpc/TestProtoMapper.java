@@ -88,13 +88,16 @@ public class TestProtoMapper {
   }
 
   private static TaskContinuation marker() {
-    TaskContinuation marker = new TaskContinuation("main", 3);
+    return marker("main", 3);
+  }
+
+  private static TaskContinuation marker(String lane, int n) {
+    TaskContinuation marker = new TaskContinuation(lane, n);
     marker.setState(TaskContinuation.LEASED);
-    marker.setEpoch(7);
-    marker.setQueuedAt(100);
-    marker.setLeasedAt(200);
-    marker.setAppliedAt(300);
-    marker.setDeferred("diverged: the code changed");
+    marker.setRetryCount(7);
+    marker.setScheduledTime(100);
+    marker.setEndTime(300);
+    marker.setReasonForIncompletion("diverged: the code changed");
     marker.setRecorded(Map.of("random_0", 0.5));
     marker.setResumedWith(Map.of("count", 4.0));
     marker.setDone(true);
@@ -105,11 +108,10 @@ public class TestProtoMapper {
     assertEquals(expected.getLane(), actual.getLane());
     assertEquals(expected.getN(), actual.getN());
     assertEquals(expected.getState(), actual.getState());
-    assertEquals(expected.getEpoch(), actual.getEpoch());
-    assertEquals(expected.getQueuedAt(), actual.getQueuedAt());
-    assertEquals(expected.getLeasedAt(), actual.getLeasedAt());
-    assertEquals(expected.getAppliedAt(), actual.getAppliedAt());
-    assertEquals(expected.getDeferred(), actual.getDeferred());
+    assertEquals(expected.getRetryCount(), actual.getRetryCount());
+    assertEquals(expected.getScheduledTime(), actual.getScheduledTime());
+    assertEquals(expected.getEndTime(), actual.getEndTime());
+    assertEquals(expected.getReasonForIncompletion(), actual.getReasonForIncompletion());
     assertEquals(expected.getRecorded(), actual.getRecorded());
     assertEquals(expected.getResumedWith(), actual.getResumedWith());
     assertEquals(expected.isDone(), actual.isDone());
@@ -141,16 +143,16 @@ public class TestProtoMapper {
   @Test
   public void aWorkflowKeepsItsNativeStateOverGrpc() {
     NativeState state = new NativeState();
-    state.setBootstrap(marker());
-    state.setHandlers(marker());
+    state.setBootstrap(marker("main", 1));
+    state.setHandlers(marker("handlers", 3));
     state.setReplies(Map.of("u1", Map.of("value", 1.0)));
     Workflow workflow = new Workflow();
     workflow.setNativeState(state);
 
     NativeState back = mapper.fromProto(mapper.toProto(workflow)).getNativeState();
 
-    assertSameMarker(marker(), back.getBootstrap());
-    assertSameMarker(marker(), back.getHandlers());
+    assertSameMarker(marker("main", 1), back.getBootstrap());
+    assertSameMarker(marker("handlers", 3), back.getHandlers());
     assertEquals(state.getReplies(), back.getReplies());
   }
 

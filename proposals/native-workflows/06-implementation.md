@@ -117,7 +117,8 @@ Each entry names the problem and the mechanism that fixes it as it exists now.
    stalled for its timeout. Signals sent meanwhile stayed queued, the main lane finished, and the
    queue was deleted with the execution. A main-lane completion that would end the execution
    successfully is now deferred while messages are queued or the handler marker is `RUNNABLE` or
-   `LEASED`: the marker goes back to `RUNNABLE` with the reason in `deferred`, and the continuation
+   `LEASED`: the marker goes back to `RUNNABLE` with the reason in `reasonForIncompletion` (then
+   `deferred`), and the continuation
    runs again on the current state. Messages still queued when an execution ends anyway (failed, terminated) are logged
    and counted (`workflow_messages_discarded`) instead of dropped silently.
 7. **A lost poll response stalled a continuation for two minutes.** Also found by the bench: a
@@ -265,12 +266,12 @@ operator checks that a worker task failing once is retried rather than raised.
 | The first continuation | the skeleton's first `CODE` task | `nativeState.bootstrap`, message `<workflowId>\|main` |
 | Handlers | `FORK_JOIN` + `DO_WHILE` + `PULL_WORKFLOW_MESSAGES` + handler `CODE` + `JOIN` | `nativeState.handlers`; the message endpoint wakes it; the poll claims the messages under `handlers#<n>` |
 | Replies and handled message ids | workflow variables `__replies`, `__seen` | `nativeState.replies` (every handled message) |
-| Continuation routing | `taskToDomain[<codeType>]`, the worker's id captured per execution | the shared queue of the code type; `taskToDomain` only when the start names the code type or `*` (01 §3) |
-| Poll | batch poll of the `CODE` task type | the same batch poll of the code type; `ExecutionService.poll` leases the marker and returns the finished task itself (or a synthetic task for the bootstrap and handler lanes) |
+| Continuation routing | `taskToDomain[<codeType>]`, the worker's id captured per execution | the shared queue of the code type; task domains do not apply, whatever the start's `taskToDomain` (01 §3) |
+| Poll | batch poll of the `CODE` task type | the same batch poll of the code type; a decide offers the marker (`LEASED`) and `ExecutionService.poll` hands out the finished task itself (or a synthetic task for the bootstrap and handler lanes) |
 | Complete | `POST /api/tasks` on the `CODE` task | `POST /api/tasks/update-v2` on the awaited task's id or the synthetic id; stale completions get 409 |
-| Fencing | owner refusal, stale-write guard, response and poll timeouts with retry | one lease per marker, `(n, epoch)` check under the execution lock |
-| Deferral | the attempt set aside as `CANCELED`, retried with the next retry count | the marker back to `RUNNABLE` with `deferred` set; the same message re-pushed |
-| Replay input | `CODE` outputs with `applied`, `step`, `resumedWith`; `RECORD` outputs | `APPLIED` markers ordered by `appliedAt`, plus the bootstrap |
+| Fencing | owner refusal, stale-write guard, response and poll timeouts with retry | one leased marker per execution, `(n, retryCount)` check under the execution lock |
+| Deferral | the attempt set aside as `CANCELED`, retried with the next retry count | the marker back to `RUNNABLE` with `retryCount + 1` and `reasonForIncompletion` set; offered again under the same message id |
+| Replay input | `CODE` outputs with `applied`, `step`, `resumedWith`; `RECORD` outputs | the bootstrap first, then the `APPLIED` task markers ordered by `endTime` |
 | Task count | hello world: 6 tasks (3 `CODE`, 2 tasks, `TERMINATE`) | hello world: 2 tasks |
 | UI | fold hidden tasks, `?showHidden=true` | nothing to fold; continuation on the task panel, engine state on the summary |
 
@@ -309,7 +310,7 @@ operator checks that a worker task failing once is retried rather than raised.
   common cause, but the worker still gives up after its retries.
 - Divergence is always strict: a replay that reaches a call the recording does not have is
   refused, with a message naming the call and its source line. The execution is held rather than
-  failed (`marker.deferred` starts `diverged: `; ui-next shows "Waiting for compatible code"
+  failed (`marker.reasonForIncompletion` starts `diverged: `; ui-next shows "Waiting for compatible code"
   beside the status, as a dashed step after the task the code paused on that opens an explanation, and with the reason on
   both summaries) and retried with
   backoff up to a minute, indefinitely, until a compatible build runs it, it times out or an
@@ -336,10 +337,11 @@ operator checks that a worker task failing once is retried rather than raised.
   definition is only a view: `NativeContinuationService.initialize` clears it from each execution.
 - Every continuation replays the method from the top, so the cost of a continuation grows with the
   length of the execution. The large-loops and latency rounds address this.
-- Domain lists are resolved when a message is pushed. If every worker of a domain dies inside the
-  10-second poll window, a continuation pushed then waits for the next decider pass (up to about
-  30 s, `repairAndWake`). On the shared queue a continuation held by a dead worker is redelivered
-  when its lease expires.
+- Continuations are not routed by domain: each goes to the shared queue of the code type
+  (`queueName`). A continuation held by a dead worker is redelivered when its lease
+  (`continuationTimeoutSeconds`) expires. A lost message is pushed again by the next decide
+  (`repairAndWake` re-pushes the slot holder's message), which is at most `workflowOffsetTimeout`
+  (30 s) away while a marker is `RUNNABLE` or `LEASED` (`needsPromptRevisit`).
 - `continuation` and `nativeState` are carried over gRPC (`Task.continuation`,
   `Workflow.native_state`, covered by `TestProtoMapper`), but workers only use REST: no worker has
   polled or completed a continuation over gRPC.

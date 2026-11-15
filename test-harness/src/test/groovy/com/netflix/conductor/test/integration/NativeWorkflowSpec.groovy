@@ -72,7 +72,7 @@ class NativeWorkflowSpec extends AbstractSpecification {
             wf.tasks[0].continuation.state == TaskContinuation.WAITING
             wf.variables.stage == 'classic'
             wf.nativeState.bootstrap.state == TaskContinuation.APPLIED
-            wf.nativeState.bootstrap.appliedAt > 0
+            wf.nativeState.bootstrap.endTime == 0 // the first to apply: replay needs no time for it
         }
 
         when: 'the task completes'
@@ -163,7 +163,7 @@ class NativeWorkflowSpec extends AbstractSpecification {
 
         when: 'a completion arrives for a lease the server never handed out'
         def stale = completion(first, [paused(simple('integration_task_1', [:]), 'main', 2)], [cancelled: true])
-        stale.epoch = first.continuation.epoch + 1
+        stale.retryCount = first.continuation.retryCount + 1
         complete(first, 'worker-a', stale)
 
         then: 'it is refused and nothing was applied'
@@ -205,7 +205,7 @@ class NativeWorkflowSpec extends AbstractSpecification {
         result.status = TaskResult.Status.FAILED
         result.reasonForIncompletion = 'timeout reading the execution'
         result.workerId = 'worker-a'
-        result.outputData = [protocol: 2, n: held.continuation.n, epoch: held.continuation.epoch]
+        result.outputData = [protocol: 2, n: held.continuation.n, retryCount: held.continuation.retryCount]
         workflowExecutionService.updateTask(result)
 
         then: 'the task keeps its result and the continuation is offered again'
@@ -214,10 +214,10 @@ class NativeWorkflowSpec extends AbstractSpecification {
             wf.tasks.size() == 1
             wf.tasks[0].status == Task.Status.COMPLETED
             wf.tasks[0].outputData.result == 'ok'
-            // offered again at once, at a new epoch, delivered after its backoff
+            // offered again at once as a retry, delivered after its backoff
             wf.tasks[0].continuation.state == TaskContinuation.LEASED
-            wf.tasks[0].continuation.epoch == held.continuation.epoch + 1
-            wf.tasks[0].continuation.deferred == 'worker reported FAILED'
+            wf.tasks[0].continuation.retryCount == held.continuation.retryCount + 1
+            wf.tasks[0].continuation.reasonForIncompletion == 'worker reported FAILED'
         }
         workflowExecutionService.poll(CODE_TYPE, 'worker-b') == null // within the backoff
 
@@ -227,7 +227,7 @@ class NativeWorkflowSpec extends AbstractSpecification {
 
         then:
         again != null
-        again.continuation.epoch == held.continuation.epoch + 1
+        again.continuation.retryCount == held.continuation.retryCount + 1
     }
 
     def "a task whose name looks like a code type is an ordinary task"() {
@@ -271,7 +271,7 @@ class NativeWorkflowSpec extends AbstractSpecification {
 
     private static Map<String, Object> completion(Task task, List<WorkflowTask> fragment, Map<String, Object> variables,
                                                   boolean done = false, Map<String, Object> result = null) {
-        def output = [protocol: 2, n: task.continuation.n, epoch: task.continuation.epoch,
+        def output = [protocol: 2, n: task.continuation.n, retryCount: task.continuation.retryCount,
                       fragment: fragment, done: done] as Map<String, Object>
         if (variables != null) {
             output.variables = variables

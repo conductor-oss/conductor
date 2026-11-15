@@ -46,8 +46,8 @@ blocks either.
 |---|---|
 | lane | One thread of workflow code: the `@Workflow` method (`main`), each `async` block (`fork_<k>.<i>`), and the handler lane (`handlers`). |
 | continuation | One run of a lane's code between two pauses. Numbered `n` per lane, starting at 1. |
-| continuation marker | The `continuation` field on the task a lane paused on (`TaskContinuation`): lane, `n`, state `WAITING` → `RUNNABLE` → `LEASED` → `APPLIED`, lease epoch, and once applied the record replay reads (recorded values, `resumedWith`, `done`). |
-| bootstrap | The main lane's first continuation. It runs before any task exists, so its marker lives on the workflow (`nativeState.bootstrap`). |
+| continuation marker | The `continuation` field on the task a lane paused on (`TaskContinuation`): lane, `n`, state `WAITING` → `RUNNABLE` → `LEASED` → `APPLIED`, `retryCount` (the attempts that ended without applying, which a completion must name), `scheduledTime`, and once applied the record replay reads (`endTime`, recorded values, `resumedWith`, `done`). |
+| bootstrap | The main lane's first continuation. It runs before any task exists, so its marker lives on the workflow (`nativeState.bootstrap`), stored without its constant `lane` and `n` (`main` #1). It always applies first, so it has no `endTime`. |
 | handler lane | Signal and update handlers. They schedule no tasks, so their marker lives on the workflow (`nativeState.handlers`), one run per batch of messages. |
 | fragment | The list of `WorkflowTask` entries a lane scheduled during one continuation. Carried in the completion and inserted right after its anchor. |
 | anchor | Where a fragment is inserted: the task the lane paused on, or the entry named by the fragment's first entry's `metadata.after` (`NativeContinuationService.runs`, `insertAfter` at any depth). The SDK names the switch when the lane resumed inside a `switchOn` case and the body returned. An anchor that names no entry is a rejected fragment. |

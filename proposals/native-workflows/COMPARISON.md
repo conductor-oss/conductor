@@ -57,7 +57,7 @@ differ in how a step resumes and in where the work between steps happens.
 | Read-only query | query; also on completed workflows | shared handler | `@Query`, run by the client on the execution's applied state; also on completed executions; cannot change state |
 | Message sent before the receiver is ready | stored in history | stored until received | stored in the workflow message queue |
 | External system completes a wait | signal or async activity completion | awakeable or durable promise | `awaitExternal`: complete the WAIT by reference |
-| Completing while messages are buffered | refused while signals are buffered | not documented | the completion is deferred while messages are queued or a handler run is pending, and runs again on the current state |
+| Completing while messages are buffered | refused while signals are buffered | not documented | the completion is deferred while messages are queued or a handler run is pending, and runs again on the current state once the handler lane, offered first, has run |
 
 ## Failures and retries
 
@@ -68,7 +68,7 @@ differ in how a step resumes and in where the work between steps happens.
 | What the code sees after retries | `ActivityFailure` | terminal error at the await | `TaskFailure`, with how the task failed |
 | Uncaught failure | workflow fails (workflows are not retried by default) | invocation fails, error to the caller | workflow fails, with the task as cause |
 | Lost worker detection | workflow task timeout (10 s default), activity start-to-close and heartbeat timeouts | stream loss, inactivity and abort timeouts | task response timeout; continuation lease (30 s default); any other worker polling the shared queue takes it |
-| Stale workers | task tokens | epochs | a lease epoch per continuation; a stale completion is refused (409) |
+| Stale workers | task tokens | epochs | a retry count per continuation, named in each completion; a stale completion is refused (409) |
 | Cancellation | delivered to the code (cancellation scopes) | delivered to the code at the next await | terminate cancels pending tasks; not delivered to the code |
 | Step delivery | activities: at least once | `ctx.run`: at least once | tasks: at least once, the same contract as Conductor tasks; make side effects idempotent |
 | Terminal step error | a non-retryable activity error is raised in the workflow code, which decides | a terminal error propagates to the caller | FAILED_WITH_TERMINAL_ERROR: the task is not retried, and the code decides whether the workflow ends |
@@ -94,7 +94,7 @@ The guarantees in [DURABILITY.md](DURABILITY.md), against what Temporal and Rest
 | Survives worker crash, resumes without re-running completed steps | yes, history replay | yes, journal replay | yes, replay against the applied continuations and tasks |
 | Survives server crash | yes; Cloud replicates across three zones | yes; quorum-replicated log | yes; as durable as the database (Postgres, MySQL, Redis replication) |
 | Lost-worker detection | workflow task timeout, 10 s default | stream loss, inactivity timeout | continuation lease, 30 s default; any other worker polling the shared queue takes over |
-| Stale or zombie workers fenced | task tokens | epochs | a lease epoch per continuation; a stale completion is refused |
+| Stale or zombie workers fenced | task tokens | epochs | a retry count per continuation, named in each completion; a stale completion is refused |
 | Recorded non-determinism (time, random, side effects) | SideEffect, deterministic APIs | `ctx.run`, `ctx.rand`, `ctx.date` | `once`, `now`, `random` |
 | Durable timers, no worker while waiting | yes | yes | yes |
 | Messages buffered before the receiver is ready | signals stored in history | signals stored until received | message queue |

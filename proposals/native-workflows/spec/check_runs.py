@@ -2,7 +2,7 @@
 """Checks real native executions against the promises of NativeProtocol.tla.
 
 It reads finished executions from a server and checks what their stored state shows: tasks, the
-definition that grew, and the continuation markers with their lease and apply times. It compares
+definition that grew, and the continuation markers with their scheduled and end times. It compares
 final states and timestamps, so it cannot see a behaviour that left no trace.
 
     python3 check_runs.py --server http://localhost:8099/api --since <epoch-ms> [--limit 500]
@@ -49,9 +49,8 @@ def markers(w):
     """(id, marker) for every marker of the latest attempts and the execution's own."""
     out = [(t['referenceTaskName'], t['continuation']) for t in latest_attempts(w['tasks']) if t.get('continuation')]
     ns = w.get('nativeState') or {}
-    for name in ('bootstrap',):
-        if ns.get(name):
-            out.append((name, ns[name]))
+    if ns.get('bootstrap'):
+        out.append(('bootstrap', {'lane': 'main', 'n': 1, **ns['bootstrap']}))  # stored without them
     return out
 
 
@@ -74,20 +73,21 @@ def check(w):
         if ref in previews:
             bad.append(('AsIfRunOnce', f'preview {ref} ran'))
 
-    # Applied at most once: an applied marker has one lease that applied it, after that lease began.
-    for name, m in marks:
-        if m.get('state') == 'APPLIED':
-            if m.get('epoch', 0) < 1:
-                bad.append(('AppliedOnce', f'{name} applied with no lease'))
-            if m.get('appliedAt', 0) < m.get('leasedAt', 0):
-                bad.append(('AppliedAtLatestLease', f'{name} applied before its last lease began'))
-
-    # One continuation at a time: the last leases do not overlap. An expired lease can.
-    spans = sorted((m['leasedAt'], m['appliedAt'], n) for n, m in marks
-                   if m.get('state') == 'APPLIED' and m.get('leasedAt', 0) > 0 and m.get('epoch', 1) == 1)
-    for (s1, e1, n1), (s2, e2, n2) in zip(spans, spans[1:]):
-        if s2 < e1:
-            bad.append(('OneContinuationAtATime', f'{n1} and {n2} overlap by {e1 - s2} ms'))
+    # Applied in order, one at a time: every applied continuation on a task has its own end time,
+    # the order replay follows, and applied after its task ended.
+    ends = collections.Counter()
+    for t in latest_attempts(tasks):
+        c = t.get('continuation') or {}
+        if c.get('state') == 'APPLIED' and c.get('lane') != 'handlers':
+            if not c.get('endTime'):
+                bad.append(('AppliedInOrder', f'{t["referenceTaskName"]} applied with no end time'))
+                continue
+            ends[c['endTime']] += 1
+            if c['endTime'] < t['endTime']:
+                bad.append(('AppliedInOrder', f'{t["referenceTaskName"]}: the code after it applied before it ended'))
+    for at, count in ends.items():
+        if count > 1:
+            bad.append(('AppliedInOrder', f'{count} continuations applied at {at}'))
 
     if ended:
         for t in tasks:
@@ -122,7 +122,7 @@ def check(w):
         r = t['referenceTaskName']
         end_of[r] = max(end_of[r], t['endTime'])
         if t.get('continuation'):
-            applied[r] = t['continuation'].get('appliedAt', 0)
+            applied[r] = t['continuation'].get('endTime', 0)
     first = {}
     for t in sorted(tasks, key=lambda x: x['seq']):
         first.setdefault(t['referenceTaskName'], t)
@@ -158,7 +158,7 @@ def check(w):
                 if x['endTime'] > jt['endTime'] or x['status'] not in TERMINAL:
                     bad.append(('JoinWaitsForLanes', f'{t["taskReferenceName"]} ended before {x["referenceTaskName"]}'))
                 c = x.get('continuation')
-                if c and (c.get('state') != 'APPLIED' or c.get('appliedAt', 0) > jt['endTime']):
+                if c and (c.get('state') != 'APPLIED' or c.get('endTime', 0) > jt['endTime']):
                     bad.append(('JoinWaitsForLanes', f'{t["taskReferenceName"]} ended before the code after {x["referenceTaskName"]} ran'))
     return bad
 

@@ -90,11 +90,14 @@ export interface TaskContinuation {
   lane: string;
   n: number;
   state: "WAITING" | "RUNNABLE" | "LEASED" | "APPLIED";
-  epoch?: number;
-  queuedAt?: number;
-  leasedAt?: number;
-  appliedAt?: number;
-  deferred?: string;
+  /** How many times it was offered again after an attempt that did not apply. */
+  retryCount?: number;
+  /** When it became runnable. */
+  scheduledTime?: number;
+  /** When it applied, on a task's marker. */
+  endTime?: number;
+  /** Why its last completion did not apply, until one does. */
+  reasonForIncompletion?: string;
   done?: boolean;
   recorded?: Record<string, unknown>;
   resumedWith?: Record<string, unknown>;

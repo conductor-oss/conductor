@@ -19,6 +19,8 @@ import com.netflix.conductor.annotations.protogen.ProtoField;
 import com.netflix.conductor.annotations.protogen.ProtoMessage;
 import com.netflix.conductor.common.metadata.tasks.TaskContinuation;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 /**
  * Engine state of a native (code-defined) workflow that has no task to live on. Everything else
  * about the code's progress is on the tasks it paused on ({@link TaskContinuation}), so this stays
@@ -28,12 +30,20 @@ import com.netflix.conductor.common.metadata.tasks.TaskContinuation;
 @ProtoMessage
 public class NativeState {
 
-    /** The main lane's first continuation, which runs before any task exists. */
+    /**
+     * The main lane's first continuation, which runs before any task exists. Always {@code main}
+     * #1, so neither is stored.
+     */
     @ProtoField(id = 1)
+    @JsonIgnoreProperties({"lane", "n"})
     private TaskContinuation bootstrap;
 
-    /** The handler lane: signal and update handlers schedule no tasks. Null without handlers. */
+    /**
+     * The handler lane: signal and update handlers schedule no tasks. Null without handlers. Its
+     * lane is always {@code handlers}, so it is not stored; its number counts its runs.
+     */
     @ProtoField(id = 2)
+    @JsonIgnoreProperties({"lane"})
     private TaskContinuation handlers;
 
     @ProtoField(id = 3)
@@ -44,6 +54,10 @@ public class NativeState {
     }
 
     public void setBootstrap(TaskContinuation bootstrap) {
+        if (bootstrap != null) {
+            bootstrap.setLane("main");
+            bootstrap.setN(1);
+        }
         this.bootstrap = bootstrap;
     }
 
@@ -52,6 +66,9 @@ public class NativeState {
     }
 
     public void setHandlers(TaskContinuation handlers) {
+        if (handlers != null) {
+            handlers.setLane("handlers");
+        }
         this.handlers = handlers;
     }
 

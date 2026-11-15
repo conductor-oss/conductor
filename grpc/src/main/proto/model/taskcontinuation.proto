@@ -11,12 +11,11 @@ message TaskContinuation {
     string lane = 1;
     int32 n = 2;
     string state = 3;
-    int64 epoch = 4;
-    int64 queued_at = 5;
-    int64 leased_at = 6;
-    int64 applied_at = 7;
-    string deferred = 8;
-    map<string, google.protobuf.Value> recorded = 9;
-    map<string, google.protobuf.Value> resumed_with = 10;
-    bool done = 11;
+    int32 retry_count = 4;
+    int64 scheduled_time = 5;
+    int64 end_time = 6;
+    string reason_for_incompletion = 7;
+    map<string, google.protobuf.Value> recorded = 8;
+    map<string, google.protobuf.Value> resumed_with = 9;
+    bool done = 10;
 }

@@ -1,8 +1,4 @@
-import {
-  ExecutionTask,
-  TaskContinuation,
-  WorkflowExecution,
-} from "types/Execution";
+import { TaskContinuation, WorkflowExecution } from "types/Execution";
 
 const HELD_PREFIX = "diverged: ";
 
@@ -10,9 +6,29 @@ const HELD_PREFIX = "diverged: ";
 export const heldReasonOfMarker = (
   marker?: TaskContinuation,
 ): string | undefined =>
-  marker?.deferred?.startsWith(HELD_PREFIX)
-    ? marker.deferred.slice(HELD_PREFIX.length)
+  marker?.reasonForIncompletion?.startsWith(HELD_PREFIX)
+    ? marker.reasonForIncompletion.slice(HELD_PREFIX.length)
     : undefined;
+
+/**
+ * Every continuation marker of an execution: its first continuation's, its handler lane's and
+ * those on its tasks. The first is always main #1 and the handler lane's lane is always handlers,
+ * so the server does not store them; they are filled in here.
+ */
+export const markersOf = (execution?: {
+  nativeState?: {
+    bootstrap?: Partial<TaskContinuation>;
+    handlers?: Partial<TaskContinuation>;
+  };
+  tasks?: { continuation?: TaskContinuation }[];
+}): TaskContinuation[] => {
+  const state = execution?.nativeState;
+  return [
+    state?.bootstrap && { lane: "main", n: 1, ...state.bootstrap },
+    state?.handlers && { lane: "handlers", ...state.handlers },
+    ...(execution?.tasks ?? []).map((task) => task.continuation),
+  ].filter(Boolean) as TaskContinuation[];
+};
 
 export interface HeldMismatch {
   /** Where in the code the mismatch is, such as Held.run:52. */
@@ -54,10 +70,5 @@ export const heldReason = (
   if (!canBeHeld(execution)) {
     return undefined;
   }
-  const markers = [
-    execution?.nativeState?.bootstrap,
-    execution?.nativeState?.handlers,
-    ...(execution?.tasks ?? []).map((task: ExecutionTask) => task.continuation),
-  ];
-  return markers.map(heldReasonOfMarker).find(Boolean);
+  return markersOf(execution).map(heldReasonOfMarker).find(Boolean);
 };

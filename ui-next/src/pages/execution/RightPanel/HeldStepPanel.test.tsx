@@ -16,7 +16,7 @@ const execution = (status: string, deferred?: string) =>
     tasks: [
       {
         referenceTaskName: "sleep",
-        continuation: { epoch: 5, deferred },
+        continuation: { retryCount: 5, reasonForIncompletion: deferred },
       },
     ],
   }) as unknown as WorkflowExecution;

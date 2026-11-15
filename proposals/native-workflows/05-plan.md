@@ -22,6 +22,7 @@ what shipped in each PR-sized unit, and the decisions taken.
 | 10 | `ui-next`: continuation on the task panel, native state on the execution summary | 9 | 0.5 d | low |
 | 11 | SDK protocol 2: `Registration`, `Workers`, `Replayer`, `Execution`, `Entries`, `WorkflowHandle`; bench summaries and checker on markers | 9 | 3 d | medium |
 | 12 | Documentation: this proposal set, `DURABILITY.md`, `COMPARISON.md`, the SDK design pages and bench page | 9, 11 | 1 d | – |
+| 13 | Marker fields named after a task's: `retryCount` (was `epoch`; bumped when an attempt ends without applying, not per offer), `scheduledTime` (was `queuedAt`), `endTime` on task markers only (was `appliedAt`), `reasonForIncompletion` (was `deferred`, now display only); `leasedAt` dropped; the bootstrap stored without `lane` and `n`, the handler marker without `lane`; a runnable handler lane offered first; proto fields renumbered; `check_runs.py` checks `AppliedInOrder`; SDK replay puts the bootstrap first and echoes `retryCount` | 9, 10, 11 | – | low |
 
 PRs 1 and 2 were the critical path of the first round; PR 9 is the critical path of the second.
 
@@ -56,7 +57,7 @@ PRs 1 and 2 were the critical path of the first round; PR 9 is the critical path
 |---|---|
 | Definition growth per append rewrites the workflow row, and decide loads all tasks; long native loops degrade | `maxDefinitionTasks` fails cleanly with a named limit; the large-loops round addresses incremental decide; the SDK's `repeatUntil` and `forEach` keep loops server-side |
 | `joinOn: []` after `FORK_JOIN` changes meaning | gated on `metadata.native`; other definitions unchanged |
-| Two workers holding the same continuation | one lease per marker under the execution lock; a completion must name the lease's `n` and `epoch`; the loser gets 409 |
+| Two workers holding the same continuation | one leased marker per execution, offered under the execution lock; a completion must name the offer's `n` and `retryCount`; the loser gets 409 |
 | Lock lease with large fragments | validation is linear in fragment size; limits bound it; `maxRuntime` guard persists and re-queues if ever hit |
 | Queue redelivery granularity after a worker death | the lease (30 s) plus the queue's redelivery of an unacknowledged message; the sweeper's `repairAndWake` covers a lost message |
 
