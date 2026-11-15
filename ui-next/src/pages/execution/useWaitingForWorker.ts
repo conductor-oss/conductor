@@ -9,6 +9,6 @@ export const useWaitingForWorker = (
   const waiting = waitingCode(execution);
   const { data } = useTaskQueueInfo(waiting?.codeType ?? "");
   return waiting
-    ? waitingForWorker(waiting, lastPoll(waiting, data?.pollData), Date.now())
+    ? waitingForWorker(waiting, lastPoll(data?.pollData), Date.now())
     : undefined;
 };

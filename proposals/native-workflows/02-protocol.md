@@ -10,8 +10,8 @@ names are those of `TaskContinuation`, `NativeState`, `NativeContinuationService
 
 | Thing | Name | Notes |
 |---|---|---|
-| Code type (the poll type) | `<workflow>.v<version>.code` | `metadata.native.codeType` in the skeleton. Workers poll it like a task type; `ExecutionService.poll` tells a continuation from a task by its data: a synthetic id, or a message naming a task with a marker of another type than the one polled. A task may not be named after its workflow's code type. |
-| Continuation queue | `<domain>:<codeType>` or `<codeType>` | `QueueUtils.getQueueName(codeType, domain, null, null)`. No domain by default: the shared queue. A domain only when the start's `taskToDomain` names the code type or `*` (01 §3). |
+| Code type (the poll type) | `<workflow>.v<version>.code` | From the definition's name and version: one per workflow version. Workers poll it like a task type; `ExecutionService.poll` tells a continuation from a task by its data: a synthetic id, or a message naming a task with a marker of another type than the one polled. A task may not be named after its workflow's code type. |
+| Continuation queue | `<codeType>` | The shared queue of the code type. Task domains do not apply to workflow code (01 §3). |
 | Message ids on the queue | the awaited task's id; `<workflowId>\|main`; `<workflowId>\|handlers` | The two synthetic ids are the bootstrap and the handler lane, which have no task. `NativeContinuationService.syntheticId`. |
 | Lane ids | `main`, `fork_<k>.<i>`, `handlers` | `k` is the ordinal of the fork in its parent lane, `i` the branch index. |
 | Continuation number | `n`, from 1 per lane | The SDK's per-lane counter; the server checks it on completion. |
@@ -38,15 +38,10 @@ present, which the test harness uses. Shown with the shape of the `DiscoveryTest
   "inputParameters": ["item", "region", "quantity"],
   "metadata": {
     "native": {
-      "sdk": "java",
       "class": "…DiscoveryTest$Fulfilment",
       "method": "run",
-      "codeType": "fulfilment.v1.code",
       "continuationTimeoutSeconds": 30,
-      "handlers": true,
-      "signals": ["cancel"], "updates": [], "queries": [],
-      "discovered": true,
-      "codeVersion": "f89c6f14fcf2"
+      "handlers": true
     }
   },
   "inputSchema": { "name": "fulfilment_input", "version": 1, "type": "JSON" },
@@ -74,9 +69,8 @@ present, which the test harness uses. Shown with the shape of the `DiscoveryTest
 | Key | Written by | Meaning |
 |---|---|---|
 | `inputParameters` | `Registration.inputParameters` | the components of the method's single record parameter, or the parameter names when there are several; empty for a single non-record parameter or none |
-| `metadata.native.signals`, `updates`, `queries` | `Registration.skeleton` from `WorkflowSpec` | the handler inventory: the names of the `@Signal`, `@Update` and `@Query` methods |
-| `metadata.native.discovered`, `discoveryError` | `Registration.skeleton` | `true` when `Replayer.discover` returned; `false` with the exception's `toString()` when it threw, and `tasks` is then `[]` |
-| `metadata.native.codeVersion` | `Registration.codeVersion` | a short hash of the discovered graph: which structure of the code the definition was read from |
+| `metadata.native.class`, `method` | `Registration.skeleton` | the code the definition is generated from; the UI shows the definition read only |
+| `metadata.native.continuationTimeoutSeconds`, `handlers` | `Registration.skeleton` | the continuation lease (default 30), and whether the class has handler methods (the server then keeps a handler lane) |
 | `inputSchema`, `outputSchema`, `enforceSchema` | `Registration.Schemas` from `JsonSchemas` | the workflow method's input and output as JSON Schemas, registered by name (`<workflow>_input`, `_output`) and versioned by content; never enforced. Each worker task's definition, and the inline one in `tasks`, references its own (`<task>_input`, `_output`) the same way |
 | `tasks` | `Replayer.discover` + `Registration.inlineTaskDefinitions` | the discovered graph; every `SIMPLE` entry without a `taskDefinition` gets an inline one (`retryCount` 3, `timeoutSeconds` 0, `responseTimeoutSeconds` 120, `ownerEmail native@conductor.local`), at any depth, so registration validates |
 
@@ -100,8 +94,9 @@ an interface or into another package is not followed; a case key that is not a c
 registers it without starting workers; `Workers.start()` registers it too.
 
 `NativeContinuationService.initialize` clears the execution's copy of `tasks` (an execution starts
-empty and holds only what the code calls) and reads `protocol`, `codeType` (default
-`<name>.v<version>.code`), `continuationTimeoutSeconds` (default 30) and `handlers`.
+empty and holds only what the code calls) and reads `handlers`. `codeType` (default
+`<name>.v<version>.code`) and `continuationTimeoutSeconds` (default 30) are read from the
+execution's copy of the definition when they are needed, not copied into `nativeState`.
 `continuationTimeoutSeconds` is the lease: how long a continuation handed to a worker may go
 unanswered before the queue redelivers it. Dev mode registers 3600. `MetadataServiceImpl` refuses
 the skeleton when `conductor.app.nativeWorkflow.enabled=false`, and logs when `handlers` is true
@@ -140,18 +135,15 @@ continuations when the entry is the code type or `*` (`Map.of("kitchensink.v1.co
 
 ```json
 "nativeState": {
-  "codeType": "kitchensink.v1.code",
-  "continuationTimeoutSeconds": 30,
-  "step": 7,
-  "bootstrap": { "lane": "main", "n": 1, "state": "APPLIED", "epoch": 1, "worker": "worker-7f3a",
-                 "queue": "kitchensink.v1.code", "queuedAt": 1794128766000, "leasedAt": 1794128766040,
-                 "appliedAt": 1794128766110, "attempts": 1, "step": 1,
+  "bootstrap": { "lane": "main", "n": 1, "state": "APPLIED", "epoch": 1,
+                 "queuedAt": 1794128766000, "leasedAt": 1794128766040,
+                 "appliedAt": 1794128766110,
                  "recorded": { "runId": { "value": "ks-3c1e…", "type": "java.lang.String" } },
                  "resumedWith": {}, "done": false },
-  "handlers": { "lane": "handlers", "n": 3, "state": "WAITING", "step": 4, "attempts": 0,
+  "handlers": { "lane": "handlers", "n": 3, "state": "WAITING",
                 "recorded": {}, "resumedWith": {}, "done": false },
-  "replies": { "<client message id>": { "value": 1, "at": 1794128766000 } },
-  "seen": ["<client message id>", "…"]
+  "replies": { "<update id>": { "value": 1, "at": 1794128766000 },
+               "<signal id>": { "at": 1794128766020 } }
 }
 ```
 
@@ -159,10 +151,14 @@ continuations when the entry is the code type or `*` (`Map.of("kitchensink.v1.co
   task.
 - `handlers` is the handler lane's live marker, `n` being the next (or current) run. After a run
   is applied the server replaces it with a `WAITING` marker for `n + 1`.
-- `step` orders applied continuations across lanes for replay; each applied marker takes
-  `step = ++nativeState.step`.
-- `replies` and `seen` are written by handler completions: replies kept 10 minutes, at most 500;
-  the last 500 handled message ids.
+- Replay follows the applied markers' `appliedAt`: each apply takes `max(now, latest + 1)`, so the
+  times keep increasing within a run, across lanes and servers (applies are serialized by the
+  run's lock).
+- The continuation offered right now is the one marker that is `LEASED` (§6); there is no other
+  record of the slot.
+- `replies` is written by handler completions: every handled message by the sender's id, an
+  update's with its value or error, a signal's with only its time; kept 10 minutes, at most 500.
+  A message already in it was handled, so a retried send applies once.
 
 ## 5. The continuation marker on a task
 
@@ -171,10 +167,10 @@ continuations when the entry is the code type or `*` (`Map.of("kitchensink.v1.co
 ```json
 "continuation": {
   "lane": "main", "n": 3, "state": "LEASED",
-  "epoch": 2, "worker": "worker-7f3a", "queue": "kitchensink.v1.code",
-  "queuedAt": 1794128769900, "leasedAt": 1794128769940, "appliedAt": 0, "attempts": 2,
+  "epoch": 2,
+  "queuedAt": 1794128769900, "leasedAt": 1794128769940, "appliedAt": 0,
   "deferred": null,
-  "step": 0, "recorded": {}, "resumedWith": {}, "done": false, "result": {}, "error": {}
+  "recorded": {}, "resumedWith": {}, "done": false, "result": {}
 }
 ```
 
@@ -183,12 +179,11 @@ Once applied:
 ```json
 "continuation": {
   "lane": "main", "n": 3, "state": "APPLIED",
-  "epoch": 2, "worker": "worker-7f3a", "queue": "kitchensink.v1.code",
-  "queuedAt": 1794128769900, "leasedAt": 1794128769940, "appliedAt": 1794128770010, "attempts": 2,
-  "step": 7,
+  "epoch": 2,
+  "queuedAt": 1794128769900, "leasedAt": 1794128769940, "appliedAt": 1794128770010,
   "recorded": { "now": { "value": "2026-11-08T…", "type": "java.time.Instant" } },
   "resumedWith": { "stage": "new" },
-  "done": false, "result": {}, "error": {}
+  "done": false, "result": {}
 }
 ```
 
@@ -196,22 +191,21 @@ Once applied:
 |---|---|---|
 | `lane`, `n` | `TaskMapperContext` from `metadata.continuation` | which continuation runs when this task finishes |
 | `state` | decider, poll, complete | `WAITING`, `RUNNABLE`, `LEASED`, `APPLIED` |
-| `epoch`, `queue`, `leasedAt`, `attempts` | `offer` (in a decide) | `epoch` increments per offer; `queue` is the queue the message was pushed to, acknowledged on completion; `leasedAt` is when the message is delivered (after a retry's backoff); `attempts` counts offers |
-| `worker` | `complete` | the worker whose completion applied; the poll writes nothing |
+| `epoch`, `leasedAt` | `offer` (in a decide) | `epoch` increments per offer, so it also counts the offers (the retry backoff and the UI read it so); `leasedAt` is when the message is delivered (after a retry's backoff). The message always goes to the code type's queue |
 | `queuedAt` | `repairAndWake`, `defer`, `rearmLastMain`, `initialize` | when the marker became runnable |
 | `deferred` | `defer` | why the last completion was not applied (variable conflict, pending messages, worker error); cleared when the continuation applies. A value starting `waiting for handlers: ` is a main lane that returned while the handler lane has work: it is not re-queued, and `repairAndWake` wakes it once that lane has settled |
-| `step`, `recorded`, `resumedWith`, `done`, `result`, `error`, `appliedAt` | `complete` | the record a replay reads |
+| `appliedAt`, `recorded`, `resumedWith`, `done`, `result` | `complete` | the record a replay reads, in `appliedAt` order (increasing within a run). A lane that threw is `done` with no `result`; the main lane's exception is the run's `reasonForIncompletion`, and where it threw is the `TERMINATE` task `failedTaskId` names |
 
 ## 6. Poll
 
 `GET /api/tasks/poll/batch/{tasktype}?workerid=&domain=&count=&timeout=` (`TaskResource`), with
-`tasktype` the code type. The SDK calls `TaskClient.batchPollTasksInDomain(codeType, domain,
-workerId, 10, 500)` on the shared queue (no domain) and, when `buildId` is set, on that domain.
+`tasktype` the code type. The SDK polls it with a `TaskRunner`, as any worker polls its task type,
+on the shared queue: workflows have no domains.
 
 Only a decide gives out a continuation. Under its lock, `repairAndWake` offers the execution's
 slot to the runnable continuation that has waited longest (`NativeContinuationService.offer`):
-`nativeState.activeContinuation` and `activeUntil`, and on the marker `LEASED`, `epoch + 1`,
-`leasedAt` (when the message is delivered), `queue` (resolved now), `attempts + 1`. The decide saves
+the marker `LEASED` (which makes it the slot), `epoch + 1`, `leasedAt` (when the
+message is delivered). The decide saves
 the workflow, and the task when there is one, then pushes the message. A deferred completion is
 offered the same way, inside the decide that applies it, with its backoff as the push's delay.
 
@@ -219,16 +213,15 @@ offered the same way, inside the decide that applies it, with its backoff as the
 to `NativeContinuationService.lease(queueName, messageId, workerId)`, which takes no lock and writes
 nothing:
 
-- The marker is `LEASED`, the message is the slot holder and came from the marker's `queue`: leave
-  it unacknowledged with `setUnackTimeout(queue, id, continuationTimeoutSeconds)` and return the
+- The marker is `LEASED` (it is the slot holder) and the message came from the code type's queue:
+  leave it unacknowledged with `setUnackTimeout(queue, id, continuationTimeoutSeconds)` and return the
   task. If the worker dies the queue redelivers the message, and the next worker runs the same
   offer; the first completion applies, the other is refused (§7).
 - Anything else (marker `APPLIED`, `WAITING`, `RUNNABLE` or absent; another continuation holds the
-  slot; a duplicate in another domain's queue; the workflow terminal): a stale message, remove it.
+  slot; the workflow terminal): a stale message, remove it.
 
 The slot holder's message is pushed again on every decide (idempotent), which repairs a lost
-message. A holder offered in a queue no worker polls any more (its domain's workers went away) is
-offered again in the queue resolved now, at a new epoch, once `activeUntil` has passed.
+message.
 
 The awaited task's own status, worker id and poll count are untouched: the task is finished; only
 its marker changes. The returned `Task` is the awaited task itself, with `continuation` now
@@ -239,15 +232,14 @@ its marker changes. The returned `Task` is the awaited task itself, with `contin
   "taskId": "6f1c…", "referenceTaskName": "task_10", "taskType": "task_10", "status": "COMPLETED",
   "workflowInstanceId": "a4e2…",
   "outputData": { "…": "…" },
-  "continuation": { "lane": "fork_1.0", "n": 2, "state": "LEASED", "epoch": 1,
-                    "worker": "worker-7f3a", "queue": "kitchensink.v1.code", "…": "…" }
+  "continuation": { "lane": "fork_1.0", "n": 2, "state": "LEASED", "epoch": 1, "…": "…" }
 }
 ```
 
 For `<workflowId>|main` and `<workflowId>|handlers` the poll builds a task that is not persisted
 (`syntheticTask`): `taskType` and `taskDefName` the code type, `referenceTaskName` the lane,
-`status IN_PROGRESS`, `scheduledTime` the marker's `queuedAt`, `startTime` its `leasedAt`, the
-marker, and in `inputData` either `input` (the workflow input, bootstrap) or `messages` (the
+`status IN_PROGRESS`, `scheduledTime` the marker's `queuedAt`, `startTime` its `leasedAt`,
+`workerId` the poller, the marker, and in `inputData` either `input` (the workflow input, bootstrap) or `messages` (the
 handler lane):
 
 ```json
@@ -311,15 +303,14 @@ The output, as `Replayer.process` and `Workers.complete` build it:
 | `result` | main lane, `done` without error | The workflow output. |
 | `error` | main lane, `done` by throwing | `{ "message": "…", "ref": "<task>" }`; `ref` is present for an uncaught `TaskFailure`. The workflow fails with `message` and `failedTaskId` from `ref`. Another lane's error is raised by replay in the lane that joins it, so the SDK does not send it. |
 | `releases` | handler lane | `[ { "ref": "condition", "output": { "satisfied": true } } ]`: `WAIT` tasks the server completes with that output in the same write. |
-| `replies` | handler lane | `{ "<client message id>": { "value": …, "at": <millis> } }` or `{ "error": "…", "at": … }`; replaces `nativeState.replies`. |
-| `seen` | handler lane | the handled message ids, at most 500; replaces `nativeState.seen`. |
+| `replies` | handler lane | every handled message by the sender's id: `{ "value": …, "at": <millis> }` or `{ "error": "…", "at": … }` for an update, `{ "at": … }` for a signal; replaces `nativeState.replies`. |
 
 A completion must carry `protocol`, `n` and `epoch` whatever its status: a result on a task row
 without `protocol` is an ordinary task update. Statuses other than `COMPLETED`: `FAILED_WITH_TERMINAL_ERROR` (the SDK's `NonDeterminismException`)
 holds the execution: the marker goes back to `RUNNABLE` with `deferred` set to
 `diverged: <reasonForIncompletion>`, and the workflow stays `RUNNING` so that a rollback or a fixed
 build continues it. `FAILED` (an unexpected worker exception) defers the marker the same way. Both
-are offered again after 1, 2, 4, ... seconds by `attempts`, at most 60. A main lane that returned while the handler lane has work is not offered again until that lane has settled; `repairAndWake` wakes it after the handler run.
+are offered again after 1, 2, 4, ... seconds by `epoch`, at most 60. A main lane that returned while the handler lane has work is not offered again until that lane has settled; `repairAndWake` wakes it after the handler run.
 
 The SDK processes a task returned here only if its marker is `LEASED`. The response is a `Task` of the code type (a stand-in, not the awaited task): `update-v2` then
 polls the code type in the completion's domain, so the worker's next continuation comes back in

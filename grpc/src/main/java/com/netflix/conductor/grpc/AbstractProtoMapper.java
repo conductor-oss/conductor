@@ -528,11 +528,6 @@ public abstract class AbstractProtoMapper {
 
     public NativeStatePb.NativeState toProto(NativeState from) {
         NativeStatePb.NativeState.Builder to = NativeStatePb.NativeState.newBuilder();
-        if (from.getCodeType() != null) {
-            to.setCodeType( from.getCodeType() );
-        }
-        to.setContinuationTimeoutSeconds( from.getContinuationTimeoutSeconds() );
-        to.setStep( from.getStep() );
         if (from.getBootstrap() != null) {
             to.setBootstrap( toProto( from.getBootstrap() ) );
         }
@@ -542,19 +537,11 @@ public abstract class AbstractProtoMapper {
         for (Map.Entry<String, Object> pair : from.getReplies().entrySet()) {
             to.putReplies( pair.getKey(), toProto( pair.getValue() ) );
         }
-        to.addAllSeen( from.getSeen() );
-        if (from.getActiveContinuation() != null) {
-            to.setActiveContinuation( from.getActiveContinuation() );
-        }
-        to.setActiveUntil( from.getActiveUntil() );
         return to.build();
     }
 
     public NativeState fromProto(NativeStatePb.NativeState from) {
         NativeState to = new NativeState();
-        to.setCodeType( from.getCodeType() );
-        to.setContinuationTimeoutSeconds( from.getContinuationTimeoutSeconds() );
-        to.setStep( from.getStep() );
         if (from.hasBootstrap()) {
             to.setBootstrap( fromProto( from.getBootstrap() ) );
         }
@@ -566,9 +553,6 @@ public abstract class AbstractProtoMapper {
             repliesMap.put( pair.getKey(), fromProto( pair.getValue() ) );
         }
         to.setReplies(repliesMap);
-        to.setSeen( from.getSeenList().stream().collect(Collectors.toCollection(ArrayList::new)) );
-        to.setActiveContinuation( from.getActiveContinuation() );
-        to.setActiveUntil( from.getActiveUntil() );
         return to;
     }
 
@@ -1053,20 +1037,12 @@ public abstract class AbstractProtoMapper {
             to.setState( from.getState() );
         }
         to.setEpoch( from.getEpoch() );
-        if (from.getWorker() != null) {
-            to.setWorker( from.getWorker() );
-        }
-        if (from.getQueue() != null) {
-            to.setQueue( from.getQueue() );
-        }
         to.setQueuedAt( from.getQueuedAt() );
         to.setLeasedAt( from.getLeasedAt() );
         to.setAppliedAt( from.getAppliedAt() );
-        to.setAttempts( from.getAttempts() );
         if (from.getDeferred() != null) {
             to.setDeferred( from.getDeferred() );
         }
-        to.setStep( from.getStep() );
         for (Map.Entry<String, Object> pair : from.getRecorded().entrySet()) {
             to.putRecorded( pair.getKey(), toProto( pair.getValue() ) );
         }
@@ -1077,9 +1053,6 @@ public abstract class AbstractProtoMapper {
         for (Map.Entry<String, Object> pair : from.getResult().entrySet()) {
             to.putResult( pair.getKey(), toProto( pair.getValue() ) );
         }
-        for (Map.Entry<String, Object> pair : from.getError().entrySet()) {
-            to.putError( pair.getKey(), toProto( pair.getValue() ) );
-        }
         return to.build();
     }
 
@@ -1089,14 +1062,10 @@ public abstract class AbstractProtoMapper {
         to.setN( from.getN() );
         to.setState( from.getState() );
         to.setEpoch( from.getEpoch() );
-        to.setWorker( from.getWorker() );
-        to.setQueue( from.getQueue() );
         to.setQueuedAt( from.getQueuedAt() );
         to.setLeasedAt( from.getLeasedAt() );
         to.setAppliedAt( from.getAppliedAt() );
-        to.setAttempts( from.getAttempts() );
         to.setDeferred( from.getDeferred() );
-        to.setStep( from.getStep() );
         Map<String, Object> recordedMap = new HashMap<String, Object>();
         for (Map.Entry<String, Value> pair : from.getRecordedMap().entrySet()) {
             recordedMap.put( pair.getKey(), fromProto( pair.getValue() ) );
@@ -1113,11 +1082,6 @@ public abstract class AbstractProtoMapper {
             resultMap.put( pair.getKey(), fromProto( pair.getValue() ) );
         }
         to.setResult(resultMap);
-        Map<String, Object> errorMap = new HashMap<String, Object>();
-        for (Map.Entry<String, Value> pair : from.getErrorMap().entrySet()) {
-            errorMap.put( pair.getKey(), fromProto( pair.getValue() ) );
-        }
-        to.setError(errorMap);
         return to;
     }
 

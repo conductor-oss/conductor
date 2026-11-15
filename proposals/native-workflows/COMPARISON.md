@@ -21,7 +21,7 @@ differ in how a step resumes and in where the work between steps happens.
 | Unit of progress | workflow task: the code runs until it is blocked, emitting commands | journal entry; the handler runs while its connection is open | continuation: the code runs until it needs a server result; the task it pauses on carries the continuation marker |
 | How a step reaches the code | workers poll a task queue | the server pushes the invocation to a service instance over HTTP/2 (or a FaaS call) | workers poll a task queue (long poll) |
 | Resuming on another machine | replay of the event history | replay of the journal after the invocation suspends | replay against the recorded task list |
-| Affinity to one machine | sticky execution: the next workflow task goes to the same worker, which keeps the workflow state in memory and skips replay; falls back to any worker after 5 s | the handler stays on one instance until it suspends (after 1 min of inactivity by default) | none by default: continuations go to any worker polling the shared queue; opt-in domains with fallback; no in-memory fast path |
+| Affinity to one machine | sticky execution: the next workflow task goes to the same worker, which keeps the workflow state in memory and skips replay; falls back to any worker after 5 s | the handler stays on one instance until it suspends (after 1 min of inactivity by default) | none: continuations go to any worker polling the shared queue of the code type; no in-memory fast path |
 | Concurrency of one workflow's code | single-threaded, deterministic scheduler | single handler; awaitables for concurrency | one continuation per execution at a time, enforced by the server across all hosts; `async` lanes take turns, while their tasks run in parallel |
 | Where the server holds state | event history per execution | replicated log and partition store | Conductor's database: definition, task rows with their continuation markers, variables, a small `nativeState` block |
 
@@ -45,7 +45,7 @@ differ in how a step resumes and in where the work between steps happens.
 | Non-deterministic values | SideEffect, deterministic time and random APIs | `ctx.run`, `ctx.rand`, `ctx.date` | `once`, `now`, `random` |
 | How replay matches | positional: the command sequence must match history | positional journal | by reference name; independent reorderings and added calls in new code paths are tolerated |
 | Divergence | non-determinism error; the workflow task fails and retries | journal mismatch; retry, pause or fail (configurable) | the execution is held: it stays running and the continuation is retried with backoff up to 1 min, naming the call and source line, until a compatible build continues it or an operator terminates it |
-| In-flight code changes | patching (`getVersion`), Worker Versioning with pinned workflows | immutable deployments: an invocation finishes on the version that started it | name-matched replay, divergence detection; an opt-in domain list on the start prefers a build (`buildId` on its workers), with fallback to any worker; a new `@Workflow(version)` gets its own queue |
+| In-flight code changes | patching (`getVersion`), Worker Versioning with pinned workflows | immutable deployments: an invocation finishes on the version that started it | name-matched replay, divergence detection; a new `@Workflow(version)` gets its own queue |
 | Replay testing | replayer against exported histories | not documented | `DurableReplay.assertCompatible` against recorded executions |
 
 ## Messaging
@@ -67,7 +67,7 @@ differ in how a step resumes and in where the work between steps happens.
 | Non-retryable error | non-retryable application failure | terminal error | `NonRetryableException`, task FAILED_WITH_TERMINAL_ERROR |
 | What the code sees after retries | `ActivityFailure` | terminal error at the await | `TaskFailure`, with how the task failed |
 | Uncaught failure | workflow fails (workflows are not retried by default) | invocation fails, error to the caller | workflow fails, with the task as cause |
-| Lost worker detection | workflow task timeout (10 s default), activity start-to-close and heartbeat timeouts | stream loss, inactivity and abort timeouts | task response timeout; continuation lease (30 s default); on the shared queue any other worker takes it; with domains, one queued for a domain nobody has polled for 10 s moves at the next decider pass (up to 30 s) |
+| Lost worker detection | workflow task timeout (10 s default), activity start-to-close and heartbeat timeouts | stream loss, inactivity and abort timeouts | task response timeout; continuation lease (30 s default); any other worker polling the shared queue takes it |
 | Stale workers | task tokens | epochs | a lease epoch per continuation; a stale completion is refused (409) |
 | Cancellation | delivered to the code (cancellation scopes) | delivered to the code at the next await | terminate cancels pending tasks; not delivered to the code |
 | Step delivery | activities: at least once | `ctx.run`: at least once | tasks: at least once, the same contract as Conductor tasks; make side effects idempotent |
@@ -93,7 +93,7 @@ The guarantees in [DURABILITY.md](DURABILITY.md), against what Temporal and Rest
 |---|---|---|---|
 | Survives worker crash, resumes without re-running completed steps | yes, history replay | yes, journal replay | yes, replay against the applied continuations and tasks |
 | Survives server crash | yes; Cloud replicates across three zones | yes; quorum-replicated log | yes; as durable as the database (Postgres, MySQL, Redis replication) |
-| Lost-worker detection | workflow task timeout, 10 s default | stream loss, inactivity timeout | continuation lease, 30 s default; on the shared queue any other worker takes over, and with domains a queued continuation moves at the next decider pass |
+| Lost-worker detection | workflow task timeout, 10 s default | stream loss, inactivity timeout | continuation lease, 30 s default; any other worker polling the shared queue takes over |
 | Stale or zombie workers fenced | task tokens | epochs | a lease epoch per continuation; a stale completion is refused |
 | Recorded non-determinism (time, random, side effects) | SideEffect, deterministic APIs | `ctx.run`, `ctx.rand`, `ctx.date` | `once`, `now`, `random` |
 | Durable timers, no worker while waiting | yes | yes | yes |
@@ -105,7 +105,7 @@ The guarantees in [DURABILITY.md](DURABILITY.md), against what Temporal and Rest
 | Idempotent start | workflow id reuse and conflict policies | idempotency keys, 24 h | idempotency keys, return existing or fail |
 | Cancellation delivered to code for compensation | yes, cancellation scopes | yes, at the next await | **no**: terminate cancels pending tasks |
 | Reset or restart from a point | reset to an event | restart-from-prefix | rerun from a task, retry, restart |
-| Code changes in flight | patching, worker versioning (pinned) | immutable deployments | name-matched replay (tolerant), divergence detection that holds the execution until a compatible build runs, opt-in build domains |
+| Code changes in flight | patching, worker versioning (pinned) | immutable deployments | name-matched replay (tolerant), divergence detection that holds the execution until a compatible build runs |
 | Replay testing in CI | replayer | not documented | `DurableReplay` |
 | History limits | 51,200 events or 50 MB | journal grows; retention 24 h | no fixed limit on tasks per execution; a native execution's code-appended definition is capped by `maxDefinitionTasks` (configurable, 5000 entries by default), and iterations of `repeatUntil` and `forEach` loops run on the server do not count against it |
 | Visual graph of what ran, with per-task operator actions | event history view | invocation journal | full Conductor UI graph of exactly the code's tasks, pause, rerun, retry, restart |

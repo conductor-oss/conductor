@@ -498,7 +498,12 @@ public class DeciderService {
             NativeContinuationService.LastMain lastMain =
                     nativeContinuationService.lastMain(workflow);
             TaskContinuation last = lastMain == null ? null : lastMain.marker();
-            if (last == null || !last.isApplied() || !last.isDone() || last.hasError()) {
+            // the code threw (or its fragment was rejected): the run has a reason, and is ended
+            // by the completion that recorded it, not completed
+            if (last == null
+                    || !last.isApplied()
+                    || !last.isDone()
+                    || workflow.getReasonForIncompletion() != null) {
                 return false;
             }
             // code that returned without calling anything has no tasks to wait for

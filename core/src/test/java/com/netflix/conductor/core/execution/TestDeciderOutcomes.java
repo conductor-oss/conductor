@@ -565,6 +565,20 @@ public class TestDeciderOutcomes {
         assertFalse(outcome.isComplete);
     }
 
+    @Test
+    public void aNativeWorkflowWhoseCodeThrewIsNotCompletedBeforeItIsEnded() {
+        // the completion that recorded the throw was saved; the server stopped before ending it
+        WorkflowModel workflow = nativeWorkflowPausedOn(TaskModel.Status.COMPLETED);
+        TaskContinuation marker = workflow.getTasks().get(0).getContinuation();
+        marker.setState(TaskContinuation.APPLIED);
+        marker.setDone(true);
+        workflow.setReasonForIncompletion("boom");
+        assertFalse(deciderService.checkForWorkflowCompletion(workflow));
+
+        workflow.setReasonForIncompletion(null); // had the code returned
+        assertTrue(deciderService.checkForWorkflowCompletion(workflow));
+    }
+
     /** A native execution with one finished task the code paused on. */
     private WorkflowModel nativeWorkflowPausedOn(TaskModel.Status taskStatus) {
         WorkflowDef def = new WorkflowDef();

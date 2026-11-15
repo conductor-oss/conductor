@@ -146,21 +146,18 @@ public class NativeContinuationServiceTest {
     private static void lease(TaskContinuation marker, long epoch) {
         marker.setState(TaskContinuation.LEASED);
         marker.setEpoch(epoch);
-        marker.setQueue(CODE_TYPE + ":worker-a");
         marker.setLeasedAt(System.currentTimeMillis());
     }
 
-    /** A completed task the code paused on, with its marker leased. */
-    /** Completes a continuation as the worker that holds the execution's slot. */
+    /** Completes a continuation as the worker that holds its lease, the execution's slot. */
     private NativeContinuationService.Completion completeHoldingSlot(
             WorkflowModel workflow,
             TaskModel awaited,
             com.netflix.conductor.common.metadata.tasks.TaskResult result) {
-        workflow.getNativeState()
-                .setActiveContinuation(awaited != null ? awaited.getTaskId() : result.getTaskId());
         return service.complete(workflow, awaited, result);
     }
 
+    /** A completed task the code paused on, with its marker leased. */
     private static TaskModel awaitedTask(
             WorkflowModel workflow, String ref, String lane, int n, long epoch) {
         WorkflowTask entry = new WorkflowTask();
@@ -197,8 +194,7 @@ public class NativeContinuationServiceTest {
     public void initializeSetsUpTheBootstrapAndHandlerMarkers() {
         WorkflowModel workflow = freshWorkflow(true);
         NativeState state = workflow.getNativeState();
-        assertEquals(CODE_TYPE, state.getCodeType());
-        assertEquals(30, state.getContinuationTimeoutSeconds());
+        assertEquals(CODE_TYPE, NativeContinuationService.codeType(workflow));
         assertTrue(state.getBootstrap().isRunnable());
         assertEquals(1, state.getBootstrap().getN());
         assertTrue(state.getHandlers().isWaiting());
@@ -225,11 +221,11 @@ public class NativeContinuationServiceTest {
         assertFalse(completion.reason, completion.finished);
         assertEquals(List.of("task_1"), refs(workflow.getWorkflowDefinition().getTasks()));
         assertTrue(bootstrap.isApplied());
-        assertEquals(1, bootstrap.getStep());
+        assertTrue(bootstrap.getAppliedAt() > 0);
         assertEquals("r-1", bootstrap.getRecorded().get("runId"));
         assertEquals("new", bootstrap.getResumedWith().get("stage"));
         assertEquals("classic", workflow.getVariables().get("stage"));
-        assertEquals(CODE_TYPE + ":worker-a", completion.ackQueue);
+        assertEquals(CODE_TYPE, completion.ackQueue); // the code type's queue: no domains
         assertEquals("wf-1|main", completion.ackId);
         // the entry the code paused on carries the next marker for the mapper to copy
         assertEquals(
@@ -418,26 +414,14 @@ public class NativeContinuationServiceTest {
     }
 
     @Test
-    public void continuationsFollowTheWorkflowsTaskDomains() {
-        com.netflix.conductor.core.dal.ExecutionDAOFacade dao =
-                mock(com.netflix.conductor.core.dal.ExecutionDAOFacade.class);
-        service.setExecutionDAOFacade(dao);
-        when(dao.getTaskPollDataByDomain(CODE_TYPE, "build-1"))
-                .thenReturn(
-                        new com.netflix.conductor.common.metadata.tasks.PollData(
-                                CODE_TYPE, "build-1", "w", System.currentTimeMillis()));
+    public void continuationsIgnoreTaskDomains() {
         WorkflowModel workflow = freshWorkflow(false);
+        assertEquals(CODE_TYPE, service.queueName(workflow));
 
-        assertEquals(CODE_TYPE, service.queueName(workflow)); // no domains: the shared queue
-
-        workflow.setTaskToDomain(new HashMap<>(Map.of(CODE_TYPE, "gone,build-1,NO_DOMAIN")));
-        assertEquals("build-1:" + CODE_TYPE, service.queueName(workflow)); // first with a poller
-
-        workflow.setTaskToDomain(new HashMap<>(Map.of(CODE_TYPE, "gone,NO_DOMAIN")));
-        assertEquals(CODE_TYPE, service.queueName(workflow)); // nobody polling: falls back
-
-        workflow.setTaskToDomain(new HashMap<>(Map.of("*", "build-1,NO_DOMAIN")));
-        assertEquals("build-1:" + CODE_TYPE, service.queueName(workflow)); // the wildcard applies
+        // a run started with domains for its tasks, or for every type, still continues in the
+        // shared queue, which every host of the code polls
+        workflow.setTaskToDomain(new HashMap<>(Map.of(CODE_TYPE, "build-1", "*", "blue")));
+        assertEquals(CODE_TYPE, service.queueName(workflow));
     }
 
     @Test
@@ -461,18 +445,39 @@ public class NativeContinuationServiceTest {
     }
 
     @Test
-    public void aResultFromAWorkerThatLostTheSlotIsRefused() {
+    public void appliedTimesKeepIncreasingWithinARunWhateverTheClockSays() {
         WorkflowModel workflow = freshWorkflow(false);
         workflow.getNativeState().getBootstrap().setState(TaskContinuation.APPLIED);
-        TaskModel awaited = awaitedTask(workflow, "task_1", "main", 2, 3);
-        workflow.getNativeState().setActiveContinuation("another-continuation");
-        try {
-            service.complete(workflow, awaited, result("id-task_1", output(2, 3, List.of())));
-            fail("a result computed before another continuation ran must be refused");
-        } catch (ConflictException expected) {
-            // the continuation runs again
-        }
-        assertEquals(TaskContinuation.LEASED, awaited.getContinuation().getState());
+        // applied on a server whose clock was a minute ahead
+        long ahead = System.currentTimeMillis() + 60_000;
+        TaskModel earlier = awaitedTask(workflow, "task_1", "main", 2, 1);
+        earlier.getContinuation().setState(TaskContinuation.APPLIED);
+        earlier.getContinuation().setAppliedAt(ahead);
+        TaskModel awaited = awaitedTask(workflow, "task_2", "fork_1.0", 1, 1);
+
+        completeHoldingSlot(workflow, awaited, result("id-task_2", output(1, 1, List.of())));
+
+        // replay follows these times: the later apply must sort after the earlier one
+        assertEquals(ahead + 1, awaited.getContinuation().getAppliedAt());
+    }
+
+    @Test
+    public void whileAContinuationIsLeasedNoOtherIsOffered() {
+        WorkflowModel workflow = freshWorkflow(false);
+        workflow.getNativeState().getBootstrap().setState(TaskContinuation.APPLIED);
+        TaskModel leased = awaitedTask(workflow, "task_1", "main", 2, 3);
+        TaskModel other = awaitedTask(workflow, "task_2", "fork_1.0", 1, 0);
+        other.getContinuation().setState(TaskContinuation.RUNNABLE);
+
+        // the leased marker is the slot: its message is pushed again, under the same offer
+        assertEquals(List.of("id-task_1"), offered(service.repairAndWake(workflow)));
+        assertEquals(3, leased.getContinuation().getEpoch());
+        assertTrue(other.getContinuation().isRunnable());
+
+        // once it applied, the other is offered
+        leased.getContinuation().setState(TaskContinuation.APPLIED);
+        assertEquals(List.of("id-task_2"), offered(service.repairAndWake(workflow)));
+        assertTrue(other.getContinuation().isLeased());
     }
 
     @Test
@@ -509,6 +514,9 @@ public class NativeContinuationServiceTest {
         assertTrue(completion.finished);
         assertEquals("task charge FAILED: over limit", completion.reason);
         assertEquals(awaited, completion.causeTask);
+        // saved with the marker: until the run is ended, it reads as failed, not returned
+        assertEquals("task charge FAILED: over limit", workflow.getReasonForIncompletion());
+        assertTrue(awaited.getContinuation().isDone());
     }
 
     private com.netflix.conductor.core.dal.ExecutionDAOFacade dao;
@@ -565,7 +573,7 @@ public class NativeContinuationServiceTest {
     }
 
     @Test
-    public void anOfferInAQueueNobodyPollsIsMovedToTheQueueWorkersPoll() {
+    public void aLeasedOfferIsPushedAgainAtTheSameEpoch() {
         WorkflowModel workflow = freshWorkflow(false);
         useMockedStores(workflow);
         workflow.getNativeState().getBootstrap().setState(TaskContinuation.APPLIED);
@@ -576,20 +584,10 @@ public class NativeContinuationServiceTest {
 
         offerAndPoll(workflow, "id-item", "worker-a");
 
-        // within its lease, or in the queue resolved now, the offer stands
+        // the push repairs a lost message, the queue redelivers the rest
         long epoch = marker.getEpoch();
-        workflow.getNativeState().setActiveUntil(System.currentTimeMillis() - 1);
-        service.repairAndWake(workflow);
-        assertEquals(epoch, marker.getEpoch());
-
-        // offered in a domain whose workers went away: offered again where workers poll
-        marker.setQueue("gone:" + CODE_TYPE);
         assertEquals(List.of("id-item"), offered(service.repairAndWake(workflow)));
-        assertEquals(epoch + 1, marker.getEpoch());
-        assertEquals(CODE_TYPE, marker.getQueue());
-        assertTrue(
-                service.lease(CODE_TYPE, "id-item", dao.getTaskModel("id-item"), "worker-b")
-                        != null);
+        assertEquals(epoch, marker.getEpoch());
     }
 
     @Test
@@ -613,14 +611,12 @@ public class NativeContinuationServiceTest {
         assertEquals(1, completion.retryDelaySeconds);
 
         // handed out more often, it waits longer, up to a minute
-        lease(marker, 2);
-        marker.setAttempts(4);
-        result = result("wf-1|main", output(1, 2, List.of()));
+        lease(marker, 4); // the epoch counts the offers
+        result = result("wf-1|main", output(1, 4, List.of()));
         result.setStatus(TaskResult.Status.FAILED_WITH_TERMINAL_ERROR);
         assertEquals(8, completeHoldingSlot(workflow, null, result).retryDelaySeconds);
-        lease(marker, 3);
-        marker.setAttempts(30);
-        result = result("wf-1|main", output(1, 3, List.of()));
+        lease(marker, 30);
+        result = result("wf-1|main", output(1, 30, List.of()));
         result.setStatus(TaskResult.Status.FAILED);
         assertEquals(60, completeHoldingSlot(workflow, null, result).retryDelaySeconds);
     }
@@ -658,7 +654,6 @@ public class NativeContinuationServiceTest {
         assertTrue(completion.waitsForHandlers); // not offered again until that lane has run
         TaskContinuation bootstrap = workflow.getNativeState().getBootstrap();
         assertTrue(bootstrap.isRunnable());
-        assertNull(bootstrap.getWorker());
 
         // a leased handler run also defers
         when(queue.size("wf-1")).thenReturn(0L);
@@ -900,7 +895,6 @@ public class NativeContinuationServiceTest {
         out.put("variables", Map.of("notes", List.of("first")));
         out.put("resumedWith", Map.of("notes", List.of()));
         out.put("replies", Map.of("m-1", Map.of("value", 1, "at", 5L)));
-        out.put("seen", List.of("m-1"));
         out.put(
                 "releases",
                 List.of(Map.of("ref", "condition", "output", Map.of("satisfied", true))));
@@ -913,7 +907,6 @@ public class NativeContinuationServiceTest {
         Map<?, ?> reply = (Map<?, ?>) workflow.getNativeState().getReplies().get("m-1");
         assertEquals(1, ((Number) reply.get("value")).intValue());
         assertEquals(5, ((Number) reply.get("at")).intValue());
-        assertEquals(List.of("m-1"), workflow.getNativeState().getSeen());
         assertEquals(TaskModel.Status.COMPLETED, wait.getStatus());
         assertFalse(wait.isExecuted());
         assertTrue(completion.touchedTasks.contains(wait));

@@ -1242,7 +1242,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         standIn.setWorkflowInstanceId(workflowId);
         standIn.setStatus(COMPLETED);
         if (workflow.getNativeState() != null) {
-            standIn.setTaskType(workflow.getNativeState().getCodeType());
+            standIn.setTaskType(NativeContinuationService.codeType(workflow));
         }
         if (workflow.getStatus().isTerminal()) {
             LOGGER.info(
@@ -1287,7 +1287,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     new TerminateWorkflowException(
                             completion.reason, WorkflowModel.Status.FAILED, completion.causeTask));
         }
-        standIn.setDomain(NativeContinuationService.queueDomain(completion.ackQueue));
         return standIn;
     }
 
@@ -2535,10 +2534,21 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
      */
     @VisibleForTesting
     String getActiveDomain(String taskType, String[] domains) {
-        return org.conductoross.conductor.core.execution.ExecutorUtils.activeDomain(
-                domains,
-                domain -> executionDAOFacade.getTaskPollDataByDomain(taskType, domain),
-                validateLastPolledTime);
+        if (domains == null || domains.length == 0) {
+            return null;
+        }
+
+        return Arrays.stream(domains)
+                .filter(domain -> !domain.equalsIgnoreCase("NO_DOMAIN"))
+                .map(domain -> executionDAOFacade.getTaskPollDataByDomain(taskType, domain.trim()))
+                .filter(Objects::nonNull)
+                .filter(validateLastPolledTime)
+                .findFirst()
+                .map(PollData::getDomain)
+                .orElse(
+                        domains[domains.length - 1].trim().equalsIgnoreCase("NO_DOMAIN")
+                                ? null
+                                : domains[domains.length - 1].trim());
     }
 
     private long getTaskDuration(long s, TaskModel task) {

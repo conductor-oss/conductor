@@ -40,7 +40,6 @@ import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.execution.evaluators.NativeCodeEvaluator;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.metadata.MetadataMapperService;
-import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.dao.WorkflowMessageQueueDAO;
 import com.netflix.conductor.metrics.Monitors;
@@ -113,7 +112,6 @@ public class NativeContinuationService {
     private static final String OUTPUT_ERROR = "error";
     private static final String OUTPUT_RELEASES = "releases";
     private static final String OUTPUT_REPLIES = "replies";
-    private static final String OUTPUT_SEEN = "seen";
     private static final String INPUT_MESSAGES = "messages";
     private static final String METADATA_LANE = "lane";
     private static final String METADATA_CONTINUATION = "continuation";
@@ -121,7 +119,6 @@ public class NativeContinuationService {
 
     private static final TypeReference<List<WorkflowTask>> FRAGMENT_TYPE = new TypeReference<>() {};
     private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {};
-    private static final TypeReference<List<String>> STRING_LIST_TYPE = new TypeReference<>() {};
     private static final TypeReference<List<Map<String, Object>>> LIST_OF_MAPS_TYPE =
             new TypeReference<>() {};
 
@@ -233,15 +230,8 @@ public class NativeContinuationService {
                 && !workflow.getWorkflowDefinition().getTasks().isEmpty()) {
             workflow.getWorkflowDefinition().setTasks(new ArrayList<>());
         }
-        WorkflowDef def = workflow.getWorkflowDefinition();
-        Map<String, Object> meta = (Map<String, Object>) def.getMetadata().get("native");
+        Map<String, Object> meta = nativeMetadata(workflow);
         NativeState state = new NativeState();
-        state.setCodeType(
-                meta.get("codeType") != null
-                        ? meta.get("codeType").toString()
-                        : def.getName() + ".v" + def.getVersion() + ".code");
-        state.setContinuationTimeoutSeconds(
-                meta.get("continuationTimeoutSeconds") instanceof Number t ? t.intValue() : 30);
         TaskContinuation bootstrap = new TaskContinuation(MAIN_LANE, 1);
         bootstrap.setState(TaskContinuation.RUNNABLE);
         bootstrap.setQueuedAt(System.currentTimeMillis());
@@ -267,8 +257,7 @@ public class NativeContinuationService {
      * (a crash between the evaluation and the save), the handler lane becomes runnable when
      * messages are queued (a push wakes it this way), and the execution's slot goes to the runnable
      * continuation that has waited longest. The slot holder's message is pushed again, which is
-     * idempotent and repairs a lost message; a holder offered in a queue no worker polls any more
-     * is offered again, at a new epoch, in the queue resolved now, once its lease has run out.
+     * idempotent and repairs a lost message.
      *
      * <p>Only a decide, under its lock, gives out the slot, so a poll hands out what was offered
      * without a lock or a write.
@@ -302,29 +291,12 @@ public class NativeContinuationService {
             wakeups.workflowTouched = true;
         }
 
-        String active = state.getActiveContinuation();
-        if (active != null) {
-            TaskModel holderTask = isSyntheticId(active) ? null : taskById(latest, active);
-            TaskContinuation holder =
-                    isSyntheticId(active)
-                            ? syntheticMarker(workflow, laneOfSynthetic(active))
-                            : holderTask == null ? null : holderTask.getContinuation();
-            if (holder != null && holder.isLeased()) {
-                String queue = queueName(workflow);
-                if (queue.equals(holder.getQueue()) || now <= state.getActiveUntil()) {
-                    // pushed again if lost; a worker that dies leaves it to the queue's redelivery
-                    wakeups.offers.add(new Offer(active, holder.getQueue(), 0));
-                    return wakeups;
-                }
-                // offered in a queue nobody polls any more (its domain's workers went away)
-                queueDAO.remove(holder.getQueue(), active);
-                wakeups.offers.add(offer(workflow, holder, active, 0));
-                touch(wakeups, holderTask);
-                return wakeups;
-            }
-            state.setActiveContinuation(null); // its continuation is no longer leased
-            state.setActiveUntil(0);
-            wakeups.workflowTouched = true;
+        // the slot is the leased continuation: while there is one, nothing else is offered
+        String holder = holder(workflow, latest);
+        if (holder != null) {
+            // pushed again if lost; a worker that dies leaves it to the queue's redelivery
+            wakeups.offers.add(new Offer(holder, queueName(workflow), 0));
+            return wakeups;
         }
 
         boolean handlersOpen = handlers != null && (handlers.isRunnable() || handlers.isLeased());
@@ -355,14 +327,29 @@ public class NativeContinuationService {
         return wakeups;
     }
 
-    /**
-     * Runnable, or leased without holding the slot (left by a crash), and not waiting for the
-     * handler lane while that lane has work.
-     */
+    /** Runnable, and not waiting for the handler lane while that lane has work. */
     private static boolean offerable(TaskContinuation marker, boolean handlersOpen) {
-        return marker != null
-                && (marker.isRunnable() || marker.isLeased())
-                && !(handlersOpen && waitsForHandlers(marker));
+        return marker != null && marker.isRunnable() && !(handlersOpen && waitsForHandlers(marker));
+    }
+
+    /**
+     * The message id of the continuation leased right now, or null. One runs at a time: an offer is
+     * made only while none is leased, so the leased marker is the execution's slot.
+     */
+    private static String holder(WorkflowModel workflow, List<TaskModel> latest) {
+        for (TaskModel task : latest) {
+            if (task.getContinuation() != null && task.getContinuation().isLeased()) {
+                return task.getTaskId();
+            }
+        }
+        NativeState state = workflow.getNativeState();
+        for (TaskContinuation marker :
+                new TaskContinuation[] {state.getBootstrap(), state.getHandlers()}) {
+            if (marker != null && marker.isLeased()) {
+                return syntheticId(workflow.getWorkflowId(), marker.getLane());
+            }
+        }
+        return null;
     }
 
     private static void touch(Wakeups wakeups, TaskModel task) {
@@ -372,37 +359,21 @@ public class NativeContinuationService {
         }
     }
 
-    private static TaskModel taskById(List<TaskModel> tasks, String taskId) {
-        for (TaskModel task : tasks) {
-            if (taskId.equals(task.getTaskId())) {
-                return task;
-            }
-        }
-        return null;
-    }
-
     /**
      * Gives the execution's slot to a continuation: its marker is leased, at a new epoch, from the
-     * moment its message is delivered for the continuation timeout, in the queue resolved now. In
+     * moment its message is delivered for the continuation timeout, in its code type's queue. In
      * memory, under the decide's lock; the caller saves the workflow row (and the task, for a
      * task's marker) and then pushes the returned offer.
      */
     public Offer offer(
             WorkflowModel workflow, TaskContinuation marker, String messageId, int delaySeconds) {
-        NativeState state = workflow.getNativeState();
         long deliverable = System.currentTimeMillis() + delaySeconds * 1000L;
-        String queue = queueName(workflow);
-        state.setActiveContinuation(messageId);
-        state.setActiveUntil(deliverable + state.getContinuationTimeoutSeconds() * 1000L);
-        marker.setState(TaskContinuation.LEASED);
+        marker.setState(TaskContinuation.LEASED); // the execution's slot until it applies
         marker.setEpoch(marker.getEpoch() + 1);
-        marker.setWorker(null);
-        marker.setLeasedAt(deliverable);
-        marker.setQueue(queue);
-        marker.setAttempts(marker.getAttempts() + 1);
+        marker.setLeasedAt(deliverable); // the epoch also counts the offers
         // why it was deferred stays until it applies: visible through the backoff, and a
         // retry's wait is not counted as waiting for a worker
-        return new Offer(messageId, queue, delaySeconds);
+        return new Offer(messageId, queueName(workflow), delaySeconds);
     }
 
     private static boolean waitsForHandlers(TaskContinuation marker) {
@@ -423,35 +394,34 @@ public class NativeContinuationService {
 
     /** 1, 2, 4, ... seconds by how many times the continuation has been offered, capped. */
     private static int retryDelaySeconds(TaskContinuation marker) {
-        int doublings = Math.min(Math.max(marker.getAttempts() - 1, 0), 6);
+        int doublings = Math.min(Math.max((int) marker.getEpoch() - 1, 0), 6);
         return Math.min(1 << doublings, MAX_RETRY_DELAY_SECONDS);
     }
 
     /**
-     * The continuation queue of an execution: the shared queue of its code type, unless the
-     * workflow was started with task domains for the code type (or {@code *}), which are resolved
-     * as for any task: the first domain with an active poller, with the usual fallback.
+     * The continuation queue of an execution: the shared queue of its code type. Task domains do
+     * not apply to workflow code: any host of the code type may process any continuation.
      */
     public String queueName(WorkflowModel workflow) {
-        NativeState state = workflow.getNativeState();
-        String domain = null;
-        Map<String, String> taskToDomain = workflow.getTaskToDomain();
-        if (executionDAOFacade != null && taskToDomain != null) {
-            String domains = taskToDomain.getOrDefault(state.getCodeType(), taskToDomain.get("*"));
-            if (domains != null && !domains.isBlank()) {
-                long activeSince =
-                        System.currentTimeMillis()
-                                - properties.getActiveWorkerLastPollTimeout().toMillis();
-                domain =
-                        org.conductoross.conductor.core.execution.ExecutorUtils.activeDomain(
-                                domains.split(","),
-                                d ->
-                                        executionDAOFacade.getTaskPollDataByDomain(
-                                                state.getCodeType(), d),
-                                pollData -> pollData.getLastPollTime() > activeSince);
-            }
-        }
-        return QueueUtils.getQueueName(state.getCodeType(), domain, null, null);
+        return codeType(workflow);
+    }
+
+    /** The definition's {@code native} metadata, which the SDK registers with the workflow. */
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> nativeMetadata(WorkflowModel workflow) {
+        return (Map<String, Object>) workflow.getWorkflowDefinition().getMetadata().get("native");
+    }
+
+    /** The task type workers poll for the workflow's continuations: one per workflow version. */
+    public static String codeType(WorkflowModel workflow) {
+        WorkflowDef def = workflow.getWorkflowDefinition();
+        return def.getName() + ".v" + def.getVersion() + ".code";
+    }
+
+    /** How long a worker holds a continuation before it is offered again. */
+    private static long continuationTimeoutMillis(WorkflowModel workflow) {
+        Object seconds = nativeMetadata(workflow).get("continuationTimeoutSeconds");
+        return (seconds instanceof Number t ? t.longValue() : 30) * 1000L;
     }
 
     // ------------------------------------------------------------------ poll
@@ -482,30 +452,24 @@ public class NativeContinuationService {
                 task != null
                         ? task.getContinuation()
                         : syntheticMarker(workflow, laneOfSynthetic(messageId));
-        if (marker == null
-                || !marker.isLeased()
-                || !messageId.equals(state.getActiveContinuation())
-                || !queueName.equals(marker.getQueue())) {
-            // not what was offered: a stale wake-up, or a duplicate in another domain's queue
+        if (marker == null || !marker.isLeased() || !queueName.equals(queueName(workflow))) {
+            // not what was offered: a stale wake-up
             queueDAO.remove(queueName, messageId);
             return null;
         }
-        marker.setWorker(workerId); // in what is handed out; the completion records it
         TaskModel handed =
-                task != null ? task : syntheticTask(workflow, marker, messageId, queueName);
-        queueDAO.setUnackTimeout(
-                queueName, messageId, state.getContinuationTimeoutSeconds() * 1000L);
+                task != null ? task : syntheticTask(workflow, marker, messageId, workerId);
+        queueDAO.setUnackTimeout(queueName, messageId, continuationTimeoutMillis(workflow));
         return handed.toTask();
     }
 
     /** The task handed to a worker for a lane that has no task: bootstrap or handlers. */
     private TaskModel syntheticTask(
-            WorkflowModel workflow, TaskContinuation marker, String messageId, String queueName) {
-        NativeState state = workflow.getNativeState();
+            WorkflowModel workflow, TaskContinuation marker, String messageId, String workerId) {
         TaskModel task = new TaskModel();
         task.setTaskId(messageId);
-        task.setTaskType(state.getCodeType());
-        task.setTaskDefName(state.getCodeType());
+        task.setTaskType(codeType(workflow));
+        task.setTaskDefName(codeType(workflow));
         task.setReferenceTaskName(marker.getLane());
         task.setWorkflowInstanceId(workflow.getWorkflowId());
         task.setWorkflowType(workflow.getWorkflowName());
@@ -514,8 +478,7 @@ public class NativeContinuationService {
         task.setStatus(TaskModel.Status.IN_PROGRESS);
         task.setScheduledTime(marker.getQueuedAt());
         task.setStartTime(marker.getLeasedAt());
-        task.setWorkerId(marker.getWorker());
-        task.setDomain(queueDomain(queueName));
+        task.setWorkerId(workerId);
         task.setContinuation(marker);
         Map<String, Object> input = new HashMap<>();
         if (HANDLER_LANE.equals(marker.getLane()) && workflowMessageQueueDAO != null) {
@@ -531,14 +494,6 @@ public class NativeContinuationService {
         }
         task.setInputData(input);
         return task;
-    }
-
-    /**
-     * The domain of a continuation queue ({@code domain:codeType}), or null for the plain queue.
-     */
-    public static String queueDomain(String queueName) {
-        int colon = queueName == null ? -1 : queueName.indexOf(':');
-        return colon < 0 ? null : queueName.substring(0, colon);
     }
 
     // ------------------------------------------------------------------ complete
@@ -582,22 +537,14 @@ public class NativeContinuationService {
         }
         long epoch = out.get(OUTPUT_EPOCH) instanceof Number e ? e.longValue() : -1;
         int n = out.get(OUTPUT_N) instanceof Number number ? number.intValue() : -1;
-        if (!marker.isLeased()
-                || marker.getN() != n
-                || marker.getEpoch() != epoch
-                // the lease ran out and another continuation has run since: this result was
-                // computed without it, so the continuation runs again
-                || !messageId.equals(state.getActiveContinuation())) {
+        if (!marker.isLeased() || marker.getN() != n || marker.getEpoch() != epoch) {
             Monitors.recordNativeStaleCompletion(workflow.getWorkflowName());
             throw new ConflictException(
                     "Continuation %s#%d of workflow %s is not leased at epoch %d (%s)",
                     marker.getLane(), n, workflow.getWorkflowId(), epoch, marker);
         }
-        state.setActiveContinuation(null); // whatever the outcome, the next one may run
-        state.setActiveUntil(0);
-        marker.setWorker(result.getWorkerId()); // the poll that handed it out wrote nothing
         Completion completion = new Completion();
-        completion.ackQueue = marker.getQueue();
+        completion.ackQueue = queueName(workflow);
         completion.ackId = messageId;
         completion.handed = awaited;
         String workflowName = workflow.getWorkflowName();
@@ -664,7 +611,7 @@ public class NativeContinuationService {
                         definition,
                         fragment,
                         runs,
-                        state.getCodeType(),
+                        codeType(workflow),
                         thrownRef(done, error, marker));
             }
             checkVariablesSize(workflow, changedVariables);
@@ -685,28 +632,22 @@ public class NativeContinuationService {
                 }
             }
             workflow.getVariables().putAll(changedVariables);
+            // every handled message, by the sender's id: an update's reply, or just when it ran
             if (out.get(OUTPUT_REPLIES) instanceof Map<?, ?> replies) {
                 state.setReplies(objectMapper.convertValue(replies, MAP_TYPE));
             }
-            if (out.get(OUTPUT_SEEN) instanceof List<?> seen) {
-                state.setSeen(objectMapper.convertValue(seen, STRING_LIST_TYPE));
-            }
             release(workflow, out, completion);
+            long appliedAt = appliedNow(workflow);
             marker.setState(TaskContinuation.APPLIED);
-            marker.setStep(state.getStep() + 1);
-            state.setStep(marker.getStep());
             marker.setRecorded(mapOrEmpty(out.get(OUTPUT_RECORDED)));
             marker.setResumedWith(mapOrEmpty(out.get(OUTPUT_RESUMED_WITH)));
             marker.setDone(done);
             marker.setResult(mapOrNull(out.get(OUTPUT_RESULT)));
-            marker.setError(error);
-            marker.setAppliedAt(System.currentTimeMillis());
+            marker.setAppliedAt(appliedAt);
             marker.setDeferred(null);
             if (HANDLER_LANE.equals(marker.getLane())) {
                 // the handler lane runs once per batch of messages; it is never done
-                TaskContinuation next = new TaskContinuation(HANDLER_LANE, marker.getN() + 1);
-                next.setStep(marker.getStep());
-                state.setHandlers(next);
+                state.setHandlers(new TaskContinuation(HANDLER_LANE, marker.getN() + 1));
             }
             if (awaited != null) {
                 // re-evaluated by the decider, which finds the appended entries after it
@@ -719,6 +660,8 @@ public class NativeContinuationService {
             if (done && error != null && MAIN_LANE.equals(marker.getLane())) {
                 completion.finished = true;
                 completion.reason = String.valueOf(error.get("message"));
+                // saved with the marker, so the run reads as failed before it is ended
+                workflow.setReasonForIncompletion(completion.reason);
                 completion.causeTask = causeTask(workflow, error.get("ref"), completion.reason);
             }
             LOGGER.debug(
@@ -736,8 +679,8 @@ public class NativeContinuationService {
             Monitors.recordNativeFragmentRejected(workflowName, e.reason);
             marker.setState(TaskContinuation.APPLIED);
             marker.setDone(true);
-            marker.setError(Map.of("message", e.getMessage()));
-            marker.setAppliedAt(System.currentTimeMillis());
+            workflow.setReasonForIncompletion(e.getMessage());
+            marker.setAppliedAt(appliedNow(workflow));
             if (awaited != null) {
                 completion.touchedTasks.add(awaited);
             }
@@ -811,7 +754,6 @@ public class NativeContinuationService {
             marker.setQueuedAt(now); // while held it stays at the start of the hold
         }
         marker.setDeferred(why);
-        marker.setWorker(null);
         if (completion.handed != null) {
             completion.touchedTasks.add(completion.handed);
         }
@@ -1027,11 +969,10 @@ public class NativeContinuationService {
      * again. Should one have a task, only the mark and its previews go.
      */
     public void undoThrow(WorkflowModel workflow, TaskModel thrown) {
-        LastMain last = lastMain(workflow);
-        String key =
-                last != null && last.marker().isDone() && last.marker().hasError()
-                        ? markerKey(last.marker())
-                        : null;
+        // the continuation that threw is the one that drew the mark
+        WorkflowTask mark =
+                workflow.getWorkflowDefinition().getTaskByRefName(thrown.getReferenceTaskName());
+        Object key = mark == null ? null : mark.getMetadata().get(APPENDED_BY);
         Set<String> refs = new HashSet<>();
         for (WorkflowTask entry : workflow.getWorkflowDefinition().collectTasks()) {
             if (key != null && key.equals(entry.getMetadata().get(APPENDED_BY))) {
@@ -1065,10 +1006,25 @@ public class NativeContinuationService {
         marker.setQueuedAt(System.currentTimeMillis());
         marker.setDeferred("retry");
         marker.setDone(false);
-        marker.setError(null);
-        workflow.getNativeState().setActiveContinuation(null);
-        workflow.getNativeState().setActiveUntil(0);
         return last;
+    }
+
+    /**
+     * When a continuation applies: now, and always after the run's last applied continuation, so
+     * these times are the order replay follows. Applies are serialized by the run's lock.
+     */
+    private static long appliedNow(WorkflowModel workflow) {
+        long latest = 0;
+        for (TaskModel task : workflow.getTasks()) {
+            if (task.getContinuation() != null) {
+                latest = Math.max(latest, task.getContinuation().getAppliedAt());
+            }
+        }
+        TaskContinuation bootstrap = workflow.getNativeState().getBootstrap();
+        if (bootstrap != null) {
+            latest = Math.max(latest, bootstrap.getAppliedAt());
+        }
+        return Math.max(System.currentTimeMillis(), latest + 1);
     }
 
     private static String markerKey(TaskContinuation marker) {

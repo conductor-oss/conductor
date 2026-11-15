@@ -18,6 +18,8 @@ import java.util.Map;
 import com.netflix.conductor.annotations.protogen.ProtoField;
 import com.netflix.conductor.annotations.protogen.ProtoMessage;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 /**
  * The continuation of a native (code-defined) workflow that runs when this task finishes.
  *
@@ -49,44 +51,29 @@ public class TaskContinuation {
     private long epoch;
 
     @ProtoField(id = 5)
-    private String worker;
-
-    @ProtoField(id = 6)
-    private String queue;
-
-    @ProtoField(id = 7)
     private long queuedAt;
 
-    @ProtoField(id = 8)
+    @ProtoField(id = 6)
     private long leasedAt;
 
-    @ProtoField(id = 9)
+    @ProtoField(id = 7)
     private long appliedAt;
 
-    @ProtoField(id = 10)
-    private int attempts;
-
-    @ProtoField(id = 11)
+    @ProtoField(id = 8)
     private String deferred;
 
-    @ProtoField(id = 12)
-    private long step;
-
-    @ProtoField(id = 13)
+    @ProtoField(id = 9)
     private Map<String, Object> recorded = new HashMap<>();
 
-    @ProtoField(id = 14)
+    @ProtoField(id = 10)
     private Map<String, Object> resumedWith = new HashMap<>();
 
-    @ProtoField(id = 15)
+    @ProtoField(id = 11)
     private boolean done;
 
-    // never null: an empty map is no result, or no error (the generated proto mapper copies them)
-    @ProtoField(id = 16)
+    // never null: an empty map is no result (the generated proto mapper copies it)
+    @ProtoField(id = 12)
     private Map<String, Object> result = new HashMap<>();
-
-    @ProtoField(id = 17)
-    private Map<String, Object> error = new HashMap<>();
 
     public TaskContinuation() {}
 
@@ -100,18 +87,22 @@ public class TaskContinuation {
         return new TaskContinuation(lane, n);
     }
 
+    @JsonIgnore // derived from state, not stored
     public boolean isWaiting() {
         return WAITING.equals(state);
     }
 
+    @JsonIgnore
     public boolean isRunnable() {
         return RUNNABLE.equals(state);
     }
 
+    @JsonIgnore
     public boolean isLeased() {
         return LEASED.equals(state);
     }
 
+    @JsonIgnore
     public boolean isApplied() {
         return APPLIED.equals(state);
     }
@@ -148,22 +139,6 @@ public class TaskContinuation {
         this.epoch = epoch;
     }
 
-    public String getWorker() {
-        return worker;
-    }
-
-    public void setWorker(String worker) {
-        this.worker = worker;
-    }
-
-    public String getQueue() {
-        return queue;
-    }
-
-    public void setQueue(String queue) {
-        this.queue = queue;
-    }
-
     public long getQueuedAt() {
         return queuedAt;
     }
@@ -188,28 +163,12 @@ public class TaskContinuation {
         this.appliedAt = appliedAt;
     }
 
-    public int getAttempts() {
-        return attempts;
-    }
-
-    public void setAttempts(int attempts) {
-        this.attempts = attempts;
-    }
-
     public String getDeferred() {
         return deferred;
     }
 
     public void setDeferred(String deferred) {
         this.deferred = deferred;
-    }
-
-    public long getStep() {
-        return step;
-    }
-
-    public void setStep(long step) {
-        this.step = step;
     }
 
     public Map<String, Object> getRecorded() {
@@ -242,19 +201,6 @@ public class TaskContinuation {
 
     public void setResult(Map<String, Object> result) {
         this.result = result == null ? new HashMap<>() : result;
-    }
-
-    public Map<String, Object> getError() {
-        return error;
-    }
-
-    /** Whether the code raised: the continuation ended its lane with an error. */
-    public boolean hasError() {
-        return !error.isEmpty();
-    }
-
-    public void setError(Map<String, Object> error) {
-        this.error = error == null ? new HashMap<>() : error;
     }
 
     @Override

@@ -12,9 +12,7 @@
  */
 package com.netflix.conductor.common.run;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import com.netflix.conductor.annotations.protogen.ProtoField;
@@ -24,85 +22,22 @@ import com.netflix.conductor.common.metadata.tasks.TaskContinuation;
 /**
  * Engine state of a native (code-defined) workflow that has no task to live on. Everything else
  * about the code's progress is on the tasks it paused on ({@link TaskContinuation}), so this stays
- * small however long the execution runs.
+ * small however long the execution runs. The code type and the continuation timeout are the
+ * definition's {@code metadata.native}, which the execution carries.
  */
 @ProtoMessage
 public class NativeState {
 
-    @ProtoField(id = 2)
-    private String codeType;
-
-    @ProtoField(id = 3)
-    private int continuationTimeoutSeconds;
-
-    @ProtoField(id = 4)
-    private long step;
-
     /** The main lane's first continuation, which runs before any task exists. */
-    @ProtoField(id = 5)
+    @ProtoField(id = 1)
     private TaskContinuation bootstrap;
 
     /** The handler lane: signal and update handlers schedule no tasks. Null without handlers. */
-    @ProtoField(id = 6)
+    @ProtoField(id = 2)
     private TaskContinuation handlers;
 
-    @ProtoField(id = 7)
+    @ProtoField(id = 3)
     private Map<String, Object> replies = new HashMap<>();
-
-    @ProtoField(id = 8)
-    private List<String> seen = new ArrayList<>();
-
-    /**
-     * The continuation (queue message id) leased right now. One continuation of an execution runs
-     * at a time, on any host: reference names and recorded values are allocated from what its
-     * replay saw, so two running at once could pick the same ones.
-     */
-    @ProtoField(id = 9)
-    private String activeContinuation;
-
-    /** When {@link #activeContinuation}'s lease ends, in epoch millis. */
-    @ProtoField(id = 10)
-    private long activeUntil;
-
-    public String getActiveContinuation() {
-        return activeContinuation;
-    }
-
-    public void setActiveContinuation(String activeContinuation) {
-        this.activeContinuation = activeContinuation;
-    }
-
-    public long getActiveUntil() {
-        return activeUntil;
-    }
-
-    public void setActiveUntil(long activeUntil) {
-        this.activeUntil = activeUntil;
-    }
-
-    public String getCodeType() {
-        return codeType;
-    }
-
-    public void setCodeType(String codeType) {
-        this.codeType = codeType;
-    }
-
-    public int getContinuationTimeoutSeconds() {
-        return continuationTimeoutSeconds;
-    }
-
-    public void setContinuationTimeoutSeconds(int continuationTimeoutSeconds) {
-        this.continuationTimeoutSeconds = continuationTimeoutSeconds;
-    }
-
-    public long getStep() {
-        return step;
-    }
-
-    public void setStep(long step) {
-        this.step = step;
-    }
 
     public TaskContinuation getBootstrap() {
         return bootstrap;
@@ -126,13 +61,5 @@ public class NativeState {
 
     public void setReplies(Map<String, Object> replies) {
         this.replies = replies;
-    }
-
-    public List<String> getSeen() {
-        return seen;
-    }
-
-    public void setSeen(List<String> seen) {
-        this.seen = seen;
     }
 }

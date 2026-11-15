@@ -31,12 +31,12 @@ What went away, and where it went:
 | Protocol 1 | Protocol 2 |
 |---|---|
 | `CODE` task per pause: queued, leased, timed out, retried, owner-routed as a worker task | a **continuation marker on the task the code paused on**, and one queue message per wake-up; the queue's lease is the continuation lease. Polled and completed with the regular task poll and update |
-| `CODE` output: `fragment`, `applied`, `step`, `resumedWith`, `variables`, `owner` | the marker's **record** once applied: `step`, recorded values, `resumedWith`, the lane's result or error |
+| `CODE` output: `fragment`, `applied`, `step`, `resumedWith`, `variables`, `owner` | the marker's **record** once applied: `appliedAt` (its order), recorded values, `resumedWith`, the lane's result or error |
 | `RECORD` task per `once`, `now`, `random` | `recorded` in the record of the continuation that produced them |
 | `TERMINATE` with the result or the failure | the engine completes or fails the workflow from the main lane's final record |
 | FORK `lanes` + DO_WHILE `handlers` + PULL_WORKFLOW_MESSAGES + handler `CODE` + JOIN `lanes_join` | a handler marker on the workflow (handlers schedule no tasks); a message push wakes it; the poll claims the messages |
-| `__replies`, `__seen` in workflow variables | `replies`, `seen` on the workflow's native section; variables hold only `@Variable` fields |
-| `taskToDomain[<codeType>]` owner chain | as planned, `owner` on the native section; since removed: the shared queue, or the start's `taskToDomain` (section 9) |
+| `__replies`, `__seen` in workflow variables | `replies` on the workflow's native section (every handled message); variables hold only `@Variable` fields |
+| `taskToDomain[<codeType>]` owner chain | as planned, `owner` on the native section; since removed: the shared queue of the code type, whatever the start's `taskToDomain` (section 9) |
 | hidden-task fold in the UI | nothing to fold; the task panel shows a task's continuation |
 
 What stays a task because it is the user's structure, exactly as a JSON author would write it:
@@ -55,8 +55,8 @@ on the marker, not a nested object as this plan first drew it:
 ```json
 "continuation": {
   "lane": "main", "n": 3, "state": "LEASED",
-  "epoch": 2, "worker": "w2", "queue": "w2:kitchensink.v1.code",
-  "queuedAt": 1794128769900, "leasedAt": 1794128770000, "attempts": 2, "deferred": null
+  "epoch": 2,
+  "queuedAt": 1794128769900, "leasedAt": 1794128770000, "deferred": null
 }
 ```
 
@@ -66,11 +66,11 @@ server applies only what differs from it; a replay restores the lane's fields to
 
 ```json
 "continuation": {
-  "lane": "main", "n": 3, "state": "APPLIED", "step": 7,
+  "lane": "main", "n": 3, "state": "APPLIED", "appliedAt": 1794128770010,
   "recorded": {"now": {"value": "2026-11-08T…", "type": "java.time.Instant"}},
   "resumedWith": {"stage": "new"},
   "done": false, "result": null, "error": null,
-  "queuedAt": 1794128769900, "leasedAt": 1794128769940, "appliedAt": 1794128770010, "attempts": 1
+  "queuedAt": 1794128769900, "leasedAt": 1794128769940, "appliedAt": 1794128770010
 }
 ```
 
@@ -100,15 +100,10 @@ well under 100 bytes to its task.
 
 ```json
 "nativeState": {
-  "protocol": 2,
-  "codeType": "kitchensink.v1.code",
-  "continuationTimeoutSeconds": 30,
-  "step": 7,
-  "bootstrap": {"lane": "main", "n": 1, "state": "APPLIED", "step": 1,
+  "bootstrap": {"lane": "main", "n": 1, "state": "APPLIED", "appliedAt": 1794128766110,
                 "recorded": {"runId": {"value": "ks-…", "type": "java.lang.String"}}, "resumedWith": {}, "done": false},
-  "handlers": {"lane": "handlers", "n": 8, "state": "WAITING", "step": 6},
-  "replies": {"<message id>": {"value": 1, "at": 1794128766000}},
-  "seen": ["<message id>", "…"]
+  "handlers": {"lane": "handlers", "n": 8, "state": "WAITING"},
+  "replies": {"<message id>": {"value": 1, "at": 1794128766000}}
 }
 ```
 
@@ -118,9 +113,10 @@ well under 100 bytes to its task.
   replayed, so only the live state is kept: whether a run is due or leased, and its number, which
   is the ordinal the message-queue claim fence uses. After a run is applied the server installs a
   fresh `WAITING` marker for `n + 1`.
-- `step` is the counter that orders applied continuations across lanes for replay, as protocol 1's
-  `step` output did.
-- `replies` and `seen` keep protocol 1's bounds (10 minutes and 500; last 500).
+- Applied markers' `appliedAt` orders them across lanes for replay, as protocol 1's `step` output
+  did: the server keeps it increasing within a run.
+- `replies` holds every handled message (10 minutes, at most 500), which also de-duplicates a
+  retried send; protocol 1 kept the ids apart, in `seen`.
 
 The definition in the workflow row still grows by one entry per call, as it did under protocol 1, which is
 why the entry cap and the `continueAsNew` gap remain. A workflow with 10,000 task calls has
@@ -151,11 +147,11 @@ No new endpoint. Workers poll continuations with the task batch poll they use fo
 `GET /api/tasks/poll/batch/{codeType}?workerid=&domain=&count=&timeout=`
 
 `codeType` (`<workflow>.v<version>.code`) names the continuation queue, as it named the CODE
-task queue under protocol 1; the queue is `codeType` plus the domain, like any task queue. The SDK keeps
-polling no domain and, when `buildId` is set, that domain, with `TaskClient.batchPollTasksInDomain`.
+task queue under protocol 1. Task domains do not apply: every host of the code polls the shared
+queue, with the SDK's `TaskRunner`, as any worker polls its task type.
 
 `ExecutionService.poll` already pops ids from that queue and records poll data for
-`(codeType, domain, workerId)`, which is what `ExecutorUtils.activeDomain` reads when the start named domains.
+`(codeType, workerId)`.
 It gains one branch, taken before its "terminal task: drop the message" check:
 
 - The message id is the awaited task's id (its task carries a continuation marker), or
@@ -205,7 +201,7 @@ No new endpoint. A continuation finishes with the task update every worker uses:
     "variables": {"stage": "classic"}, "resumedWith": {"stage": "new"},
     "done": false, "result": null, "error": null,
     "releases": [ {"ref": "condition", "output": {"satisfied": true}} ],
-    "replies": {"…": "…"}, "seen": ["…"]
+    "replies": {"…": "…"}
   }
 }
 ```
@@ -219,7 +215,7 @@ continuation completion and goes to `completeContinuation`; any other result is 
 result, as when the worker that ran `greet` reports it. The ordinary path never runs for a
 completion, so the awaited task's status stays what the worker that executed it set. The
 update-v2 variant is used because it returns a task: the server answers with a stand-in of the
-code type in the completion's domain, so the worker's next continuation comes back in the same
+code type, so the worker's next continuation comes back in the same
 request. (The plan had the SDK read the marker's new state from the response; it does not need
 to.)
 
@@ -247,10 +243,11 @@ to.)
    wait for yet arrive with a `metadata.detached` JOIN, and a later wait is a JOIN with
    `metadata.waitFor`.
 5. **Apply the rest**: variables (only those changed since `resumedWith`), `replies`
-   (pruned) and `seen` (bounded), and `releases`, which complete the named WAIT tasks with the
+   (pruned), and `releases`, which complete the named WAIT tasks with the
    given output in the same locked write.
-6. **Write the record**: the marker becomes `APPLIED` with `step = ++nativeState.step`,
-   `recorded`, `resumedWith`, `done`, `result` or `error`, and `appliedAt`.
+6. **Write the record**: the marker becomes `APPLIED` with `appliedAt` (increasing within the run),
+   `recorded`, `resumedWith`, `done`, `result`, and `appliedAt`; an exception is the run's
+   `reasonForIncompletion`.
 7. **Make the decider schedule the fragment**: mark the awaited task `executed = false`. The
    decider re-evaluates it and `getNextTask` finds the appended entries after it. For the
    bootstrap, the definition had no tasks, and the decider's start path schedules the first entry.
@@ -279,7 +276,7 @@ complete; every task being terminal while a marker is runnable or leased is not.
 - The message endpoint pushes the message under the execution lock, as now, then marks the
   handler marker `RUNNABLE` and pushes its wake-up (`pushIfNotExists`). No decide, no task.
 - The handler continuation receives the claimed messages in the poll response, applies them to an
-  instance restored from the variables, and completes with the new variables, `replies`, `seen`,
+  instance restored from the variables, and completes with the new variables, `replies`
   and `releases` for every `awaitCondition` that now holds. Under protocol 1 the worker completed those
   WAITs with separate task updates after a full extra replay; the completion carries them instead.
 - A class without handlers has no handler marker. The endpoint still queues the message and
@@ -352,27 +349,28 @@ or queued continuation is the running work.
 
 Internals:
 
-- `Registration.skeleton`: `metadata.native` with `sdk`, `protocol: 2`, `class`, `method`,
-  `codeType`, `continuationTimeoutSeconds`, `handlers` (a boolean) and, added later, `signals`,
-  `updates`, `queries`, `discovered` (and `discoveryError`); `inputParameters`; and `tasks` holding
+- `Registration.skeleton`: `metadata.native` with `class`, `method`, `continuationTimeoutSeconds`
+  and `handlers` (a boolean); `inputParameters`; and `tasks` holding
   the graph `Replayer.discover` found (was `tasks: []` when this plan landed; 02 §2). No task
   definition for the code type. `WorkflowDef` accepts an empty task list for a native definition,
   and `NativeContinuationService.initialize` empties the execution's copy either way.
-- `Workers.poll`: unchanged, `batchPollTasksInDomain(codeType, domain, workerId, 10, 500)` on
-  the shared queue and, when set, the build's domain. `process(Task)`: the lane, number and epoch come from
+- Polling: each hosted workflow is a `Worker` of its code type on a `TaskRunner` (virtual threads,
+  update-v2, no domains), with `threadCount`, `pollingInterval` and `pollTimeout` from
+  `conductor.workflow.<name>.*`, `conductor.workflow.all.*` or `@Workflow` (20, 100 ms, 500 ms).
+  `process(Task)` returns the completion: the lane, number and epoch come from
   `task.continuation` (the synthetic tasks carry the marker too); the handler messages from
   `task.inputData.messages`. Build the `Execution` from the workflow JSON with its tasks;
   segments are the tasks whose marker is `APPLIED` (latest attempt per reference name) plus
-  `bootstrap`, ordered by `step`; each segment's `resumedWith` and `recorded` are read from its
-  marker; lane results and errors from the lane's last record. Complete with
-  `updateTaskV2(TaskResult)`: a `4xx` (`409` means stale) is final, stop; a `5xx` or a lost
-  connection is retried four times, 250 ms apart and growing. The SDK's vendored `Task` and
+  `bootstrap`, ordered by `appliedAt`; each segment's `resumedWith` and `recorded` are read from its
+  marker; lane results and errors from the lane's last record. `TaskRunner` sends it with
+  update-v2: a `4xx` other than 408 and 429 (`409` means stale) is final; anything else is retried
+  three times, 2 s apart. The SDK's vendored `Task` and
   `Workflow` classes gain `continuation` and `nativeState`.
 - `Replayer`: no `codeEntry`, `terminate` or RECORD entries. A pause puts
   `metadata.continuation` on the entry it pauses on (`Entries.continuation`); `once`, `now` and
   `random` report `recorded`; the lane's end reports `done` with `result` or `error`.
-  `processHandlers` reports `releases` instead of posting task updates, and sends `replies` and
-  `seen` in the completion.
+  `processHandlers` reports `releases` instead of posting task updates, and sends `replies` (every
+  handled message) in the completion.
 - `Entries.metadata` keeps `lane` and `site`; pause entries gain `continuation`. The fork entry
   carries nothing extra.
 - `Execution.TaskView.isCode/lane/continuation/step` are replaced by `TaskView.marker`
@@ -406,7 +404,7 @@ Internals:
 | An acknowledged signal is never lost | push under the lock; completion deferred while messages are queued or the handler marker is active; claims fenced by `n` |
 | Recorded values never change | `recorded` is written with the continuation that produced them, in one write |
 | Replay reads only applied state | only `APPLIED` markers are segments, so the "unapplied completion" replay bug cannot recur |
-| Failover time | lease (30 s default) plus queue redelivery granularity (up to 60 s on Postgres); a wake-up queued for a domain whose workers died is re-pushed by the next decide, which is at most `workflowOffsetTimeout` (30 s) plus the sweeper's pass away while a marker is `RUNNABLE` or `LEASED`, because `WorkflowExecutorOps.decide` caps the postpone then |
+| Failover time | lease (30 s default) plus queue redelivery granularity (up to 60 s on Postgres); a lost wake-up is re-pushed by the next decide, which is at most `workflowOffsetTimeout` (30 s) plus the sweeper's pass away while a marker is `RUNNABLE` or `LEASED`, because `WorkflowExecutorOps.decide` caps the postpone then |
 
 ## 6. Performance
 
@@ -471,7 +469,7 @@ Order followed: 1, 2 and 3 together (a completion with any protocol other than 2
 | Plan | Implementation |
 |---|---|
 | `native` field on the workflow, `@ProtoField(id = 27)` | `nativeState`; JSON only, no `@ProtoField` on it or on `Task.continuation` |
-| nested `lease: {epoch, worker, since}` on the marker | flat `epoch`, `worker`, `queue`, `leasedAt`, `attempts`, `deferred` |
+| nested `lease: {epoch, worker, since}` on the marker | flat `epoch`, `leasedAt`, `attempts`, `deferred`; the queue is always the code type's, and no worker is kept |
 | `delta` against the lane's previous record | `resumedWith`, the variables the continuation started from |
 | `lane` in the completion output | not sent; the server reads the lane from the marker |
 | `metadata.lanes` on the fork entry | not needed; each entry carries `metadata.lane` |
@@ -486,8 +484,8 @@ Order followed: 1, 2 and 3 together (a completion with any protocol other than 2
 | a fragment always goes after the awaited task | the first entry may name another anchor in `metadata.after` (`NativeContinuationService.runs`, `insertAfter` at any depth); an anchor that names no entry is a rejected fragment |
 | the sweeper's decide may postpone a native workflow like any other, up to `maxPostponeDurationSeconds` | capped at `workflowOffsetTimeout` while a marker is `RUNNABLE` or `LEASED` (`needsPromptRevisit`), and always written to replace a longer earlier postpone, so `repairAndWake` re-routes a wake-up stuck in a dead domain's queue; found by the chaos run under the earlier per-worker routing |
 | the registered skeleton has `tasks: []`; the definition view comes later from an observed graph | the registered definition carries the graph discovered from the code (`Registration.skeleton` → `Replayer.discover`: the compiled method read by `CodeReader`, plain reference names, no `metadata.preview`, inline task definitions), plus `inputParameters` and `metadata.native.signals/updates/queries/discovered`; `NativeContinuationService.initialize` clears those tasks from the execution's copy at start and restart, so the rule above still holds: an execution contains exactly the tasks the code asked for. New public API: `Conductor.register(Class<?>...)` and `Conductor.definitions(Class<?>)` |
-| continuations of one execution may run concurrently, one lease per marker | one per execution at a time across hosts (`nativeState.activeContinuation`, `activeUntil`) |
-| `owner` on the native section and in every completion; workers poll their worker id, their build id and no domain; a host runs an execution's continuations one at a time | all removed: `NativeState.owner`, the `owner` completion output (`OUTPUT_OWNER`), the worker-id poller and the SDK's per-execution `ReentrantLock`. `queueName` uses the workflow's `taskToDomain` for the code type, else `*`, else the shared queue, resolved by `ExecutorUtils.activeDomain`; `Workers` polls the shared queue plus `buildId` as a domain when set; the server's `activeContinuation` slot is what serializes an execution |
+| continuations of one execution may run concurrently, one lease per marker | one per execution at a time across hosts (the one `LEASED` marker) |
+| `owner` on the native section and in every completion; workers poll their worker id, their build id and no domain; a host runs an execution's continuations one at a time | all removed: `NativeState.owner`, the `owner` completion output (`OUTPUT_OWNER`), the worker-id poller and the SDK's per-execution `ReentrantLock`. `queueName` is the shared queue of the code type (task domains do not apply), which `Workers` polls; the one `LEASED` marker is the slot that serializes an execution |
 | a deferred completion is re-queued at once | a main lane that returned while the handler lane has work is deferred with `waiting for handlers: ` and not re-queued (`Completion.waitsForHandlers`); `repairAndWake` skips it while the handler marker is `RUNNABLE` or `LEASED` and wakes it afterwards |
 | a failed continuation's result needs no `protocol` | every continuation result carries `protocol`, or it lands on the task the code paused on; found as a bench failure |
 | a diverged continuation fails the workflow | the execution is held: the marker is deferred with `diverged: ...` and retried with backoff up to 60 s |

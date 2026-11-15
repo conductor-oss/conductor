@@ -91,30 +91,21 @@ export interface TaskContinuation {
   n: number;
   state: "WAITING" | "RUNNABLE" | "LEASED" | "APPLIED";
   epoch?: number;
-  worker?: string;
   queuedAt?: number;
   leasedAt?: number;
   appliedAt?: number;
-  attempts?: number;
   deferred?: string;
-  queue?: string;
-  step?: number;
   done?: boolean;
   recorded?: Record<string, unknown>;
   resumedWith?: Record<string, unknown>;
   result?: Record<string, unknown>;
-  error?: Record<string, unknown>;
 }
 
 /** The engine's state of a native (code-first) workflow execution. */
 export interface NativeState {
-  codeType?: string;
-  continuationTimeoutSeconds?: number;
-  step?: number;
   bootstrap?: TaskContinuation;
   handlers?: TaskContinuation;
   replies?: Record<string, unknown>;
-  seen?: string[];
 }
 
 // @deprecated use WorkflowExecution instead

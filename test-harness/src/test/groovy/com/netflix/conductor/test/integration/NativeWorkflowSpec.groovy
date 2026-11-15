@@ -72,7 +72,7 @@ class NativeWorkflowSpec extends AbstractSpecification {
             wf.tasks[0].continuation.state == TaskContinuation.WAITING
             wf.variables.stage == 'classic'
             wf.nativeState.bootstrap.state == TaskContinuation.APPLIED
-            wf.nativeState.bootstrap.step == 1
+            wf.nativeState.bootstrap.appliedAt > 0
         }
 
         when: 'the task completes'
@@ -85,7 +85,6 @@ class NativeWorkflowSpec extends AbstractSpecification {
         next.referenceTaskName == 'integration_task_1'
         next.status == Task.Status.COMPLETED
         next.outputData.result == 'ok'
-        next.continuation.queue == CODE_TYPE // the shared queue: any worker of the code
         next.continuation.n == 2
         next.continuation.state == TaskContinuation.LEASED
 

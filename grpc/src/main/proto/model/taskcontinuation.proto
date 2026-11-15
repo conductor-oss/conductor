@@ -12,17 +12,12 @@ message TaskContinuation {
     int32 n = 2;
     string state = 3;
     int64 epoch = 4;
-    string worker = 5;
-    string queue = 6;
-    int64 queued_at = 7;
-    int64 leased_at = 8;
-    int64 applied_at = 9;
-    int32 attempts = 10;
-    string deferred = 11;
-    int64 step = 12;
-    map<string, google.protobuf.Value> recorded = 13;
-    map<string, google.protobuf.Value> resumed_with = 14;
-    bool done = 15;
-    map<string, google.protobuf.Value> result = 16;
-    map<string, google.protobuf.Value> error = 17;
+    int64 queued_at = 5;
+    int64 leased_at = 6;
+    int64 applied_at = 7;
+    string deferred = 8;
+    map<string, google.protobuf.Value> recorded = 9;
+    map<string, google.protobuf.Value> resumed_with = 10;
+    bool done = 11;
+    map<string, google.protobuf.Value> result = 12;
 }

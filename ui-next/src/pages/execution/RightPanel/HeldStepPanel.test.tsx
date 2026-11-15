@@ -8,10 +8,15 @@ const execution = (status: string, deferred?: string) =>
     status,
     workflowName: "orders",
     workflowVersion: 3,
+    workflowDefinition: {
+      name: "orders",
+      version: 3,
+      metadata: { native: {} },
+    },
     tasks: [
       {
         referenceTaskName: "sleep",
-        continuation: { attempts: 5, queue: "orders.v3.code", deferred },
+        continuation: { epoch: 5, deferred },
       },
     ],
   }) as unknown as WorkflowExecution;

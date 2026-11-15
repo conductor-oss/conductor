@@ -436,7 +436,6 @@ public class TestWorkflowExecutor {
         workflow.setStatus(WorkflowModel.Status.RUNNING);
         workflow.setCreateTime(System.currentTimeMillis());
         workflow.setNativeState(new com.netflix.conductor.common.run.NativeState());
-        workflow.getNativeState().setCodeType("native-postpone.v1.code");
         TaskModel task = new TaskModel();
         task.setTaskId("t0-id");
         task.setReferenceTaskName("t0");
@@ -484,8 +483,6 @@ public class TestWorkflowExecutor {
         workflow.setStatus(WorkflowModel.Status.RUNNING);
         workflow.setCreateTime(System.currentTimeMillis());
         workflow.setNativeState(new com.netflix.conductor.common.run.NativeState());
-        workflow.getNativeState().setCodeType("native-order.v1.code");
-        workflow.getNativeState().setActiveContinuation("t0-id");
         TaskModel awaited = new TaskModel();
         awaited.setTaskId("t0-id");
         awaited.setReferenceTaskName("t0");
@@ -498,7 +495,6 @@ public class TestWorkflowExecutor {
                 new com.netflix.conductor.common.metadata.tasks.TaskContinuation("main", 2);
         marker.setState(com.netflix.conductor.common.metadata.tasks.TaskContinuation.LEASED);
         marker.setEpoch(4);
-        marker.setQueue("native-order.v1.code:w1");
         awaited.setContinuation(marker);
         workflow.getTasks().add(awaited);
 
@@ -559,7 +555,7 @@ public class TestWorkflowExecutor {
                 workflow.getTasks().stream().anyMatch(t -> "t1".equals(t.getReferenceTaskName())));
         assertEquals(
                 TaskModel.Status.COMPLETED, awaited.getStatus()); // the task's own result stands
-        verify(queueDAO).remove("native-order.v1.code:w1", "t0-id");
+        verify(queueDAO).remove("native-order.v1.code", "t0-id");
     }
 
     /** A native workflow whose code paused on t0, with t0's marker in {@code state}. */
@@ -577,8 +573,6 @@ public class TestWorkflowExecutor {
         workflow.setWorkflowId("native-route-1");
         workflow.setStatus(WorkflowModel.Status.RUNNING);
         workflow.setNativeState(new com.netflix.conductor.common.run.NativeState());
-        workflow.getNativeState().setCodeType("native-route.v1.code");
-        workflow.getNativeState().setActiveContinuation("t0-id");
         TaskModel t0 = taskOf(entry, "t0", 1);
         t0.setTaskId("t0-id");
         t0.setWorkflowInstanceId("native-route-1");
@@ -586,7 +580,6 @@ public class TestWorkflowExecutor {
         TaskContinuation marker = new TaskContinuation("main", 2);
         marker.setState(state);
         marker.setEpoch(4);
-        marker.setQueue("native-route.v1.code");
         t0.setContinuation(marker);
         workflow.getTasks().add(t0);
         when(executionLockService.acquireLock(anyString())).thenReturn(true);
@@ -2551,7 +2544,6 @@ public class TestWorkflowExecutor {
         workflow.setStatus(WorkflowModel.Status.COMPLETED);
         workflow.setCreateTime(System.currentTimeMillis());
         workflow.setNativeState(new com.netflix.conductor.common.run.NativeState());
-        workflow.getNativeState().setCodeType("native-rerun.v1.code");
         TaskModel forkTask = taskOf(fork, TaskType.TASK_TYPE_FORK, 1);
         TaskModel aTask = taskOf(a, "a", 2);
         TaskModel joinTask = taskOf(join, TaskType.TASK_TYPE_JOIN, 3);
@@ -2586,7 +2578,7 @@ public class TestWorkflowExecutor {
         assertEquals(List.of(a), workflow.getTasks());
         assertEquals(WorkflowModel.Status.RUNNING, workflow.getStatus());
         assertEquals(TaskContinuation.RUNNABLE, a.getContinuation().getState());
-        assertFalse(a.getContinuation().hasError());
+        assertNull(workflow.getReasonForIncompletion());
         verify(executionDAOFacade).removeTask("thrown-id");
     }
 
@@ -2645,8 +2637,8 @@ public class TestWorkflowExecutor {
         TaskContinuation marker = new TaskContinuation("main", 2);
         marker.setState(TaskContinuation.APPLIED);
         marker.setDone(true);
-        marker.setError(new HashMap<>(Map.of("message", "boom")));
         aTask.setContinuation(marker);
+        workflow.setReasonForIncompletion("boom");
         TaskModel thrown = taskOf(mark, TaskType.TASK_TYPE_TERMINATE, 2);
         workflow.getTasks().addAll(new ArrayList<>(List.of(aTask, thrown)));
         workflow.setFailedTaskId(thrown.getTaskId());

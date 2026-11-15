@@ -4,6 +4,7 @@ import { WorkflowExecution } from "types/Execution";
 import { useFetch } from "utils/query";
 import { heldReason } from "./held";
 import { useWaitingForWorker } from "./useWaitingForWorker";
+import { appliedContinuations, codeTypeOf } from "./waiting";
 import {
   WorkflowSizeIndicator,
   type WorkflowSizeResponse,
@@ -97,7 +98,7 @@ export default function ExecutionSummary({
       // Native (code-first) workflows: the code type, and where its first continuation stands
       execution.nativeState && {
         label: "Native workflow",
-        value: `${execution.nativeState.codeType ?? "code"} · ${execution.nativeState.step ?? 0} continuation(s) applied`,
+        value: `${codeTypeOf(execution) ?? "code"} · ${appliedContinuations(execution)} continuation(s) applied`,
       },
       execution.nativeState?.bootstrap &&
         !execution.nativeState.bootstrap.done &&

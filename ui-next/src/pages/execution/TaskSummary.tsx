@@ -75,9 +75,6 @@ export default function TaskSummary({
           : ""
       }`,
     });
-    if (continuation.worker) {
-      data.push({ label: "Continuation worker", value: continuation.worker });
-    }
     if (continuation.appliedAt) {
       data.push({
         label: "Continuation applied",

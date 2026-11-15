@@ -84,7 +84,7 @@ def check(w):
 
     # One continuation at a time: the last leases do not overlap. An expired lease can.
     spans = sorted((m['leasedAt'], m['appliedAt'], n) for n, m in marks
-                   if m.get('state') == 'APPLIED' and m.get('leasedAt', 0) > 0 and m.get('attempts', 1) == 1)
+                   if m.get('state') == 'APPLIED' and m.get('leasedAt', 0) > 0 and m.get('epoch', 1) == 1)
     for (s1, e1, n1), (s2, e2, n2) in zip(spans, spans[1:]):
         if s2 < e1:
             bad.append(('OneContinuationAtATime', f'{n1} and {n2} overlap by {e1 - s2} ms'))
@@ -99,7 +99,7 @@ def check(w):
                 bad.append(('CompletedSound', f'marker of {name} is {m.get("state")}'))
         main = [m for n, m in marks if m.get('lane') == 'main' and m.get('state') == 'APPLIED']
         last = max(main, key=lambda m: m.get('n', 0), default=None)
-        if last is None or not last.get('done') or last.get('error'):
+        if last is None or not last.get('done') or w.get('reasonForIncompletion'):
             bad.append(('CompletedSound', 'the main lane did not return'))
         # Every entry landed where it would run.
         ran = {base_ref(t['referenceTaskName']) for t in tasks}

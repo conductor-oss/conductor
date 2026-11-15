@@ -5,15 +5,14 @@ guarantee are in [03-server-changes.md](03-server-changes.md).
 
 ## 1. The definition grows
 
-A native workflow is registered with `metadata.native` naming the protocol (`2`), the code type
-(`<workflow>.v<version>.code`), the continuation timeout, whether the class declares `@Signal`,
-`@Update` or `@Query` methods (`handlers`) and their names (`signals`, `updates`, `queries`), and a
-task list the SDK **discovered** from the code (`Registration.skeleton` → `Replayer.discover`):
+A native workflow is registered with `metadata.native` naming the class and method, the
+continuation timeout and whether the class declares `@Signal`, `@Update` or `@Query` methods
+(`handlers`); its code type is `<workflow>.v<version>.code`. The definition holds a task list the
+SDK **discovered** from the code (`Registration.skeleton` → `Replayer.discover`):
 read from the compiled workflow method without running it (`CodeReader`), every call becoming a
 definition entry under the plain reference name an execution would allocate, switches with all
-their cases, `async` blocks as `FORK_JOIN` + `JOIN`, loops as `DO_WHILE`. `metadata.native.discovered`
-says whether that succeeded (`discoveryError` carries the exception otherwise, and the list is
-empty). The definition also carries `inputParameters`. `WorkflowDef` still accepts an empty task
+their cases, `async` blocks as `FORK_JOIN` + `JOIN`, loops as `DO_WHILE`. When the code cannot be
+read the list is empty and the SDK logs why. The definition also carries `inputParameters`. `WorkflowDef` still accepts an empty task
 list when `metadata.native` is present, which is what the test harness registers.
 
 The discovered tasks are the definition view and the inventory; they are not what runs.
@@ -24,8 +23,7 @@ definition never changes; the per-execution copy does. A definition shows what t
 execution shows what it did.
 
 At start, `NativeContinuationService.initialize` gives the execution its engine state,
-`WorkflowModel.nativeState`: the protocol, code type and continuation timeout from the metadata,
-`step` 0, a `bootstrap` marker (lane `main`, `n` 1, `RUNNABLE`) and, when the
+`WorkflowModel.nativeState`: a `bootstrap` marker (lane `main`, `n` 1, `RUNNABLE`) and, when the
 class has handlers, a `handlers` marker (lane `handlers`, `n` 1, `WAITING`). A message with id
 `<workflowId>|main` is pushed to the continuation queue, and a worker runs the first continuation.
 
@@ -134,42 +132,23 @@ shared queue of its code type, and any worker polling it can lease any continuat
 an execution to the machine that last ran it. `nativeState` records no owner and a completion names
 none.
 
-A start can opt in to domains, with the `taskToDomain` map tasks use, for example
-`.taskToDomain(Map.of("<name>.v1.code", "build-7,NO_DOMAIN"))` on the SDK's start builder.
-`NativeContinuationService.queueName` reads the entry for the code type, else `*`; no entry means
-the shared queue. `ExecutorUtils.activeDomain`, the code `WorkflowExecutorOps.getActiveDomain` also
-uses, resolves the list: the first domain with a poller for the code type in the last
-`activeWorkerLastPollTimeout` (default 10 seconds), else the last entry, where `NO_DOMAIN` means the
-shared queue. A list that does not end in `NO_DOMAIN` therefore queues for its last domain even
-when nobody polls it.
-
-Workers poll the shared queue, plus their `buildId` as a domain when one is set. Nothing captures
-a worker's build automatically: an execution is pinned only if its start asks. `*` also applies to
-ordinary tasks (`setTaskDomains`), and only workers polling that domain receive them; the SDK's
-task workers poll the shared queue, so a `*` list used for continuations needs a final `NO_DOMAIN`,
-and naming the code type avoids the question.
+Task domains do not apply to workflow code. `NativeContinuationService.queueName` is always the
+shared queue of the code type, also for a run started with a `taskToDomain` entry for the code type
+or for `*`: such a map routes the run's tasks, never its continuations. A new
+`@Workflow(version)` gets its own code type, and so its own queue.
 
 Failover:
 
 1. A worker dies while holding a lease. On the shared queue the message was left unacknowledged
    for `continuationTimeoutSeconds` (default 30), so the queue redelivers it when the lease expires
-   and the next poll re-leases with `epoch + 1`. With domains, `repairAndWake` pushes the expired
-   lease to the queue that is now active.
+   and the next poll re-leases with `epoch + 1`.
 2. A worker is alive but slow. Same as 1 for that continuation. When it later completes under the
    old epoch, `complete` refuses it with `ConflictException` (HTTP 409): the marker is not `LEASED`
    at that `n` and `epoch`.
-3. Every worker of a domain dies (domain lists only). This is the remaining gap: domains are
-   resolved when a message is pushed, so a continuation pushed inside the 10-second window lands in
-   the dead domain's queue and waits for the next decider pass, up to about 30 seconds.
-   `repairAndWake`, run on every decide, then pushes a `RUNNABLE` marker's message again to the
-   queue that is now active (pushes are `pushIfNotExists`), and the stale copy is dropped when the
-   lease is already held elsewhere. While any continuation is `RUNNABLE` or `LEASED` the decider's
-   postpone is capped at the normal offset (30 s) and always written, replacing a longer postpone
-   from an earlier decide, so this does not wait for a long postpone.
 
 Whichever worker leases a continuation replays the method from the top (an SDK mechanism) against
 the applied markers and the task list. For the replay to be exact the server keeps every applied
-continuation's record on its marker (`step`, `recorded`, `resumedWith`, `done`, `result`, `error`),
+continuation's record on its marker (`appliedAt`, `recorded`, `resumedWith`, `done`, `result`),
 every task's output, and the bootstrap's record on the workflow. Handler runs are not replayed;
 their effect is in the variables.
 
@@ -181,8 +160,8 @@ applies, the other gets 409 and stops.
 
 One continuation of an execution runs at a time, across all hosts. Reference names and recorded
 values are allocated from what a replay saw, so two lanes running at once on different machines
-could pick the same names. `nativeState.activeContinuation` and `activeUntil` hold the current
-offer. A decide offers the slot to one runnable continuation at a time (`repairAndWake`); a poll
+could pick the same names. The leased marker is the current offer:
+the server keeps no other record of the slot. A decide offers the slot to one runnable continuation at a time (`repairAndWake`); a poll
 drops any message that is not the one offered. `complete` releases the slot whatever the outcome,
 and the decide it runs in offers the next. A holder that dies leaves its message to the queue's
 redelivery after the continuation timeout, and the next worker runs the same offer. Tasks are unaffected and still run in parallel.
@@ -201,8 +180,8 @@ a replay restores each continuation's variables to what it saw the first time.
 The handler lane runs on an instance restored from the current variables and completes with
 `variables` and `resumedWith` too, so a handler's write is fenced the same way.
 
-Variables hold only `@Variable` fields. Update replies and the handled-message ids live in
-`nativeState.replies` and `nativeState.seen`, not in the variables.
+Variables hold only `@Variable` fields. Every handled message, with an update's reply, lives in
+`nativeState.replies`, not in the variables.
 
 ## 5. Handlers
 
@@ -214,7 +193,7 @@ the handler marker `RUNNABLE` if it was `WAITING` and offers it (`repairAndWake`
 hands out the offered marker and claims up to 10 messages from the message
 queue under claimant `handlers#<n>` with ordinal `n`; the messages arrive in the handed task's
 `inputData.messages`. The worker runs the handlers between pauses of the other lanes and completes
-with the changed variables, `replies`, `seen` and `releases`. The server then installs a fresh
+with the changed variables, `replies` and `releases`. The server then installs a fresh
 `handlers` marker with `n + 1`, `WAITING`.
 
 Guarantees:

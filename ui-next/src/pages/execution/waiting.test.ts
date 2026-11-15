@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  appliedContinuations,
+  codeTypeOf,
   lastPoll,
   NO_WORKER_AFTER_MS,
   waitingCode,
@@ -16,32 +18,32 @@ const marker = (state: string, extra: object = {}) => ({
 const execution = (bootstrap: any, extra: object = {}): any => ({
   status: "RUNNING",
   tasks: [],
-  nativeState: { codeType: "kitchensink.v1.code", bootstrap },
+  workflowDefinition: {
+    name: "kitchensink",
+    version: 1,
+    metadata: { native: {} },
+  },
+  nativeState: { bootstrap },
   ...extra,
 });
 
 describe("waitingCode", () => {
   it("names the code type and lane of a continuation offered and not yet run", () => {
-    expect(
-      waitingCode(
-        execution(
-          marker("LEASED", { queuedAt: 100, queue: "kitchensink.v1.code" }),
-        ),
-      ),
-    ).toEqual({
-      codeType: "kitchensink.v1.code",
-      domain: undefined,
-      lane: "main",
-      since: 100,
-    });
+    expect(waitingCode(execution(marker("LEASED", { queuedAt: 100 })))).toEqual(
+      {
+        codeType: "kitchensink.v1.code",
+        lane: "main",
+        since: 100,
+      },
+    );
   });
 
-  it("reads the domain from the queue it was offered in", () => {
-    expect(
-      waitingCode(
-        execution(marker("RUNNABLE", { queue: "team-a:kitchensink.v1.code" })),
-      )?.domain,
-    ).toBe("team-a");
+  it("names the code type after the workflow and its version, as the server does", () => {
+    const def = (metadata: object) => ({
+      workflowDefinition: { name: "orders", version: 3, metadata },
+    });
+    expect(codeTypeOf(def({ native: {} }) as any)).toBe("orders.v3.code");
+    expect(codeTypeOf(def({}) as any)).toBeUndefined();
   });
 
   it("is nothing once the code ran, while held, or when the run ended", () => {
@@ -78,6 +80,23 @@ describe("waitingCode", () => {
   });
 });
 
+describe("appliedContinuations", () => {
+  it("counts the applied bootstrap and task continuations", () => {
+    expect(
+      appliedContinuations(
+        execution(marker("APPLIED"), {
+          tasks: [
+            { continuation: marker("APPLIED") },
+            { continuation: marker("LEASED") },
+            {},
+          ],
+        }),
+      ),
+    ).toBe(2);
+    expect(appliedContinuations(undefined)).toBe(0);
+  });
+});
+
 describe("waitingForWorker", () => {
   const waiting = { codeType: "kitchensink.v1.code", lane: "main" };
 
@@ -95,14 +114,13 @@ describe("waitingForWorker", () => {
     expect(waitingForWorker(undefined, undefined, 1)).toBeUndefined();
   });
 
-  it("counts only polls in the continuation's domain", () => {
+  it("counts only polls of the shared queue: workflows have no domains", () => {
     const polls = [
       { domain: "dev", lastPollTime: 900 },
       { lastPollTime: 500 },
       { domain: "", lastPollTime: 600 },
     ];
-    expect(lastPoll(waiting, polls)).toBe(600);
-    expect(lastPoll({ ...waiting, domain: "dev" }, polls)).toBe(900);
-    expect(lastPoll({ ...waiting, domain: "team-a" }, polls)).toBeUndefined();
+    expect(lastPoll(polls)).toBe(600);
+    expect(lastPoll([{ domain: "dev", lastPollTime: 900 }])).toBeUndefined();
   });
 });

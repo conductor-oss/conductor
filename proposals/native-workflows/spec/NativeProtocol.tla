@@ -57,8 +57,7 @@ VARIABLES
     st,        \* ref -> "none", "sched", "ok", "fail"
     done,      \* ref -> TRUE once the decider has evaluated it
     mark,      \* ref -> continuation marker on the task the code paused on
-    slot,      \* the continuation that last leased and has not finished, or NONE
-    expired,   \* whether its lease ran out, so that another continuation may take the slot
+    expired,   \* whether the leased continuation's lease ran out, so its queue delivers it again
     queue,     \* markers with a message in the queue
     inflight,  \* results of leased continuations, on their way to the server
     wf,        \* "RUNNING", "COMPLETED", "FAILED"
@@ -69,7 +68,7 @@ VARIABLES
     retries,   \* retries used
     applied    \* ghost: ref -> [count, epoch] of its applied continuation
 
-vars == <<def, seqs, st, done, mark, slot, expired, queue, inflight, wf, build, faults, deploys, failedTask, retries, applied>>
+vars == <<def, seqs, st, done, mark, expired, queue, inflight, wf, build, faults, deploys, failedTask, retries, applied>>
 
 -----------------------------------------------------------------------------
 (* Replay: a pure function of the code and what the server had recorded. *)
@@ -224,7 +223,6 @@ Init ==
     /\ st = BOOT :> "ok"
     /\ done = BOOT :> TRUE
     /\ mark = BOOT :> [NewMark("main") EXCEPT !.state = "RUNNABLE"]
-    /\ slot = NONE
     /\ expired = FALSE
     /\ queue = {BOOT}
     /\ inflight = {}
@@ -250,7 +248,7 @@ Evaluate(t) ==
        THEN /\ mark' = [mark EXCEPT ![t].state = "RUNNABLE"]
             /\ queue' = queue \cup {t}
        ELSE UNCHANGED <<mark, queue, failedTask, retries>>
-    /\ UNCHANGED <<def, seqs, slot, expired, inflight, wf, build, faults, deploys, applied, failedTask, retries>>
+    /\ UNCHANGED <<def, seqs, expired, inflight, wf, build, faults, deploys, applied, failedTask, retries>>
 
 \* A JOIN completes when the lanes it waits for, and all they started, settled.
 JoinSettles(j) ==
@@ -258,11 +256,16 @@ JoinSettles(j) ==
     /\ j \in DOMAIN def /\ def[j].kind = "join" /\ st[j] = "sched"
     /\ \A l \in Waits(j) : Settled(l)
     /\ st' = [st EXCEPT ![j] = "ok"]
-    /\ UNCHANGED <<def, seqs, done, mark, slot, expired, queue, inflight, wf, build, faults, deploys, applied, failedTask, retries>>
+    /\ UNCHANGED <<def, seqs, done, mark, expired, queue, inflight, wf, build, faults, deploys, applied, failedTask, retries>>
 
+\* The slot: the one continuation leased right now. The server keeps no other record of it.
+Holder == {k \in DOMAIN mark : mark[k].state = "LEASED"}
+
+\* A runnable marker is offered only while no continuation is leased; a lease that ran out is
+\* delivered again, under the same offer.
 Leasable(k) ==
-    \/ mark[k].state = "RUNNABLE"
-    \/ mark[k].state = "LEASED" /\ (slot # k \/ expired)
+    \/ mark[k].state = "RUNNABLE" /\ Holder = {}
+    \/ mark[k].state = "LEASED" /\ expired
 
 \* Decides push the message of every runnable or expired marker again.
 Repair(k) ==
@@ -270,30 +273,26 @@ Repair(k) ==
     /\ k \in DOMAIN mark /\ k \notin queue
     /\ Leasable(k)
     /\ queue' = queue \cup {k}
-    /\ UNCHANGED <<def, seqs, st, done, mark, slot, expired, inflight, wf, build, faults, deploys, applied, failedTask, retries>>
+    /\ UNCHANGED <<def, seqs, st, done, mark, expired, inflight, wf, build, faults, deploys, applied, failedTask, retries>>
 
 \* A worker takes a message, and replay runs on what is recorded now. The epoch is the
-\* offer's: a runnable marker is offered at a new epoch; a lease that ran out is either
-\* delivered again under the same offer and epoch (its queue redelivers it: two workers may
-\* then run it, and the first result applies) or offered again at a new epoch (its queue is no
-\* longer polled). A held marker waits until the build changes.
+\* offer's: a runnable marker is offered at a new epoch; a lease that ran out is delivered again
+\* under the same offer and epoch (its queue redelivers it: two workers may then run it, and the
+\* first result applies). A held marker waits until the build changes.
 Lease(k) ==
     /\ Running
     /\ k \in queue /\ k \in DOMAIN mark
     /\ Leasable(k)
-    /\ slot = NONE \/ (expired /\ slot = k)   \* a lease that ran out is taken again only by its own continuation
     /\ mark[k].held # build
-    /\ \E bump \in IF mark[k].state = "LEASED" THEN {FALSE, TRUE} ELSE {TRUE} :
-          LET e == IF bump THEN mark[k].epoch + 1 ELSE mark[k].epoch
-          IN /\ inflight' = inflight \cup {Replay(k, build, e)}
-             /\ mark' = [mark EXCEPT ![k].state = "LEASED", ![k].epoch = e]
-    /\ slot' = k
+    /\ LET e == IF mark[k].state = "LEASED" THEN mark[k].epoch ELSE mark[k].epoch + 1
+       IN /\ inflight' = inflight \cup {Replay(k, build, e)}
+          /\ mark' = [mark EXCEPT ![k].state = "LEASED", ![k].epoch = e]
     /\ expired' = FALSE
     /\ UNCHANGED <<def, seqs, st, done, queue, wf, build, faults, deploys, applied, failedTask, retries>>
 
-\* Applying a result: fenced on the lease, the epoch and the slot, so a result
-\* computed before another continuation ran does not count.
-Fresh(r) == mark[r.key].state = "LEASED" /\ mark[r.key].epoch = r.epoch /\ slot = r.key
+\* Applying a result: fenced on the lease and its epoch (the leased marker is the slot), so a
+\* result computed before another continuation ran does not count.
+Fresh(r) == mark[r.key].state = "LEASED" /\ mark[r.key].epoch = r.epoch
 
 Apply(r) ==
     LET k  == r.key
@@ -336,9 +335,8 @@ Deliver(r) ==
        \/ faults < MaxFaults /\ faults' = faults + 1 /\ UNCHANGED inflight
     /\ UNCHANGED <<build, deploys>>
     /\ IF ~Fresh(r)
-       THEN UNCHANGED <<def, seqs, st, done, mark, slot, expired, queue, wf, applied, failedTask, retries>>
-       ELSE /\ slot' = NONE
-            /\ expired' = FALSE
+       THEN UNCHANGED <<def, seqs, st, done, mark, expired, queue, wf, applied, failedTask, retries>>
+       ELSE /\ expired' = FALSE
             /\ IF r.res = "diverged"
                THEN /\ mark' = [mark EXCEPT ![r.key].state = "RUNNABLE", ![r.key].held = r.build]
                     /\ UNCHANGED <<def, seqs, st, done, queue, wf, applied, failedTask, retries>>
@@ -355,7 +353,7 @@ Complete ==
     /\ \A r \in DOMAIN done : done[r]
     /\ \A k \in DOMAIN mark : mark[k].state = "APPLIED"
     /\ wf' = "COMPLETED"
-    /\ UNCHANGED <<def, seqs, st, done, mark, slot, expired, queue, inflight, build, faults, deploys, applied, failedTask, retries>>
+    /\ UNCHANGED <<def, seqs, st, done, mark, expired, queue, inflight, build, faults, deploys, applied, failedTask, retries>>
 
 -----------------------------------------------------------------------------
 (* The world *)
@@ -365,14 +363,14 @@ Finish(t) ==
     /\ Running
     /\ t \in DOMAIN def /\ def[t].kind = "task" /\ st[t] = "sched"
     /\ \E r \in Terminal : st' = [st EXCEPT ![t] = r]
-    /\ UNCHANGED <<def, seqs, done, mark, slot, expired, queue, inflight, wf, build, faults, deploys, applied, failedTask, retries>>
+    /\ UNCHANGED <<def, seqs, done, mark, expired, queue, inflight, wf, build, faults, deploys, applied, failedTask, retries>>
 
 \* A worker crashes: its result never arrives. The lease then runs out.
 Crash(r) ==
     /\ Running /\ r \in inflight /\ faults < MaxFaults
     /\ inflight' = inflight \ {r}
     /\ faults' = faults + 1
-    /\ UNCHANGED <<def, seqs, st, done, mark, slot, expired, queue, wf, build, deploys, applied, failedTask, retries>>
+    /\ UNCHANGED <<def, seqs, st, done, mark, expired, queue, wf, build, deploys, applied, failedTask, retries>>
 
 \* A worker reports that it could not run the continuation (an exception, a variable
 \* conflict, messages waiting for the handler lane) instead of its result.
@@ -380,41 +378,41 @@ Falter(r) ==
     /\ Running /\ r \in inflight /\ r.res \notin {"error", "diverged"} /\ faults < MaxFaults
     /\ inflight' = (inflight \ {r}) \cup {[r EXCEPT !.res = "error", !.entries = <<>>]}
     /\ faults' = faults + 1
-    /\ UNCHANGED <<def, seqs, st, done, mark, slot, expired, queue, wf, build, deploys, applied, failedTask, retries>>
+    /\ UNCHANGED <<def, seqs, st, done, mark, expired, queue, wf, build, deploys, applied, failedTask, retries>>
 
 \* A queue message is lost.
 Lose(k) ==
     /\ Running /\ k \in queue /\ faults < MaxFaults
     /\ queue' = queue \ {k}
     /\ faults' = faults + 1
-    /\ UNCHANGED <<def, seqs, st, done, mark, slot, expired, inflight, wf, build, deploys, applied, failedTask, retries>>
+    /\ UNCHANGED <<def, seqs, st, done, mark, expired, inflight, wf, build, deploys, applied, failedTask, retries>>
 
 \* A lease runs out. A lease with no result left to arrive always runs out;
 \* expiring one whose worker is merely slow is a fault.
 LiveResult(k) == \E r \in inflight : r.key = k /\ Fresh(r)
 
 ExpireDead(k) ==
-    /\ Running /\ slot = k /\ ~expired /\ ~LiveResult(k)
+    /\ Running /\ k \in Holder /\ ~expired /\ ~LiveResult(k)
     /\ expired' = TRUE
-    /\ UNCHANGED <<slot, def, seqs, st, done, mark, queue, inflight, wf, build, faults, deploys, applied, failedTask, retries>>
+    /\ UNCHANGED <<def, seqs, st, done, mark, queue, inflight, wf, build, faults, deploys, applied, failedTask, retries>>
 
 ExpireSlow(k) ==
-    /\ Running /\ slot = k /\ ~expired /\ LiveResult(k) /\ faults < MaxFaults
+    /\ Running /\ k \in Holder /\ ~expired /\ LiveResult(k) /\ faults < MaxFaults
     /\ expired' = TRUE
     /\ faults' = faults + 1
-    /\ UNCHANGED <<slot, def, seqs, st, done, mark, queue, inflight, wf, build, deploys, applied, failedTask, retries>>
+    /\ UNCHANGED <<def, seqs, st, done, mark, queue, inflight, wf, build, deploys, applied, failedTask, retries>>
 
 \* A deploy changes the code; a rollback restores it.
 Deploy ==
     /\ wf # "COMPLETED" /\ build = 1 /\ deploys < MaxDeploys
     /\ build' = 2
     /\ deploys' = deploys + 1
-    /\ UNCHANGED <<def, seqs, st, done, mark, slot, expired, queue, inflight, wf, faults, applied, failedTask, retries>>
+    /\ UNCHANGED <<def, seqs, st, done, mark, expired, queue, inflight, wf, faults, applied, failedTask, retries>>
 
 Rollback ==
     /\ Running /\ build = 2
     /\ build' = 1
-    /\ UNCHANGED <<def, seqs, st, done, mark, slot, expired, queue, inflight, wf, faults, deploys, applied, failedTask, retries>>
+    /\ UNCHANGED <<def, seqs, st, done, mark, expired, queue, inflight, wf, faults, deploys, applied, failedTask, retries>>
 
 \* An operator retries a workflow that failed where its code threw: everything the continuation
 \* that threw drew goes (the mark, its previews, and a switch it went past or a lane it started,
@@ -438,7 +436,7 @@ Retry ==
     /\ wf' = "RUNNING"
     /\ failedTask' = NONE
     /\ retries' = retries + 1
-    /\ UNCHANGED <<slot, expired, inflight, build, faults, deploys>>
+    /\ UNCHANGED <<expired, inflight, build, faults, deploys>>
 
 -----------------------------------------------------------------------------
 Server ==
@@ -568,9 +566,8 @@ SequenceOrder ==
     \A o \in Owners : \A j \in 2..Len(seqs[o]) :
         st[seqs[o][j]] # "none" /\ def[seqs[o][j]].kind # "mark" => st[seqs[o][j - 1]] \in {"ok", "fail"}
 
-\* One continuation counts at a time: a result is live only while it holds the slot.
-OneContinuationAtATime ==
-    Cardinality({k \in DOMAIN mark : mark[k].state = "LEASED" /\ LiveResult(k)}) <= 1
+\* One continuation runs at a time: at most one marker is leased, and it is the slot.
+OneContinuationAtATime == Cardinality(Holder) <= 1
 
 \* A result is applied only if nothing else was applied since its worker read
 \* the history: continuations take effect one after another.

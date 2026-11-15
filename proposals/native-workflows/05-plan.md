@@ -56,9 +56,7 @@ PRs 1 and 2 were the critical path of the first round; PR 9 is the critical path
 |---|---|
 | Definition growth per append rewrites the workflow row, and decide loads all tasks; long native loops degrade | `maxDefinitionTasks` fails cleanly with a named limit; the large-loops round addresses incremental decide; the SDK's `repeatUntil` and `forEach` keep loops server-side |
 | `joinOn: []` after `FORK_JOIN` changes meaning | gated on `metadata.native`; other definitions unchanged |
-| Poll data lookups | `queueName` makes one `getTaskPollDataByDomain` per domain listed for the code type, and none by default |
 | Two workers holding the same continuation | one lease per marker under the execution lock; a completion must name the lease's `n` and `epoch`; the loser gets 409 |
-| A dead domain's queue holds a wake-up | only when an execution was started with task domains: `queueName` skips a domain whose poll data is stale; `repairAndWake` re-pushes on every decide; `lease` drops the duplicate once the lease is held elsewhere |
 | Lock lease with large fragments | validation is linear in fragment size; limits bound it; `maxRuntime` guard persists and re-queues if ever hit |
 | Queue redelivery granularity after a worker death | the lease (30 s) plus the queue's redelivery of an unacknowledged message; the sweeper's `repairAndWake` covers a lost message |
 
@@ -68,8 +66,8 @@ PRs 1 and 2 were the critical path of the first round; PR 9 is the critical path
    `complete`, fenced by `resumedWith`; no task row. Handler completions could not append tasks
    anyway.
 2. **Per-worker domains for ownership versus per-host.** Neither: resolved on 2026-11-09 by removing
-   per-worker routing. Continuations go to the shared queue of the code type by default and follow
-   `taskToDomain` when the workflow is started with domains.
+   per-worker routing. Continuations go to the shared queue of the code type; on 2026-11-14 task
+   domains stopped applying to them too, with the build domains workers polled.
 3. **`@Update` replies.** `nativeState.replies`, keyed by the client's message id, pruned to 10
    minutes and 500 entries by the handler completion; the client reads them from the execution.
 4. **Observed-graph definition view.** Deferred at the time; superseded on 2026-11-08 by the discovered definition registered from the code (see 01 §1 and 02 §2).

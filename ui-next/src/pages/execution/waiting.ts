@@ -10,8 +10,6 @@ import { canBeHeld, heldReasonOfMarker } from "./held";
 export interface WaitingCode {
   /** The code type workers poll, such as kitchensink.v1.code. */
   codeType: string;
-  /** The task domain the continuation was offered in, if any. */
-  domain?: string;
   /** The lane the continuation runs, such as main. */
   lane: string;
   /** When it was offered. */
@@ -26,11 +24,26 @@ const offered = (marker?: TaskContinuation): marker is TaskContinuation =>
   (marker.state === "RUNNABLE" || marker.state === "LEASED") &&
   !heldReasonOfMarker(marker); // held: a worker ran it, and the code did not match
 
+/** The task type a native workflow's hosts poll: `<name>.v<version>.code`, one per version. */
+export const codeTypeOf = (
+  execution?: WorkflowExecution,
+): string | undefined => {
+  const def: any = execution?.workflowDefinition;
+  return def?.metadata?.native ? `${def.name}.v${def.version}.code` : undefined;
+};
+
+/** How many continuations of the code have applied: the bootstrap's and those on tasks. */
+export const appliedContinuations = (execution?: WorkflowExecution): number =>
+  [
+    execution?.nativeState?.bootstrap,
+    ...(execution?.tasks ?? []).map((task) => task.continuation),
+  ].filter((marker) => marker?.state === "APPLIED").length;
+
 /** The oldest continuation offered to the code's workers and not yet applied, if any. */
 export const waitingCode = (
   execution?: WorkflowExecution,
 ): WaitingCode | undefined => {
-  const codeType = execution?.nativeState?.codeType;
+  const codeType = codeTypeOf(execution);
   if (!codeType || !canBeHeld(execution)) {
     return undefined;
   }
@@ -45,23 +58,17 @@ export const waitingCode = (
   const oldest = markers.reduce((a, b) =>
     (b.queuedAt ?? Infinity) < (a.queuedAt ?? Infinity) ? b : a,
   );
-  const queue = oldest.queue ?? codeType;
-  const colon = queue.indexOf(":");
   return {
     codeType,
-    domain: colon > 0 ? queue.slice(0, colon) : undefined,
     lane: oldest.lane,
     since: oldest.queuedAt,
   };
 };
 
-/** When a worker last polled the code type in the waiting continuation's domain, if ever. */
-export const lastPoll = (
-  waiting: WaitingCode,
-  pollData: PollData[] = [],
-): number | undefined => {
+/** When a worker last polled the code type's shared queue, if ever: workflows have no domains. */
+export const lastPoll = (pollData: PollData[] = []): number | undefined => {
   const times = pollData
-    .filter((p) => (p.domain || undefined) === waiting.domain)
+    .filter((p) => !p.domain)
     .map((p) => p.lastPollTime ?? 0)
     .filter((t) => t > 0);
   return times.length > 0 ? Math.max(...times) : undefined;
@@ -79,12 +86,9 @@ export const waitingForWorker = (
   if (!waiting || (polled !== undefined && now - polled < NO_WORKER_AFTER_MS)) {
     return undefined;
   }
-  const queue = waiting.domain
-    ? `${waiting.codeType} in domain ${waiting.domain}`
-    : waiting.codeType;
   const last =
     polled === undefined
       ? "no worker has polled it"
       : `no worker has polled it since ${new Date(polled).toLocaleString()}`;
-  return `Waiting for a worker of ${queue}: ${last}. The code runs when one starts.`;
+  return `Waiting for a worker of ${waiting.codeType}: ${last}. The code runs when one starts.`;
 };

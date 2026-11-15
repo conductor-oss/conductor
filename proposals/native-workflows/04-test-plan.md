@@ -36,7 +36,7 @@ plays an SDK with nothing discovered; a real SDK registers the discovered graph,
 `metadata.native = { sdk: "test-harness", protocol: 2, codeType: "native_skeleton.v1.code",
 continuationTimeoutSeconds: 60 }`. The spec registers it with
 `workflowTestUtil.registerWorkflows(...)`, starts with `startWorkflow(...)`, polls the code type
-with `workflowExecutionService.poll(CODE_TYPE, workerId[, domain])`, and completes with
+with `workflowExecutionService.poll(CODE_TYPE, workerId)`, and completes with
 `workflowExecutionService.updateTask(new TaskResult(task))` whose output is built by a helper,
 `completion(task, fragment, variables, done, result)`, that copies `n` and `epoch` from the
 polled task's marker and sets `protocol: 2`. Entries are built by `simple(name, input, lane)`
@@ -44,7 +44,7 @@ polled task's marker and sets `protocol: 2`. Entries are built by `simple(name, 
 
 | # | Scenario | Asserts |
 |---|---|---|
-| 1 | Linear: poll the code type → the bootstrap (`taskId` `<workflowId>\|main`, `taskType` the code type, marker `main#1` `LEASED`) → complete with `[integration_task_1 (paused main#2)]`, variables → complete the task → poll the shared queue → complete with `done` and a result | after the bootstrap: one task, `SCHEDULED`, marker `main#2` `WAITING`, input evaluated from the workflow input, variables applied, `nativeState.bootstrap` `APPLIED` with `step` 1; the next poll returns the finished task itself, `COMPLETED` with its output, marker `main#2` `LEASED`, `continuation.queue` `worker-a:native_skeleton.v1.code`, `domain` `worker-a`; at the end the workflow is `COMPLETED` with the result as output, still one task, its marker `APPLIED` and `done` |
+| 1 | Linear: poll the code type → the bootstrap (`taskId` `<workflowId>\|main`, `taskType` the code type, marker `main#1` `LEASED`) → complete with `[integration_task_1 (paused main#2)]`, variables → complete the task → poll the shared queue → complete with `done` and a result | after the bootstrap: one task, `SCHEDULED`, marker `main#2` `WAITING`, input evaluated from the workflow input, variables applied, `nativeState.bootstrap` `APPLIED` with `step` 1; the next poll returns the finished task itself, `COMPLETED` with its output, marker `main#2` `LEASED`, `continuation.queue` `native_skeleton.v1.code`; at the end the workflow is `COMPLETED` with the result as output, still one task, its marker `APPLIED` and `done` |
 | 2 | Fork with independent branches: the bootstrap completes with `FORK_JOIN fork_1` of `[integration_task_1 (paused fork_1.0#1)]` and `[integration_task_2 (paused fork_1.1#1)]`, `JOIN join_1` with `joinOn: []` paused `main#2` | both branch tasks `SCHEDULED`, the join `IN_PROGRESS`; completing only `integration_task_1` offers branch 0's continuation on the shared queue while `integration_task_2` is still `SCHEDULED`; completing it with `[integration_task_3 (paused fork_1.0#2)]` lands inside branch 0 only, `integration_task_3` is `SCHEDULED` before branch 1 moved, and the execution holds five tasks: fork, join and the three the code called |
 | 3 | Stale completion: complete the bootstrap with an `epoch` the server never handed out | `ConflictException`; no task, no definition entry, no variable applied. The lease holder's completion is then applied; the same completion delivered again (a retried update after a lost response) is refused and the execution still holds one task |
 | 4 | A continuation fails for a reason unrelated to the task: the worker completes it `FAILED` with `protocol`, `n` and `epoch` | the workflow stays `RUNNING`, the task keeps its `COMPLETED` status and output, the marker returns to `RUNNABLE`; after the 1 s backoff a poll hands it out again with `epoch + 1` |
@@ -52,7 +52,7 @@ polled task's marker and sets `protocol: 2`. Entries are built by `simple(name, 
 Scenario 2 is the acceptance test for the design: it is the kitchensink's `forkx` branch.
 
 Covered end to end by the SDK repository rather than by the harness: handlers (claimed messages,
-`replies`, `seen`, `releases`, completion deferral), failover to another worker, `WAIT` and `HUMAN` timeouts,
+`replies`, `releases`, completion deferral), failover to another worker, `WAIT` and `HUMAN` timeouts,
 restart, rerun and retry (`native-examples`: kitchensink, `operator.OperatorChecks`, `chaos.sh`
 and the durability bench, see [06-implementation.md](06-implementation.md)), and `switchOn`
 (`conductor-client`'s `SwitchOnTest`: the first continuation emits the switch with every case and
@@ -111,7 +111,6 @@ Run on Postgres with the `test-harness` functional profile:
 | Check | Method | Pass |
 |---|---|---|
 | Append cost | 1,000 sequential continuations in one execution, each with a 2-task fragment; measure decide time per cycle and workflow row size | decide time grows linearly, not quadratically, up to the default `maxDefinitionTasks`; row size reported |
-| Domain lookups | an execution started with a long `taskToDomain` list for its code type; measure `queueName` (one `getTaskPollDataByDomain` per listed domain) per wake-up | sub-millisecond lookups; no table scan in the query plan |
 | Fork independence | scenario 2 with branch-1 task delayed 60 s | branch-0 progresses through 5 continuations before branch-1 completes |
 
 `<!-- TODO: verify against live server -->` These checks have not been run on protocol 2.

@@ -7,13 +7,13 @@ describe("generatedFrom", () => {
       generatedFrom({
         name: "loop_shapes",
         metadata: {
-          native: { class: "loops.LoopShapes", method: "run", codeType: "x" },
+          native: { class: "loops.LoopShapes", method: "run" },
         },
       }),
     ).toBe("loops.LoopShapes.run");
-    expect(
-      generatedFrom({ metadata: { native: { codeType: "orders.v1.code" } } }),
-    ).toBe("orders.v1.code");
+    expect(generatedFrom({ name: "orders", metadata: { native: {} } })).toBe(
+      "orders",
+    );
   });
 
   it("is nothing for a definition edited here", () => {

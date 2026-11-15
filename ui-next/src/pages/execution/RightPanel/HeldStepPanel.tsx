@@ -4,6 +4,7 @@ import { Heading, IconButton, KeyValueTable } from "components";
 import { FunctionComponent, ReactNode } from "react";
 import { WorkflowExecution } from "types/Execution";
 import { canBeHeld, heldMismatch, heldReasonOfMarker } from "../held";
+import { codeTypeOf } from "../waiting";
 
 interface HeldStepPanelProps {
   /** The task the code paused on. */
@@ -131,14 +132,14 @@ export const HeldStepPanel: FunctionComponent<HeldStepPanelProps> = ({
                         ? new Date(marker.queuedAt).toLocaleString()
                         : "Unknown",
                     },
-                    { label: "Attempts so far", value: marker?.attempts ?? 0 },
+                    { label: "Attempts so far", value: marker?.epoch ?? 0 },
                     {
                       label: "Next attempt",
                       value: "Offered to workers again, up to a minute apart",
                     },
                     {
                       label: "Needs a worker polling",
-                      value: <Code>{marker?.queue}</Code>,
+                      value: <Code>{codeTypeOf(execution)}</Code>,
                     },
                   ]}
                 />

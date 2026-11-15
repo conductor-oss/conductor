@@ -127,8 +127,8 @@ Each entry names the problem and the mechanism that fixes it as it exists now.
 8. **A signal could be applied twice.** The client retries a message send that fails ambiguously,
    such as a timeout while the server is paused, and the server had already queued the first
    attempt. The client now puts its own id in each message, reused across retries; the handler
-   lane remembers the last 500 ids it applied (`nativeState.seen`) and skips repeats, and update
-   replies (`nativeState.replies`) are keyed by that id.
+   lane records every message it applied in `nativeState.replies`, keyed by that id (an update
+   with its reply), and skips repeats.
 9. **A continuation's stale variables could overwrite a handler's write.** Two continuations of
    one execution can run at once on different workers during a failover. Every completion carried
    a full copy of the variables, so the later one erased what the earlier one wrote: a signal
@@ -264,13 +264,13 @@ operator checks that a worker task failing once is retried rather than raised.
 | The end of the workflow | a `TERMINATE` task in the main lane's last fragment | the engine completes or fails the workflow from the main lane's final completion (`done`, `result` or `error`) |
 | The first continuation | the skeleton's first `CODE` task | `nativeState.bootstrap`, message `<workflowId>\|main` |
 | Handlers | `FORK_JOIN` + `DO_WHILE` + `PULL_WORKFLOW_MESSAGES` + handler `CODE` + `JOIN` | `nativeState.handlers`; the message endpoint wakes it; the poll claims the messages under `handlers#<n>` |
-| Replies and handled message ids | workflow variables `__replies`, `__seen` | `nativeState.replies`, `nativeState.seen` |
+| Replies and handled message ids | workflow variables `__replies`, `__seen` | `nativeState.replies` (every handled message) |
 | Continuation routing | `taskToDomain[<codeType>]`, the worker's id captured per execution | the shared queue of the code type; `taskToDomain` only when the start names the code type or `*` (01 §3) |
 | Poll | batch poll of the `CODE` task type | the same batch poll of the code type; `ExecutionService.poll` leases the marker and returns the finished task itself (or a synthetic task for the bootstrap and handler lanes) |
 | Complete | `POST /api/tasks` on the `CODE` task | `POST /api/tasks/update-v2` on the awaited task's id or the synthetic id; stale completions get 409 |
 | Fencing | owner refusal, stale-write guard, response and poll timeouts with retry | one lease per marker, `(n, epoch)` check under the execution lock |
 | Deferral | the attempt set aside as `CANCELED`, retried with the next retry count | the marker back to `RUNNABLE` with `deferred` set; the same message re-pushed |
-| Replay input | `CODE` outputs with `applied`, `step`, `resumedWith`; `RECORD` outputs | `APPLIED` markers ordered by `step`, plus the bootstrap |
+| Replay input | `CODE` outputs with `applied`, `step`, `resumedWith`; `RECORD` outputs | `APPLIED` markers ordered by `appliedAt`, plus the bootstrap |
 | Task count | hello world: 6 tasks (3 `CODE`, 2 tasks, `TERMINATE`) | hello world: 2 tasks |
 | UI | fold hidden tasks, `?showHidden=true` | nothing to fold; continuation on the task panel, engine state on the summary |
 
@@ -278,7 +278,7 @@ operator checks that a worker task failing once is retried rather than raised.
 
 | Topic | Earlier documents | Implemented |
 |---|---|---|
-| Worker execution model | live thread as the fast path, re-run only on worker loss | The worker always replays the code against the applied markers and the tasks, so it is stateless. Segments replay in the order the server applied them (`step`). `@Variable` fields are restored at each continuation to the values recorded when it was first processed (`resumedWith`). Any worker can run any continuation; the server's slot (`nativeState.activeContinuation`) lets one continuation of an execution run at a time, across all hosts, and the SDK holds no per-execution lock. The live-thread fast path is left for the latency round. |
+| Worker execution model | live thread as the fast path, re-run only on worker loss | The worker always replays the code against the applied markers and the tasks, so it is stateless. Segments replay in the order the server applied them (`step`). `@Variable` fields are restored at each continuation to the values recorded when it was first processed (`resumedWith`). Any worker can run any continuation; the server's slot (the one `LEASED` marker) lets one continuation of an execution run at a time, across all hosts, and the SDK holds no per-execution lock. The live-thread fast path is left for the latency round. |
 | Fan-out | FORK_JOIN_DYNAMIC, in stages | a FORK_JOIN generated at run time with one lane per item; items progress independently, with no stages |
 | Native JOIN mode | `joinMode: SYNC` | default asynchronous evaluation; SYNC re-evaluates continuously and would busy-poll long branches |
 | Condition waits | reference `cond`, `cond_2` | `condition`, `condition_2` |

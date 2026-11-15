@@ -20,7 +20,6 @@ import com.netflix.conductor.common.metadata.tasks.TaskContinuation;
 import tools.jackson.databind.ObjectMapper;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /** Markers stored before a field changed still read: an execution outlives the server version. */
@@ -29,38 +28,47 @@ public class TaskContinuationJsonTest {
     private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
 
     @Test
-    public void aMarkerStoredWithoutResultOrErrorReadsAsNeither() {
+    public void aMarkerIsStoredWithItsStateOnlyNotTheFlagsDerivedFromIt() throws Exception {
+        TaskContinuation marker = new TaskContinuation("main", 2);
+        marker.setState(TaskContinuation.LEASED);
+
+        String json = objectMapper.writeValueAsString(marker);
+
+        org.junit.Assert.assertTrue(json, json.contains("\"state\":\"LEASED\""));
+        for (String flag : new String[] {"waiting", "runnable", "leased", "applied"}) {
+            org.junit.Assert.assertFalse(json, json.contains("\"" + flag + "\""));
+        }
+    }
+
+    @Test
+    public void aMarkerStoredWithoutAResultReadsAsNone() {
         String stored =
-                "{\"lane\":\"main\",\"n\":3,\"state\":\"APPLIED\",\"epoch\":2,\"attempts\":2,"
+                "{\"lane\":\"main\",\"n\":3,\"state\":\"APPLIED\",\"epoch\":2,"
                         + "\"queuedAt\":100,\"step\":7,\"done\":false,\"recorded\":{},\"resumedWith\":{}}";
 
         TaskContinuation marker = objectMapper.readValue(stored, TaskContinuation.class);
 
         assertEquals(3, marker.getN());
         assertTrue(marker.getResult().isEmpty());
-        assertTrue(marker.getError().isEmpty());
-        assertFalse(marker.hasError());
     }
 
     @Test
-    public void aMarkerStoredWithNullResultAndErrorReadsAsNeither() {
-        String stored =
-                "{\"lane\":\"main\",\"n\":1,\"state\":\"WAITING\",\"result\":null,\"error\":null}";
+    public void aMarkerStoredWithANullResultReadsAsNone() {
+        String stored = "{\"lane\":\"main\",\"n\":1,\"state\":\"WAITING\",\"result\":null}";
 
-        TaskContinuation marker = objectMapper.readValue(stored, TaskContinuation.class);
-
-        assertTrue(marker.getResult().isEmpty());
-        assertFalse(marker.hasError());
+        assertTrue(objectMapper.readValue(stored, TaskContinuation.class).getResult().isEmpty());
     }
 
     @Test
-    public void aMarkerWhoseCodeRaisedHasAnError() {
+    public void aMarkerStoredByAnEarlierBuildStillReads() {
+        // the error now lives on the run (its reason) and attempts is the epoch: both are ignored
         String stored =
-                "{\"lane\":\"main\",\"n\":2,\"state\":\"APPLIED\",\"done\":true,\"error\":{\"message\":\"boom\"}}";
+                "{\"lane\":\"main\",\"n\":2,\"state\":\"APPLIED\",\"done\":true,\"attempts\":3,"
+                        + "\"worker\":\"w\",\"queue\":\"q\",\"error\":{\"message\":\"boom\"}}";
 
         TaskContinuation marker = objectMapper.readValue(stored, TaskContinuation.class);
 
-        assertTrue(marker.hasError());
-        assertEquals("boom", marker.getError().get("message"));
+        assertTrue(marker.isDone());
+        assertEquals(2, marker.getN());
     }
 }

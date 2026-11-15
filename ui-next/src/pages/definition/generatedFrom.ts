@@ -13,7 +13,7 @@ export const generatedFrom = (workflow?: any): string | undefined => {
   }
   return native.class && native.method
     ? `${native.class}.${native.method}`
-    : (native.codeType ?? workflow?.name ?? "code");
+    : (workflow?.name ?? "code");
 };
 
 /** Where the definition being edited is generated from, if it is generated from code. */

@@ -46,7 +46,7 @@ blocks either.
 |---|---|
 | lane | One thread of workflow code: the `@Workflow` method (`main`), each `async` block (`fork_<k>.<i>`), and the handler lane (`handlers`). |
 | continuation | One run of a lane's code between two pauses. Numbered `n` per lane, starting at 1. |
-| continuation marker | The `continuation` field on the task a lane paused on (`TaskContinuation`): lane, `n`, state `WAITING` → `RUNNABLE` → `LEASED` → `APPLIED`, lease epoch, and once applied the record replay reads (recorded values, `resumedWith`, `done`, `result`, `error`). |
+| continuation marker | The `continuation` field on the task a lane paused on (`TaskContinuation`): lane, `n`, state `WAITING` → `RUNNABLE` → `LEASED` → `APPLIED`, lease epoch, and once applied the record replay reads (recorded values, `resumedWith`, `done`, `result`). |
 | bootstrap | The main lane's first continuation. It runs before any task exists, so its marker lives on the workflow (`nativeState.bootstrap`). |
 | handler lane | Signal and update handlers. They schedule no tasks, so their marker lives on the workflow (`nativeState.handlers`), one run per batch of messages. |
 | fragment | The list of `WorkflowTask` entries a lane scheduled during one continuation. Carried in the completion and inserted right after its anchor. |
@@ -54,7 +54,7 @@ blocks either.
 | switch (`switchOn`) | The SDK call that emits a real `SWITCH` task: `evaluatorType: native-code` on `switchCaseValue`, every declared case as a branch, a `defaultCase`, the taken case's body run inline with its calls inside that branch, and a preview of every untaken case. Plain Java `if`/`switch` stays invisible to the server; `switchOn` is the opt-in for a branch the execution should show. |
 | preview entry | An entry in an untaken switch case showing a call that case would have made: `metadata.preview: true`, reference `<base>_if_<caseKey>`, no continuation marker, no `optional`. Produced by the SDK by reading the compiled case body, without running it. The server validates it like any entry and never schedules it. |
 | code type | `<workflow>.v<version>.code`: the task type workers poll for continuations. Its queue is the continuation queue, shared by every worker of the code by default; a domain prefix applies only when the start's `taskToDomain` asks for one. |
-| active continuation | The one continuation of an execution leased right now (`nativeState.activeContinuation`, until `activeUntil`); others wait for it. |
+| active continuation | The one continuation of an execution leased right now (its marker is the only `LEASED` one); others wait for it. |
 | replay | What a worker does for every continuation: run the method from the top against the applied markers and the tasks, then run the active continuation. |
 | skeleton | The registered definition of a native workflow: `metadata.native` with the protocol, code type, continuation timeout, whether the class has handlers and their names, and the discovered task list below. Originally it had no tasks; the test harness still registers it that way. |
 | discovered definition | The task list the SDK registers (`Replayer.discover`): read from the compiled workflow method without running it (`CodeReader`), every call an entry under the reference name an execution would allocate, switches with all cases, forks, loops; `metadata.native.discovered` says whether it succeeded. It is the definition view and the inventory, not what runs: `NativeContinuationService.initialize` clears it from each execution's copy, which then grows from the code. |

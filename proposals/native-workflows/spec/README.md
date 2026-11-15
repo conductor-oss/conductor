@@ -5,10 +5,10 @@
 code is a tree: what a lane does next given what it has observed. The server holds a definition that
 grows and a continuation marker on each task the code paused on. A worker leases a marker, replays
 the code against what the server recorded, and submits a fragment of new tasks. The epoch of a lease
-is its offer's: a marker that becomes runnable is offered at a new epoch, and a lease that ran out is
-either delivered again under the same offer, so two workers may run it and the first result applies,
-or offered again at a new epoch when its queue is no longer polled; no other continuation takes the
-slot meanwhile. Workers can crash, report that they could not run a continuation (it is deferred and
+is its offer's: a marker that becomes runnable is offered at a new epoch, only while no marker is
+leased (the leased marker is the slot), and a lease that ran out is delivered again under the same
+offer, so two workers may run it and the first result applies; no other continuation takes the slot
+meanwhile. Workers can crash, report that they could not run a continuation (it is deferred and
 offered again), and be slow past their lease; queue messages can be lost or delivered twice; and a
 deploy can change the code. A switch draws the cases it did not take as previews. When the main
 lane's code raises, the execution names where: the task whose
@@ -33,7 +33,7 @@ variables come later; task retries are in `Workflow.tla`.
 | `UntakenStayDrawn` | a switch shows the cases it did not take for as long as it is drawn: a retry removes only what the continuation that threw drew, never a switch an earlier one drew |
 | `NeverStuck` | every entry lands where it will run: with nothing left to do, the workflow can complete |
 | `SequenceOrder` | a task runs only after the entry before it ended (a mark is never run: it is created failed) |
-| `OneContinuationAtATime` | only the worker holding the slot can have its result count |
+| `OneContinuationAtATime` | at most one marker is leased: the leased marker is the slot |
 | `AppliedOnFreshHistory` | a result applies only if nothing else was applied since its worker read the history |
 | `Settles` | each time it runs, including after a retry, a workflow ends, unless it is held waiting for a compatible build (`running ~> ended or held`) |
 
@@ -98,9 +98,9 @@ an execution it recorded got no verdict from the replay (the replay tool failing
 
 1. A join missed a lane started inside a switch case; `Join.addBranchTargets` now goes into the case
    the switch took. The kitchen sink checks it on a live server.
-2. A slow worker's result was accepted after another continuation had run. `complete` now also requires
-   that the worker still holds the slot; a refused continuation runs again. `AppliedOnFreshHistory`
-   states this.
+2. A slow worker's result was accepted after another continuation had run. No other continuation is
+   now offered while one is leased, even after its lease ran out, so a late result is computed on
+   the history that is still current. `AppliedOnFreshHistory` states this.
 3. The SDK did not notice a recorded call the code no longer makes. Replay now holds such an execution.
 4. A preview name for an untaken switch case could repeat a name from an earlier fragment, which failed
    the workflow. The expanded kitchen sink found this.

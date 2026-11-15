@@ -105,8 +105,8 @@ server by the kitchensink and the operator checks.
 
 - **Exactly-once side effects in tasks.** Tasks are at-least-once (guarantee 12).
 - **Exactly-once delivery of messages sent by other clients.** The Java client stamps each
-  message with its own id and the handler lane skips an id it applied among the last 500
-  (`nativeState.seen`), so a send the client retried is applied once. A client that posts to the
+  message with its own id and the handler lane skips an id it applied in the last 10 minutes
+  (`nativeState.replies`, at most 500), so a send the client retried is applied once. A client that posts to the
   message endpoint directly and retries without that id can still have a message applied twice.
 - **Delivery to an execution that fails or is terminated.** Messages still queued when an
   execution ends other than by completing are discarded, logged and counted
@@ -168,7 +168,7 @@ Each row is a gap and the mechanism that closes it as it stands on protocol 2.
 | (bench) A JOIN could complete while a lane's last continuation still had tasks to append, failing the execution | `lanesSettled`: a branch ends only when its last task's marker is applied and ended the lane |
 | (bench) Acknowledged signals were discarded when an execution completed with them queued | completion deferred while messages are queued or the handler lane is runnable or leased; discarded messages logged and counted |
 | (bench) An update sent to an execution that then ended waited three minutes; a refused message was retried for two | the client stops waiting when the execution is terminal, and does not retry a 4xx |
-| (bench) A message the client re-sent after an ambiguous failure was applied twice | client-chosen message ids, de-duplicated against `nativeState.seen` |
+| (bench) A message the client re-sent after an ambiguous failure was applied twice | client-chosen message ids, de-duplicated against the handled messages in `nativeState.replies` |
 | (bench) Two continuations running at once on different workers: the later completion's stale copy of the variables erased the other's writes, losing signals | completions apply only the variables they changed (`resumedWith`); a conflicting completion is deferred and run again on the current values |
 | (bench) A JOIN failed the execution on a continuation that was being retried or deferred | `lanesSettled` waits on any marker that is not applied and done |
 | (bench) A lost poll response stalled a continuation for 120 s | 30 s default lease, configurable |
