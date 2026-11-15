@@ -126,6 +126,8 @@ export interface WorkflowExecution {
   tasks: ExecutionTask[];
   /** Set by the UI: the code has not run yet and the definition shown is the registered one. */
   codePreview?: boolean;
+  /** Set by the UI: what the code has yet to do is previewed from the registered definition. */
+  codeAhead?: boolean;
   workflowDefinition: WorkflowDef;
   correlationId: string;
   createdBy: string;

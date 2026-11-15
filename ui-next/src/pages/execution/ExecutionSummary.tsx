@@ -59,6 +59,11 @@ export default function ExecutionSummary({
         value:
           "A preview: the code has not run yet, so it shows what the code calls, read from the registered definition",
       },
+      execution.codeAhead && {
+        label: "Diagram",
+        value:
+          "What the code has yet to do is previewed after the step it is at, read from the registered definition",
+      },
       { label: "Version", value: execution.workflowVersion },
       { label: "Start time", value: execution.startTime, type: "date" },
       { label: "End time", value: execution.endTime, type: "date" },
