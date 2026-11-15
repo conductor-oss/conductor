@@ -1341,10 +1341,6 @@ public class NativeContinuationService {
     // ------------------------------------------------------------------ variables
 
     /**
-     * The variables this completion changed, checked: an object, within the size limit with the
-     * current variables. Empty when it changed none.
-     */
-    /**
      * The variables this completion changed: those it wrote that differ from what its continuation
      * read ({@code resumedWith}), so a value another completion wrote since is kept.
      */

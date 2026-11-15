@@ -441,7 +441,7 @@ protocol 2 on 2026-11-08.
 | 3 | core, rest | continuation branch in `ExecutionService.poll` (lease a marker, build the two synthetic tasks); continuation rule in `WorkflowExecutorOps.updateTask`; the message endpoint wakes the handler marker instead of deciding. No new endpoints |
 | 4 | SDK | `Registration`, `Workers` (poll, process, complete), `Replayer`, `Execution`, `Entries`, `WorkflowHandle.awaitReply`, `DurableReplay`; protocol 2 |
 | 5 | ui-next | remove the fold; continuation on the task panel; native section on the summary |
-| 6 | bench, docs | checker reads markers for retried and stalled continuations; bench summaries carry markers and the native section; mutants re-mapped (`ignore-epoch` added for the lease check; the SDK's unapplied-replay mutant dropped, having no equivalent; `no-stale-write-guard` kept for the async executor); re-record `kitchensink-odd.json` (done 2026-11-08); rewrite 01, 02, 03 and 06, update DURABILITY, COMPARISON and the SDK README |
+| 6 | bench, docs | checker reads markers for retried and stalled continuations; bench summaries carry markers and the native section; mutants re-mapped (`no-retry-count-fence` added for the lease check; the SDK's unapplied-replay mutant dropped, having no equivalent; `no-stale-write-guard` kept for the async executor); re-record `kitchensink-odd.json` (done 2026-11-08); rewrite 01, 02, 03 and 06, update DURABILITY, COMPARISON and the SDK README |
 | 7 | validation | server unit and harness suites; SDK suites; kitchensink, operator checks, chaos; cluster bench with every fault profile and overlapping nemeses; bug-injection rounds; Elle and Porcupine |
 
 Order followed: 1, 2 and 3 together (a completion with any protocol other than 2 is rejected);

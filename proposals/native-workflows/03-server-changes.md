@@ -193,7 +193,7 @@ for this worker's next continuation.
 `NativeContinuationService.complete`, in memory, under the lock the caller holds:
 
 1. **Validate the lease.** The marker must be `LEASED` with the output's `n` and `retryCount`
-   (the `ignore-epoch` mutant skips the `retryCount` check). Otherwise `native_stale_completion`
+   (the `no-retry-count-fence` mutant skips the `retryCount` check). Otherwise `native_stale_completion`
    and `ConflictException` (HTTP 409).
 2. **Status.** `FAILED_WITH_TERMINAL_ERROR` (replay divergence) defers with
    `reasonForIncompletion` "diverged: <reason>"; the workflow keeps running. Any other

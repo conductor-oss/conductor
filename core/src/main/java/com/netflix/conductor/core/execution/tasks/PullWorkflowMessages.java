@@ -80,9 +80,9 @@ public class PullWorkflowMessages extends WorkflowSystemTask {
         int batchSize = getBatchSize(task);
         List<WorkflowMessage> messages;
         try {
-            // claimed under the task's reference name (unique per loop iteration), so running
-            // this task again returns the same messages rather than losing the first run's
-            // fenced by the loop iteration: a stale run of an older pull takes nothing new
+            // claimed under the task's reference name (unique per loop iteration) and fenced by
+            // the iteration: running this task again returns the same messages rather than
+            // losing the first run's, and a stale run of an older pull takes nothing new
             messages =
                     dao.claim(
                             workflow.getWorkflowId(),
@@ -90,7 +90,7 @@ public class PullWorkflowMessages extends WorkflowSystemTask {
                             task.getReferenceTaskName(),
                             task.getIteration());
         } catch (RuntimeException e) {
-            // The pop rolled back, so the messages are still queued. Stay IN_PROGRESS and try
+            // The claim rolled back, so the messages are still queued. Stay IN_PROGRESS and try
             // again on the next poll instead of leaving the task unscheduled.
             LOGGER.warn(
                     "Could not pull messages for workflow {}; will retry",
