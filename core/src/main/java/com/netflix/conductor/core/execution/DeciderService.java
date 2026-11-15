@@ -514,8 +514,7 @@ public class DeciderService {
             if (nativeContinuationService.hasUnappliedLane(workflow)) {
                 return false;
             }
-            workflow.setOutput(last.getResult());
-            return true;
+            return true; // its output is what the code returned, set when that applied
         }
         return checkTasksForWorkflowCompletion(workflow);
     }

@@ -50,8 +50,8 @@ carries the marker, so a fragment is never recorded as applied without being in 
 A lane is one thread of code. The `@Workflow` method is the main lane. Each `async` block is a
 lane. The handler lane runs the signal and update handlers. A lane pauses when it needs a result
 from the server. The pause is not a task: it is a `continuation` marker on the last entry the lane
-appended, the task it waits on. The SDK puts `metadata.continuation = {"lane": …, "n": …}` on that
-entry, and `TaskMapperContext.createTaskModel` copies it onto the scheduled `TaskModel` as a
+appended, the task it waits on. The SDK puts `metadata.continuation = n` on that entry (its lane is
+the entry's `metadata.lane`), and `TaskMapperContext.createTaskModel` copies it onto the scheduled `TaskModel` as a
 `WAITING` marker. A JOIN, a DO_WHILE and a WAIT carry it like a worker task does, since the code
 pauses on them too.
 
@@ -148,7 +148,7 @@ Failover:
 
 Whichever worker leases a continuation replays the method from the top (an SDK mechanism) against
 the applied markers and the task list. For the replay to be exact the server keeps every applied
-continuation's record on its marker (`appliedAt`, `recorded`, `resumedWith`, `done`, `result`),
+continuation's record on its marker (`appliedAt`, `recorded`, `resumedWith`, `done`),
 every task's output, and the bootstrap's record on the workflow. Handler runs are not replayed;
 their effect is in the variables.
 

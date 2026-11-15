@@ -20,6 +20,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskContinuation;
 import tools.jackson.databind.ObjectMapper;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /** Markers stored before a field changed still read: an execution outlives the server version. */
@@ -41,30 +42,31 @@ public class TaskContinuationJsonTest {
     }
 
     @Test
-    public void aMarkerStoredWithoutAResultReadsAsNone() {
-        String stored =
-                "{\"lane\":\"main\",\"n\":3,\"state\":\"APPLIED\",\"epoch\":2,"
-                        + "\"queuedAt\":100,\"step\":7,\"done\":false,\"recorded\":{},\"resumedWith\":{}}";
+    public void aWaitingMarkerIsStoredAsItsLaneNumberAndStateOnly() throws Exception {
+        String json = objectMapper.writeValueAsString(new TaskContinuation("fork_1.0", 3));
+
+        assertEquals("{\"lane\":\"fork_1.0\",\"n\":3,\"state\":\"WAITING\"}", json);
+    }
+
+    @Test
+    public void aMarkerStoredWithoutItsEmptyValuesReadsThemBack() {
+        String stored = "{\"lane\":\"main\",\"n\":3,\"state\":\"APPLIED\",\"appliedAt\":100}";
 
         TaskContinuation marker = objectMapper.readValue(stored, TaskContinuation.class);
 
         assertEquals(3, marker.getN());
-        assertTrue(marker.getResult().isEmpty());
-    }
-
-    @Test
-    public void aMarkerStoredWithANullResultReadsAsNone() {
-        String stored = "{\"lane\":\"main\",\"n\":1,\"state\":\"WAITING\",\"result\":null}";
-
-        assertTrue(objectMapper.readValue(stored, TaskContinuation.class).getResult().isEmpty());
+        assertEquals(0, marker.getEpoch());
+        assertFalse(marker.isDone());
+        assertTrue(marker.getRecorded().isEmpty());
+        assertTrue(marker.getResumedWith().isEmpty());
     }
 
     @Test
     public void aMarkerStoredByAnEarlierBuildStillReads() {
-        // the error now lives on the run (its reason) and attempts is the epoch: both are ignored
+        // fields since moved to the run (error, result) or dropped: all ignored
         String stored =
-                "{\"lane\":\"main\",\"n\":2,\"state\":\"APPLIED\",\"done\":true,\"attempts\":3,"
-                        + "\"worker\":\"w\",\"queue\":\"q\",\"error\":{\"message\":\"boom\"}}";
+                "{\"lane\":\"main\",\"n\":2,\"state\":\"APPLIED\",\"done\":true,\"attempts\":3,\"step\":4,"
+                        + "\"worker\":\"w\",\"queue\":\"q\",\"error\":{\"message\":\"boom\"},\"result\":{}}";
 
         TaskContinuation marker = objectMapper.readValue(stored, TaskContinuation.class);
 

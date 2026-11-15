@@ -98,7 +98,6 @@ export interface TaskContinuation {
   done?: boolean;
   recorded?: Record<string, unknown>;
   resumedWith?: Record<string, unknown>;
-  result?: Record<string, unknown>;
 }
 
 /** The engine's state of a native (code-first) workflow execution. */

@@ -19,6 +19,7 @@ import com.netflix.conductor.annotations.protogen.ProtoField;
 import com.netflix.conductor.annotations.protogen.ProtoMessage;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
  * The continuation of a native (code-defined) workflow that runs when this task finishes.
@@ -48,32 +49,36 @@ public class TaskContinuation {
     private String state = WAITING;
 
     @ProtoField(id = 4)
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     private long epoch;
 
     @ProtoField(id = 5)
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     private long queuedAt;
 
     @ProtoField(id = 6)
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     private long leasedAt;
 
     @ProtoField(id = 7)
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     private long appliedAt;
 
     @ProtoField(id = 8)
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private String deferred;
 
     @ProtoField(id = 9)
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private Map<String, Object> recorded = new HashMap<>();
 
     @ProtoField(id = 10)
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private Map<String, Object> resumedWith = new HashMap<>();
 
     @ProtoField(id = 11)
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     private boolean done;
-
-    // never null: an empty map is no result (the generated proto mapper copies it)
-    @ProtoField(id = 12)
-    private Map<String, Object> result = new HashMap<>();
 
     public TaskContinuation() {}
 
@@ -82,9 +87,15 @@ public class TaskContinuation {
         this.n = n;
     }
 
-    /** A fresh marker for the same lane and continuation, as a retried attempt carries. */
+    /**
+     * A fresh marker for the same lane and continuation, as a retried or rerun task carries. It
+     * keeps the epoch: its next offer takes a new one, so a completion of an offer made before the
+     * reset can never match it.
+     */
     public TaskContinuation reset() {
-        return new TaskContinuation(lane, n);
+        TaskContinuation fresh = new TaskContinuation(lane, n);
+        fresh.epoch = epoch;
+        return fresh;
     }
 
     @JsonIgnore // derived from state, not stored
@@ -193,14 +204,6 @@ public class TaskContinuation {
 
     public void setDone(boolean done) {
         this.done = done;
-    }
-
-    public Map<String, Object> getResult() {
-        return result;
-    }
-
-    public void setResult(Map<String, Object> result) {
-        this.result = result == null ? new HashMap<>() : result;
     }
 
     @Override

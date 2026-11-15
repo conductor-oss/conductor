@@ -19,5 +19,4 @@ message TaskContinuation {
     map<string, google.protobuf.Value> recorded = 9;
     map<string, google.protobuf.Value> resumed_with = 10;
     bool done = 11;
-    map<string, google.protobuf.Value> result = 12;
 }

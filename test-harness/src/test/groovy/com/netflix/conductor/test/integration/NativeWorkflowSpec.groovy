@@ -291,7 +291,8 @@ class NativeWorkflowSpec extends AbstractSpecification {
 
     /** Marks the entry as the task the code paused on: continuation {@code n} of {@code lane} follows it. */
     private static WorkflowTask paused(WorkflowTask task, String lane, int n) {
-        task.metadata.continuation = [lane: lane, n: n]
+        task.metadata.lane = lane
+        task.metadata.continuation = n
         return task
     }
 

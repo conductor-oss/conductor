@@ -1050,9 +1050,6 @@ public abstract class AbstractProtoMapper {
             to.putResumedWith( pair.getKey(), toProto( pair.getValue() ) );
         }
         to.setDone( from.isDone() );
-        for (Map.Entry<String, Object> pair : from.getResult().entrySet()) {
-            to.putResult( pair.getKey(), toProto( pair.getValue() ) );
-        }
         return to.build();
     }
 
@@ -1077,11 +1074,6 @@ public abstract class AbstractProtoMapper {
         }
         to.setResumedWith(resumedWithMap);
         to.setDone( from.getDone() );
-        Map<String, Object> resultMap = new HashMap<String, Object>();
-        for (Map.Entry<String, Value> pair : from.getResultMap().entrySet()) {
-            resultMap.put( pair.getKey(), fromProto( pair.getValue() ) );
-        }
-        to.setResult(resultMap);
         return to;
     }
 

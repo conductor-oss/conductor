@@ -591,7 +591,7 @@ public class TestDeciderOutcomes {
         entry.setTaskReferenceName("t0");
         entry.setOptional(true);
         entry.getMetadata().put("lane", "main");
-        entry.getMetadata().put("continuation", Map.of("lane", "main", "n", 2));
+        entry.getMetadata().put("continuation", 2);
         entry.setTaskDefinition(new TaskDef("task0"));
 
         WorkflowModel workflow = new WorkflowModel();
@@ -666,7 +666,7 @@ public class TestDeciderOutcomes {
         TaskModel task = workflow.getTasks().get(0);
         task.getContinuation().setState(TaskContinuation.APPLIED);
         task.getContinuation().setDone(true);
-        task.getContinuation().setResult(Map.of("answer", 42));
+        workflow.setOutput(Map.of("answer", 42)); // set when the code's return applied
         WorkflowTask trailing = new WorkflowTask();
         trailing.setName("task1");
         trailing.setType("SIMPLE");

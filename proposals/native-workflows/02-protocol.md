@@ -167,12 +167,12 @@ continuations when the entry is the code type or `*` (`Map.of("kitchensink.v1.co
 ```json
 "continuation": {
   "lane": "main", "n": 3, "state": "LEASED",
-  "epoch": 2,
-  "queuedAt": 1794128769900, "leasedAt": 1794128769940, "appliedAt": 0,
-  "deferred": null,
-  "recorded": {}, "resumedWith": {}, "done": false, "result": {}
+  "epoch": 2, "queuedAt": 1794128769900, "leasedAt": 1794128769940
 }
 ```
+
+Empty values (zero times and epoch, `false`, empty maps, no `deferred`) are not stored: a marker
+whose task is still running is just `{"lane": "main", "n": 3, "state": "WAITING"}`.
 
 Once applied:
 
@@ -182,19 +182,18 @@ Once applied:
   "epoch": 2,
   "queuedAt": 1794128769900, "leasedAt": 1794128769940, "appliedAt": 1794128770010,
   "recorded": { "now": { "value": "2026-11-08T…", "type": "java.time.Instant" } },
-  "resumedWith": { "stage": "new" },
-  "done": false, "result": {}
+  "resumedWith": { "stage": "new" }
 }
 ```
 
 | Field | Written by | Meaning |
 |---|---|---|
-| `lane`, `n` | `TaskMapperContext` from `metadata.continuation` | which continuation runs when this task finishes |
+| `lane`, `n` | `TaskMapperContext` from the entry's `metadata.lane` and `metadata.continuation` | which continuation runs when this task finishes: the lane's `n`-th, counting its pauses |
 | `state` | decider, poll, complete | `WAITING`, `RUNNABLE`, `LEASED`, `APPLIED` |
 | `epoch`, `leasedAt` | `offer` (in a decide) | `epoch` increments per offer, so it also counts the offers (the retry backoff and the UI read it so); `leasedAt` is when the message is delivered (after a retry's backoff). The message always goes to the code type's queue |
 | `queuedAt` | `repairAndWake`, `defer`, `rearmLastMain`, `initialize` | when the marker became runnable |
 | `deferred` | `defer` | why the last completion was not applied (variable conflict, pending messages, worker error); cleared when the continuation applies. A value starting `waiting for handlers: ` is a main lane that returned while the handler lane has work: it is not re-queued, and `repairAndWake` wakes it once that lane has settled |
-| `appliedAt`, `recorded`, `resumedWith`, `done`, `result` | `complete` | the record a replay reads, in `appliedAt` order (increasing within a run). A lane that threw is `done` with no `result`; the main lane's exception is the run's `reasonForIncompletion`, and where it threw is the `TERMINATE` task `failedTaskId` names |
+| `appliedAt`, `recorded`, `resumedWith`, `done` | `complete` | the record a replay reads, in `appliedAt` order (increasing within a run). `done` once the lane returned or threw: what the main lane returned is the run's output, written when it applies; its exception is the run's `reasonForIncompletion`, and where it threw is the `TERMINATE` task `failedTaskId` names |
 
 ## 6. Poll
 
@@ -284,7 +283,7 @@ The output, as `Replayer.process` and `Workers.complete` build it:
         "inputParameters": { "…": "…" }, "subWorkflowParam": { "name": "sub_flow_1", "version": 1 },
         "optional": true,
         "metadata": { "lane": "fork_1.0", "site": "KitchenSinkWorkflow.kitchenSink:112",
-                      "continuation": { "lane": "fork_1.0", "n": 3 } } }
+                      "continuation": 3 } }
     ],
     "variables": { "stage": "classic" }
   }
@@ -300,7 +299,7 @@ The output, as `Replayer.process` and `Workers.complete` build it:
 | `variables` | no | The lane's `@Variable` values after the continuation. Only entries that differ from `resumedWith` are applied. |
 | `resumedWith` | no | The variables the continuation started from. A variable it changed that another completion changed meanwhile defers the completion (`deferred: "variable 'x' was changed by another completion"`). |
 | `done` | no (false) | `true` when the lane returned or threw. |
-| `result` | main lane, `done` without error | The workflow output. |
+| `result` | main lane, `done` without error | The workflow output: the server writes it to the run's output as the completion applies. |
 | `error` | main lane, `done` by throwing | `{ "message": "…", "ref": "<task>" }`; `ref` is present for an uncaught `TaskFailure`. The workflow fails with `message` and `failedTaskId` from `ref`. Another lane's error is raised by replay in the lane that joins it, so the SDK does not send it. |
 | `releases` | handler lane | `[ { "ref": "condition", "output": { "satisfied": true } } ]`: `WAIT` tasks the server completes with that output in the same write. |
 | `replies` | handler lane | every handled message by the sender's id: `{ "value": …, "at": <millis> }` or `{ "error": "…", "at": … }` for an update, `{ "at": … }` for a signal; replaces `nativeState.replies`. |
@@ -336,8 +335,8 @@ message.
    in the completion that ends the lane with that error and names it in `error.ref`. A `SWITCH`
    is decided by the code: its `evaluatorType` must be `native-code`.
 4. `lane`: every entry carries `metadata.lane`.
-5. `continuation`: a `metadata.continuation` is `{ "lane": "<lane>", "n": <number> }`, and a lane
-   pauses at most once in one fragment.
+5. `continuation`: a `metadata.continuation` is a number, the `n` of the lane's next continuation
+   (the lane is the entry's `metadata.lane`), and a lane pauses at most once in one fragment.
 6. `definition`: `SIMPLE` tasks get their task definition through
    `MetadataMapperService.populateTaskDefinitions`, with the same missing-definition policy as
    registration; `SUB_WORKFLOW` entries may carry an inline `workflowDefinition` or a name and
@@ -436,7 +435,7 @@ empty):
              "metadata": { "lane": "main", "site": "…", "preview": true } } ],
     "1": [ { "name": "fork", "taskReferenceName": "fork", "type": "FORK_JOIN", "…": "…" },
            { "name": "fork_join", "taskReferenceName": "fork_join", "type": "JOIN", "joinOn": [],
-             "metadata": { "lane": "main", "site": "…", "continuation": { "lane": "main", "n": 4 } }, "…": "…" } ]
+             "metadata": { "lane": "main", "site": "…", "continuation": 4 }, "…": "…" } ]
   },
   "defaultCase": [],
   "metadata": { "lane": "main", "site": "KitchenSinkWorkflow.kitchenSink:…", "loops": [] } }
@@ -448,7 +447,7 @@ first entry is anchored after the switch:
 ```json
 [ { "name": "get_es_1", "taskReferenceName": "get_es_1", "type": "HTTP", "optional": true, "…": "…",
     "metadata": { "lane": "main", "site": "…", "after": "switch_oddEven",
-                  "continuation": { "lane": "main", "n": 5 } } } ]
+                  "continuation": 5 } } ]
 ```
 
 The task row the server writes for the switch has `outputData.selectedCase: "1"` and

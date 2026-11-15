@@ -115,9 +115,9 @@ public class NativeContinuationServiceTest {
         e.put("taskReferenceName", ref);
         e.put("type", type);
         Map<String, Object> metadata = new HashMap<>();
-        metadata.put("lane", lane);
+        metadata.put("lane", pauseLane != null ? pauseLane : lane);
         if (pauseLane != null) {
-            metadata.put("continuation", Map.of("lane", pauseLane, "n", n));
+            metadata.put("continuation", n); // the lane's n-th continuation follows this task
         }
         e.put("metadata", metadata);
         return e;
@@ -227,9 +227,9 @@ public class NativeContinuationServiceTest {
         assertEquals("classic", workflow.getVariables().get("stage"));
         assertEquals(CODE_TYPE, completion.ackQueue); // the code type's queue: no domains
         assertEquals("wf-1|main", completion.ackId);
-        // the entry the code paused on carries the next marker for the mapper to copy
+        // the entry the code paused on carries the next continuation's number for the mapper
         assertEquals(
-                Map.of("lane", "main", "n", 2),
+                2,
                 workflow.getWorkflowDefinition()
                         .getTasks()
                         .get(0)
@@ -462,6 +462,44 @@ public class NativeContinuationServiceTest {
     }
 
     @Test
+    public void aCompletionOfAnOfferMadeBeforeARerunIsRefusedAfterTheTaskIsOfferedAgain() {
+        WorkflowModel workflow = freshWorkflow(false);
+        workflow.getNativeState().getBootstrap().setState(TaskContinuation.APPLIED);
+        TaskModel task = awaitedTask(workflow, "task_1", "main", 2, 1);
+        // a rerun from the task: same task id, a fresh marker, then offered again
+        task.setContinuation(task.getContinuation().reset());
+        task.getContinuation().setState(TaskContinuation.RUNNABLE);
+        service.offer(workflow, task.getContinuation(), task.getTaskId(), 0);
+        assertEquals(2, task.getContinuation().getEpoch()); // never the epoch of an earlier offer
+
+        // the worker that held the offer from before the rerun reports late
+        try {
+            service.complete(workflow, task, result("id-task_1", output(2, 1, List.of())));
+            fail("a completion of an offer made before the rerun must be refused");
+        } catch (ConflictException expected) {
+            // the continuation runs again under the new offer
+        }
+        assertTrue(task.getContinuation().isLeased());
+    }
+
+    @Test
+    public void aRestartKeepsCountingTheEpochsOfTheLanesWithoutATask() {
+        WorkflowModel workflow = freshWorkflow(true);
+        workflow.getNativeState().getBootstrap().setEpoch(4);
+        workflow.getNativeState().getHandlers().setN(3);
+        workflow.getNativeState().getHandlers().setEpoch(2);
+
+        service.initialize(workflow); // a restart: <workflowId>|main and |handlers stay the same
+
+        TaskContinuation bootstrap = workflow.getNativeState().getBootstrap();
+        assertTrue(bootstrap.isRunnable());
+        assertEquals(4, bootstrap.getEpoch());
+        assertEquals(3, workflow.getNativeState().getHandlers().getN());
+        assertEquals(2, workflow.getNativeState().getHandlers().getEpoch());
+        assertTrue(workflow.getNativeState().getHandlers().isWaiting());
+    }
+
+    @Test
     public void whileAContinuationIsLeasedNoOtherIsOffered() {
         WorkflowModel workflow = freshWorkflow(false);
         workflow.getNativeState().getBootstrap().setState(TaskContinuation.APPLIED);
@@ -495,7 +533,7 @@ public class NativeContinuationServiceTest {
         // the decider completes the workflow (after anything the fragment appended has run)
         assertFalse(completion.reason, completion.finished);
         assertTrue(awaited.getContinuation().isDone());
-        assertEquals(Map.of("answer", 42), awaited.getContinuation().getResult());
+        assertEquals(Map.of("answer", 42), workflow.getOutput()); // what the code returned
         assertFalse(awaited.isExecuted());
     }
 
@@ -1128,7 +1166,7 @@ public class NativeContinuationServiceTest {
         entry.setTaskReferenceName("task_1");
         entry.setType(TaskType.TASK_TYPE_SIMPLE);
         entry.getMetadata().put("lane", "main");
-        entry.getMetadata().put("continuation", Map.of("lane", "main", "n", 2));
+        entry.getMetadata().put("continuation", 2);
         WorkflowModel workflow = freshWorkflow(false);
         TaskModel task =
                 com.netflix.conductor.core.execution.mapper.TaskMapperContext.newBuilder()

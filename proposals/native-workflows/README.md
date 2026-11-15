@@ -46,7 +46,7 @@ blocks either.
 |---|---|
 | lane | One thread of workflow code: the `@Workflow` method (`main`), each `async` block (`fork_<k>.<i>`), and the handler lane (`handlers`). |
 | continuation | One run of a lane's code between two pauses. Numbered `n` per lane, starting at 1. |
-| continuation marker | The `continuation` field on the task a lane paused on (`TaskContinuation`): lane, `n`, state `WAITING` → `RUNNABLE` → `LEASED` → `APPLIED`, lease epoch, and once applied the record replay reads (recorded values, `resumedWith`, `done`, `result`). |
+| continuation marker | The `continuation` field on the task a lane paused on (`TaskContinuation`): lane, `n`, state `WAITING` → `RUNNABLE` → `LEASED` → `APPLIED`, lease epoch, and once applied the record replay reads (recorded values, `resumedWith`, `done`). |
 | bootstrap | The main lane's first continuation. It runs before any task exists, so its marker lives on the workflow (`nativeState.bootstrap`). |
 | handler lane | Signal and update handlers. They schedule no tasks, so their marker lives on the workflow (`nativeState.handlers`), one run per batch of messages. |
 | fragment | The list of `WorkflowTask` entries a lane scheduled during one continuation. Carried in the completion and inserted right after its anchor. |

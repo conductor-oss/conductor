@@ -172,10 +172,11 @@ public class NativeContinuationService {
      * number), new and waiting for the task; null when it names none or a malformed one.
      */
     public static TaskContinuation markerOf(WorkflowTask entry) {
-        Object raw =
+        Object n =
                 entry.getMetadata() == null ? null : entry.getMetadata().get(METADATA_CONTINUATION);
-        return raw instanceof Map<?, ?> m && m.get("lane") != null && m.get("n") instanceof Number n
-                ? new TaskContinuation(String.valueOf(m.get("lane")), n.intValue())
+        String lane = laneOf(entry);
+        return n instanceof Number number && lane != null
+                ? new TaskContinuation(lane, number.intValue())
                 : null;
     }
 
@@ -231,13 +232,22 @@ public class NativeContinuationService {
             workflow.getWorkflowDefinition().setTasks(new ArrayList<>());
         }
         Map<String, Object> meta = nativeMetadata(workflow);
+        // on a restart the lanes without a task keep their ids, so their markers keep counting
+        // epochs (reset), and a completion of an offer made before the restart cannot match
+        NativeState before = workflow.getNativeState();
         NativeState state = new NativeState();
-        TaskContinuation bootstrap = new TaskContinuation(MAIN_LANE, 1);
+        TaskContinuation bootstrap =
+                before != null && before.getBootstrap() != null
+                        ? before.getBootstrap().reset()
+                        : new TaskContinuation(MAIN_LANE, 1);
         bootstrap.setState(TaskContinuation.RUNNABLE);
         bootstrap.setQueuedAt(System.currentTimeMillis());
         state.setBootstrap(bootstrap);
         if (Boolean.TRUE.equals(meta.get("handlers"))) {
-            state.setHandlers(new TaskContinuation(HANDLER_LANE, 1));
+            state.setHandlers(
+                    before != null && before.getHandlers() != null
+                            ? before.getHandlers().reset()
+                            : new TaskContinuation(HANDLER_LANE, 1));
         }
         workflow.setNativeState(state);
     }
@@ -642,7 +652,11 @@ public class NativeContinuationService {
             marker.setRecorded(mapOrEmpty(out.get(OUTPUT_RECORDED)));
             marker.setResumedWith(mapOrEmpty(out.get(OUTPUT_RESUMED_WITH)));
             marker.setDone(done);
-            marker.setResult(mapOrNull(out.get(OUTPUT_RESULT)));
+            if (done && error == null && MAIN_LANE.equals(marker.getLane())) {
+                // the code returned: its value is the run's output, which the decider completes
+                // the run with once everything this continuation appended has run
+                workflow.setOutput(mapOrEmpty(out.get(OUTPUT_RESULT)));
+            }
             marker.setAppliedAt(appliedAt);
             marker.setDeferred(null);
             if (HANDLER_LANE.equals(marker.getLane())) {
@@ -932,7 +946,11 @@ public class NativeContinuationService {
         }
         NativeState state = workflow.getNativeState();
         if (state != null && def.getTasks().isEmpty()) {
-            TaskContinuation bootstrap = new TaskContinuation(MAIN_LANE, 1);
+            // the same id, <workflowId>|main: the fresh marker keeps counting its epochs
+            TaskContinuation bootstrap =
+                    state.getBootstrap() != null
+                            ? state.getBootstrap().reset()
+                            : new TaskContinuation(MAIN_LANE, 1);
             bootstrap.setState(TaskContinuation.RUNNABLE);
             bootstrap.setQueuedAt(System.currentTimeMillis());
             state.setBootstrap(bootstrap);

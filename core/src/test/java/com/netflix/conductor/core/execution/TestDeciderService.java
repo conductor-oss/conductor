@@ -2151,7 +2151,7 @@ public class TestDeciderService {
 
         bootstrap.setState(com.netflix.conductor.common.metadata.tasks.TaskContinuation.APPLIED);
         bootstrap.setDone(true);
-        bootstrap.setResult(Map.of("result", "value"));
+        workflow.setOutput(Map.of("result", "value")); // set when the code's return applied
         assertTrue(deciderService.checkForWorkflowCompletion(workflow));
         assertEquals(Map.of("result", "value"), workflow.getOutput());
 

@@ -538,12 +538,7 @@ public class TestWorkflowExecutor {
                                         "name", "t1",
                                         "taskReferenceName", "t1",
                                         "type", "SIMPLE",
-                                        "metadata",
-                                                Map.of(
-                                                        "lane",
-                                                        "main",
-                                                        "continuation",
-                                                        Map.of("lane", "main", "n", 3)))));
+                                        "metadata", Map.of("lane", "main", "continuation", 3))));
         workflowExecutor.updateTask(result);
 
         assertTrue(writes.toString(), writes.indexOf("workflow:true") >= 0);

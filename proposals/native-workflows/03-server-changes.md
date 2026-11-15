@@ -48,14 +48,17 @@ describes code waiting on it.
 1. `TaskContinuation` in `common/.../metadata/tasks/`, and a `continuation` field on `Task` and
    `TaskModel` (`TaskModel.copy` carries it). Fields: `lane`, `n`, `state` (`WAITING`, `RUNNABLE`,
    `LEASED`, `APPLIED`), `epoch`, `queuedAt`, `leasedAt`, `appliedAt`,
-   `deferred`, `recorded`, `resumedWith`, `done`, `result`.
-   `reset()` returns a fresh `WAITING` marker for the same lane and `n`, for a retried attempt.
+   `deferred`, `recorded`, `resumedWith`, `done`. Empty values are not stored.
+   `reset()` returns a fresh `WAITING` marker for the same lane and `n`, keeping the epoch, for a
+   retried or rerun task: its next offer takes a new epoch, so a completion of an offer made
+   before the reset never matches. A restart and a rerun from the start rebuild the bootstrap
+   and handler markers the same way, since their ids stay the same.
 2. `NativeState` in `common/.../run/`, and a `nativeState` field on `Workflow` and `WorkflowModel`.
    Fields: `bootstrap` and `handlers` (both `TaskContinuation`), and `replies` (every handled
    message by the sender's id). Null for other workflows. The code type and the continuation timeout are
    read from the execution's definition (`metadata.native`), never copied here.
-3. `TaskMapperContext.createTaskModel`: when the entry's `metadata.continuation` is a map with
-   `lane` and a numeric `n`, set `taskModel.continuation = new TaskContinuation(lane, n)`.
+3. `TaskMapperContext.createTaskModel`: when the entry's `metadata.continuation` is a number `n`,
+   set `taskModel.continuation = new TaskContinuation(lane, n)`, with the entry's `metadata.lane`.
 4. `NativeContinuationService.initialize(workflow)` (called by `startWorkflow` when
    `NativeContinuationService.isNative(workflowDefinition)`, and by `restart`): first, if the
    execution's copy of the definition has tasks (the graph the SDK discovered from the code at
@@ -218,7 +221,8 @@ for this worker's next continuation.
    `release` completes each `releases[].ref` task that is not terminal with `COMPLETED`, `endTime`,
    `executed false` and the given `output`.
 8. **Record.** Marker `APPLIED`, `appliedAt` (now, but after the run's latest `appliedAt`: replay's
-   order), `recorded`, `resumedWith`, `done`, `result`, `deferred` null. For the handler lane,
+   order), `recorded`, `resumedWith`, `done`, `deferred` null; a main lane that returned sets the
+   run's output to its `result`. For the handler lane,
    `nativeState.handlers` becomes a new `WAITING` marker for `n + 1`.
 9. **Re-evaluate.** The awaited task gets `executed = false` and is returned among the touched
    tasks; the next decide finds the appended entries after it. For the bootstrap, the start path
@@ -227,8 +231,8 @@ for this worker's next continuation.
     the reason and the task named by `error.ref` as the cause. The reason is set on the workflow
     with the marker, so a run saved before it is ended reads as failed: the decider completes a
     native run only when its main lane is done and it has no `reasonForIncompletion`. `done` without `error` finishes
-    nothing here: the decider completes the workflow with `result` as the output once everything
-    the fragment appended has run.
+    nothing here: the run's output is already the `result`, and the decider completes the workflow
+    once everything the fragment appended has run.
 
 A `RejectedFragmentException` at any step records the marker `APPLIED` with `done` and
 `error.message`, counts `native_fragment_rejected` with the reason, and finishes the workflow

@@ -98,7 +98,6 @@ public class TestProtoMapper {
     marker.setRecorded(Map.of("random_0", 0.5));
     marker.setResumedWith(Map.of("count", 4.0));
     marker.setDone(true);
-    marker.setResult(Map.of("greeting", "hi"));
     return marker;
   }
 
@@ -114,7 +113,6 @@ public class TestProtoMapper {
     assertEquals(expected.getRecorded(), actual.getRecorded());
     assertEquals(expected.getResumedWith(), actual.getResumedWith());
     assertEquals(expected.isDone(), actual.isDone());
-    assertEquals(expected.getResult(), actual.getResult());
   }
 
   @Test
@@ -126,16 +124,13 @@ public class TestProtoMapper {
 
   @Test
   public void aMarkerThatHasNotRunYetGoesOverGrpc() {
-    // a waiting marker, and one whose result and error the code cleared: no result, no error
-    TaskContinuation waiting = new TaskContinuation("main", 1);
-    TaskContinuation cleared = marker();
-    cleared.setResult(null);
-    for (TaskContinuation marker : List.of(waiting, cleared)) {
-      Task task = new Task();
-      task.setContinuation(marker);
-      TaskContinuation back = mapper.fromProto(mapper.toProto(task)).getContinuation();
-      assertTrue(back.getResult().isEmpty());
-    }
+    // a waiting marker: no record yet, and its maps come back empty, not null
+    Task task = new Task();
+    task.setContinuation(new TaskContinuation("main", 1));
+    TaskContinuation back = mapper.fromProto(mapper.toProto(task)).getContinuation();
+    assertTrue(back.isWaiting());
+    assertTrue(back.getRecorded().isEmpty());
+    assertTrue(back.getResumedWith().isEmpty());
   }
 
   @Test

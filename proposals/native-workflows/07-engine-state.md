@@ -69,7 +69,6 @@ server applies only what differs from it; a replay restores the lane's fields to
   "lane": "main", "n": 3, "state": "APPLIED", "appliedAt": 1794128770010,
   "recorded": {"now": {"value": "2026-11-08T…", "type": "java.time.Instant"}},
   "resumedWith": {"stage": "new"},
-  "done": false, "result": null, "error": null,
   "queuedAt": 1794128769900, "leasedAt": 1794128769940, "appliedAt": 1794128770010
 }
 ```
@@ -82,7 +81,7 @@ server applies only what differs from it; a replay restores the lane's fields to
 | `APPLIED` | the continuation ran and its fragment was appended after this task | never; a rerun resets it to `WAITING` |
 
 The marker is placed by the SDK: each lane's last blocking entry in a fragment carries
-`metadata.continuation = {"lane": …, "n": …}`, and `TaskMapperContext.createTaskModel` copies it
+`metadata.continuation = n` (with the entry's `metadata.lane`), and `TaskMapperContext.createTaskModel` copies it
 onto the `TaskModel` as `WAITING` when the entry is scheduled. A JOIN, a DO_WHILE and a WAIT carry
 it like a worker task does, since the code pauses on them too. A retried attempt copies the marker
 reset to `WAITING`, so the continuation runs after the attempt that finishes.
@@ -196,7 +195,7 @@ No new endpoint. A continuation finishes with the task update every worker uses:
   "outputData": {
     "protocol": 2, "n": 3, "epoch": 2,
     "fragment": [ {"name": "shout", "taskReferenceName": "shout", "type": "SIMPLE", "optional": true,
-                   "metadata": {"lane": "main", "site": "Hello.hello:44", "continuation": {"lane": "main", "n": 4}}} ],
+                   "metadata": {"lane": "main", "site": "Hello.hello:44", "continuation": 4}} ],
     "recorded": {"token": {"value": "…", "type": "java.lang.String"}},
     "variables": {"stage": "classic"}, "resumedWith": {"stage": "new"},
     "done": false, "result": null, "error": null,
@@ -246,8 +245,8 @@ to.)
    (pruned), and `releases`, which complete the named WAIT tasks with the
    given output in the same locked write.
 6. **Write the record**: the marker becomes `APPLIED` with `appliedAt` (increasing within the run),
-   `recorded`, `resumedWith`, `done`, `result`, and `appliedAt`; an exception is the run's
-   `reasonForIncompletion`.
+   `recorded`, `resumedWith`, `done`, and `appliedAt`; what the main lane returned is the run's
+   output, and an exception the run's `reasonForIncompletion`.
 7. **Make the decider schedule the fragment**: mark the awaited task `executed = false`. The
    decider re-evaluates it and `getNextTask` finds the appended entries after it. For the
    bootstrap, the definition had no tasks, and the decider's start path schedules the first entry.
