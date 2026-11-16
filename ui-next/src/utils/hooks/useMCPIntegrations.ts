@@ -52,18 +52,42 @@ export const useMCPIntegrations = () => {
   };
 };
 
-export const useMCPTools = (integrationName?: string) => {
+type MCPToolDefinition = {
+  api: string;
+  inputSchema?: {
+    data?: {
+      "x-integration-configuration"?: Record<string, unknown>;
+    };
+  };
+};
+
+export const useMCPTools = (
+  integrationName?: string,
+  configuration?: Record<string, unknown>,
+) => {
   const toolsUrl = integrationName
     ? `/integrations/${integrationName}/def/apis`
     : "";
 
-  const { data: tools, isLoading } = useFetch(toolsUrl, {
+  const { data: tools, isLoading } = useFetch<MCPToolDefinition[]>(toolsUrl, {
     enterpriseApiFeature: FEATURES.INTEGRATIONS,
     when: Boolean(integrationName),
+    keepPreviousData: false,
   });
 
+  // Match schema requirements against saved settings; unrestricted operations stay available.
+  const availableTools = useMemo(
+    () =>
+      (tools || []).filter((tool) =>
+        Object.entries(
+          tool.inputSchema?.data?.["x-integration-configuration"] || {},
+        ).every(([field, value]) => configuration?.[field] === value),
+      ),
+    [tools, configuration],
+  );
+
   return {
-    tools: tools || [],
+    tools: availableTools,
     isLoading: isLoading,
   };
 };

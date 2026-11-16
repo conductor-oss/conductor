@@ -29,6 +29,15 @@ import { Optional } from "./OptionalFieldForm";
 import TaskFormSection from "./TaskFormSection";
 import { TaskFormProps } from "./types";
 import { useMemo } from "react";
+import { UISchemaElement } from "@jsonforms/core";
+import { zipFileRenderer } from "./ZipFileControl";
+import {
+  formAjv,
+  protectTaskInputs,
+  retainVisibleInputs,
+} from "./mcpTaskFormData";
+
+const renderers = [...materialRenderers, zipFileRenderer];
 
 export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
   const navigate = useNavigate();
@@ -193,6 +202,10 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
     useMCPIntegrations();
   const { tools, isLoading: isLoadingTools } = useMCPTools(
     task?.inputParameters?.integrationName,
+    integrations.find(
+      (integration) =>
+        integration.name === task?.inputParameters?.integrationName,
+    )?.configuration,
   );
 
   const hasValidIntegration = Boolean(
@@ -207,6 +220,7 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
     `/integrations/${task?.inputParameters?.integrationName}/def/api/${task?.inputParameters?.method}`,
     {
       enabled: hasValidIntegration && hasValidMethod,
+      keepPreviousData: false,
     },
   );
 
@@ -231,17 +245,22 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
     }
 
     try {
-      return downgradeSchemaToDraft7(schemaData);
+      const { "x-ui-schema": _, ...validationSchema } = schemaData;
+      return downgradeSchemaToDraft7(validationSchema);
     } catch (error) {
       console.error("[MCPTaskForm] Error processing schema:", error);
       return null;
     }
   }, [toolData?.inputSchema?.data]);
 
+  const uiSchema = toolData?.inputSchema?.data?.["x-ui-schema"] as
+    | UISchemaElement
+    | undefined;
+
   return (
     <Box width="100%">
       <MaybeVariable
-        value={task?.inputParameters}
+        value={task.inputParameters}
         onChange={(val) => onChange(updateField("inputParameters", val, task))}
         path={"inputParameters"}
         taskType={TaskType.INTEGRATION}
@@ -423,11 +442,20 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
                       <ThemeProvider theme={customTheme}>
                         <JsonForms
                           schema={processedSchema}
-                          data={task?.inputParameters}
+                          uischema={uiSchema}
+                          data={task.inputParameters}
+                          ajv={formAjv}
+                          middleware={protectTaskInputs}
                           onChange={({ data }) =>
-                            onChange(updateField("inputParameters", data, task))
+                            onChange(
+                              updateField(
+                                "inputParameters",
+                                retainVisibleInputs(uiSchema, data),
+                                task,
+                              ),
+                            )
                           }
-                          renderers={materialRenderers}
+                          renderers={renderers}
                           cells={materialCells}
                         />
                       </ThemeProvider>
