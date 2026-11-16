@@ -52,7 +52,7 @@ public class MCPToolCallRequest extends LLMWorkerInput {
     /**
      * Optional MCP client options, for example {@code {"protocolVersion": "2026-07-28"}}. Without
      * it, or without {@code protocolVersion}, the call uses the legacy request. Kept as raw JSON so
-     * that {@link org.conductoross.conductor.ai.mcp.McpOptions} can reject wrong types and unknown
+     * that {@link org.conductoross.conductor.ai.mcp.MCPOptions} can reject wrong types and unknown
      * keys with clear messages. Read only from the top-level task input; a key with the same name
      * inside {@code arguments} is an ordinary tool argument.
      */

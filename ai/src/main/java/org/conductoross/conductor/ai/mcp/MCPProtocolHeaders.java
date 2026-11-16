@@ -24,9 +24,9 @@ import tools.jackson.databind.node.ObjectNode;
  * calls that select {@code mcpOptions.protocolVersion}; the legacy request is untouched.
  *
  * <p>All protocol constants for this revision are kept here, so a change to the specification text
- * touches only this class and {@code McpTasksCall}.
+ * touches only this class and {@code MCPTasksCall}.
  */
-public final class McpProtocolHeaders {
+public final class MCPProtocolHeaders {
 
     public static final String PROTOCOL_VERSION = "2026-07-28";
     public static final String TASKS_EXTENSION = "io.modelcontextprotocol/tasks";
@@ -53,7 +53,7 @@ public final class McpProtocolHeaders {
 
     private static final String CLIENT_VERSION = resolveClientVersion();
 
-    private McpProtocolHeaders() {}
+    private MCPProtocolHeaders() {}
 
     /**
      * Builds the {@code params._meta} object.
@@ -85,7 +85,7 @@ public final class McpProtocolHeaders {
      * @param method the JSON-RPC method, sent as {@code Mcp-Method}
      * @param name the tool name or task ID, sent as {@code Mcp-Name}; {@code null} to omit it
      */
-    public static void apply(Request.Builder builder, McpMethod method, String name) {
+    public static void apply(Request.Builder builder, MCPMethod method, String name) {
         builder.header(HEADER_PROTOCOL_VERSION, PROTOCOL_VERSION);
         builder.header(HEADER_METHOD, encodeHeaderValue(method.value()));
         if (name != null) {
@@ -137,7 +137,7 @@ public final class McpProtocolHeaders {
     }
 
     private static String resolveClientVersion() {
-        String version = McpProtocolHeaders.class.getPackage().getImplementationVersion();
+        String version = MCPProtocolHeaders.class.getPackage().getImplementationVersion();
         return version == null || version.isBlank() ? "unknown" : version;
     }
 }

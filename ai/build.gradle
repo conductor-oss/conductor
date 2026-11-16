@@ -68,7 +68,7 @@ dependencies {
 
 }
 
-// McpProtocolHeaders reports this version as clientInfo.version on MCP 2026-07-28 requests.
+// MCPProtocolHeaders reports this version as clientInfo.version on MCP 2026-07-28 requests.
 jar {
     manifest {
         attributes('Implementation-Title': project.name,

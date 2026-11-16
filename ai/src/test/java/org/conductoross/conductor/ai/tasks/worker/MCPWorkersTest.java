@@ -13,12 +13,14 @@
 package org.conductoross.conductor.ai.tasks.worker;
 
 import java.lang.reflect.Method;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.conductoross.conductor.ai.mcp.MCPClientProperties;
 import org.conductoross.conductor.ai.mcp.MCPService;
 import org.conductoross.conductor.ai.model.MCPListToolsRequest;
 import org.conductoross.conductor.ai.model.MCPToolCallRequest;
@@ -45,6 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -59,6 +62,10 @@ class MCPWorkersTest {
 
     private static final ObjectMapper MAPPER = new ObjectMapperProvider().getObjectMapper();
 
+    /** A call with the default maximum duration, for the wait computations. */
+    private static final MCPTasksCall BACKOFF =
+            new MCPTasksCall(null, MCPClientProperties.DEFAULT_MAX_DURATION);
+
     private MockWebServer server;
     private MCPWorkers workers;
     private String url;
@@ -68,7 +75,7 @@ class MCPWorkersTest {
         server = new MockWebServer();
         server.start();
         url = server.url("/mcp").toString();
-        workers = new MCPWorkers(new MCPService(new OkHttpClient()));
+        workers = new MCPWorkers(new MCPService(new OkHttpClient()), new MCPClientProperties());
     }
 
     @AfterEach
@@ -380,7 +387,7 @@ class MCPWorkersTest {
 
         TaskModel task = runCallTool(optedInInput());
 
-        assertEquals(TaskModel.Status.FAILED, task.getStatus());
+        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
         assertEquals(0, task.getCallbackAfterSeconds());
         String reason = task.getReasonForIncompletion();
         assertTrue(reason.contains("MCP tool 'echo'"), reason);
@@ -563,7 +570,7 @@ class MCPWorkersTest {
 
         TaskModel task = runCallTool(optedInInput());
 
-        assertFailedContaining(task, "2025-11-25");
+        assertTerminalFailureContaining(task, "2025-11-25");
         assertEquals(2, server.getRequestCount());
     }
 
@@ -578,7 +585,7 @@ class MCPWorkersTest {
 
         TaskModel task = runCallTool(optedInInput());
 
-        assertFailedContaining(task, "elicitation");
+        assertTerminalFailureContaining(task, "elicitation");
         assertEquals(2, server.getRequestCount());
     }
 
@@ -702,7 +709,7 @@ class MCPWorkersTest {
     @Test
     void pollIntervalIsRoundedUpOrDefaults() {
         assertInProgress(startCreatedTask(1500L), 2);
-        assertInProgress(startCreatedTask(null), McpTasksCall.DEFAULT_POLL.toSeconds());
+        assertInProgress(startCreatedTask(null), MCPTasksCall.DEFAULT_POLL.toSeconds());
     }
 
     @Test
@@ -712,7 +719,9 @@ class MCPWorkersTest {
         TaskModel restored = MAPPER.readValue(MAPPER.writeValueAsString(created), TaskModel.class);
         enqueueTaskStatus("\"status\":\"working\",\"pollIntervalMs\":3000");
 
-        poll(new MCPWorkers(new MCPService(new OkHttpClient())), restored);
+        poll(
+                new MCPWorkers(new MCPService(new OkHttpClient()), new MCPClientProperties()),
+                restored);
 
         assertInProgress(restored, 3);
         RecordedRequest request = takeRequest();
@@ -845,7 +854,7 @@ class MCPWorkersTest {
         enqueueTaskStatus("\"status\":\"working\",\"statusMessage\":\"still going\"");
         poll(task);
 
-        assertInProgress(task, McpTasksCall.DEFAULT_POLL.toSeconds());
+        assertInProgress(task, MCPTasksCall.DEFAULT_POLL.toSeconds());
         assertEquals(
                 json(
                         "{\"mcpTask\":{\"taskId\":\"t-1\",\"pollFailures\":0,\"retryCount\":0,\"pollIntervalMs\":5000}}"),
@@ -887,18 +896,18 @@ class MCPWorkersTest {
                                 + "\"pollIntervalMs\":1e30}"));
         TaskModel task = runCallTool(optedInInput());
 
-        assertInProgress(task, McpTasksCall.DEFAULT_POLL.toSeconds());
+        assertInProgress(task, MCPTasksCall.DEFAULT_POLL.toSeconds());
         assertEquals("t-1", output(task).at("/mcpTask/taskId").asString());
 
         // An integer out of the long range.
         enqueueTaskStatus("\"status\":\"working\",\"pollIntervalMs\":99999999999999999999");
         poll(task);
-        assertInProgress(task, McpTasksCall.DEFAULT_POLL.toSeconds());
+        assertInProgress(task, MCPTasksCall.DEFAULT_POLL.toSeconds());
 
         // A fraction is ignored, not truncated to 1500.
         enqueueTaskStatus("\"status\":\"working\",\"pollIntervalMs\":1500.5");
         poll(task);
-        assertInProgress(task, McpTasksCall.DEFAULT_POLL.toSeconds());
+        assertInProgress(task, MCPTasksCall.DEFAULT_POLL.toSeconds());
 
         // A whole number written as a float is used.
         enqueueTaskStatus("\"status\":\"working\",\"pollIntervalMs\":2000.0");
@@ -920,7 +929,7 @@ class MCPWorkersTest {
                                 + "}"));
         TaskModel task = runCallTool(optedInInput());
 
-        assertInProgress(task, McpTasksCall.DEFAULT_POLL.toSeconds());
+        assertInProgress(task, MCPTasksCall.DEFAULT_POLL.toSeconds());
         assertEquals(
                 json("{\"mcpTask\":{\"taskId\":\"t-1\",\"pollFailures\":0,\"retryCount\":0}}"),
                 output(task));
@@ -937,7 +946,7 @@ class MCPWorkersTest {
         TaskModel task = runCallTool(optedInInput());
 
         // CreateTaskResult has no result for any status; the result comes from tasks/get.
-        assertInProgress(task, McpTasksCall.DEFAULT_POLL.toSeconds());
+        assertInProgress(task, MCPTasksCall.DEFAULT_POLL.toSeconds());
         enqueueTaskStatus(
                 "\"status\":\"completed\",\"result\":{\"content\":"
                         + "[{\"type\":\"text\",\"text\":\"done\"}],\"isError\":false}");
@@ -1062,13 +1071,183 @@ class MCPWorkersTest {
     void lastCallbackIsLimitedSoTheDeadlineCheckRuns() {
         TaskModel task = startCreatedTask(5000L);
         task.setStartTime(
-                System.currentTimeMillis() - McpTasksCall.MAX_DURATION.minusSeconds(3).toMillis());
+                System.currentTimeMillis()
+                        - MCPClientProperties.DEFAULT_MAX_DURATION.minusSeconds(3).toMillis());
         enqueueTaskStatus("\"status\":\"working\",\"pollIntervalMs\":600000");
 
         poll(task);
 
         assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
         assertTrue(task.getCallbackAfterSeconds() >= 1 && task.getCallbackAfterSeconds() <= 4);
+    }
+
+    @Test
+    void serverTtlIsStoredWithTheState() {
+        TaskModel task = startCreatedTask(5000L, 60_000L);
+
+        assertInProgress(task, 5);
+        assertEquals(
+                json(
+                        "{\"mcpTask\":{\"taskId\":\"t-1\",\"pollFailures\":0,\"retryCount\":0,"
+                                + "\"pollIntervalMs\":5000,\"ttlMs\":60000}}"),
+                output(task));
+    }
+
+    @Test
+    void ttlFromTasksGetReplacesTheStoredOneAndAnAbsentOneKeepsIt() {
+        TaskModel task = startCreatedTask(5000L, 60_000L);
+        enqueueTaskStatus("\"status\":\"working\",\"ttlMs\":120000");
+
+        poll(task);
+
+        assertEquals(120_000L, mcpTaskField(task, "ttlMs"));
+        enqueueTaskStatus("\"status\":\"working\"");
+
+        poll(task);
+
+        assertEquals(120_000L, mcpTaskField(task, "ttlMs"));
+    }
+
+    @Test
+    void shorterServerTtlIsTheDeadline() throws Exception {
+        TaskModel task = startCreatedTask(5000L, 60_000L);
+        task.setStartTime(System.currentTimeMillis() - 61_000L);
+        enqueueTaskStatus("\"status\":\"working\"");
+        enqueueJson(result("{\"resultType\":\"complete\"}"));
+
+        poll(task);
+
+        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
+        assertTrue(
+                task.getReasonForIncompletion().contains("the server's ttlMs of 60000 ms"),
+                task.getReasonForIncompletion());
+        takeRequests(3);
+        assertEquals(
+                "tasks/cancel", json(takeRequest().getBody().readUtf8()).get("method").asString());
+        assertEquals(4, server.getRequestCount());
+    }
+
+    @Test
+    void longerServerTtlKeepsTheMaximumDuration() {
+        TaskModel task = startCreatedTask(5000L, 48L * 60 * 60 * 1000);
+        task.setStartTime(System.currentTimeMillis() - 23L * 60 * 60 * 1000);
+        enqueueTaskStatus("\"status\":\"working\"");
+
+        poll(task);
+
+        assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
+        task.setStartTime(System.currentTimeMillis() - 25L * 60 * 60 * 1000);
+        enqueueTaskStatus("\"status\":\"working\"");
+        enqueueJson(result("{\"resultType\":\"complete\"}"));
+
+        poll(task);
+
+        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
+        assertTrue(task.getReasonForIncompletion().contains("maximum duration of 24 hours"));
+    }
+
+    @Test
+    void lastCallbackIsLimitedByTheServerTtl() {
+        TaskModel task = startCreatedTask(5000L, 60_000L);
+        task.setStartTime(System.currentTimeMillis() - 57_000L);
+        enqueueTaskStatus("\"status\":\"working\",\"pollIntervalMs\":600000");
+
+        poll(task);
+
+        assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
+        assertTrue(task.getCallbackAfterSeconds() >= 1 && task.getCallbackAfterSeconds() <= 4);
+    }
+
+    @Test
+    void configuredMaximumDurationIsTheDeadline() throws Exception {
+        MCPClientProperties properties = new MCPClientProperties();
+        properties.setMaxDuration(Duration.ofHours(2));
+        workers = new MCPWorkers(new MCPService(new OkHttpClient()), properties);
+        TaskModel task = startCreatedTask(5000L);
+        task.setStartTime(System.currentTimeMillis() - Duration.ofHours(3).toMillis());
+        enqueueTaskStatus("\"status\":\"working\"");
+        enqueueJson(result("{\"resultType\":\"complete\"}"));
+
+        poll(task);
+
+        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
+        assertTrue(
+                task.getReasonForIncompletion().contains("maximum duration of 2 hours"),
+                task.getReasonForIncompletion());
+    }
+
+    @Test
+    void oneHourMaximumDurationIsNamedInTheSingular() throws Exception {
+        MCPClientProperties properties = new MCPClientProperties();
+        properties.setMaxDuration(Duration.ofHours(1));
+        workers = new MCPWorkers(new MCPService(new OkHttpClient()), properties);
+        TaskModel task = startCreatedTask(5000L);
+        task.setStartTime(System.currentTimeMillis() - Duration.ofHours(2).toMillis());
+        enqueueTaskStatus("\"status\":\"working\"");
+        enqueueJson(result("{\"resultType\":\"complete\"}"));
+
+        poll(task);
+
+        assertTrue(
+                task.getReasonForIncompletion().contains("maximum duration of 1 hour;"),
+                task.getReasonForIncompletion());
+    }
+
+    @Test
+    void serverTtlLongerThanTheConfiguredMaximumIsCut() {
+        MCPClientProperties properties = new MCPClientProperties();
+        properties.setMaxDuration(Duration.ofMinutes(90));
+        workers = new MCPWorkers(new MCPService(new OkHttpClient()), properties);
+        TaskModel task = startCreatedTask(5000L, Duration.ofHours(48).toMillis());
+        task.setStartTime(System.currentTimeMillis() - Duration.ofHours(2).toMillis());
+        enqueueTaskStatus("\"status\":\"working\"");
+        enqueueJson(result("{\"resultType\":\"complete\"}"));
+
+        poll(task);
+
+        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
+        assertTrue(
+                task.getReasonForIncompletion().contains("maximum duration of 5400000 ms"),
+                task.getReasonForIncompletion());
+    }
+
+    @Test
+    void nonPositiveMaximumDurationIsRejected() {
+        MCPClientProperties zero = new MCPClientProperties();
+        zero.setMaxDuration(Duration.ZERO);
+        MCPClientProperties negative = new MCPClientProperties();
+        negative.setMaxDuration(Duration.ofSeconds(-1));
+        MCPService service = new MCPService(new OkHttpClient());
+
+        assertThrows(IllegalArgumentException.class, () -> new MCPWorkers(service, zero));
+        assertThrows(IllegalArgumentException.class, () -> new MCPWorkers(service, negative));
+    }
+
+    @Test
+    void unknownTaskAfterTheServerTtlFailsWithoutARetry() {
+        TaskModel task = startCreatedTask(5000L, 60_000L);
+        task.setStartTime(System.currentTimeMillis() - 61_000L);
+        server.enqueue(rpcErrorResponse(400, "{\"code\":-32602,\"message\":\"Task not found\"}"));
+
+        poll(task);
+
+        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
+        assertTrue(
+                task.getReasonForIncompletion().contains("no longer known to the server after"),
+                task.getReasonForIncompletion());
+        assertTrue(task.getReasonForIncompletion().contains("ttlMs of 60000 ms"));
+        assertEquals(3, server.getRequestCount(), "the server does not know the task: no cancel");
+    }
+
+    @Test
+    void nonPositiveOrNonIntegerTtlIsIgnored() {
+        TaskModel task = startCreatedTask(5000L, 0L);
+        assertFalse(mcpTask(task).containsKey("ttlMs"));
+        enqueueTaskStatus("\"status\":\"working\",\"ttlMs\":1500.5");
+
+        poll(task);
+
+        assertFalse(mcpTask(task).containsKey("ttlMs"));
     }
 
     @Test
@@ -1107,7 +1286,7 @@ class MCPWorkersTest {
 
         poll(task);
 
-        assertInProgress(task, McpTasksCall.DEFAULT_POLL.toSeconds());
+        assertInProgress(task, MCPTasksCall.DEFAULT_POLL.toSeconds());
         assertEquals(1, output(task).at("/mcpTask/pollFailures").asInt());
     }
 
@@ -1121,13 +1300,13 @@ class MCPWorkersTest {
                                 "taskId",
                                 "t-1",
                                 "pollFailures",
-                                McpTasksCall.MAX_POLL_FAILURES - 1));
+                                MCPTasksCall.MAX_POLL_FAILURES - 1));
         server.enqueue(new MockResponse().setResponseCode(503).setBody("busy"));
         enqueueJson(result("{\"resultType\":\"complete\"}"));
 
         poll(task);
 
-        assertPollFailed(task, "limit of " + McpTasksCall.MAX_POLL_FAILURES, "HTTP 503");
+        assertPollFailed(task, "limit of " + MCPTasksCall.MAX_POLL_FAILURES, "HTTP 503");
         takeRequests(3);
         assertEquals(
                 "tasks/cancel", json(takeRequest().getBody().readUtf8()).get("method").asString());
@@ -1215,20 +1394,20 @@ class MCPWorkersTest {
     void noIntervalFromTheServerIsLeftOutOfTheState() {
         TaskModel task = startCreatedTask(null);
 
-        assertInProgress(task, McpTasksCall.DEFAULT_POLL.toSeconds());
+        assertInProgress(task, MCPTasksCall.DEFAULT_POLL.toSeconds());
         assertTrue(output(task).at("/mcpTask/pollIntervalMs").isMissingNode());
     }
 
     @Test
     void backoffDoublesFromTheIntervalUpToTheCap() {
-        assertEquals(5000, McpTasksCall.backoffMs(null, 1));
-        assertEquals(10000, McpTasksCall.backoffMs(null, 2));
-        assertEquals(160000, McpTasksCall.backoffMs(null, 6));
-        assertEquals(300000, McpTasksCall.backoffMs(null, 7));
-        assertEquals(300000, McpTasksCall.backoffMs(null, McpTasksCall.MAX_POLL_FAILURES));
+        assertEquals(5000, BACKOFF.backoffMs(null, 1));
+        assertEquals(10000, BACKOFF.backoffMs(null, 2));
+        assertEquals(160000, BACKOFF.backoffMs(null, 6));
+        assertEquals(300000, BACKOFF.backoffMs(null, 7));
+        assertEquals(300000, BACKOFF.backoffMs(null, MCPTasksCall.MAX_POLL_FAILURES));
         // A server interval longer than the cap is never shortened.
-        assertEquals(600000, McpTasksCall.backoffMs(600000L, 1));
-        assertEquals(600000, McpTasksCall.backoffMs(600000L, 5));
+        assertEquals(600000, BACKOFF.backoffMs(600000L, 1));
+        assertEquals(600000, BACKOFF.backoffMs(600000L, 5));
     }
 
     @Test
@@ -1241,7 +1420,7 @@ class MCPWorkersTest {
 
             poll(task);
 
-            assertInProgress(task, McpTasksCall.DEFAULT_POLL.toSeconds());
+            assertInProgress(task, MCPTasksCall.DEFAULT_POLL.toSeconds());
             assertEquals(1, output(task).at("/mcpTask/pollFailures").asInt());
             assertEquals(before + 1, server.getRequestCount(), "no tasks/cancel");
         }
@@ -1288,7 +1467,7 @@ class MCPWorkersTest {
         before = server.getRequestCount();
         server.enqueue(rpcErrorResponse(500, "{\"code\":-32000,\"message\":\"replay failed\"}"));
         poll(serverError);
-        assertInProgress(serverError, McpTasksCall.DEFAULT_POLL.toSeconds());
+        assertInProgress(serverError, MCPTasksCall.DEFAULT_POLL.toSeconds());
         assertEquals(1, output(serverError).at("/mcpTask/pollFailures").asInt());
         assertEquals(before + 1, server.getRequestCount(), "no tasks/cancel");
     }
@@ -1318,7 +1497,7 @@ class MCPWorkersTest {
         int before = server.getRequestCount();
         server.enqueue(rpcErrorResponse(503, "{\"code\":-1,\"message\":\"overloaded\"}"));
         poll(busy);
-        assertInProgress(busy, McpTasksCall.DEFAULT_POLL.toSeconds());
+        assertInProgress(busy, MCPTasksCall.DEFAULT_POLL.toSeconds());
         assertEquals(before + 1, server.getRequestCount(), "no tasks/cancel");
 
         // The same code with HTTP 200 cancels and fails.
@@ -1339,7 +1518,7 @@ class MCPWorkersTest {
 
             poll(task);
 
-            assertInProgress(task, McpTasksCall.DEFAULT_POLL.toSeconds());
+            assertInProgress(task, MCPTasksCall.DEFAULT_POLL.toSeconds());
             assertEquals(1, output(task).at("/mcpTask/pollFailures").asInt());
         }
     }
@@ -1563,13 +1742,17 @@ class MCPWorkersTest {
     }
 
     @Test
-    void missingMethodIsRejectedBeforeAnyRequest() {
+    void missingMethodIsRejectedBeforeAnyRequestWithoutARetry() {
         Map<String, Object> input = new HashMap<>(optedInInput());
         input.remove("method");
 
         TaskModel task = runCallTool(input);
 
-        assertFailedContaining(task, "CALL_MCP_TOOL requires the input 'method'");
+        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
+        assertTrue(
+                task.getReasonForIncompletion()
+                        .contains("CALL_MCP_TOOL requires the input 'method'"),
+                task.getReasonForIncompletion());
         assertEquals(0, server.getRequestCount());
     }
 
@@ -1581,7 +1764,7 @@ class MCPWorkersTest {
 
         TaskModel task = runCallTool(optedInInput());
 
-        assertFailedContaining(task, "supported versions: not given by the server");
+        assertTerminalFailureContaining(task, "supported versions: not given by the server");
     }
 
     @Test
@@ -1747,6 +1930,11 @@ class MCPWorkersTest {
 
     /** Runs the first execution of an opted-in call whose server creates task "t-1". */
     private TaskModel startCreatedTask(Long pollIntervalMs) {
+        return startCreatedTask(pollIntervalMs, null);
+    }
+
+    /** As {@link #startCreatedTask(Long)}, with the server's {@code ttlMs} when not null. */
+    private TaskModel startCreatedTask(Long pollIntervalMs, Long ttlMs) {
         enqueueToolList();
         enqueueJson(
                 result(
@@ -1754,8 +1942,19 @@ class MCPWorkersTest {
                                 + (pollIntervalMs != null
                                         ? ",\"pollIntervalMs\":" + pollIntervalMs
                                         : "")
+                                + (ttlMs != null ? ",\"ttlMs\":" + ttlMs : "")
                                 + "}"));
         return runCallTool(optedInInput());
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> mcpTask(TaskModel task) {
+        return (Map<String, Object>) task.getOutputData().get("mcpTask");
+    }
+
+    private static Long mcpTaskField(TaskModel task, String field) {
+        Object value = mcpTask(task).get(field);
+        return value instanceof Number n ? n.longValue() : null;
     }
 
     private void enqueueTaskStatus(String fields) {

@@ -19,9 +19,9 @@ package org.conductoross.conductor.ai.mcp;
  * is the task's reason as it is. Every other failure of such a call keeps the reason of a legacy
  * call.
  */
-public class McpCallException extends RuntimeException {
+public class MCPCallException extends RuntimeException {
 
-    public McpCallException(String message) {
+    public MCPCallException(String message) {
         super(message);
     }
 }

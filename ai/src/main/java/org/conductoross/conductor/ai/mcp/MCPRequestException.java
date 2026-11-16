@@ -35,7 +35,7 @@ import static java.net.HttpURLConnection.HTTP_UNSUPPORTED_TYPE;
  * {@code mcpOptions.protocolVersion}). It keeps the HTTP status and the parsed JSON-RPC error so
  * the caller can choose the task outcome.
  */
-public class McpRequestException extends RuntimeException {
+public class MCPRequestException extends RuntimeException {
 
     // JSON-RPC error codes, sorted by number.
     // Defined by MCP:
@@ -64,15 +64,15 @@ public class McpRequestException extends RuntimeException {
                     UNSUPPORTED_PROTOCOL_VERSION);
     private static final int MAX_BODY_IN_MESSAGE = 500;
 
-    private final McpMethod method;
+    private final MCPMethod method;
     private final int httpStatus;
     private final Integer code;
     private final String rpcMessage;
     private final JsonNode data;
     private final String body;
 
-    McpRequestException(
-            McpMethod method,
+    MCPRequestException(
+            MCPMethod method,
             int httpStatus,
             Integer code,
             String rpcMessage,
@@ -91,8 +91,8 @@ public class McpRequestException extends RuntimeException {
      * Builds the exception for a response with a non-2xx status. The body is parsed as a JSON-RPC
      * response when possible; an empty or non-JSON body gives an exception without a code.
      */
-    static McpRequestException fromHttpError(
-            McpMethod method, int httpStatus, String body, ObjectMapper objectMapper) {
+    static MCPRequestException fromHttpError(
+            MCPMethod method, int httpStatus, String body, ObjectMapper objectMapper) {
         JsonNode error = null;
         try {
             if (body != null && !body.isBlank()) {
@@ -102,20 +102,20 @@ public class McpRequestException extends RuntimeException {
             // Not JSON: keep the HTTP status and the body only.
         }
         if (error == null || !error.isObject()) {
-            return new McpRequestException(method, httpStatus, null, null, null, body);
+            return new MCPRequestException(method, httpStatus, null, null, null, body);
         }
         return withError(method, httpStatus, error, body);
     }
 
     /** Builds the exception for a JSON-RPC {@code error} object. */
-    static McpRequestException fromRpcError(McpMethod method, int httpStatus, JsonNode error) {
+    static MCPRequestException fromRpcError(MCPMethod method, int httpStatus, JsonNode error) {
         return withError(method, httpStatus, error, error.toString());
     }
 
-    private static McpRequestException withError(
-            McpMethod method, int httpStatus, JsonNode error, String body) {
-        McpRpcError rpcError = McpRpcError.from(error);
-        return new McpRequestException(
+    private static MCPRequestException withError(
+            MCPMethod method, int httpStatus, JsonNode error, String body) {
+        MCPRpcError rpcError = MCPRpcError.from(error);
+        return new MCPRequestException(
                 method, httpStatus, rpcError.code(), rpcError.message(), rpcError.data(), body);
     }
 
@@ -178,7 +178,7 @@ public class McpRequestException extends RuntimeException {
      * credentials or limits, not the request form.
      */
     public boolean isOlderServerRejection() {
-        return (method == McpMethod.TOOLS_LIST || method == McpMethod.TOOLS_CALL)
+        return (method == MCPMethod.TOOLS_LIST || method == MCPMethod.TOOLS_CALL)
                 && REQUEST_FORM_REJECTION_STATUSES.contains(httpStatus)
                 && !isRecognizedProtocolError();
     }
@@ -222,7 +222,7 @@ public class McpRequestException extends RuntimeException {
     private static final Set<Integer> TRANSIENT_STATUSES =
             Set.of(HTTP_CLIENT_TIMEOUT, HTTP_TOO_MANY_REQUESTS);
 
-    public McpMethod getMethod() {
+    public MCPMethod getMethod() {
         return method;
     }
 
@@ -259,7 +259,7 @@ public class McpRequestException extends RuntimeException {
     }
 
     private static String message(
-            McpMethod method,
+            MCPMethod method,
             int httpStatus,
             Integer code,
             String rpcMessage,

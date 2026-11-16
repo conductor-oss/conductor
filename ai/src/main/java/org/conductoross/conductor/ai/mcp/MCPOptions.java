@@ -25,19 +25,19 @@ import java.util.TreeSet;
  * meaning, and new functionality is added as new optional fields. Unknown keys are rejected, so a
  * definition written for a newer Conductor does not silently lose an option on an older one.
  */
-public final class McpOptions {
+public final class MCPOptions {
 
     public static final String PROTOCOL_VERSION_KEY = "protocolVersion";
 
     /** The protocol versions that can be selected. */
     public static final List<String> SUPPORTED_PROTOCOL_VERSIONS =
-            List.of(McpProtocolHeaders.PROTOCOL_VERSION);
+            List.of(MCPProtocolHeaders.PROTOCOL_VERSION);
 
     /** The known option keys, sorted so that error messages list them in a stable order. */
     private static final SortedSet<String> KNOWN_KEYS =
             Collections.unmodifiableSortedSet(new TreeSet<>(List.of(PROTOCOL_VERSION_KEY)));
 
-    private McpOptions() {}
+    private MCPOptions() {}
 
     /**
      * Returns the selected protocol version, or {@code null} for a legacy call (no {@code
@@ -56,7 +56,7 @@ public final class McpOptions {
                     "Invalid mcpOptions: expected a JSON object, got "
                             + typeName(mcpOptions)
                             + ". Example: {\"protocolVersion\": \""
-                            + McpProtocolHeaders.PROTOCOL_VERSION
+                            + MCPProtocolHeaders.PROTOCOL_VERSION
                             + "\"}");
         }
 

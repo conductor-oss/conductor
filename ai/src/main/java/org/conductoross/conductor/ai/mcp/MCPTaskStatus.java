@@ -18,10 +18,10 @@ import java.util.Arrays;
  * The {@code status} of a task in the MCP Tasks extension ({@code 2026-07-28}), as reported by
  * {@code CreateTaskResult} and {@code tasks/get}.
  *
- * <p>Not to be confused with {@link McpResultType}, which says what kind of result a request
+ * <p>Not to be confused with {@link MCPResultType}, which says what kind of result a request
  * returned; both vocabularies have an {@code input_required} value, with different meanings.
  */
-public enum McpTaskStatus {
+public enum MCPTaskStatus {
     WORKING("working"),
     COMPLETED("completed"),
     FAILED("failed"),
@@ -35,7 +35,7 @@ public enum McpTaskStatus {
 
     private final String value;
 
-    McpTaskStatus(String value) {
+    MCPTaskStatus(String value) {
         this.value = value;
     }
 
@@ -50,7 +50,7 @@ public enum McpTaskStatus {
     }
 
     /** The status with this wire value, or {@link #UNKNOWN} for any other value. */
-    public static McpTaskStatus of(String value) {
+    public static MCPTaskStatus of(String value) {
         return Arrays.stream(values())
                 .filter(s -> s.value.equals(value))
                 .findFirst()

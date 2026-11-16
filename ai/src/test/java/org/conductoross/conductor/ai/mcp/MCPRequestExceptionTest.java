@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Error classification for opted-in responses (task 2.7, design § 5 "Error classification"). */
-class McpRequestExceptionTest {
+class MCPRequestExceptionTest {
 
     private static final ObjectMapper MAPPER = new ObjectMapperProvider().getObjectMapper();
 
@@ -44,9 +44,9 @@ class McpRequestExceptionTest {
         "500, -32603, false"
     })
     void classifiesJsonRpcErrorBodies(int status, int code, boolean recognized) {
-        McpRequestException e =
-                McpRequestException.fromHttpError(
-                        McpMethod.TOOLS_CALL,
+        MCPRequestException e =
+                MCPRequestException.fromHttpError(
+                        MCPMethod.TOOLS_CALL,
                         status,
                         "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":"
                                 + code
@@ -60,9 +60,9 @@ class McpRequestExceptionTest {
 
     @Test
     void keepsMessageAndDataOfARecognizedError() {
-        McpRequestException e =
-                McpRequestException.fromHttpError(
-                        McpMethod.TOOLS_CALL,
+        MCPRequestException e =
+                MCPRequestException.fromHttpError(
+                        MCPMethod.TOOLS_CALL,
                         400,
                         "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32022,"
                                 + "\"message\":\"Unsupported protocol version\","
@@ -82,8 +82,8 @@ class McpRequestExceptionTest {
             value = {"400|''", "404|'Not Found'", "405|<html>no</html>", "400|{\"foo\":1}"},
             delimiter = '|')
     void unrecognizedFourHundredOnToolsCallIsTheOlderServerOutcome(int status, String body) {
-        McpRequestException e =
-                McpRequestException.fromHttpError(McpMethod.TOOLS_CALL, status, body, MAPPER);
+        MCPRequestException e =
+                MCPRequestException.fromHttpError(MCPMethod.TOOLS_CALL, status, body, MAPPER);
 
         assertNull(e.getCode());
         assertFalse(e.isRecognizedProtocolError());
@@ -97,15 +97,15 @@ class McpRequestExceptionTest {
             delimiter = '|')
     void unrecognizedFourHundredOnTheSchemaLookupIsTheOlderServerOutcome(int status, String body) {
         assertTrue(
-                McpRequestException.fromHttpError(McpMethod.TOOLS_LIST, status, body, MAPPER)
+                MCPRequestException.fromHttpError(MCPMethod.TOOLS_LIST, status, body, MAPPER)
                         .isOlderServerRejection());
     }
 
     @ParameterizedTest(name = "HTTP {0} on {1}")
     @CsvSource({"406,TOOLS_CALL", "415,TOOLS_CALL", "406,TOOLS_LIST", "415,TOOLS_LIST"})
-    void otherRequestFormStatusesAreTheOlderServerOutcome(int status, McpMethod method) {
+    void otherRequestFormStatusesAreTheOlderServerOutcome(int status, MCPMethod method) {
         assertTrue(
-                McpRequestException.fromHttpError(method, status, "", MAPPER)
+                MCPRequestException.fromHttpError(method, status, "", MAPPER)
                         .isOlderServerRejection());
     }
 
@@ -120,9 +120,9 @@ class McpRequestExceptionTest {
         "403,TOOLS_LIST",
         "429,TOOLS_LIST"
     })
-    void credentialAndLimitStatusesAreNotTheOlderServerOutcome(int status, McpMethod method) {
+    void credentialAndLimitStatusesAreNotTheOlderServerOutcome(int status, MCPMethod method) {
         assertFalse(
-                McpRequestException.fromHttpError(method, status, "", MAPPER)
+                MCPRequestException.fromHttpError(method, status, "", MAPPER)
                         .isOlderServerRejection());
     }
 
@@ -136,9 +136,9 @@ class McpRequestExceptionTest {
                 "\"\"|''"
             })
     void nonStringMessageIsKeptAsTextAndTheErrorIsStillClassified(String message, String expected) {
-        McpRequestException e =
-                McpRequestException.fromHttpError(
-                        McpMethod.TASKS_GET,
+        MCPRequestException e =
+                MCPRequestException.fromHttpError(
+                        MCPMethod.TASKS_GET,
                         503,
                         "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32000,"
                                 + "\"message\":"
@@ -153,9 +153,9 @@ class McpRequestExceptionTest {
 
     @Test
     void codeOutsideTheIntRangeIsKeptAsNoCodeAndTheErrorIsStillClassified() {
-        McpRequestException e =
-                McpRequestException.fromHttpError(
-                        McpMethod.TASKS_GET,
+        MCPRequestException e =
+                MCPRequestException.fromHttpError(
+                        MCPMethod.TASKS_GET,
                         503,
                         "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":99999999999,"
                                 + "\"message\":\"busy\"}}",
@@ -169,24 +169,24 @@ class McpRequestExceptionTest {
     @Test
     void olderServerOutcomeExcludesTaskRequestsAndOtherStatuses() {
         assertFalse(
-                McpRequestException.fromHttpError(McpMethod.TASKS_GET, 400, "", MAPPER)
+                MCPRequestException.fromHttpError(MCPMethod.TASKS_GET, 400, "", MAPPER)
                         .isOlderServerRejection());
         assertFalse(
-                McpRequestException.fromHttpError(McpMethod.TASKS_CANCEL, 404, "", MAPPER)
+                MCPRequestException.fromHttpError(MCPMethod.TASKS_CANCEL, 404, "", MAPPER)
                         .isOlderServerRejection());
         assertFalse(
-                McpRequestException.fromHttpError(McpMethod.TOOLS_CALL, 500, "", MAPPER)
+                MCPRequestException.fromHttpError(MCPMethod.TOOLS_CALL, 500, "", MAPPER)
                         .isOlderServerRejection());
         assertFalse(
-                McpRequestException.fromHttpError(McpMethod.TOOLS_LIST, 500, "", MAPPER)
+                MCPRequestException.fromHttpError(MCPMethod.TOOLS_LIST, 500, "", MAPPER)
                         .isOlderServerRejection());
     }
 
     @Test
     void longBodiesAreTruncatedInTheMessage() {
-        McpRequestException e =
-                McpRequestException.fromHttpError(
-                        McpMethod.TOOLS_CALL, 502, "x".repeat(2000), MAPPER);
+        MCPRequestException e =
+                MCPRequestException.fromHttpError(
+                        MCPMethod.TOOLS_CALL, 502, "x".repeat(2000), MAPPER);
 
         assertTrue(e.getMessage().length() < 600, e.getMessage());
     }
@@ -214,9 +214,9 @@ class McpRequestExceptionTest {
     })
     void internalErrorAndCodesWithADefinedMeaning(
             int code, boolean internal, boolean definedMeaning) {
-        McpRequestException e =
-                McpRequestException.fromHttpError(
-                        McpMethod.TASKS_GET,
+        MCPRequestException e =
+                MCPRequestException.fromHttpError(
+                        MCPMethod.TASKS_GET,
                         200,
                         "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":"
                                 + code
@@ -229,8 +229,8 @@ class McpRequestExceptionTest {
 
     @Test
     void noJsonRpcErrorHasNoDefinedMeaning() {
-        McpRequestException e =
-                McpRequestException.fromHttpError(McpMethod.TASKS_GET, 503, "busy", MAPPER);
+        MCPRequestException e =
+                MCPRequestException.fromHttpError(MCPMethod.TASKS_GET, 503, "busy", MAPPER);
 
         assertFalse(e.isInternalError());
         assertFalse(e.hasDefinedMeaning());

@@ -23,9 +23,9 @@ import tools.jackson.databind.JsonNode;
  *     JSON text
  * @param data the error {@code data}, or {@code null} if absent
  */
-public record McpRpcError(Integer code, String message, JsonNode data) {
+public record MCPRpcError(Integer code, String message, JsonNode data) {
 
-    public static McpRpcError from(JsonNode error) {
+    public static MCPRpcError from(JsonNode error) {
         JsonNode codeNode = error.get("code");
         // canConvertToInt: an integer outside the int range is kept as no code, not thrown on.
         Integer code =
@@ -38,7 +38,7 @@ public record McpRpcError(Integer code, String message, JsonNode data) {
                 messageNode == null || messageNode.isNull()
                         ? null
                         : messageNode.isString() ? messageNode.asString() : messageNode.toString();
-        return new McpRpcError(code, message, error.get("data"));
+        return new MCPRpcError(code, message, error.get("data"));
     }
 
     /** {@code JSON-RPC error <code> <message>}, with placeholders for absent fields. */

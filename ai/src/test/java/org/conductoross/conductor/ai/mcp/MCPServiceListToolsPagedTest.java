@@ -176,11 +176,11 @@ class MCPServiceListToolsPagedTest {
                                         + "\"message\":\"Unsupported protocol version\","
                                         + "\"data\":{\"supported\":[\"2025-11-25\"]}}}"));
 
-        McpRequestException e =
+        MCPRequestException e =
                 assertThrows(
-                        McpRequestException.class,
+                        MCPRequestException.class,
                         () -> service.listToolsPaged(url, "echo", Map.of()));
-        assertEquals(McpMethod.TOOLS_LIST, e.getMethod());
+        assertEquals(MCPMethod.TOOLS_LIST, e.getMethod());
         assertEquals(400, e.getHttpStatus());
         assertEquals(-32022, e.getCode());
         assertTrue(e.isRecognizedProtocolError());
@@ -193,9 +193,9 @@ class MCPServiceListToolsPagedTest {
                         + "\"message\":\"Missing capability\","
                         + "\"data\":{\"requiredCapabilities\":[\"elicitation\"]}}}");
 
-        McpRequestException e =
+        MCPRequestException e =
                 assertThrows(
-                        McpRequestException.class,
+                        MCPRequestException.class,
                         () -> service.listToolsPaged(url, "echo", Map.of()));
         assertEquals(-32021, e.getCode());
         assertEquals(200, e.getHttpStatus());

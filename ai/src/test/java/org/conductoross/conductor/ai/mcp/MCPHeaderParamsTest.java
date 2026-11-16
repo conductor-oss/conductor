@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Spec: "Opted-in tool calls mirror x-mcp-header parameters" (task 2.5). */
-class McpHeaderParamsTest {
+class MCPHeaderParamsTest {
 
     private static final ObjectMapper MAPPER = new ObjectMapperProvider().getObjectMapper();
 
@@ -37,7 +37,7 @@ class McpHeaderParamsTest {
 
         assertEquals(
                 Map.of("Mcp-Param-Region", "us-west1"),
-                McpHeaderParams.headersFor("execute_sql", schema, Map.of("region", "us-west1")));
+                MCPHeaderParams.headersFor("execute_sql", schema, Map.of("region", "us-west1")));
     }
 
     @Test
@@ -46,8 +46,8 @@ class McpHeaderParamsTest {
         Map<String, Object> nullValue = new HashMap<>();
         nullValue.put("region", null);
 
-        assertEquals(Map.of(), McpHeaderParams.headersFor("t", schema, Map.of()));
-        assertEquals(Map.of(), McpHeaderParams.headersFor("t", schema, nullValue));
+        assertEquals(Map.of(), MCPHeaderParams.headersFor("t", schema, Map.of()));
+        assertEquals(Map.of(), MCPHeaderParams.headersFor("t", schema, nullValue));
     }
 
     @Test
@@ -59,10 +59,10 @@ class McpHeaderParamsTest {
 
         assertEquals(
                 Map.of("Mcp-Param-N", "42", "Mcp-Param-B", "true"),
-                McpHeaderParams.headersFor("t", schema, Map.of("n", 42, "b", true)));
+                MCPHeaderParams.headersFor("t", schema, Map.of("n", 42, "b", true)));
         assertEquals(
                 Map.of("Mcp-Param-N", "-9007199254740991", "Mcp-Param-B", "false"),
-                McpHeaderParams.headersFor(
+                MCPHeaderParams.headersFor(
                         "t", schema, Map.of("n", -9007199254740991L, "b", false)));
     }
 
@@ -73,7 +73,7 @@ class McpHeaderParamsTest {
 
         assertEquals(
                 Map.of("Mcp-Param-Greeting", "=?base64?SGVsbG8sIOS4lueVjA==?="),
-                McpHeaderParams.headersFor("t", schema, Map.of("greeting", "Hello, 世界")));
+                MCPHeaderParams.headersFor("t", schema, Map.of("greeting", "Hello, 世界")));
     }
 
     @Test
@@ -85,19 +85,19 @@ class McpHeaderParamsTest {
 
         assertEquals(
                 Map.of("Mcp-Param-Region", "eu"),
-                McpHeaderParams.headersFor("t", schema, Map.of("target", Map.of("region", "eu"))));
+                MCPHeaderParams.headersFor("t", schema, Map.of("target", Map.of("region", "eu"))));
         assertEquals(
                 Map.of(),
-                McpHeaderParams.headersFor("t", schema, Map.of("target", "not-an-object")));
+                MCPHeaderParams.headersFor("t", schema, Map.of("target", "not-an-object")));
     }
 
     @Test
     void schemaWithoutAnnotationsOrWithoutSchemaGivesNoHeaders() {
         assertEquals(
                 Map.of(),
-                McpHeaderParams.headersFor(
+                MCPHeaderParams.headersFor(
                         "t", schema("{\"q\":{\"type\":\"string\"}}"), Map.of("q", "x")));
-        assertEquals(Map.of(), McpHeaderParams.headersFor("t", null, Map.of("q", "x")));
+        assertEquals(Map.of(), MCPHeaderParams.headersFor("t", null, Map.of("q", "x")));
     }
 
     @Test
@@ -141,10 +141,10 @@ class McpHeaderParamsTest {
                 "'properties' keys");
 
         JsonNode rootAnnotated = MAPPER.readTree("{\"type\":\"string\",\"x-mcp-header\":\"Root\"}");
-        McpCallException e =
+        MCPCallException e =
                 assertThrows(
-                        McpCallException.class,
-                        () -> McpHeaderParams.headersFor("t", rootAnnotated, Map.of()));
+                        MCPCallException.class,
+                        () -> MCPHeaderParams.headersFor("t", rootAnnotated, Map.of()));
         assertTrue(e.getMessage().contains("the schema root"), e.getMessage());
     }
 
@@ -153,7 +153,7 @@ class McpHeaderParamsTest {
         JsonNode schema = schema("{\"x-mcp-header\":{\"type\":\"string\"}}");
 
         assertEquals(
-                Map.of(), McpHeaderParams.headersFor("t", schema, Map.of("x-mcp-header", "value")));
+                Map.of(), MCPHeaderParams.headersFor("t", schema, Map.of("x-mcp-header", "value")));
     }
 
     @Test
@@ -161,10 +161,10 @@ class McpHeaderParamsTest {
         JsonNode schema = schema("{\"n\":{\"type\":\"integer\",\"x-mcp-header\":\"N\"}}");
 
         for (Object bad : new Object[] {1.5, 9007199254740992L, Map.of("a", 1)}) {
-            McpCallException e =
+            MCPCallException e =
                     assertThrows(
-                            McpCallException.class,
-                            () -> McpHeaderParams.headersFor("t", schema, Map.of("n", bad)));
+                            MCPCallException.class,
+                            () -> MCPHeaderParams.headersFor("t", schema, Map.of("n", bad)));
             assertTrue(e.getMessage().contains("argument 'n'"), e.getMessage());
             assertTrue(e.getMessage().contains("x-mcp-header 'N'"), e.getMessage());
         }
@@ -172,10 +172,10 @@ class McpHeaderParamsTest {
 
     private static void assertInvalid(String properties, String... expectedInMessage) {
         JsonNode schema = schema(properties);
-        McpCallException e =
+        MCPCallException e =
                 assertThrows(
-                        McpCallException.class,
-                        () -> McpHeaderParams.headersFor("execute_sql", schema, Map.of()));
+                        MCPCallException.class,
+                        () -> MCPHeaderParams.headersFor("execute_sql", schema, Map.of()));
         for (String expected : expectedInMessage) {
             assertTrue(e.getMessage().contains(expected), e.getMessage());
         }
@@ -194,7 +194,7 @@ class McpHeaderParamsTest {
 
         assertEquals(
                 Map.of(),
-                McpHeaderParams.headersFor(
+                MCPHeaderParams.headersFor(
                         "t", schema, Map.of("config", Map.of("x-mcp-header", "v"))));
     }
 

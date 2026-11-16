@@ -138,21 +138,23 @@ class MCPServiceTasksRequestsTest {
 
         assertTrue(outcome.isTask());
         assertNull(outcome.result());
-        MCPService.McpTask task = outcome.task();
+        MCPService.MCPTask task = outcome.task();
         assertEquals(TASK_ID, task.taskId());
         assertEquals("working", task.status());
         assertEquals("started", task.statusMessage());
         assertEquals(5000L, task.pollIntervalMs());
+        assertEquals(60000L, task.ttlMs());
     }
 
     @Test
     void createTaskResultWithoutPollIntervalHasNoInterval() {
         enqueue("{\"resultType\":\"task\",\"taskId\":\"t-1\",\"status\":\"working\"}");
 
-        MCPService.McpTask task = callEcho().task();
+        MCPService.MCPTask task = callEcho().task();
 
         assertEquals("t-1", task.taskId());
         assertNull(task.pollIntervalMs());
+        assertNull(task.ttlMs());
     }
 
     @Test
@@ -277,13 +279,13 @@ class MCPServiceTasksRequestsTest {
         server.enqueue(new MockResponse().setResponseCode(503));
         server.enqueue(new MockResponse().setResponseCode(503));
 
-        McpRequestException get =
+        MCPRequestException get =
                 assertThrows(
-                        McpRequestException.class,
+                        MCPRequestException.class,
                         () -> withSharedRetries.getTask(url, "t-1", Map.of()));
-        McpRequestException cancel =
+        MCPRequestException cancel =
                 assertThrows(
-                        McpRequestException.class,
+                        MCPRequestException.class,
                         () -> withSharedRetries.cancelTask(url, "t-1", Map.of()));
 
         assertEquals(503, get.getHttpStatus());
@@ -349,7 +351,7 @@ class MCPServiceTasksRequestsTest {
     void httpErrorKeepsTheSynchronousDetail() {
         server.enqueue(new MockResponse().setResponseCode(500).setBody("boom"));
 
-        McpRequestException e = assertThrows(McpRequestException.class, this::callEcho);
+        MCPRequestException e = assertThrows(MCPRequestException.class, this::callEcho);
 
         assertEquals(500, e.getHttpStatus());
         assertEquals("HTTP 500 error from MCP server: boom", e.synchronousDetail());
@@ -444,7 +446,7 @@ class MCPServiceTasksRequestsTest {
                 "{\"resultType\":\"complete\",\"taskId\":\"t-1\",\"status\":\"working\","
                         + "\"pollIntervalMs\":3000}");
 
-        MCPService.McpTask task = service.getTask(url, "t-1", Map.of());
+        MCPService.MCPTask task = service.getTask(url, "t-1", Map.of());
 
         assertEquals("t-1", task.taskId());
         assertEquals("working", task.status());
@@ -460,7 +462,7 @@ class MCPServiceTasksRequestsTest {
                         + "\"result\":{\"isError\":true,\"content\":["
                         + "{\"type\":\"text\",\"text\":\"[1,2]\"}]}}");
 
-        MCPService.McpTask task = service.getTask(url, "t-1", Map.of());
+        MCPService.MCPTask task = service.getTask(url, "t-1", Map.of());
 
         assertEquals("completed", task.status());
         JsonNode result = MAPPER.valueToTree(service.mapTaskResult(task.result()));
@@ -474,7 +476,7 @@ class MCPServiceTasksRequestsTest {
                 "{\"resultType\":\"complete\",\"taskId\":\"t-1\",\"status\":\"failed\","
                         + "\"error\":{\"code\":-32603,\"message\":\"boom\"}}");
 
-        MCPService.McpTask task = service.getTask(url, "t-1", Map.of());
+        MCPService.MCPTask task = service.getTask(url, "t-1", Map.of());
 
         assertEquals("failed", task.status());
         assertEquals(-32603, task.error().get("code").asInt());
@@ -521,12 +523,12 @@ class MCPServiceTasksRequestsTest {
                                 "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32602,"
                                         + "\"message\":\"Task not found\"}}"));
 
-        McpRequestException e =
+        MCPRequestException e =
                 assertThrows(
-                        McpRequestException.class, () -> service.getTask(url, "t-1", Map.of()));
+                        MCPRequestException.class, () -> service.getTask(url, "t-1", Map.of()));
 
         assertEquals(-32602, e.getCode());
-        assertEquals(McpMethod.TASKS_GET, e.getMethod());
+        assertEquals(MCPMethod.TASKS_GET, e.getMethod());
     }
 
     // ---- helpers --------------------------------------------------------------------------------

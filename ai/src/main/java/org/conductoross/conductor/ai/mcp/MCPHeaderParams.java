@@ -29,7 +29,7 @@ import tools.jackson.databind.JsonNode;
  * {@code 2026-07-28}, <i>Streamable HTTP › Custom Headers from Tool Parameters</i>). Used only for
  * calls that select {@code mcpOptions.protocolVersion}.
  */
-public final class McpHeaderParams {
+public final class MCPHeaderParams {
 
     public static final String ANNOTATION = "x-mcp-header";
     public static final String HEADER_PREFIX = "Mcp-Param-";
@@ -50,7 +50,7 @@ public final class McpHeaderParams {
 
     private static final BigInteger MIN_SAFE_INTEGER = MAX_SAFE_INTEGER.negate();
 
-    private McpHeaderParams() {}
+    private MCPHeaderParams() {}
 
     /**
      * Validates the tool's {@code x-mcp-header} annotations and returns the headers to send for the
@@ -59,7 +59,7 @@ public final class McpHeaderParams {
      * @param toolName the tool name, used in error messages
      * @param inputSchema the tool's {@code inputSchema}; may be {@code null} or missing
      * @param arguments the call's tool arguments
-     * @throws McpCallException if an annotation is invalid, which makes the tool unusable, or if an
+     * @throws MCPCallException if an annotation is invalid, which makes the tool unusable, or if an
      *     annotated argument has a value that cannot be sent as a header
      */
     public static Map<String, String> headersFor(
@@ -72,7 +72,7 @@ public final class McpHeaderParams {
             }
             headers.put(
                     HEADER_PREFIX + binding.name(),
-                    McpProtocolHeaders.encodeHeaderValue(toText(toolName, binding, value)));
+                    MCPProtocolHeaders.encodeHeaderValue(toText(toolName, binding, value)));
         }
         return headers;
     }
@@ -196,7 +196,7 @@ public final class McpHeaderParams {
                 return integer.toString();
             }
         }
-        throw new McpCallException(
+        throw new MCPCallException(
                 "MCP tool '"
                         + toolName
                         + "': the value of argument '"
@@ -234,10 +234,10 @@ public final class McpHeaderParams {
         return true;
     }
 
-    private static McpCallException invalid(String toolName, Binding binding, String reason) {
+    private static MCPCallException invalid(String toolName, Binding binding, String reason) {
         String where =
                 binding.path().isEmpty() ? "the schema root" : String.join(".", binding.path());
-        return new McpCallException(
+        return new MCPCallException(
                 "MCP tool '"
                         + toolName
                         + "' has an invalid x-mcp-header annotation '"

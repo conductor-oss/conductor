@@ -18,10 +18,10 @@ import java.util.Arrays;
  * The {@code resultType} of a result in the MCP {@code 2026-07-28} form: what kind of result a
  * request returned. An absent {@code resultType} means {@link #COMPLETE}.
  *
- * <p>Not to be confused with {@link McpTaskStatus}, the state of a task; both vocabularies have an
+ * <p>Not to be confused with {@link MCPTaskStatus}, the state of a task; both vocabularies have an
  * {@code input_required} value, with different meanings.
  */
-public enum McpResultType {
+public enum MCPResultType {
     /** A final result. */
     COMPLETE("complete"),
     /** A {@code CreateTaskResult}: the server created a task to poll. */
@@ -36,7 +36,7 @@ public enum McpResultType {
 
     private final String value;
 
-    McpResultType(String value) {
+    MCPResultType(String value) {
         this.value = value;
     }
 
@@ -51,7 +51,7 @@ public enum McpResultType {
     }
 
     /** The result type with this wire value, or {@link #UNKNOWN} for any other value. */
-    public static McpResultType of(String value) {
+    public static MCPResultType of(String value) {
         return Arrays.stream(values())
                 .filter(t -> t.value.equals(value))
                 .findFirst()

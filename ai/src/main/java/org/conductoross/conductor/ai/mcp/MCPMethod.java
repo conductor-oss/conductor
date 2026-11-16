@@ -17,7 +17,7 @@ package org.conductoross.conductor.ai.mcp;
  * names; how each request is built (for example, which ones declare the Tasks extension) is decided
  * by the sender.
  */
-public enum McpMethod {
+public enum MCPMethod {
     TOOLS_LIST("tools/list"),
     TOOLS_CALL("tools/call"),
     TASKS_GET("tasks/get"),
@@ -25,7 +25,7 @@ public enum McpMethod {
 
     private final String value;
 
-    McpMethod(String value) {
+    MCPMethod(String value) {
         this.value = value;
     }
 

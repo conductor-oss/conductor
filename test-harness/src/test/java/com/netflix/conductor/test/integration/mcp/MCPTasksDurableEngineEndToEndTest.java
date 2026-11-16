@@ -88,7 +88,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
             "conductor.app.sweeper.queuePopTimeout=750",
             "conductor.integrations.ai.enabled=true"
         })
-class McpTasksDurableEngineEndToEndTest {
+class MCPTasksDurableEngineEndToEndTest {
 
     private static final String CALL_MCP_TOOL = "CALL_MCP_TOOL";
 

@@ -16,8 +16,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.conductoross.conductor.ai.mcp.MCPClientProperties;
+import org.conductoross.conductor.ai.mcp.MCPOptions;
 import org.conductoross.conductor.ai.mcp.MCPService;
-import org.conductoross.conductor.ai.mcp.McpOptions;
 import org.conductoross.conductor.ai.model.MCPListToolsRequest;
 import org.conductoross.conductor.ai.model.MCPToolCallRequest;
 import org.conductoross.conductor.ai.tasks.mapper.CallMCPToolTaskMapper;
@@ -47,11 +48,11 @@ import lombok.extern.slf4j.Slf4j;
 public class MCPWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHandler {
 
     private final MCPService mcpService;
-    private final McpTasksCall mcpTasksCall;
+    private final MCPTasksCall mcpTasksCall;
 
-    public MCPWorkers(MCPService mcpService) {
+    public MCPWorkers(MCPService mcpService, MCPClientProperties clientProperties) {
         this.mcpService = mcpService;
-        this.mcpTasksCall = new McpTasksCall(mcpService);
+        this.mcpTasksCall = new MCPTasksCall(mcpService, clientProperties.getMaxDuration());
         log.debug("MCP Workers initialized");
     }
 
@@ -93,7 +94,7 @@ public class MCPWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
     public ToolCallResult callTool(MCPToolCallRequest request) {
         String protocolVersion;
         try {
-            protocolVersion = McpOptions.protocolVersion(request.getMcpOptions());
+            protocolVersion = MCPOptions.protocolVersion(request.getMcpOptions());
         } catch (IllegalArgumentException e) {
             throw new NonRetryableException(e.getMessage());
         }
@@ -158,33 +159,43 @@ public class MCPWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
      *     successful check
      * @param retryCount the Conductor task's {@code retryCount} when the remote task was created.
      *     It tells this execution's remote task apart from one that an earlier execution left in
-     *     the output (the engine can reset a task in place, keeping its output, and increments
-     *     {@code retryCount} when it does).
+     *     the output. The engine can reset a task in place and keep its output; it increments
+     *     {@code retryCount} when it re-schedules a cancelled task, but not when a rerun resets a
+     *     failed one.
      * @param pollIntervalMs the last {@code pollIntervalMs} the server gave, or {@code null} if it
      *     gave none. Reused when a later {@code tasks/get} gives none, and as the base of the wait
      *     after a failed check.
+     * @param ttlMs the last {@code ttlMs} the server gave, or {@code null} if it gave none. When it
+     *     is shorter than the maximum duration, it is the deadline of the call.
      */
-    public record McpTaskState(
-            String taskId, Integer pollFailures, Integer retryCount, Long pollIntervalMs) {
+    public record MCPTaskState(
+            String taskId,
+            Integer pollFailures,
+            Integer retryCount,
+            Long pollIntervalMs,
+            Long ttlMs) {
 
         /**
          * Reads the state back from task output, where it is a plain map. Lenient, because the
          * output can be edited: a missing or blank {@code taskId} reads as {@code null}, a missing
          * or negative {@code pollFailures} as {@code 0}, a missing {@code retryCount} as {@code
-         * null}, and a missing or non-positive {@code pollIntervalMs} as {@code null}. A value that
-         * is not a map reads as all of these.
+         * null}, and a missing or non-positive {@code pollIntervalMs} or {@code ttlMs} as {@code
+         * null}. A value that is not a map reads as all of these.
          */
-        static McpTaskState from(Object state) {
+        static MCPTaskState from(Object state) {
             if (!(state instanceof Map<?, ?> map)) {
-                return new McpTaskState(null, 0, null, null);
+                return new MCPTaskState(null, 0, null, null, null);
             }
-            return new McpTaskState(
+            return new MCPTaskState(
                     map.get("taskId") instanceof String id && !id.isBlank() ? id : null,
                     map.get("pollFailures") instanceof Number n ? Math.max(0, n.intValue()) : 0,
                     map.get("retryCount") instanceof Number n ? n.intValue() : null,
-                    map.get("pollIntervalMs") instanceof Number n && n.longValue() > 0
-                            ? n.longValue()
-                            : null);
+                    positiveMillis(map.get("pollIntervalMs")),
+                    positiveMillis(map.get("ttlMs")));
+        }
+
+        private static Long positiveMillis(Object value) {
+            return value instanceof Number n && n.longValue() > 0 ? n.longValue() : null;
         }
     }
 
@@ -197,8 +208,8 @@ public class MCPWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
          * Polling state of a remote MCP task, for calls that select a protocol version and whose
          * server creates a task. {@code null} otherwise, and then omitted from task output.
          */
-        @JsonProperty(McpTasksCall.STATE_KEY)
-        public McpTaskState mcpTask;
+        @JsonProperty(MCPTasksCall.STATE_KEY)
+        public MCPTaskState mcpTask;
 
         public static ToolCallResult from(McpSchema.CallToolResult result) {
             ToolCallResult callResult = new ToolCallResult();

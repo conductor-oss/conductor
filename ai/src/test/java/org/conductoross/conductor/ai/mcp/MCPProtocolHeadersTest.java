@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Spec: "Opted-in requests carry the 2026-07-28 per-request protocol fields" and "… headers". */
-class McpProtocolHeadersTest {
+class MCPProtocolHeadersTest {
 
     private static final ObjectMapper MAPPER = new ObjectMapperProvider().getObjectMapper();
 
@@ -34,7 +34,7 @@ class McpProtocolHeadersTest {
 
     @Test
     void toolsCallAndTaskRequestMetaDeclaresTheTasksExtension() {
-        JsonNode meta = McpProtocolHeaders.meta(MAPPER, true);
+        JsonNode meta = MCPProtocolHeaders.meta(MAPPER, true);
 
         assertEquals("2026-07-28", meta.get("io.modelcontextprotocol/protocolVersion").asString());
         JsonNode clientInfo = meta.get("io.modelcontextprotocol/clientInfo");
@@ -54,7 +54,7 @@ class McpProtocolHeadersTest {
 
     @Test
     void schemaLookupMetaDeclaresNoCapability() {
-        JsonNode meta = McpProtocolHeaders.meta(MAPPER, false);
+        JsonNode meta = MCPProtocolHeaders.meta(MAPPER, false);
 
         assertEquals("2026-07-28", meta.get("io.modelcontextprotocol/protocolVersion").asString());
         assertEquals(
@@ -66,14 +66,14 @@ class McpProtocolHeadersTest {
     @Test
     void clientVersionFallsBackToUnknownWithoutAJarManifest() {
         // Test classes run from a directory, so there is no Implementation-Version.
-        assertEquals("unknown", McpProtocolHeaders.clientVersion());
+        assertEquals("unknown", MCPProtocolHeaders.clientVersion());
     }
 
     // ---- headers (task 2.4) ---------------------------------------------------------------------
 
     @Test
     void asciiToolName() {
-        Request request = build(McpMethod.TOOLS_CALL, "get_weather");
+        Request request = build(MCPMethod.TOOLS_CALL, "get_weather");
 
         assertEquals("2026-07-28", request.header("MCP-Protocol-Version"));
         assertEquals("tools/call", request.header("Mcp-Method"));
@@ -84,43 +84,43 @@ class McpProtocolHeadersTest {
     @Test
     void nonAsciiToolName() {
         assertEquals(
-                "=?base64?bcOpdMOpbw==?=", build(McpMethod.TOOLS_CALL, "météo").header("Mcp-Name"));
+                "=?base64?bcOpdMOpbw==?=", build(MCPMethod.TOOLS_CALL, "météo").header("Mcp-Name"));
     }
 
     @Test
     void valueMatchingTheSentinelPatternIsEncoded() {
         String name = "=?base64?x?=";
-        assertEquals("=?base64?PT9iYXNlNjQ/eD89?=", McpProtocolHeaders.encodeHeaderValue(name));
+        assertEquals("=?base64?PT9iYXNlNjQ/eD89?=", MCPProtocolHeaders.encodeHeaderValue(name));
         assertEquals(
-                McpProtocolHeaders.encodeHeaderValue(name),
-                build(McpMethod.TOOLS_CALL, name).header("Mcp-Name"));
+                MCPProtocolHeaders.encodeHeaderValue(name),
+                build(MCPMethod.TOOLS_CALL, name).header("Mcp-Name"));
     }
 
     @Test
     void valueWithLeadingOrTrailingWhitespaceIsEncoded() {
-        assertEquals("=?base64?IGE=?=", McpProtocolHeaders.encodeHeaderValue(" a"));
-        assertEquals("=?base64?YSA=?=", McpProtocolHeaders.encodeHeaderValue("a "));
-        assertEquals("=?base64?CWE=?=", McpProtocolHeaders.encodeHeaderValue("\ta"));
+        assertEquals("=?base64?IGE=?=", MCPProtocolHeaders.encodeHeaderValue(" a"));
+        assertEquals("=?base64?YSA=?=", MCPProtocolHeaders.encodeHeaderValue("a "));
+        assertEquals("=?base64?CWE=?=", MCPProtocolHeaders.encodeHeaderValue("\ta"));
     }
 
     @Test
     void printableAsciiAndInnerTabAreSentUnchanged() {
-        assertEquals("a b\tc!~", McpProtocolHeaders.encodeHeaderValue("a b\tc!~"));
-        assertEquals("", McpProtocolHeaders.encodeHeaderValue(""));
+        assertEquals("a b\tc!~", MCPProtocolHeaders.encodeHeaderValue("a b\tc!~"));
+        assertEquals("", MCPProtocolHeaders.encodeHeaderValue(""));
     }
 
     @Test
     void controlCharactersAndNonAsciiAreEncoded() {
         assertEquals(
                 "=?base64?SGVsbG8sIOS4lueVjA==?=",
-                McpProtocolHeaders.encodeHeaderValue("Hello, 世界"));
-        assertEquals("=?base64?YQFi?=", McpProtocolHeaders.encodeHeaderValue("a\u0001b"));
+                MCPProtocolHeaders.encodeHeaderValue("Hello, 世界"));
+        assertEquals("=?base64?YQFi?=", MCPProtocolHeaders.encodeHeaderValue("a\u0001b"));
     }
 
     @Test
     void taskRequestsUseTheTaskIdAsMcpName() {
         String taskId = "786512e2-9e0d-44bd-8f29-789f320fe840";
-        for (McpMethod method : new McpMethod[] {McpMethod.TASKS_GET, McpMethod.TASKS_CANCEL}) {
+        for (MCPMethod method : new MCPMethod[] {MCPMethod.TASKS_GET, MCPMethod.TASKS_CANCEL}) {
             Request request = build(method, taskId);
             assertEquals(method.value(), request.header("Mcp-Method"));
             assertEquals(taskId, request.header("Mcp-Name"));
@@ -129,7 +129,7 @@ class McpProtocolHeadersTest {
 
     @Test
     void mcpNameIsOmittedWhenNull() {
-        assertNull(build(McpMethod.TOOLS_LIST, null).header("Mcp-Name"));
+        assertNull(build(MCPMethod.TOOLS_LIST, null).header("Mcp-Name"));
     }
 
     @Test
@@ -139,7 +139,7 @@ class McpProtocolHeadersTest {
         builder.header("Authorization", "Bearer t");
         builder.header("Accept", "text/plain");
 
-        McpProtocolHeaders.apply(builder, McpMethod.TOOLS_CALL, "get_weather");
+        MCPProtocolHeaders.apply(builder, MCPMethod.TOOLS_CALL, "get_weather");
         Request request = builder.build();
 
         assertEquals(1, request.headers("MCP-Protocol-Version").size());
@@ -149,9 +149,9 @@ class McpProtocolHeadersTest {
         assertTrue(request.headers("Accept").size() == 1);
     }
 
-    private static Request build(McpMethod method, String name) {
+    private static Request build(MCPMethod method, String name) {
         Request.Builder builder = new Request.Builder().url("http://localhost/mcp");
-        McpProtocolHeaders.apply(builder, method, name);
+        MCPProtocolHeaders.apply(builder, method, name);
         return builder.build();
     }
 }
