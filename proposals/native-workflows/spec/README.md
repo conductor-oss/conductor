@@ -14,7 +14,13 @@ rather than at each offer, so a redelivered offer keeps it, and a completion mus
 states are not stored in the implementation; they follow from the marker and its task: `APPLIED`
 is `endTime > 0`, `LEASED` is `leased`, `RUNNABLE` is a task that has ended and been evaluated
 (`executed`) whose marker is neither, and `WAITING` a task that has not ended. The model's lane
-and number of a marker are the task's entry's `metadata.lane` and `metadata.continuation`. Workers can crash, report that they could not run a continuation (it is deferred and
+and number of a marker are the task's entry's `metadata.lane` and `metadata.continuation`, and its
+`finished` is the marker's `done`. Two fields of the model's marker are not stored: `err`, whether
+the lane's code raised, which replay works out again from the recording (the server reads what a
+lane returned or raised for the main lane only, and the run is then failed); and `held`, the build
+that held the marker, which the run's reason `diverged: ...` shows instead. The server offers a held
+continuation again after a backoff of up to 60 s, and on the same build it holds again; the model
+leaves out those repeated offers and leases a held marker again only after a deploy. Workers can crash, report that they could not run a continuation (it is deferred and
 offered again), and be slow past their lease; queue messages can be lost or delivered twice; and a
 deploy can change the code. A switch draws the cases it did not take as previews. When the main
 lane's code raises, the execution names where: the task whose
@@ -68,10 +74,11 @@ leased or a count of its offers, so `AppliedOnce`, `AppliedAtLatestLease` and
 `OneContinuationAtATime` are checked in the model only. Before that change, 173 executions from the
 conformance suite and kitchen sink, and 80 run while workers were killed, paused and cut off from
 the server, showed no violation, and it flagged the stuck workflow from the kitchen sink (execution
-`e1ddf9a5`), so it can fail. With `AppliedInOrder`, the 719 executions of an end-to-end run on
-2026-11-14 (conformance, branches, operator checks, the kitchen sink and the drawing catalogue: 697
-completed, 22 failed) showed no violation. That run predates the first continuation's `endTime`
-and the check that it applied first. <!-- TODO: verify against live server -->
+`e1ddf9a5`), so it can fail. With `AppliedInOrder`, including the check that the first
+continuation applied before any other, the 720 executions of an end-to-end run on 2026-11-15
+(conformance, a retry after a throw, branches, operator checks, the kitchen sink and the drawing
+catalogue and seed 2: 698 completed, 22 failed) showed no violation, and `check_paths.py` passed
+all 720.
 
 `check_paths.py` checks, for any native execution, that the workflow it built matches the path its
 code took: every task that ran is drawn and every drawn entry ran (a failed run may stop short), no
