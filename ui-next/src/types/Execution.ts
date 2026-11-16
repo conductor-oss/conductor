@@ -83,24 +83,23 @@ export interface ExecutionTask<
 }
 
 /**
- * Where a native workflow's code paused: when the task finishes, the server hands continuation
- * `n` of `lane` to a host of the code, which appends what the code does next after the task.
+ * Where a native workflow's code paused: when the task finishes, the server hands the continuation
+ * its entry names (`metadata.lane`, `metadata.continuation`) to a host of the code, which appends
+ * what the code does next after the task. The marker holds only that continuation's progress.
  */
 export interface TaskContinuation {
-  lane: string;
-  n: number;
-  state: "WAITING" | "RUNNABLE" | "LEASED" | "APPLIED";
+  /** Offered to a worker and not yet applied or handed back. */
+  leased?: boolean;
   /** How many times it was offered again after an attempt that did not apply. */
   retryCount?: number;
-  /** When it became runnable. */
-  scheduledTime?: number;
-  /** When it applied, on a task's marker. */
+  /** When it applied; absent until then. */
   endTime?: number;
-  /** Why its last completion did not apply, until one does. */
-  reasonForIncompletion?: string;
+  /** Whether it ended its lane. */
   done?: boolean;
   recorded?: Record<string, unknown>;
   resumedWith?: Record<string, unknown>;
+  /** The handler lane's run number; absent on other markers. */
+  n?: number;
 }
 
 /** The engine's state of a native (code-first) workflow execution. */

@@ -13,7 +13,6 @@
 package com.netflix.conductor.test.integration
 
 import com.netflix.conductor.common.metadata.tasks.Task
-import com.netflix.conductor.common.metadata.tasks.TaskContinuation
 import com.netflix.conductor.common.metadata.tasks.TaskDef
 import com.netflix.conductor.common.metadata.tasks.TaskResult
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask
@@ -50,9 +49,9 @@ class NativeWorkflowSpec extends AbstractSpecification {
         bootstrap != null
         bootstrap.taskId == "${workflowId}|main"
         bootstrap.taskType == CODE_TYPE
-        bootstrap.continuation.lane == 'main'
-        bootstrap.continuation.n == 1
-        bootstrap.continuation.state == TaskContinuation.LEASED
+        laneOf(bootstrap) == 'main'
+        nOf(bootstrap) == 1
+        bootstrap.continuation.leased
 
         when: 'the worker completes it with the first task the code called, marked as where the code paused'
         complete(bootstrap, 'worker-a', completion(bootstrap,
@@ -67,12 +66,11 @@ class NativeWorkflowSpec extends AbstractSpecification {
             wf.tasks[0].referenceTaskName == 'integration_task_1'
             wf.tasks[0].status == Task.Status.SCHEDULED
             wf.tasks[0].inputData.p == 5
-            wf.tasks[0].continuation.lane == 'main'
-            wf.tasks[0].continuation.n == 2
-            wf.tasks[0].continuation.state == TaskContinuation.WAITING
+            laneOf(wf.tasks[0]) == 'main'
+            nOf(wf.tasks[0]) == 2
+            !wf.tasks[0].continuation.leased && !wf.tasks[0].continuation.applied
             wf.variables.stage == 'classic'
-            wf.nativeState.bootstrap.state == TaskContinuation.APPLIED
-            wf.nativeState.bootstrap.endTime == 0 // the first to apply: replay needs no time for it
+            wf.nativeState.bootstrap.applied
         }
 
         when: 'the task completes'
@@ -85,8 +83,8 @@ class NativeWorkflowSpec extends AbstractSpecification {
         next.referenceTaskName == 'integration_task_1'
         next.status == Task.Status.COMPLETED
         next.outputData.result == 'ok'
-        next.continuation.n == 2
-        next.continuation.state == TaskContinuation.LEASED
+        nOf(next) == 2
+        next.continuation.leased
 
         when: 'the code returns'
         complete(next, 'worker-a', completion(next, [], [stage: 'done'], true, [answer: 42]))
@@ -99,7 +97,7 @@ class NativeWorkflowSpec extends AbstractSpecification {
             refs(wf.workflowDefinition.tasks) == ['integration_task_1']
             wf.tasks.size() == 1
             wf.tasks[0].status == Task.Status.COMPLETED
-            wf.tasks[0].continuation.state == TaskContinuation.APPLIED
+            wf.tasks[0].continuation.applied
             wf.tasks[0].continuation.done
         }
     }
@@ -136,7 +134,7 @@ class NativeWorkflowSpec extends AbstractSpecification {
         def branch0 = workflowExecutionService.poll(CODE_TYPE, 'worker-a')
         branch0 != null
         branch0.referenceTaskName == 'integration_task_1'
-        branch0.continuation.lane == 'fork_1.0'
+        laneOf(branch0) == 'fork_1.0'
         workflowExecutionService.getExecutionStatus(workflowId, true).getTaskByRefName('integration_task_2').status == Task.Status.SCHEDULED
 
         when: 'branch 0 continues with another task'
@@ -205,7 +203,7 @@ class NativeWorkflowSpec extends AbstractSpecification {
         result.status = TaskResult.Status.FAILED
         result.reasonForIncompletion = 'timeout reading the execution'
         result.workerId = 'worker-a'
-        result.outputData = [protocol: 2, n: held.continuation.n, retryCount: held.continuation.retryCount]
+        result.outputData = [protocol: 2, n: nOf(held), retryCount: held.continuation.retryCount]
         workflowExecutionService.updateTask(result)
 
         then: 'the task keeps its result and the continuation is offered again'
@@ -215,9 +213,9 @@ class NativeWorkflowSpec extends AbstractSpecification {
             wf.tasks[0].status == Task.Status.COMPLETED
             wf.tasks[0].outputData.result == 'ok'
             // offered again at once as a retry, delivered after its backoff
-            wf.tasks[0].continuation.state == TaskContinuation.LEASED
+            wf.tasks[0].continuation.leased
             wf.tasks[0].continuation.retryCount == held.continuation.retryCount + 1
-            wf.tasks[0].continuation.reasonForIncompletion == 'worker reported FAILED'
+            wf.reasonForIncompletion == 'worker reported FAILED'
         }
         workflowExecutionService.poll(CODE_TYPE, 'worker-b') == null // within the backoff
 
@@ -256,7 +254,7 @@ class NativeWorkflowSpec extends AbstractSpecification {
         def next = workflowExecutionService.poll(CODE_TYPE, 'worker-a')
         next != null
         next.referenceTaskName == 'paused.code'
-        next.continuation.state == TaskContinuation.LEASED
+        next.continuation.leased
     }
 
     // ------------------------------------------------------------------ the SDK, in miniature
@@ -271,7 +269,7 @@ class NativeWorkflowSpec extends AbstractSpecification {
 
     private static Map<String, Object> completion(Task task, List<WorkflowTask> fragment, Map<String, Object> variables,
                                                   boolean done = false, Map<String, Object> result = null) {
-        def output = [protocol: 2, n: task.continuation.n, retryCount: task.continuation.retryCount,
+        def output = [protocol: 2, n: nOf(task), retryCount: task.continuation.retryCount,
                       fragment: fragment, done: done] as Map<String, Object>
         if (variables != null) {
             output.variables = variables
@@ -280,6 +278,16 @@ class NativeWorkflowSpec extends AbstractSpecification {
             output.result = result
         }
         return output
+    }
+
+    /** The lane of the code a handed-out continuation runs: its entry names it. */
+    private static String laneOf(Task task) {
+        task.workflowTask.metadata.lane
+    }
+
+    /** The continuation's number in its lane. */
+    private static int nOf(Task task) {
+        task.workflowTask.metadata.continuation as int
     }
 
     private static WorkflowTask simple(String name, Map<String, Object> input, String lane = 'main') {

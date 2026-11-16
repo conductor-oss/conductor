@@ -570,7 +570,7 @@ public class TestDeciderOutcomes {
         // the completion that recorded the throw was saved; the server stopped before ending it
         WorkflowModel workflow = nativeWorkflowPausedOn(TaskModel.Status.COMPLETED);
         TaskContinuation marker = workflow.getTasks().get(0).getContinuation();
-        marker.setState(TaskContinuation.APPLIED);
+        marker.setEndTime(1);
         marker.setDone(true);
         workflow.setReasonForIncompletion("boom");
         assertFalse(deciderService.checkForWorkflowCompletion(workflow));
@@ -600,7 +600,7 @@ public class TestDeciderOutcomes {
         workflow.setCreateTime(System.currentTimeMillis());
         workflow.setStatus(WorkflowModel.Status.RUNNING);
         nativeContinuationService.initialize(workflow); // starts the execution's copy empty
-        workflow.getNativeState().getBootstrap().setState(TaskContinuation.APPLIED);
+        workflow.getNativeState().getBootstrap().setEndTime(1);
         def.getTasks().add(entry); // ... which the bootstrap continuation then grew by one entry
 
         TaskModel task = new TaskModel();
@@ -610,7 +610,7 @@ public class TestDeciderOutcomes {
         task.setTaskDefName("task0");
         task.setWorkflowTask(entry);
         task.setStatus(taskStatus);
-        task.setContinuation(new TaskContinuation("main", 2));
+        task.setContinuation(new TaskContinuation());
         workflow.getTasks().add(task);
         return workflow;
     }
@@ -664,7 +664,7 @@ public class TestDeciderOutcomes {
         // the code returned (marker done) and appended one more task after the task it paused on
         WorkflowModel workflow = nativeWorkflowPausedOn(TaskModel.Status.COMPLETED);
         TaskModel task = workflow.getTasks().get(0);
-        task.getContinuation().setState(TaskContinuation.APPLIED);
+        task.getContinuation().setEndTime(1);
         task.getContinuation().setDone(true);
         workflow.setOutput(Map.of("answer", 42)); // set when the code's return applied
         WorkflowTask trailing = new WorkflowTask();
@@ -705,9 +705,10 @@ public class TestDeciderOutcomes {
                         .findFirst()
                         .orElseThrow();
         assertEquals(1, retry.getRetryCount());
-        assertEquals("main", retry.getContinuation().getLane());
-        assertEquals(2, retry.getContinuation().getN());
-        assertTrue(retry.getContinuation().isWaiting());
+        // the same entry, so the same continuation, not run yet
+        assertEquals(workflow.getTasks().get(0).getWorkflowTask(), retry.getWorkflowTask());
+        assertFalse(retry.getContinuation().isApplied());
+        assertFalse(retry.getContinuation().isLeased());
     }
 
     @Test

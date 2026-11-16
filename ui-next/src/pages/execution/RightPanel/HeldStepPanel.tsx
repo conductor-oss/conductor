@@ -3,7 +3,7 @@ import { X as CloseIcon } from "@phosphor-icons/react";
 import { Heading, IconButton, KeyValueTable } from "components";
 import { FunctionComponent, ReactNode } from "react";
 import { WorkflowExecution } from "types/Execution";
-import { canBeHeld, heldMismatch, heldReasonOfMarker } from "../held";
+import { continuationOf, heldAt, heldMismatch } from "../held";
 import { codeTypeOf } from "../waiting";
 
 interface HeldStepPanelProps {
@@ -40,10 +40,11 @@ export const HeldStepPanel: FunctionComponent<HeldStepPanelProps> = ({
   execution,
   onClose,
 }) => {
-  const marker = execution?.tasks
-    ?.filter((task) => task.referenceTaskName === pausedOn)
-    .at(-1)?.continuation;
-  const reason = canBeHeld(execution) ? heldReasonOfMarker(marker) : undefined;
+  const task = execution?.tasks
+    ?.filter((t) => t.referenceTaskName === pausedOn)
+    .at(-1);
+  const continuation = task ? continuationOf(task) : undefined;
+  const reason = heldAt(execution, task);
   const mismatch = reason ? heldMismatch(reason) : undefined;
   const workflow = execution?.workflowName ?? execution?.workflowType;
   const version = execution?.workflowVersion;
@@ -128,11 +129,14 @@ export const HeldStepPanel: FunctionComponent<HeldStepPanelProps> = ({
                     { label: "Last finished task", value: pausedOn },
                     {
                       label: "Waiting since",
-                      value: marker?.scheduledTime
-                        ? new Date(marker.scheduledTime).toLocaleString()
+                      value: continuation?.since
+                        ? new Date(continuation.since).toLocaleString()
                         : "Unknown",
                     },
-                    { label: "Retries so far", value: marker?.retryCount ?? 0 },
+                    {
+                      label: "Retries so far",
+                      value: continuation?.marker.retryCount ?? 0,
+                    },
                     {
                       label: "Next attempt",
                       value: "Offered to workers again, up to a minute apart",

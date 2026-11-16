@@ -23,7 +23,7 @@ import {
   StatusMap,
   TypeStatusMap,
 } from "./StatusMapTypes";
-import { canBeHeld, heldReasonOfMarker } from "../held";
+import { heldReason } from "../held";
 import { codeLoopStatus, isCodeLoop } from "./codeLoops";
 import { detachedTasksByParent } from "./detachedTasks";
 import { TaskDefExecutionContext, WorkflowDefExecutionContext } from "./types";
@@ -165,6 +165,8 @@ export const taskStatusUpdater = (
   statusMap: StatusMap,
   expandDynamic: string[],
   sideTasks: Record<string, ExecutionTask[]> = {},
+  /** Why the run is held, if it is: at the one continuation it has leased. */
+  held?: string,
 ): TaskDefExecutionContext[] => {
   const updated = tasks.map((task) => {
     const { type, taskReferenceName } = task;
@@ -185,14 +187,14 @@ export const taskStatusUpdater = (
       outputData: executionTask?.outputData,
       parentLoop: executionTask?.parentLoop,
       sideTasks: sideTasks[taskReferenceName],
-      held: heldReasonOfMarker(executionTask?.continuation),
+      held: executionTask?.continuation?.leased ? held : undefined,
     };
 
     if (type === TaskType.FORK_JOIN) {
       const forkTasks: Array<TaskDefExecutionContext[]> = (
         task.forkTasks || []
       ).map((taa) =>
-        taskStatusUpdater(taa, statusMap, expandDynamic, sideTasks),
+        taskStatusUpdater(taa, statusMap, expandDynamic, sideTasks, held),
       );
       return {
         ...task,
@@ -202,7 +204,13 @@ export const taskStatusUpdater = (
     } else if (type === TaskType.DECISION || type === TaskType.SWITCH) {
       const decisionCases: Record<string, TaskDefExecutionContext[]> =
         _mapValues(task.decisionCases, (decisionTasks: TaskDef[]) =>
-          taskStatusUpdater(decisionTasks, statusMap, expandDynamic, sideTasks),
+          taskStatusUpdater(
+            decisionTasks,
+            statusMap,
+            expandDynamic,
+            sideTasks,
+            held,
+          ),
         );
       return {
         ...task,
@@ -212,6 +220,7 @@ export const taskStatusUpdater = (
           statusMap,
           expandDynamic,
           sideTasks,
+          held,
         ),
         executionData,
       } as TaskDefExecutionContext;
@@ -221,6 +230,7 @@ export const taskStatusUpdater = (
         statusMap,
         expandDynamic,
         sideTasks,
+        held,
       );
       return {
         ...task,
@@ -475,14 +485,12 @@ export const executionToWorkflowDef = (
       ...execution.workflowDefinition,
       tasks: taskStatusUpdater(
         execution.workflowDefinition.tasks,
-        canBeHeld(execution)
-          ? taskExecutionMap
-          : (_mapValues(taskExecutionMap, (task) => ({
-              ...task,
-              continuation: undefined,
-            })) as StatusMap),
+        taskExecutionMap,
         expandDynamic,
         detachedTasksByParent(execution.tasks, execution.workflowDefinition),
+        heldReason(
+          execution as { status?: unknown; reasonForIncompletion?: string },
+        ),
       ),
     },
     taskExecutionMap,

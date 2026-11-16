@@ -88,16 +88,10 @@ public class TestProtoMapper {
   }
 
   private static TaskContinuation marker() {
-    return marker("main", 3);
-  }
-
-  private static TaskContinuation marker(String lane, int n) {
-    TaskContinuation marker = new TaskContinuation(lane, n);
-    marker.setState(TaskContinuation.LEASED);
+    TaskContinuation marker = TaskContinuation.handlerRun(3);
+    marker.setLeased(true);
     marker.setRetryCount(7);
-    marker.setScheduledTime(100);
     marker.setEndTime(300);
-    marker.setReasonForIncompletion("diverged: the code changed");
     marker.setRecorded(Map.of("random_0", 0.5));
     marker.setResumedWith(Map.of("count", 4.0));
     marker.setDone(true);
@@ -105,13 +99,10 @@ public class TestProtoMapper {
   }
 
   private static void assertSameMarker(TaskContinuation expected, TaskContinuation actual) {
-    assertEquals(expected.getLane(), actual.getLane());
     assertEquals(expected.getN(), actual.getN());
-    assertEquals(expected.getState(), actual.getState());
+    assertEquals(expected.isLeased(), actual.isLeased());
     assertEquals(expected.getRetryCount(), actual.getRetryCount());
-    assertEquals(expected.getScheduledTime(), actual.getScheduledTime());
     assertEquals(expected.getEndTime(), actual.getEndTime());
-    assertEquals(expected.getReasonForIncompletion(), actual.getReasonForIncompletion());
     assertEquals(expected.getRecorded(), actual.getRecorded());
     assertEquals(expected.getResumedWith(), actual.getResumedWith());
     assertEquals(expected.isDone(), actual.isDone());
@@ -128,9 +119,10 @@ public class TestProtoMapper {
   public void aMarkerThatHasNotRunYetGoesOverGrpc() {
     // a waiting marker: no record yet, and its maps come back empty, not null
     Task task = new Task();
-    task.setContinuation(new TaskContinuation("main", 1));
+    task.setContinuation(new TaskContinuation());
     TaskContinuation back = mapper.fromProto(mapper.toProto(task)).getContinuation();
-    assertTrue(back.isWaiting());
+    assertFalse(back.isApplied());
+    assertFalse(back.isLeased());
     assertTrue(back.getRecorded().isEmpty());
     assertTrue(back.getResumedWith().isEmpty());
   }
@@ -143,16 +135,16 @@ public class TestProtoMapper {
   @Test
   public void aWorkflowKeepsItsNativeStateOverGrpc() {
     NativeState state = new NativeState();
-    state.setBootstrap(marker("main", 1));
-    state.setHandlers(marker("handlers", 3));
+    state.setBootstrap(marker());
+    state.setHandlers(marker());
     state.setReplies(Map.of("u1", Map.of("value", 1.0)));
     Workflow workflow = new Workflow();
     workflow.setNativeState(state);
 
     NativeState back = mapper.fromProto(mapper.toProto(workflow)).getNativeState();
 
-    assertSameMarker(marker("main", 1), back.getBootstrap());
-    assertSameMarker(marker("handlers", 3), back.getHandlers());
+    assertSameMarker(marker(), back.getBootstrap());
+    assertSameMarker(marker(), back.getHandlers());
     assertEquals(state.getReplies(), back.getReplies());
   }
 

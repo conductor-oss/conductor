@@ -429,6 +429,7 @@ public class TestWorkflowExecutor {
         entry.setType("SIMPLE");
         entry.setTaskReferenceName("t0");
         entry.getMetadata().put("lane", "main");
+        entry.getMetadata().put("continuation", 2);
         def.getTasks().add(entry);
         WorkflowModel workflow = new WorkflowModel();
         workflow.setWorkflowDefinition(def);
@@ -445,8 +446,7 @@ public class TestWorkflowExecutor {
         task.setStatus(TaskModel.Status.COMPLETED);
         task.setExecuted(true);
         com.netflix.conductor.common.metadata.tasks.TaskContinuation marker =
-                new com.netflix.conductor.common.metadata.tasks.TaskContinuation("main", 2);
-        marker.setState(com.netflix.conductor.common.metadata.tasks.TaskContinuation.RUNNABLE);
+                new com.netflix.conductor.common.metadata.tasks.TaskContinuation();
         task.setContinuation(marker);
         workflow.getTasks().add(task);
         when(executionLockService.acquireLock(anyString())).thenReturn(true);
@@ -475,6 +475,7 @@ public class TestWorkflowExecutor {
         entry.setType("SIMPLE");
         entry.setTaskReferenceName("t0");
         entry.getMetadata().put("lane", "main");
+        entry.getMetadata().put("continuation", 2);
         def.getTasks().add(entry);
 
         WorkflowModel workflow = new WorkflowModel();
@@ -492,8 +493,8 @@ public class TestWorkflowExecutor {
         awaited.setStatus(TaskModel.Status.COMPLETED);
         awaited.setExecuted(true);
         com.netflix.conductor.common.metadata.tasks.TaskContinuation marker =
-                new com.netflix.conductor.common.metadata.tasks.TaskContinuation("main", 2);
-        marker.setState(com.netflix.conductor.common.metadata.tasks.TaskContinuation.LEASED);
+                new com.netflix.conductor.common.metadata.tasks.TaskContinuation();
+        marker.setLeased(true);
         marker.setRetryCount(4);
         awaited.setContinuation(marker);
         workflow.getTasks().add(awaited);
@@ -553,8 +554,8 @@ public class TestWorkflowExecutor {
         verify(queueDAO).remove("native-order.v1.code", "t0-id");
     }
 
-    /** A native workflow whose code paused on t0, with t0's marker in {@code state}. */
-    private TaskModel pausedOnT0(String state, TaskModel.Status taskStatus) {
+    /** A native workflow whose code paused on t0, with t0's marker leased or not. */
+    private TaskModel pausedOnT0(boolean leased, TaskModel.Status taskStatus) {
         WorkflowDef def = new WorkflowDef();
         def.setName("native-route");
         def.getMetadata().put("native", Map.of("codeType", "native-route.v1.code"));
@@ -562,6 +563,8 @@ public class TestWorkflowExecutor {
         entry.setName("t0");
         entry.setType("SIMPLE");
         entry.setTaskReferenceName("t0");
+        entry.getMetadata().put("lane", "main");
+        entry.getMetadata().put("continuation", 2);
         def.getTasks().add(entry);
         WorkflowModel workflow = new WorkflowModel();
         workflow.setWorkflowDefinition(def);
@@ -572,8 +575,8 @@ public class TestWorkflowExecutor {
         t0.setTaskId("t0-id");
         t0.setWorkflowInstanceId("native-route-1");
         t0.setStatus(taskStatus);
-        TaskContinuation marker = new TaskContinuation("main", 2);
-        marker.setState(state);
+        TaskContinuation marker = new TaskContinuation();
+        marker.setLeased(leased);
         marker.setRetryCount(4);
         t0.setContinuation(marker);
         workflow.getTasks().add(t0);
@@ -597,9 +600,9 @@ public class TestWorkflowExecutor {
 
     @Test
     public void aStaleContinuationCompletionAfterARerunIsRefusedAndLeavesTheTaskAlone() {
-        // a rerun reset t0 to SCHEDULED and its marker to WAITING; the old continuation's
-        // completion arrives late
-        TaskModel t0 = pausedOnT0(TaskContinuation.WAITING, TaskModel.Status.SCHEDULED);
+        // a rerun reset t0 to SCHEDULED and its marker; the old continuation's completion
+        // arrives late
+        TaskModel t0 = pausedOnT0(false, TaskModel.Status.SCHEDULED);
 
         assertThrows(
                 ConflictException.class,
@@ -611,7 +614,7 @@ public class TestWorkflowExecutor {
 
     @Test
     public void aDeferredContinuationIsOfferedAgainOnlyAfterItsAckIsSaved() {
-        TaskModel t0 = pausedOnT0(TaskContinuation.LEASED, TaskModel.Status.COMPLETED);
+        TaskModel t0 = pausedOnT0(true, TaskModel.Status.COMPLETED);
         nativeService.setQueueDAO(queueDAO);
 
         // a worker error: the continuation runs again after a backoff, under the same message id
@@ -2572,7 +2575,8 @@ public class TestWorkflowExecutor {
                         .toList());
         assertEquals(List.of(a), workflow.getTasks());
         assertEquals(WorkflowModel.Status.RUNNING, workflow.getStatus());
-        assertEquals(TaskContinuation.RUNNABLE, a.getContinuation().getState());
+        assertFalse(a.getContinuation().isApplied()); // the code that threw runs again
+        assertFalse(a.getContinuation().isLeased());
         assertNull(workflow.getReasonForIncompletion());
         verify(executionDAOFacade).removeTask("thrown-id");
     }
@@ -2603,6 +2607,8 @@ public class TestWorkflowExecutor {
         a.setName("a");
         a.setType("SIMPLE");
         a.setTaskReferenceName("a");
+        a.getMetadata().put("lane", "main");
+        a.getMetadata().put("continuation", 2);
         WorkflowTask b = new WorkflowTask();
         b.setName("b");
         b.setType("SIMPLE");
@@ -2629,8 +2635,8 @@ public class TestWorkflowExecutor {
         workflow.setCreateTime(System.currentTimeMillis());
         workflow.setNativeState(new com.netflix.conductor.common.run.NativeState());
         TaskModel aTask = taskOf(a, "a", 1);
-        TaskContinuation marker = new TaskContinuation("main", 2);
-        marker.setState(TaskContinuation.APPLIED);
+        TaskContinuation marker = new TaskContinuation();
+        marker.setEndTime(1);
         marker.setDone(true);
         aTask.setContinuation(marker);
         workflow.setReasonForIncompletion("boom");

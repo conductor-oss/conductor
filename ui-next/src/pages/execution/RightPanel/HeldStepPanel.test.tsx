@@ -3,9 +3,11 @@ import { describe, expect, it, vi } from "vitest";
 import { WorkflowExecution } from "types/Execution";
 import { HeldStepPanel } from "./HeldStepPanel";
 
+// one continuation runs at a time: why it did not apply is the run's reason
 const execution = (status: string, deferred?: string) =>
   ({
     status,
+    reasonForIncompletion: deferred,
     workflowName: "orders",
     workflowVersion: 3,
     workflowDefinition: {
@@ -16,7 +18,9 @@ const execution = (status: string, deferred?: string) =>
     tasks: [
       {
         referenceTaskName: "sleep",
-        continuation: { retryCount: 5, reasonForIncompletion: deferred },
+        status: "COMPLETED",
+        endTime: 1_700_000_000_000,
+        continuation: { leased: true, retryCount: 5 },
       },
     ],
   }) as unknown as WorkflowExecution;

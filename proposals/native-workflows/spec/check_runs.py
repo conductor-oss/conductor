@@ -2,7 +2,7 @@
 """Checks real native executions against the promises of NativeProtocol.tla.
 
 It reads finished executions from a server and checks what their stored state shows: tasks, the
-definition that grew, and the continuation markers with their scheduled and end times. It compares
+definition that grew, and the continuation markers with their end times. It compares
 final states and timestamps, so it cannot see a behaviour that left no trace.
 
     python3 check_runs.py --server http://localhost:8099/api --since <epoch-ms> [--limit 500]
@@ -45,12 +45,25 @@ def latest_attempts(tasks):
     return list(by.values())
 
 
+def is_applied(m):
+    """A marker applied once it has an end time."""
+    return bool(m.get('endTime'))
+
+
 def markers(w):
-    """(id, marker) for every marker of the latest attempts and the execution's own."""
-    out = [(t['referenceTaskName'], t['continuation']) for t in latest_attempts(w['tasks']) if t.get('continuation')]
+    """(id, lane, n, marker) for every marker of the latest attempts and the execution's own.
+
+    Which continuation a task's marker is, its lane and number, is the task's entry's metadata;
+    the first continuation is main #1.
+    """
+    out = []
+    for t in latest_attempts(w['tasks']):
+        if t.get('continuation'):
+            md = (t.get('workflowTask') or {}).get('metadata') or {}
+            out.append((t['referenceTaskName'], md.get('lane'), md.get('continuation', 0), t['continuation']))
     ns = w.get('nativeState') or {}
-    if ns.get('bootstrap'):
-        out.append(('bootstrap', {'lane': 'main', 'n': 1, **ns['bootstrap']}))  # stored without them
+    if ns.get('bootstrap') is not None:
+        out.append(('bootstrap', 'main', 1, ns['bootstrap']))
     return out
 
 
@@ -73,18 +86,18 @@ def check(w):
         if ref in previews:
             bad.append(('AsIfRunOnce', f'preview {ref} ran'))
 
-    # Applied in order, one at a time: every applied continuation on a task has its own end time,
-    # the order replay follows, and applied after its task ended.
+    # Applied in order, one at a time: every applied continuation has its own end time, the order
+    # replay follows; the first one applied before any other, each on a task after its task ended.
     ends = collections.Counter()
+    first_end = (w.get('nativeState') or {}).get('bootstrap', {}).get('endTime')
     for t in latest_attempts(tasks):
         c = t.get('continuation') or {}
-        if c.get('state') == 'APPLIED' and c.get('lane') != 'handlers':
-            if not c.get('endTime'):
-                bad.append(('AppliedInOrder', f'{t["referenceTaskName"]} applied with no end time'))
-                continue
+        if is_applied(c):
             ends[c['endTime']] += 1
             if c['endTime'] < t['endTime']:
                 bad.append(('AppliedInOrder', f'{t["referenceTaskName"]}: the code after it applied before it ended'))
+            if not first_end or c['endTime'] <= first_end:
+                bad.append(('AppliedInOrder', f'{t["referenceTaskName"]} applied before the first continuation'))
     for at, count in ends.items():
         if count > 1:
             bad.append(('AppliedInOrder', f'{count} continuations applied at {at}'))
@@ -94,11 +107,11 @@ def check(w):
             if t['status'] not in TERMINAL:
                 bad.append(('EndedIsQuiet', f'{t["referenceTaskName"]} is {t["status"]} after the end'))
     if w['status'] == 'COMPLETED':
-        for name, m in marks:
-            if m.get('state') != 'APPLIED':
-                bad.append(('CompletedSound', f'marker of {name} is {m.get("state")}'))
-        main = [m for n, m in marks if m.get('lane') == 'main' and m.get('state') == 'APPLIED']
-        last = max(main, key=lambda m: m.get('n', 0), default=None)
+        for name, _, _, m in marks:
+            if not is_applied(m):
+                bad.append(('CompletedSound', f'marker of {name} is {"leased" if m.get("leased") else "not run"}'))
+        main = [(n, m) for _, lane, n, m in marks if lane == 'main' and is_applied(m)]
+        last = max(main, key=lambda nm: nm[0], default=(0, None))[1]
         if last is None or not last.get('done') or w.get('reasonForIncompletion'):
             bad.append(('CompletedSound', 'the main lane did not return'))
         # Every entry landed where it would run.
@@ -111,7 +124,7 @@ def check(w):
                     bad.append(('NeverStuck', f'{t["taskReferenceName"]} never ran'))
     if w['status'] == 'RUNNING':
         busy = [t for t in tasks if t['status'] not in TERMINAL]
-        runnable = [n for n, m in marks if m.get('state') in ('RUNNABLE', 'LEASED')]
+        runnable = [name for name, _, _, m in marks if not is_applied(m)]
         if not busy and not runnable:
             bad.append(('NeverStuck', 'running with nothing in flight'))
 
@@ -153,12 +166,12 @@ def check(w):
         elif j > 0 and seq[j - 1]['type'] == 'FORK_JOIN':
             branches = seq[j - 1].get('forkTasks') or []
         refs = {x['taskReferenceName'] for b in branches for x, _, _ in walk(b)}
-        for x in latest_attempts(tasks):   # an older, retried attempt's marker stays WAITING
+        for x in latest_attempts(tasks):   # an older, retried attempt's marker never runs
             if base_ref(x['referenceTaskName']) in refs:
                 if x['endTime'] > jt['endTime'] or x['status'] not in TERMINAL:
                     bad.append(('JoinWaitsForLanes', f'{t["taskReferenceName"]} ended before {x["referenceTaskName"]}'))
                 c = x.get('continuation')
-                if c and (c.get('state') != 'APPLIED' or c.get('endTime', 0) > jt['endTime']):
+                if c and (not is_applied(c) or c.get('endTime', 0) > jt['endTime']):
                     bad.append(('JoinWaitsForLanes', f'{t["taskReferenceName"]} ended before the code after {x["referenceTaskName"]} ran'))
     return bad
 

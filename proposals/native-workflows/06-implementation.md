@@ -111,14 +111,14 @@ Each entry names the problem and the mechanism that fixes it as it exists now.
    evaluated from a copy of the definition loaded before that decide was saved, where the task the
    lane had paused on was still the branch's last task. The code resumed after the join with a
    lane unfinished, and the execution failed. `lanesSettled` now counts a branch as finished only
-   when its last task is terminal and its marker, if any, is `APPLIED` with `done`.
+   when its last task is terminal and its marker, if any, is applied with `done`.
 6. **Acknowledged signals were lost when an execution completed.** Found by the durability bench
    with faults. A continuation's poll response was lost in a partition, so the handler lane
    stalled for its timeout. Signals sent meanwhile stayed queued, the main lane finished, and the
    queue was deleted with the execution. A main-lane completion that would end the execution
-   successfully is now deferred while messages are queued or the handler marker is `RUNNABLE` or
-   `LEASED`: the marker goes back to `RUNNABLE` with the reason in `reasonForIncompletion` (then
-   `deferred`), and the continuation
+   successfully is now deferred while messages are queued or the handler marker is leased: the
+   marker's lease is released with the reason (then the marker's `deferred`, now the workflow's
+   `reasonForIncompletion`), and the continuation
    runs again on the current state. Messages still queued when an execution ends anyway (failed, terminated) are logged
    and counted (`workflow_messages_discarded`) instead of dropped silently.
 7. **A lost poll response stalled a continuation for two minutes.** Also found by the bench: a
@@ -139,7 +139,7 @@ Each entry names the problem and the mechanism that fixes it as it exists now.
    the meantime it defers the completion and runs the continuation again on the current values.
 10. **A JOIN could fail an execution on a continuation that was about to run again.** A refused or
    deferred completion left the branch's last task in a state a live-target JOIN read as failure.
-   `lanesSettled` now waits on any marker that is not `APPLIED` with `done`, whatever happened to
+   `lanesSettled` now waits on any marker that is not applied with `done`, whatever happened to
    the previous lease.
 11. **A server crash mid-apply could strand an execution.** The continuation's record was saved
    before the grown definition, so a server killed in between had a continuation marked applied
@@ -149,7 +149,7 @@ Each entry names the problem and the mechanism that fixes it as it exists now.
    definition saved.
 12. **A replay could report a false divergence.** A worker replaying the execution between a
    completion being saved and the decide that created its tasks replayed the completion, expected
-   its tasks, and failed the execution as diverged. The SDK now replays only `APPLIED` markers
+   its tasks, and failed the execution as diverged. The SDK now replays only applied markers
    (`Execution.segments`); a continuation not yet applied leaves its lane paused.
 17. **A continuation queued for a dead worker could wait an hour.** Found by the chaos run on
    protocol 2, under the per-worker routing that has since been removed. A worker was killed right
@@ -157,10 +157,10 @@ Each entry names the problem and the mechanism that fixes it as it exists now.
    the wake-up to a live queue on the next decide, but the sweeper's decide had postponed the
    workflow's decider-queue entry on the strength of its in-progress tasks, up to
    `maxPostponeDurationSeconds` (an hour), so no decide came. `WorkflowExecutorOps.decide` now caps
-   that postpone at `workflowOffsetTimeout` (30 s) while a continuation marker is `RUNNABLE` or
-   `LEASED` (`NativeContinuationService.needsPromptRevisit`), and writes it even when it equals the
-   default, to replace a longer postpone set earlier. The cap still matters for domain lists and
-   for re-offering a lease whose holder died.
+   that postpone at `workflowOffsetTimeout` (30 s) while a continuation is runnable or leased
+   (`NativeContinuationService.needsPromptRevisit`), and writes it even when it equals the
+   default, to replace a longer postpone set earlier. The cap still matters for re-pushing a
+   wake-up whose message was lost; a lease whose holder died is redelivered by the queue.
 18. **A pop on SQLite took the same message id in other queues.** The `popMessages` update selected
    its messages within the queue but marked them popped by `message_id` alone, so a message with
    the same id in another queue was marked popped too; a continuation's id can be in several queues
@@ -267,11 +267,11 @@ operator checks that a worker task failing once is retried rather than raised.
 | Handlers | `FORK_JOIN` + `DO_WHILE` + `PULL_WORKFLOW_MESSAGES` + handler `CODE` + `JOIN` | `nativeState.handlers`; the message endpoint wakes it; the poll claims the messages under `handlers#<n>` |
 | Replies and handled message ids | workflow variables `__replies`, `__seen` | `nativeState.replies` (every handled message) |
 | Continuation routing | `taskToDomain[<codeType>]`, the worker's id captured per execution | the shared queue of the code type; task domains do not apply, whatever the start's `taskToDomain` (01 §3) |
-| Poll | batch poll of the `CODE` task type | the same batch poll of the code type; a decide offers the marker (`LEASED`) and `ExecutionService.poll` hands out the finished task itself (or a synthetic task for the bootstrap and handler lanes) |
+| Poll | batch poll of the `CODE` task type | the same batch poll of the code type; a decide offers the marker (leased) and `ExecutionService.poll` hands out the finished task itself (or a synthetic task for the bootstrap and handler lanes, with an entry whose `metadata` names the continuation) |
 | Complete | `POST /api/tasks` on the `CODE` task | `POST /api/tasks/update-v2` on the awaited task's id or the synthetic id; stale completions get 409 |
 | Fencing | owner refusal, stale-write guard, response and poll timeouts with retry | one leased marker per execution, `(n, retryCount)` check under the execution lock |
-| Deferral | the attempt set aside as `CANCELED`, retried with the next retry count | the marker back to `RUNNABLE` with `retryCount + 1` and `reasonForIncompletion` set; offered again under the same message id |
-| Replay input | `CODE` outputs with `applied`, `step`, `resumedWith`; `RECORD` outputs | the bootstrap first, then the `APPLIED` task markers ordered by `endTime` |
+| Deferral | the attempt set aside as `CANCELED`, retried with the next retry count | the marker's lease released with `retryCount + 1`, the reason on the workflow's `reasonForIncompletion`; offered again at once under the same message id, delivered after the backoff |
+| Replay input | `CODE` outputs with `applied`, `step`, `resumedWith`; `RECORD` outputs | the applied markers, the bootstrap's included, ordered by `endTime` |
 | Task count | hello world: 6 tasks (3 `CODE`, 2 tasks, `TERMINATE`) | hello world: 2 tasks |
 | UI | fold hidden tasks, `?showHidden=true` | nothing to fold; continuation on the task panel, engine state on the summary |
 
@@ -279,13 +279,13 @@ operator checks that a worker task failing once is retried rather than raised.
 
 | Topic | Earlier documents | Implemented |
 |---|---|---|
-| Worker execution model | live thread as the fast path, re-run only on worker loss | The worker always replays the code against the applied markers and the tasks, so it is stateless. Segments replay in the order the server applied them (`step`). `@Variable` fields are restored at each continuation to the values recorded when it was first processed (`resumedWith`). Any worker can run any continuation; the server's slot (the one `LEASED` marker) lets one continuation of an execution run at a time, across all hosts, and the SDK holds no per-execution lock. The live-thread fast path is left for the latency round. |
+| Worker execution model | live thread as the fast path, re-run only on worker loss | The worker always replays the code against the applied markers and the tasks, so it is stateless. Segments replay in the order the server applied them (`endTime`). `@Variable` fields are restored at each continuation to the values recorded when it was first processed (`resumedWith`). Any worker can run any continuation; the server's slot (the one leased marker) lets one continuation of an execution run at a time, across all hosts, and the SDK holds no per-execution lock. The live-thread fast path is left for the latency round. |
 | Fan-out | FORK_JOIN_DYNAMIC, in stages | a FORK_JOIN generated at run time with one lane per item; items progress independently, with no stages |
 | Native JOIN mode | `joinMode: SYNC` | default asynchronous evaluation; SYNC re-evaluates continuously and would busy-poll long branches |
 | Condition waits | reference `cond`, `cond_2` | `condition`, `condition_2` |
 | `startWorkflow` | returns the new execution id | returns nothing, since the id is not deterministic on replay |
 | `repeatUntil` condition | a predicate | a method reference to a boolean property of the result, such as `JobStatus::done`, translated to the DO_WHILE condition |
-| Continuation routing | per worker, then per build (`nativeState.owner`, sent in every completion; workers polled their worker id too) | removed. The shared queue by default; `Workers` polls it plus `buildId` as a domain when set; pinning is opt-in with a domain list on the start, such as `.taskToDomain(Map.of("<name>.v1.code", "build-7,NO_DOMAIN"))`, and a worker's build is never captured automatically |
+| Continuation routing | per worker, then per build (`nativeState.owner`, sent in every completion; workers polled their worker id too) | removed. The shared queue of the code type, which `Workers` polls with no domain; task domains do not apply to workflow code, whatever the start's `taskToDomain` (01 §3), and a worker's build is never captured |
 | Human task timeout | a registered task definition | an inline `taskDefinition` on the HUMAN entry, with `timeoutPolicy: RETRY` and `retryCount: 0` |
 | Branching visible in the graph | `decision(name, value)`: nothing emitted, a label for the observed-graph diamond; a plain Java `switch` left no trace | a plain `if` or `switch` whose arms call the server is a `SWITCH` with every arm (read from the compiled code, the arm known from the line each call is made on); `switchOn(name, value).when(key, body)…otherwise(body).get()`/`.run()`: a real `SWITCH` entry with every declared case, the taken body run inline with its calls inside that case, every untaken case holding a preview of the calls its body would have made (`<base>_if_<key>`, `metadata.preview: true`, read from the compiled case body, so nothing runs), and `metadata.after` on the first entry after the body when the lane resumed inside the case. Plain `if`/`switch` stays plain code; `switchOn` is the opt-in for a branch the execution should show. `decision` no longer exists. The kitchensink's `oddEvenDecision` is a `switchOn`; `switches.Switches` shows a nested switch, an empty case, the default case and an unhandled value |
 | Registration checks (S2) | log when the message queue is off | as designed, plus native definitions are refused when `conductor.app.nativeWorkflow.enabled=false` |
@@ -310,8 +310,8 @@ operator checks that a worker task failing once is retried rather than raised.
   common cause, but the worker still gives up after its retries.
 - Divergence is always strict: a replay that reaches a call the recording does not have is
   refused, with a message naming the call and its source line. The execution is held rather than
-  failed (`marker.reasonForIncompletion` starts `diverged: `; ui-next shows "Waiting for compatible code"
-  beside the status, as a dashed step after the task the code paused on that opens an explanation, and with the reason on
+  failed (the workflow's `reasonForIncompletion` starts `diverged: `; ui-next shows "Waiting for compatible code"
+  beside the status, as a dashed step after the task whose marker is leased that opens an explanation, and with the reason on
   both summaries) and retried with
   backoff up to a minute, indefinitely, until a compatible build runs it, it times out or an
   operator terminates it.
@@ -341,7 +341,7 @@ operator checks that a worker task failing once is retried rather than raised.
   (`queueName`). A continuation held by a dead worker is redelivered when its lease
   (`continuationTimeoutSeconds`) expires. A lost message is pushed again by the next decide
   (`repairAndWake` re-pushes the slot holder's message), which is at most `workflowOffsetTimeout`
-  (30 s) away while a marker is `RUNNABLE` or `LEASED` (`needsPromptRevisit`).
+  (30 s) away while a continuation is runnable or leased (`needsPromptRevisit`).
 - `continuation` and `nativeState` are carried over gRPC (`Task.continuation`,
   `Workflow.native_state`, covered by `TestProtoMapper`), but workers only use REST: no worker has
   polled or completed a continuation over gRPC.

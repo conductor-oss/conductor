@@ -95,17 +95,19 @@ describe("held native code on the execution definition", () => {
     type: TaskType.SIMPLE,
     inputParameters: {},
   });
-  const ran = (taskReferenceName: string, deferred?: string) => ({
+  // the held continuation is the one leased; why it did not apply is the run's reason
+  const ran = (taskReferenceName: string, leased = false) => ({
     taskId: `id-${taskReferenceName}`,
     referenceTaskName: taskReferenceName,
     taskType: TaskType.SIMPLE,
     workflowTask: def(taskReferenceName),
     status: TaskStatus.COMPLETED,
-    continuation: { reasonForIncompletion: deferred },
+    continuation: leased ? { leased } : { endTime: 1 },
   });
   const execution = (status: string, deferred?: string) =>
     ({
       status,
+      reasonForIncompletion: deferred,
       workflowDefinition: {
         name: "native",
         version: 1,
@@ -118,7 +120,7 @@ describe("held native code on the execution definition", () => {
           },
         ],
       },
-      tasks: [ran("first"), ran("branch", deferred)],
+      tasks: [ran("first"), ran("branch", true)],
     }) as any;
   const refs = (tasks: any[]) => tasks.map((t) => t.taskReferenceName);
 

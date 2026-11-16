@@ -24,132 +24,97 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 /**
  * The continuation of a native (code-defined) workflow that runs when this task finishes.
  *
- * <p>Native workflow code pauses only on a task. The task it paused on carries this marker: which
- * lane of the code waits on it, which continuation of that lane runs next, whether that
- * continuation is waiting for the task, queued for a worker, leased by one, or applied. Once
- * applied, the marker is the record of what the continuation produced, which a worker replays from.
- * The workflow's first continuation and its handler runs have no task to wait on; the workflow
+ * <p>Native workflow code pauses only on a task. The task it paused on carries this marker: whether
+ * the continuation is leased to a worker, how many times it was offered again, and, once applied,
+ * what it produced, which a worker replays from. Which continuation it is (the lane of the code and
+ * its number) is the task's entry's {@code metadata}: {@code lane} and {@code continuation}.
+ * Whether it can run follows from the task: once the task has ended and the decider has evaluated
+ * it. The workflow's first continuation and its handler runs have no task to wait on; the workflow
  * record carries their markers (see {@code NativeState}).
  */
 @ProtoMessage
 public class TaskContinuation {
 
-    public static final String WAITING = "WAITING";
-    public static final String RUNNABLE = "RUNNABLE";
-    public static final String LEASED = "LEASED";
-    public static final String APPLIED = "APPLIED";
-
+    /**
+     * Leased to a worker: offered, and not yet applied or handed back. At most one continuation of
+     * an execution is leased at a time.
+     */
     @ProtoField(id = 1)
-    private String lane;
-
-    @ProtoField(id = 2)
-    private int n;
-
-    @ProtoField(id = 3)
-    private String state = WAITING;
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+    private boolean leased;
 
     /**
      * How many times this continuation was offered again: 0 on its first offer, one more after each
      * attempt that did not apply (deferred, retried, rerun), as a task's retry count. A completion
      * names the count it was offered at, so one from an earlier attempt never applies.
      */
-    @ProtoField(id = 4)
+    @ProtoField(id = 2)
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     private int retryCount;
 
-    /** When it became runnable; the oldest runnable continuation is offered first. */
-    @ProtoField(id = 5)
-    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
-    private long scheduledTime;
-
     /**
-     * When it applied, on a task's marker: later than every earlier apply in the run, the order
-     * replay follows. The workflow's first continuation always applies first and does not need it.
+     * When it applied, 0 until then: later than every earlier apply in the run, the order replay
+     * follows.
      */
-    @ProtoField(id = 6)
+    @ProtoField(id = 3)
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     private long endTime;
 
-    /**
-     * Why its last completion did not apply, until one does: shown to people. A hold (a reason
-     * starting {@code diverged: }) keeps the time it became runnable while it lasts.
-     */
-    @ProtoField(id = 7)
-    @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    private String reasonForIncompletion;
-
-    @ProtoField(id = 8)
-    @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    private Map<String, Object> recorded = new HashMap<>();
-
-    @ProtoField(id = 9)
-    @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    private Map<String, Object> resumedWith = new HashMap<>();
-
-    @ProtoField(id = 10)
+    /** Whether it ended its lane: the code returned or raised there. */
+    @ProtoField(id = 4)
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     private boolean done;
 
+    /** The values the code recorded while it ran ({@code once}, {@code now}, {@code random}). */
+    @ProtoField(id = 5)
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    private Map<String, Object> recorded = new HashMap<>();
+
+    /** The workflow variables it started from, which a replay restores before it. */
+    @ProtoField(id = 6)
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    private Map<String, Object> resumedWith = new HashMap<>();
+
+    /**
+     * The handler lane's run number, from 1; 0 on every other marker, whose number is its entry's.
+     * Every handler run has the same message id, so this tells a run from the one before it.
+     */
+    @ProtoField(id = 7)
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+    private int n;
+
     public TaskContinuation() {}
 
-    public TaskContinuation(String lane, int n) {
-        this.lane = lane;
-        this.n = n;
+    /** A new marker of a handler run. */
+    public static TaskContinuation handlerRun(int n) {
+        TaskContinuation marker = new TaskContinuation();
+        marker.n = n;
+        return marker;
     }
 
     /**
-     * A fresh marker for the same lane and continuation, as a rerun task or a restarted run
-     * carries: another attempt, so its retry count goes up and a completion of an offer made before
-     * the reset can never match it.
+     * A fresh marker for the same continuation, as a rerun task or a restarted run carries: another
+     * attempt, so its retry count goes up and a completion of an offer made before the reset can
+     * never match it.
      */
     public TaskContinuation reset() {
-        TaskContinuation fresh = new TaskContinuation(lane, n);
+        TaskContinuation fresh = new TaskContinuation();
+        fresh.n = n;
         fresh.retryCount = retryCount + 1;
         return fresh;
     }
 
-    @JsonIgnore // derived from state, not stored
-    public boolean isWaiting() {
-        return WAITING.equals(state);
-    }
-
-    @JsonIgnore
-    public boolean isRunnable() {
-        return RUNNABLE.equals(state);
-    }
-
-    @JsonIgnore
-    public boolean isLeased() {
-        return LEASED.equals(state);
-    }
-
-    @JsonIgnore
+    @JsonIgnore // derived from endTime, not stored
     public boolean isApplied() {
-        return APPLIED.equals(state);
+        return endTime > 0;
     }
 
-    public String getLane() {
-        return lane;
+    public boolean isLeased() {
+        return leased;
     }
 
-    public void setLane(String lane) {
-        this.lane = lane;
-    }
-
-    public int getN() {
-        return n;
-    }
-
-    public void setN(int n) {
-        this.n = n;
-    }
-
-    public String getState() {
-        return state;
-    }
-
-    public void setState(String state) {
-        this.state = state;
+    public void setLeased(boolean leased) {
+        this.leased = leased;
     }
 
     public int getRetryCount() {
@@ -160,14 +125,6 @@ public class TaskContinuation {
         this.retryCount = retryCount;
     }
 
-    public long getScheduledTime() {
-        return scheduledTime;
-    }
-
-    public void setScheduledTime(long scheduledTime) {
-        this.scheduledTime = scheduledTime;
-    }
-
     public long getEndTime() {
         return endTime;
     }
@@ -176,12 +133,12 @@ public class TaskContinuation {
         this.endTime = endTime;
     }
 
-    public String getReasonForIncompletion() {
-        return reasonForIncompletion;
+    public boolean isDone() {
+        return done;
     }
 
-    public void setReasonForIncompletion(String reasonForIncompletion) {
-        this.reasonForIncompletion = reasonForIncompletion;
+    public void setDone(boolean done) {
+        this.done = done;
     }
 
     public Map<String, Object> getRecorded() {
@@ -200,22 +157,19 @@ public class TaskContinuation {
         this.resumedWith = resumedWith;
     }
 
-    public boolean isDone() {
-        return done;
+    public int getN() {
+        return n;
     }
 
-    public void setDone(boolean done) {
-        this.done = done;
+    public void setN(int n) {
+        this.n = n;
     }
 
     @Override
     public String toString() {
         return "TaskContinuation{"
-                + lane
-                + "#"
-                + n
-                + " "
-                + state
+                + (n > 0 ? "run " + n + " " : "")
+                + (leased ? "leased" : endTime > 0 ? "applied" : "not applied")
                 + (retryCount > 0 ? " retry " + retryCount : "")
                 + "}";
     }

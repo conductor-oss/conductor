@@ -237,7 +237,9 @@ const ExecutionAlert = ({
   if (
     execution?.rateLimited ||
     (execution?.reasonForIncompletion &&
-      execution?.status !== WorkflowExecutionStatus.COMPLETED)
+      execution?.status !== WorkflowExecutionStatus.COMPLETED &&
+      // a held run is explained by its chip and summary
+      !heldReason(execution))
   ) {
     return (
       <MuiAlert

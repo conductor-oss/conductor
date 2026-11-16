@@ -8,15 +8,9 @@ import {
   waitingForWorker,
 } from "./waiting";
 
-const marker = (state: string, extra: object = {}) => ({
-  lane: "main",
-  n: 1,
-  state,
-  ...extra,
-});
-
-const execution = (bootstrap: any, extra: object = {}): any => ({
+const execution = (bootstrap: object, extra: object = {}): any => ({
   status: "RUNNING",
+  startTime: 100,
   tasks: [],
   workflowDefinition: {
     name: "kitchensink",
@@ -27,22 +21,29 @@ const execution = (bootstrap: any, extra: object = {}): any => ({
   ...extra,
 });
 
-describe("waitingCode", () => {
-  it("reads the first continuation as the server stores it, without its lane and number", () => {
-    expect(
-      waitingCode(execution({ state: "RUNNABLE", scheduledTime: 100 })),
-    ).toEqual({ codeType: "kitchensink.v1.code", lane: "main", since: 100 });
-    expect(appliedContinuations(execution({ state: "APPLIED" }))).toBe(1);
-  });
+/** A task the code paused on: its entry names the lane and the continuation. */
+const paused = (
+  lane: string,
+  status: string,
+  continuation: object,
+  endTime?: number,
+) => ({
+  status,
+  endTime,
+  workflowTask: { metadata: { lane, continuation: 2 } },
+  continuation,
+});
 
-  it("names the code type and lane of a continuation offered and not yet run", () => {
-    expect(
-      waitingCode(execution(marker("LEASED", { scheduledTime: 100 }))),
-    ).toEqual({
+describe("waitingCode", () => {
+  it("waits for the first continuation from the run's start until it applied", () => {
+    expect(waitingCode(execution({}))).toEqual({
       codeType: "kitchensink.v1.code",
       lane: "main",
       since: 100,
     });
+    expect(waitingCode(execution({ leased: true }))?.since).toBe(100);
+    expect(waitingCode(execution({ endTime: 5 }))).toBeUndefined();
+    expect(appliedContinuations(execution({ endTime: 5 }))).toBe(1);
   });
 
   it("names the code type after the workflow and its version, as the server does", () => {
@@ -53,40 +54,42 @@ describe("waitingCode", () => {
     expect(codeTypeOf(def({}) as any)).toBeUndefined();
   });
 
-  it("is nothing once the code ran, while held, or when the run ended", () => {
-    expect(waitingCode(execution(marker("APPLIED")))).toBeUndefined();
+  it("is nothing while held, when the run ended, or for a lane whose task still runs", () => {
     expect(
       waitingCode(
         execution(
-          marker("RUNNABLE", {
-            reasonForIncompletion: "diverged: changed code",
-          }),
+          { leased: true },
+          { reasonForIncompletion: "diverged: changed code" },
         ),
       ),
     ).toBeUndefined();
     expect(
-      waitingCode(execution(marker("LEASED"), { status: "TERMINATED" })),
+      waitingCode(execution({ leased: true }, { status: "TERMINATED" })),
     ).toBeUndefined();
     expect(
       waitingCode({ status: "RUNNING", tasks: [] } as any),
     ).toBeUndefined();
+    expect(
+      waitingCode(
+        execution(
+          { endTime: 5 },
+          { tasks: [paused("main", "IN_PROGRESS", {})] },
+        ),
+      ),
+    ).toBeUndefined();
   });
 
-  it("takes the continuation that has waited longest, on a task too", () => {
+  it("takes the continuation whose task ended first", () => {
     const waiting = waitingCode(
-      execution(marker("APPLIED"), {
-        tasks: [
-          {
-            continuation: marker("RUNNABLE", {
-              lane: "fork_1.0",
-              scheduledTime: 50,
-            }),
-          },
-          {
-            continuation: marker("LEASED", { lane: "main", scheduledTime: 70 }),
-          },
-        ],
-      }),
+      execution(
+        { endTime: 5 },
+        {
+          tasks: [
+            paused("main", "COMPLETED", { leased: true }, 70),
+            paused("fork_1.0", "COMPLETED", {}, 50),
+          ],
+        },
+      ),
     );
     expect(waiting?.lane).toBe("fork_1.0");
     expect(waiting?.since).toBe(50);
@@ -97,13 +100,16 @@ describe("appliedContinuations", () => {
   it("counts the applied bootstrap and task continuations", () => {
     expect(
       appliedContinuations(
-        execution(marker("APPLIED"), {
-          tasks: [
-            { continuation: marker("APPLIED") },
-            { continuation: marker("LEASED") },
-            {},
-          ],
-        }),
+        execution(
+          { endTime: 5 },
+          {
+            tasks: [
+              paused("main", "COMPLETED", { endTime: 7 }, 6),
+              paused("main", "COMPLETED", { leased: true }, 8),
+              {},
+            ],
+          },
+        ),
       ),
     ).toBe(2);
     expect(appliedContinuations(undefined)).toBe(0);

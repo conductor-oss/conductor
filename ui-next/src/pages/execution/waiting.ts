@@ -1,6 +1,6 @@
-import { TaskContinuation, WorkflowExecution } from "types/Execution";
+import { WorkflowExecution } from "types/Execution";
 import { PollData } from "utils/query";
-import { canBeHeld, heldReasonOfMarker, markersOf } from "./held";
+import { canBeHeld, Continuation, continuationsOf, heldReason } from "./held";
 
 /**
  * A native workflow runs only while something hosts its code. A continuation the server offered
@@ -12,17 +12,15 @@ export interface WaitingCode {
   codeType: string;
   /** The lane the continuation runs, such as main. */
   lane: string;
-  /** When it was offered. */
+  /** Since when it could run. */
   since?: number;
 }
 
 /** A worker that last polled longer ago than this is not counted as running. */
 export const NO_WORKER_AFTER_MS = 30_000;
 
-const offered = (marker?: TaskContinuation): marker is TaskContinuation =>
-  !!marker &&
-  (marker.state === "RUNNABLE" || marker.state === "LEASED") &&
-  !heldReasonOfMarker(marker); // held: a worker ran it, and the code did not match
+const offered = (continuation: Continuation): boolean =>
+  continuation.state === "runnable" || continuation.state === "leased";
 
 /** The task type a native workflow's hosts poll: `<name>.v<version>.code`, one per version. */
 export const codeTypeOf = (
@@ -34,8 +32,9 @@ export const codeTypeOf = (
 
 /** How many continuations of the code have applied: the first one and those on tasks. */
 export const appliedContinuations = (execution?: WorkflowExecution): number =>
-  markersOf(execution).filter(
-    (marker) => marker.lane !== "handlers" && marker.state === "APPLIED",
+  continuationsOf(execution).filter(
+    (continuation) =>
+      continuation.lane !== "handlers" && continuation.state === "applied",
   ).length;
 
 /** The oldest continuation offered to the code's workers and not yet applied, if any. */
@@ -43,20 +42,21 @@ export const waitingCode = (
   execution?: WorkflowExecution,
 ): WaitingCode | undefined => {
   const codeType = codeTypeOf(execution);
-  if (!codeType || !canBeHeld(execution)) {
+  // held: a worker ran it, and the code did not match
+  if (!codeType || !canBeHeld(execution) || heldReason(execution)) {
     return undefined;
   }
-  const markers = markersOf(execution).filter(offered);
-  if (markers.length === 0) {
+  const offers = continuationsOf(execution).filter(offered);
+  if (offers.length === 0) {
     return undefined;
   }
-  const oldest = markers.reduce((a, b) =>
-    (b.scheduledTime ?? Infinity) < (a.scheduledTime ?? Infinity) ? b : a,
+  const oldest = offers.reduce((a, b) =>
+    (b.since ?? Infinity) < (a.since ?? Infinity) ? b : a,
   );
   return {
     codeType,
     lane: oldest.lane,
-    since: oldest.scheduledTime,
+    since: oldest.since,
   };
 };
 

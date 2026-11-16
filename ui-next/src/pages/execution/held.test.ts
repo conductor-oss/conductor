@@ -1,43 +1,36 @@
 import { describe, expect, it } from "vitest";
 import { WorkflowExecution } from "types/Execution";
-import { heldMismatch, heldReason } from "./held";
+import { heldAt, heldMismatch, heldReason } from "./held";
 
 const execution = (status: string, fields: object) =>
   ({ status, tasks: [], ...fields }) as unknown as WorkflowExecution;
-const held = {
-  lane: "main",
-  n: 1,
-  state: "RUNNABLE",
-  reasonForIncompletion: "diverged: the code changed",
-};
+const held = { reasonForIncompletion: "diverged: the code changed" };
 
 describe("heldReason", () => {
-  it("finds a hold on a task", () => {
-    expect(
-      heldReason(execution("RUNNING", { tasks: [{ continuation: held }] })),
-    ).toEqual("the code changed");
+  it("reads the run's reason: one continuation runs at a time", () => {
+    expect(heldReason(execution("RUNNING", held))).toEqual("the code changed");
   });
 
-  it("finds a hold on a lane that has no task", () => {
-    expect(
-      heldReason(execution("RUNNING", { nativeState: { bootstrap: held } })),
-    ).toEqual("the code changed");
+  it("names the step held: the one continuation leased", () => {
+    const running = execution("RUNNING", held);
+    expect(heldAt(running, { continuation: { leased: true } })).toEqual(
+      "the code changed",
+    );
+    expect(heldAt(running, { continuation: { endTime: 5 } })).toBeUndefined();
   });
 
   it("ignores other deferrals", () => {
-    const waiting = {
-      ...held,
-      reasonForIncompletion: "waiting for handlers: 1 message",
-    };
     expect(
-      heldReason(execution("RUNNING", { tasks: [{ continuation: waiting }] })),
+      heldReason(
+        execution("RUNNING", {
+          reasonForIncompletion: "waiting for handlers: 1 message",
+        }),
+      ),
     ).toBeUndefined();
   });
 
   it("does not call a finished execution held", () => {
-    expect(
-      heldReason(execution("TERMINATED", { tasks: [{ continuation: held }] })),
-    ).toBeUndefined();
+    expect(heldReason(execution("TERMINATED", held))).toBeUndefined();
   });
 
   it("handles an execution that has not loaded", () => {

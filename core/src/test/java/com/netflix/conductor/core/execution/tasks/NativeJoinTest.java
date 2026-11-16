@@ -55,11 +55,17 @@ public class NativeJoinTest {
         return t;
     }
 
+    private static final String NOT_RUN = "not run";
+    private static final String LEASED = "leased";
+    private static final String APPLIED = "applied";
+
     /** A task the code paused on, with its marker in the given state. */
     private static TaskModel paused(String ref, String markerState, boolean done) {
         TaskModel t = task(ref, TaskModel.Status.COMPLETED);
-        TaskContinuation marker = new TaskContinuation("fork_1." + ref.charAt(0), 2);
-        marker.setState(markerState);
+        t.getWorkflowTask().getMetadata().put("continuation", 2);
+        TaskContinuation marker = new TaskContinuation();
+        marker.setLeased(LEASED.equals(markerState));
+        marker.setEndTime(APPLIED.equals(markerState) ? 1 : 0);
         marker.setDone(done);
         t.setContinuation(marker);
         return t;
@@ -129,11 +135,7 @@ public class NativeJoinTest {
         wf.getTasks().add(task("b1", TaskModel.Status.COMPLETED));
         TaskModel j = joinTask(jd);
 
-        for (String state :
-                List.of(
-                        TaskContinuation.WAITING,
-                        TaskContinuation.RUNNABLE,
-                        TaskContinuation.LEASED)) {
+        for (String state : List.of(NOT_RUN, LEASED)) {
             wf.getTasks().removeIf(t -> t.getReferenceTaskName().equals("a1"));
             wf.getTasks().add(paused("a1", state, false));
             assertFalse(state, join.execute(wf, j, null));
@@ -141,11 +143,11 @@ public class NativeJoinTest {
         }
         // applied but the lane went on: in a stale copy of the definition a1 still looks last
         wf.getTasks().removeIf(t -> t.getReferenceTaskName().equals("a1"));
-        wf.getTasks().add(paused("a1", TaskContinuation.APPLIED, false));
+        wf.getTasks().add(paused("a1", APPLIED, false));
         assertFalse(join.execute(wf, j, null));
         // applied and the lane returned: settled
         wf.getTasks().removeIf(t -> t.getReferenceTaskName().equals("a1"));
-        wf.getTasks().add(paused("a1", TaskContinuation.APPLIED, true));
+        wf.getTasks().add(paused("a1", APPLIED, true));
         assertTrue(join.execute(wf, j, null));
         assertEquals(TaskModel.Status.COMPLETED, j.getStatus());
     }
@@ -177,11 +179,11 @@ public class NativeJoinTest {
 
         // finished, and the code it paused has not returned yet
         wf.getTasks().removeIf(t -> t.getReferenceTaskName().equals("a1"));
-        wf.getTasks().add(paused("a1", TaskContinuation.RUNNABLE, false));
+        wf.getTasks().add(paused("a1", NOT_RUN, false));
         assertFalse(join.execute(wf, j, null));
 
         wf.getTasks().removeIf(t -> t.getReferenceTaskName().equals("a1"));
-        wf.getTasks().add(paused("a1", TaskContinuation.APPLIED, true));
+        wf.getTasks().add(paused("a1", APPLIED, true));
         assertTrue(join.execute(wf, j, null));
         assertEquals(TaskModel.Status.COMPLETED, j.getStatus());
     }

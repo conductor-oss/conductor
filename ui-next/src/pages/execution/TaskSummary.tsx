@@ -5,12 +5,12 @@ import { NavLink, KeyValueTable } from "components";
 import { Link, Paper } from "@mui/material";
 import { ExecutionTask, TaskType } from "types";
 import { ReactNode, useMemo } from "react";
-import { canBeHeld, heldReasonOfMarker } from "./held";
+import { continuationOf } from "./held";
 
 interface TaskSummaryProps {
   taskResult: ExecutionTask;
-  /** Whether a held continuation still applies: a finished execution is no longer held. */
-  workflowStatus?: string;
+  /** Why the code after this task is held, while the run is held here. */
+  held?: string;
 }
 
 type DataType = {
@@ -19,10 +19,7 @@ type DataType = {
   type?: string;
 };
 
-export default function TaskSummary({
-  taskResult,
-  workflowStatus,
-}: TaskSummaryProps) {
+export default function TaskSummary({ taskResult, held }: TaskSummaryProps) {
   const shouldDisplayEvaluatedCase = useMemo(
     () => ["DECISION", "SWITCH"].includes(taskResult.taskType),
     [taskResult.taskType],
@@ -55,11 +52,8 @@ export default function TaskSummary({
   }
   // Native workflows: the code paused on this task; when it finishes, the server hands the
   // continuation to a host of the code, which appends what comes next.
-  const continuation = taskResult.continuation;
+  const continuation = continuationOf(taskResult);
   if (continuation) {
-    const held = canBeHeld({ status: workflowStatus })
-      ? heldReasonOfMarker(continuation)
-      : undefined;
     if (held) {
       data.push({
         label: "Waiting for compatible code",
@@ -69,16 +63,12 @@ export default function TaskSummary({
     }
     data.push({
       label: "Continuation",
-      value: `${continuation.lane} #${continuation.n} — ${continuation.state.toLowerCase()}${
-        continuation.reasonForIncompletion && !held
-          ? ` (deferred: ${continuation.reasonForIncompletion})`
-          : ""
-      }`,
+      value: `${continuation.lane} #${continuation.n} — ${continuation.state}`,
     });
-    if (continuation.endTime) {
+    if (continuation.marker.endTime) {
       data.push({
         label: "Continuation applied",
-        value: continuation.endTime,
+        value: continuation.marker.endTime,
         type: "date",
       });
     }

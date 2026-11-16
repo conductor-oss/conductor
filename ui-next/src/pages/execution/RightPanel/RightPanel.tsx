@@ -19,6 +19,7 @@ import { colors } from "theme/tokens/variables";
 import { TaskType } from "types/common";
 import { WorkflowDef } from "types/WorkflowDef";
 import { isSideTaskOf } from "pages/execution/state/detachedTasks";
+import { heldAt } from "pages/execution/held";
 import {
   DoWhileSelection,
   ExecutionTask,
@@ -426,7 +427,7 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
             >
               <TaskSummary
                 taskResult={selectedTask}
-                workflowStatus={workflowStatus}
+                held={heldAt(execution, selectedTask)}
               />
               {maybeStatusForm}
             </Box>

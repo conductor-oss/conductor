@@ -15,7 +15,19 @@ it.
 A second later change renamed the marker's fields after a task's (section 9): `epoch` became
 `retryCount`, which counts the attempts that ended without applying rather than the offers;
 `queuedAt` became `scheduledTime`, `appliedAt` `endTime` (on a task's marker only) and `deferred`
-`reasonForIncompletion`; `leasedAt` was dropped. The examples below use the current fields.
+`reasonForIncompletion`; `leasedAt` was dropped.
+
+A third later change kept on the marker only what decides state (section 9): `leased`,
+`retryCount`, `endTime`, `done`, `recorded`, `resumedWith`, and `n` on the handler lane's marker
+only. Which continuation a task's marker is comes from the task's entry (`metadata.lane`,
+`metadata.continuation`); the poll gives the bootstrap's and the handler lane's synthetic tasks an
+entry that names it the same way. `state` is derived: applied is `endTime > 0` (the bootstrap gets
+an `endTime` too), leased is `leased`, runnable is a terminal, evaluated task whose marker is
+neither, so the `WAITING` to `RUNNABLE` repairs below are gone. `scheduledTime` went: a decide
+offers the handler lane while messages are queued, else the bootstrap until it applied, else the
+continuation whose task ended first. The marker's `reasonForIncompletion` went to the workflow's.
+Sections 1 to 5 still name the four states; read them as derived. The examples below use the
+current fields.
 
 ## The rule
 
@@ -36,7 +48,7 @@ What went away, and where it went:
 | Protocol 1 | Protocol 2 |
 |---|---|
 | `CODE` task per pause: queued, leased, timed out, retried, owner-routed as a worker task | a **continuation marker on the task the code paused on**, and one queue message per wake-up; the queue's lease is the continuation lease. Polled and completed with the regular task poll and update |
-| `CODE` output: `fragment`, `applied`, `step`, `resumedWith`, `variables`, `owner` | the marker's **record** once applied: `endTime` (its order; the bootstrap, always the first to apply, has none), recorded values, `resumedWith`, the lane's result or error |
+| `CODE` output: `fragment`, `applied`, `step`, `resumedWith`, `variables`, `owner` | the marker's **record** once applied: `endTime` (its order, the bootstrap's included), recorded values, `resumedWith`, `done`; the main lane's result is the run's output and its error the run's reason |
 | `RECORD` task per `once`, `now`, `random` | `recorded` in the record of the continuation that produced them |
 | `TERMINATE` with the result or the failure | the engine completes or fails the workflow from the main lane's final record |
 | FORK `lanes` + DO_WHILE `handlers` + PULL_WORKFLOW_MESSAGES + handler `CODE` + JOIN `lanes_join` | a handler marker on the workflow (handlers schedule no tasks); a message push wakes it; the poll claims the messages |
@@ -58,12 +70,11 @@ paused on it: the code's lane will run again once this task is terminal. The lea
 on the marker, not a nested object as this plan first drew it:
 
 ```json
-"continuation": {
-  "lane": "main", "n": 3, "state": "LEASED",
-  "retryCount": 1, "scheduledTime": 1794128769900,
-  "reasonForIncompletion": "worker reported FAILED"
-}
+"continuation": { "leased": true, "retryCount": 1 }
 ```
+
+Which continuation it is (here `main` #3) is on the task's entry: `metadata.lane` and
+`metadata.continuation`.
 
 Once the continuation has run and its completion was applied, the marker is the record replay
 reads. The plan's `delta` became `resumedWith`, the variables the continuation started from (the
@@ -71,25 +82,24 @@ server applies only what differs from it; a replay restores the lane's fields to
 
 ```json
 "continuation": {
-  "lane": "main", "n": 3, "state": "APPLIED",
-  "scheduledTime": 1794128769900, "endTime": 1794128770010,
+  "endTime": 1794128770010,
   "recorded": {"now": {"value": "2026-11-08T…", "type": "java.time.Instant"}},
   "resumedWith": {"stage": "new"}
 }
 ```
 
-| State | Meaning | Leaves it when |
-|---|---|---|
-| `WAITING` | the task is not terminal yet | the decider evaluates the task |
-| `RUNNABLE` | the code must run; it waits for the execution's slot | a decide offers it (`repairAndWake`) |
-| `LEASED` | offered at its `retryCount`; a worker holds its message until the continuation timeout, then the queue redelivers the same offer | a completion with that `n` and `retryCount`: it applies, or the attempt is deferred (`RUNNABLE`, `retryCount + 1`) |
-| `APPLIED` | the continuation ran and its fragment was appended after this task | never; a rerun resets it to `WAITING` |
+| State | Derived from | Meaning | Leaves it when |
+|---|---|---|---|
+| `WAITING` | not applied or leased; the task has not ended | the task is not terminal yet | the decider evaluates the task |
+| `RUNNABLE` | not applied or leased; the task has ended and been evaluated | the code must run; it waits for the execution's slot | a decide offers it (`repairAndWake`) |
+| `LEASED` | `leased` | offered at its `retryCount`; a worker holds its message until the continuation timeout, then the queue redelivers the same offer | a completion with that `n` and `retryCount`: it applies, or the attempt is deferred (`retryCount + 1`, offered again) |
+| `APPLIED` | `endTime > 0` | the continuation ran and its fragment was appended after this task | never; a rerun resets the marker |
 
 The marker is placed by the SDK: each lane's last blocking entry in a fragment carries
-`metadata.continuation = n` (with the entry's `metadata.lane`), and `TaskMapperContext.createTaskModel` copies it
-onto the `TaskModel` as `WAITING` when the entry is scheduled. A JOIN, a DO_WHILE and a WAIT carry
+`metadata.continuation = n` (with the entry's `metadata.lane`), and `TaskMapperContext.createTaskModel` gives
+the `TaskModel` a new marker, stored as `{}`, when the entry is scheduled. A JOIN, a DO_WHILE and a WAIT carry
 it like a worker task does, since the code pauses on them too. A retried attempt copies the marker
-reset to `WAITING`, so the continuation runs after the attempt that finishes.
+reset (`retryCount + 1`), so the continuation runs after the attempt that finishes.
 
 `resumedWith` holds the `@Variable` values the continuation read when it ran; a replaying worker
 restores the lane's fields to it before replaying that segment (`Execution.Marker.resumedWith`).
@@ -104,23 +114,24 @@ well under 100 bytes to its task.
 
 ```json
 "nativeState": {
-  "bootstrap": {"state": "APPLIED", "scheduledTime": 1794128766000,
+  "bootstrap": {"endTime": 1794128766010,
                 "recorded": {"runId": {"value": "ks-…", "type": "java.lang.String"}}},
-  "handlers": {"n": 8, "state": "WAITING"},
+  "handlers": {"n": 8},
   "replies": {"<message id>": {"value": 1, "at": 1794128766000}}
 }
 ```
 
 - `bootstrap` is the main lane's first continuation, which runs before any task exists. It is the
   only continuation without a task, so it is the only record kept here. It is always `main` #1, so
-  neither is stored; reading it restores them.
+  neither is on the marker.
 - `handlers` is the handler lane's marker. Handlers schedule no tasks and their runs are not
-  replayed, so only the live state is kept: whether a run is due or leased, and its number, which
-  is the ordinal the message-queue claim fence uses. After a run is applied the server installs a
-  fresh `WAITING` marker for `n + 1`. Its lane is always `handlers` and is not stored.
-- Applied task markers' `endTime` orders them across lanes for replay, as protocol 1's `step`
-  output did: the server keeps it increasing within a run. The bootstrap has none: it is always the
-  first to apply, so replay puts it first.
+  replayed, so only the live state is kept: whether a run is leased, and its number `n`, which
+  is the ordinal the message-queue claim fence uses (a run is due while messages are queued).
+  After a run is applied the server installs a fresh marker for `n + 1`. Its lane is always
+  `handlers`.
+- Applied markers' `endTime` orders them across lanes for replay, as protocol 1's `step`
+  output did: the server keeps it increasing within a run, the bootstrap's included, which is the
+  earliest.
 - `replies` holds every handled message (10 minutes, at most 500), which also de-duplicates a
   retried send; protocol 1 kept the ids apart, in `seen`.
 
@@ -236,8 +247,8 @@ to.)
    blocking call; none when the lane finished (`done`) or made no blocking call.
 3. **Check conflicts.** The variable conflict check (`resumedWith` against the current
    variables) and the completion guard (`done` with success while the handler marker is `LEASED`
-   or `RUNNABLE`, or messages are queued) both defer: the marker goes back to `RUNNABLE` with
-   `retryCount + 1` and the reason in `reasonForIncompletion`, and the continuation runs again on
+   or messages are queued) both defer: the marker's lease is released with `retryCount + 1`, the
+   reason goes in the workflow's `reasonForIncompletion`, and the continuation runs again on
    current state. Same
    behaviour as protocol 1's deferral, without a CANCELED task.
 4. **Append the fragment** right after the awaited task's entry (`WorkflowDef.insertAfter`), or
@@ -252,8 +263,8 @@ to.)
 5. **Apply the rest**: variables (only those changed since `resumedWith`), `replies`
    (pruned), and `releases`, which complete the named WAIT tasks with the
    given output in the same locked write.
-6. **Write the record**: the marker becomes `APPLIED` with `endTime` on a task's marker (increasing
-   within the run; the bootstrap needs none), `recorded`, `resumedWith` and `done`, and
+6. **Write the record**: the marker becomes `APPLIED` with `endTime` (increasing within the run,
+   the bootstrap's included), `recorded`, `resumedWith` and `done`, and the workflow's
    `reasonForIncompletion` is cleared; what the main lane returned is the run's
    output, and an exception the run's `reasonForIncompletion`.
 7. **Make the decider schedule the fragment**: mark the awaited task `executed = false`. The
@@ -281,8 +292,8 @@ complete; every task being terminal while a marker is runnable or leased is not.
 
 ### 2.4 Signals, updates and queries
 
-- The message endpoint pushes the message under the execution lock, as now, then marks the
-  handler marker `RUNNABLE` and pushes its wake-up (`pushIfNotExists`). No decide, no task.
+- The message endpoint pushes the message under the execution lock, as now; with messages
+  queued the handler lane is `RUNNABLE`, and its wake-up is pushed (`pushIfNotExists`). No task.
 - The handler continuation receives the claimed messages in the poll response, applies them to an
   instance restored from the variables, and completes with the new variables, `replies`
   and `releases` for every `awaitCondition` that now holds. Under protocol 1 the worker completed those
@@ -317,17 +328,13 @@ the `error` on the lane's last record, as it reached it from the lane's last COD
 
 ### 2.7 Sweeper
 
-The repairs live in `NativeContinuationService.repairAndWake`, which `WorkflowExecutorOps.decide`
+The repair lives in `NativeContinuationService.repairAndWake`, which `WorkflowExecutorOps.decide`
 runs on every decide of a native workflow (the sweeper's decide included), rather than in the
-sweeper's task-repair loop as planned:
-
-- `RUNNABLE`: push the wake-up again (`pushIfNotExists`, so a crash between saving and pushing is
-  repaired and a duplicate is never queued).
-- `WAITING` on a terminal, executed task: make it `RUNNABLE` and push (a crash between the
-  evaluation and the save).
-- `LEASED` past its lease: push (the queue normally redelivers; this covers a lost message).
-- `handlers` `WAITING` while the message queue holds messages: make it `RUNNABLE` and push (a
-  crash between the message push and the wake).
+sweeper's task-repair loop as planned. Since the states are derived (section 9) there is nothing
+to repair in the markers; the decide only pushes again the wake-up of the continuation that holds
+the execution's slot, the leased one or the one it offers (`pushIfNotExists`, so a crash between
+saving and pushing, or a lost message, is repaired and a duplicate is never queued). A lease whose
+holder died is redelivered by the queue when its unack timeout passes.
 
 The same checks apply to `bootstrap` and `handlers` on the workflow. The sweeper's "RUNNING with
 no running task, so reset the last task" repair skips workflows with `nativeState`, where a leased
@@ -350,7 +357,7 @@ or queued continuation is the running work.
 | `@Workflow`, `@Variable`, `@Signal`, `@Update`, `@Query`, `@Schedule`, `@WorkerTask` | none |
 | `Conductor.connect/start/workflow(...).idempotencyKey/correlationId/priority/execute/attach` | none |
 | `WorkflowHandle.signal/update/query/result/status/variables/completeTask` | `variables()` returns only `@Variable` values; replies move out of it |
-| `Workers.workerId/buildId/devMode/threads/continuationTimeout/workflows/tasks/start` | none; `Workers.timeScale` is deprecated and does nothing |
+| `Workers.workerId/devMode/continuationTimeout/settings/discovery/workflows/tasks/taskDefinitions/start` | none; `Workers.timeScale` is deprecated and does nothing |
 | `DurableTestEnvironment`, `TestRun`, `DirectEngine` | none |
 | `DurableReplay.assertCompatible` | none; it reads the new recording shape |
 | `TaskFailure`, `WorkflowFailedException`, `NonDeterminismException`, `Backoff`, `Promise` | none |
@@ -365,16 +372,18 @@ Internals:
 - Polling: each hosted workflow is a `Worker` of its code type on a `TaskRunner` (virtual threads,
   update-v2, no domains), with `threadCount`, `pollingInterval` and `pollTimeout` from
   `conductor.workflow.<name>.*`, `conductor.workflow.all.*` or `@Workflow` (20, 100 ms, 500 ms).
-  `process(Task)` returns the completion: the lane, number and `retryCount` come from
-  `task.continuation` (the synthetic tasks carry the marker too); the handler messages from
+  `process(Task)` returns the completion: the lane and number come from
+  `task.workflowTask.metadata` (`lane`, `continuation`; the synthetic tasks carry an entry that
+  names them too), `retryCount` from `task.continuation`; the handler messages from
   `task.inputData.messages`. Build the `Execution` from the workflow JSON with its tasks;
-  segments are `bootstrap` first, then the tasks whose marker is `APPLIED` (latest attempt per
-  reference name, handler lane excluded) ordered by `endTime`; each segment's `resumedWith` and
+  segments are the applied markers, the bootstrap's and those on tasks (latest attempt per
+  reference name), ordered by `endTime`; each segment's `resumedWith` and
   `recorded` are read from its
   marker; lane results and errors from the lane's last record. `TaskRunner` sends it with
   update-v2: a `4xx` other than 408 and 429 (`409` means stale) is final; anything else is retried
   three times, 2 s apart. The SDK's vendored `Task` and
-  `Workflow` classes gain `continuation` and `nativeState`.
+  `Workflow` classes gain `continuation` and `nativeState`, and its `WorkflowTask` gains
+  `metadata`, as on the server.
 - `Replayer`: no `codeEntry`, `terminate` or RECORD entries. A pause puts
   `metadata.continuation` on the entry it pauses on (`Entries.continuation`); `once`, `now` and
   `random` report `recorded`; the lane's end reports `done` with `result` or `error`.
@@ -383,7 +392,8 @@ Internals:
 - `Entries.metadata` keeps `lane` and `site`; pause entries gain `continuation`. The fork entry
   carries nothing extra.
 - `Execution.TaskView.isCode/lane/continuation/step` are replaced by `TaskView.marker`
-  (`Execution.Marker`), read from `continuation` on the task, and `Execution.bootstrap()`,
+  (`Execution.Marker`), read from `continuation` on the task with its lane and number from the
+  task's `workflowTask.metadata`, and `Execution.bootstrap()` (`main` #1),
   `replies()`, `seen()` read from `nativeState`.
 
 ## 4. What an operator sees
@@ -391,30 +401,31 @@ Internals:
 - **Diagram and task list**: exactly the definition's tasks, so no fold, no `?showHidden`. Lanes
   come from `metadata.lane` on each task, as the diagram reads them now.
 - **The task panel** (`ui-next/src/pages/execution/TaskSummary.tsx`) shows a task's continuation
-  when it has one: lane, number, state, why the last attempt was deferred
-  (`reasonForIncompletion`) and the applied time (`endTime`). A
-  stalled or diverged continuation shows on the task the code paused on, which is where an
+  when it has one: lane and number (from the entry's metadata), the derived state and the applied
+  time (`endTime`). Why the last attempt was deferred is the workflow's `reasonForIncompletion`. A
+  diverged continuation shows on the task whose marker is leased, which is where an
   operator would look.
 - **The execution summary** (`ExecutionSummary.tsx`) shows the native section: code type,
   continuations applied, the bootstrap state while pending, and the handler lane's run.
 - **Source lines** stay on each task's panel (`metadata.site`).
 - **Operator actions**: retry, rerun from a task, restart, pause, resume and terminate, unchanged.
-- **Metrics**: continuation latency (`scheduledTime` to `endTime`), retries, deferrals and stale
-  completions, from the markers.
+- **Metrics**: retries, deferrals and stale completions (`native_completion_deferred`,
+  `native_stale_completion`); continuation latency, from when its task ended to the marker's
+  `endTime`, is what the durability bench's checker computes.
 
 ## 5. Durability guarantees, re-derived
 
 | Guarantee | Mechanism after the change |
 |---|---|
 | A worker crash loses nothing | the lease expires; the queue redelivers the same offer, at the same `retryCount`, to the next poll |
-| A server crash loses nothing | the marker is saved before the queue push; the sweeper repairs a `RUNNABLE` marker without a message and a `WAITING` marker on an evaluated task |
+| A server crash loses nothing | the marker is saved before the queue push; the next decide re-pushes the leased marker's message, or offers the next runnable continuation, which is derived from stored state and needs no repair |
 | A continuation is applied exactly once | the `(n, retryCount)` check under the execution lock, and the marker must still be `LEASED` |
 | Two workers never both apply the same continuation | one lease holder per marker; the loser gets `409` |
 | Stale variables never erase a handler's write | variable fencing on `resumedWith`, unchanged |
 | An acknowledged signal is never lost | push under the lock; completion deferred while messages are queued or the handler marker is active; claims fenced by `n` |
 | Recorded values never change | `recorded` is written with the continuation that produced them, in one write |
-| Replay reads only applied state | only `APPLIED` markers are segments, so the "unapplied completion" replay bug cannot recur |
-| Failover time | lease (30 s default) plus queue redelivery granularity (up to 60 s on Postgres); a lost wake-up is re-pushed by the next decide, which is at most `workflowOffsetTimeout` (30 s) plus the sweeper's pass away while a marker is `RUNNABLE` or `LEASED`, because `WorkflowExecutorOps.decide` caps the postpone then |
+| Replay reads only applied state | only applied markers (`endTime > 0`) are segments, so the "unapplied completion" replay bug cannot recur |
+| Failover time | lease (30 s default) plus the queue's redelivery (60 to 120 s on SQLite, Postgres and MySQL: a popped message is released 60 s after its unack timeout, by a sweep every 60 s); a lost wake-up is re-pushed by the next decide, which is at most `workflowOffsetTimeout` (30 s) plus the sweeper's pass away while a continuation is runnable or leased, because `WorkflowExecutorOps.decide` caps the postpone then |
 
 ## 6. Performance
 
@@ -456,7 +467,7 @@ Order followed: 1, 2 and 3 together (a completion with any protocol other than 2
   for native workflows, and the start path schedules nothing for an empty native definition
   (`TestDeciderOutcomes.nativeWorkflowWithNoTasksYetIsNotCompleteAndSchedulesNothing`). The
   bench's `incomplete` and `wrong-output` checks cover it end to end.
-- **Markers on retried attempts**: `DeciderService.retry` copies the marker reset to `WAITING`
+- **Markers on retried attempts**: `DeciderService.retry` copies the marker reset (`retryCount + 1`)
   onto the new attempt; `latestAttempts` is what `repairAndWake`, `adjustRerun` and
   `lastMainMarker` read; a completion names the task id it was leased on and the `retryCount`
   check catches an older offer.
@@ -479,14 +490,14 @@ Order followed: 1, 2 and 3 together (a completion with any protocol other than 2
 | Plan | Implementation |
 |---|---|
 | `native` field on the workflow, `@ProtoField(id = 27)` | `nativeState`; JSON only, no `@ProtoField` on it or on `Task.continuation` |
-| nested `lease: {epoch, worker, since}` on the marker | flat fields, now `retryCount`, `scheduledTime`, `endTime` and `reasonForIncompletion` (first `epoch`, `queuedAt`, `leasedAt`, `appliedAt`, `attempts` and `deferred`); the queue is always the code type's, and no worker is kept |
+| nested `lease: {epoch, worker, since}` on the marker | flat fields, then `retryCount`, `scheduledTime`, `endTime` and `reasonForIncompletion`, since cut to `leased`, `retryCount` and `endTime` (last row) (first `epoch`, `queuedAt`, `leasedAt`, `appliedAt`, `attempts` and `deferred`); the queue is always the code type's, and no worker is kept |
 | `delta` against the lane's previous record | `resumedWith`, the variables the continuation started from |
-| `lane` in the completion output | not sent; the server reads the lane from the marker |
+| `lane` in the completion output | not sent; the server reads the lane from the task's entry (`metadata.lane`), or from the synthetic id |
 | `metadata.lanes` on the fork entry | not needed; each entry carries `metadata.lane` |
 | the SDK reads the marker's new state from the `update-v2` response | the response is a stand-in task of the code type; `update-v2` then polls the continuation queue |
 | a message to a class without handlers is refused with 409 | queued and pushed; the poll drops the wake-up because there is no marker |
 | marker repairs in the sweeper's task-repair loop | `repairAndWake` in every decide of a native workflow |
-| the handler marker keeps its `n` between runs | a fresh `WAITING` marker for `n + 1` after each applied run |
+| the handler marker keeps its `n` between runs | a fresh marker for `n + 1` after each applied run (`TaskContinuation.handlerRun`) |
 | `protocolVersions` property consulted | `NativeContinuationService.PROTOCOL = 2` is checked directly; the property and `nativeState.protocol` were removed |
 | re-record `kitchensink-odd.json` | done 2026-11-08; the replay test passes against it; re-recorded again the same day with `oddEvenDecision` as a `SWITCH` |
 | `decision(name, value)`: nothing emitted, a label for the diamond | removed; `switchOn` emits a real `SWITCH` (`value-param`, `switchCaseValue`, every declared case, `defaultCase`, `metadata.lane`), the taken body's entries go inside its case, and the first entry after the body carries `metadata.after` when the lane resumed inside the case |
@@ -496,7 +507,8 @@ Order followed: 1, 2 and 3 together (a completion with any protocol other than 2
 | the registered skeleton has `tasks: []`; the definition view comes later from an observed graph | the registered definition carries the graph discovered from the code (`Registration.skeleton` → `Replayer.discover`: the compiled method read by `CodeReader`, plain reference names, no `metadata.preview`, inline task definitions), plus `inputParameters` and `metadata.native.signals/updates/queries/discovered`; `NativeContinuationService.initialize` clears those tasks from the execution's copy at start and restart, so the rule above still holds: an execution contains exactly the tasks the code asked for. New public API: `Conductor.register(Class<?>...)` and `Conductor.definitions(Class<?>)` |
 | continuations of one execution may run concurrently, one lease per marker | one per execution at a time across hosts (the one `LEASED` marker) |
 | `owner` on the native section and in every completion; workers poll their worker id, their build id and no domain; a host runs an execution's continuations one at a time | all removed: `NativeState.owner`, the `owner` completion output (`OUTPUT_OWNER`), the worker-id poller and the SDK's per-execution `ReentrantLock`. `queueName` is the shared queue of the code type (task domains do not apply), which `Workers` polls; the one `LEASED` marker is the slot that serializes an execution |
-| a deferred completion is re-queued at once | a main lane that returned while the handler lane has work is deferred with `waiting for handlers: ` and not re-queued (`Completion.waitsForHandlers`, in memory only); `repairAndWake` offers a `RUNNABLE` handler lane before any other continuation, so the main lane is offered again once that lane is neither runnable nor leased. The reason text is shown, never read back |
+| a deferred completion is re-queued at once | a main lane that returned while the handler lane has work is deferred with `waiting for handlers: ` and not re-queued (`Completion.waitsForHandlers`, in memory only); `repairAndWake` offers the handler lane before any other continuation while messages are queued, so the main lane is offered again once the slot is free and none are. The reason text is shown, never read back |
 | a failed continuation's result needs no `protocol` | every continuation result carries `protocol`, or it lands on the task the code paused on; found as a bench failure |
-| a diverged continuation fails the workflow | the execution is held: the marker is deferred with `reasonForIncompletion` `diverged: ...` and retried with backoff up to 60 s |
+| a diverged continuation fails the workflow | the execution is held: the marker is deferred, the workflow's `reasonForIncompletion` is `diverged: ...`, and it is retried with backoff up to 60 s |
 | `epoch` counts the offers; every applied marker has `appliedAt`; `leasedAt` is the delivery time; `deferred` holds the reason; `waiting for handlers` is read back from it | `retryCount`, 0-based like a task's: 0 on the first offer, `+ 1` when an attempt ends without applying (a deferral, a retry of the code by `rearmLastMain`, or a reset by a task retry, a rerun or a restart); a redelivery of the same offer keeps it. A diverged or failed attempt is offered again after 2^`retryCount` seconds, counted before it goes up (1, 2, 4, ...), at most 60. `queuedAt` is `scheduledTime`; `appliedAt` is `endTime`, set only on a task's marker (the bootstrap applies first, and the SDK's replay puts it first); `leasedAt` is gone (the synthetic task's `startTime` is when it is handed out); `deferred` is `reasonForIncompletion`, display only. `nativeState` stores the bootstrap without `lane` and `n` and the handler marker without `lane`. `check_runs.py` replaced `AppliedOnce`, `AppliedAtLatestLease` and `OneContinuationAtATime`, which read `epoch` and `leasedAt`, with `AppliedInOrder` |
+| the marker carries `lane`, `n` and `state`, and the lease, deferral and order fields (`retryCount`, `scheduledTime`, `endTime`, `reasonForIncompletion`) | the marker keeps what decides state: `leased`, `retryCount`, `endTime`, `done`, `recorded`, `resumedWith` (proto ids 1 to 6), and `n` (7) on the handler lane's marker only. Which continuation a task's marker is comes from its entry's `metadata.lane` and `metadata.continuation`; the bootstrap is `main` #1; the poll builds the synthetic tasks an entry that names them the same way, so the SDK reads lane and number from `task.workflowTask.metadata` for every continuation. `state` is derived (`APPLIED` is `endTime > 0`, `LEASED` is `leased`, `RUNNABLE` a terminal, evaluated task), so `repairAndWake` has no repairs left. `scheduledTime` is gone: the handler lane while messages are queued, else the bootstrap until it applied, else the continuation whose task ended first; a deferred one keeps its turn, offered again at once and holding the slot through its backoff. The deferral reason is the workflow's `reasonForIncompletion`, cleared by the next apply; the UI reads a hold from it and draws it at the leased marker's task. The bootstrap gets an `endTime` when it applies, so replay sorts every segment by `endTime`. `done` stays on the marker: a JOIN reads the definition and the tasks in two reads without the workflow lock, and `done` is read with the task. Stored: `{}` before a marker runs, `{"n": 4}` for the handler lane |

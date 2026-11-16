@@ -8,14 +8,11 @@ option java_outer_classname = "TaskContinuationPb";
 option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/model";
 
 message TaskContinuation {
-    string lane = 1;
-    int32 n = 2;
-    string state = 3;
-    int32 retry_count = 4;
-    int64 scheduled_time = 5;
-    int64 end_time = 6;
-    string reason_for_incompletion = 7;
-    map<string, google.protobuf.Value> recorded = 8;
-    map<string, google.protobuf.Value> resumed_with = 9;
-    bool done = 10;
+    bool leased = 1;
+    int32 retry_count = 2;
+    int64 end_time = 3;
+    bool done = 4;
+    map<string, google.protobuf.Value> recorded = 5;
+    map<string, google.protobuf.Value> resumed_with = 6;
+    int32 n = 7;
 }

@@ -1,33 +1,94 @@
-import { TaskContinuation, WorkflowExecution } from "types/Execution";
+import { ExecutionTask, TaskContinuation } from "types/Execution";
 
 const HELD_PREFIX = "diverged: ";
 
-/** Why the code is held at this continuation, or undefined when it is not. */
-export const heldReasonOfMarker = (
-  marker?: TaskContinuation,
-): string | undefined =>
-  marker?.reasonForIncompletion?.startsWith(HELD_PREFIX)
-    ? marker.reasonForIncompletion.slice(HELD_PREFIX.length)
-    : undefined;
+const TERMINAL = new Set([
+  "COMPLETED",
+  "COMPLETED_WITH_ERRORS",
+  "FAILED",
+  "FAILED_WITH_TERMINAL_ERROR",
+  "CANCELED",
+  "TIMED_OUT",
+  "SKIPPED",
+]);
+
+/** Where a continuation stands, as the server decides it from its marker and its task. */
+export type ContinuationState = "waiting" | "runnable" | "leased" | "applied";
+
+/** A continuation of the code: which one it is, where it stands, and its marker. */
+export interface Continuation {
+  /** The lane of the code, such as main. */
+  lane: string;
+  /** Its number in the lane. */
+  n: number;
+  state: ContinuationState;
+  /** Since when it could run: when its task ended, or when the run started. */
+  since?: number;
+  marker: TaskContinuation;
+  /** The task it waits for; none for the first continuation and the handler lane. */
+  task?: ExecutionTask;
+}
+
+const stateOf = (
+  marker: TaskContinuation,
+  canRun: boolean,
+): ContinuationState =>
+  marker.endTime
+    ? "applied"
+    : marker.leased
+      ? "leased"
+      : canRun
+        ? "runnable"
+        : "waiting";
+
+/** The continuation a task's marker is: the one its entry names. */
+export const continuationOf = (
+  task: ExecutionTask,
+): Continuation | undefined => {
+  const marker = task.continuation;
+  if (!marker) {
+    return undefined;
+  }
+  const metadata = task.workflowTask?.metadata ?? {};
+  const ended = TERMINAL.has(String(task.status));
+  return {
+    lane: String(metadata.lane ?? "main"),
+    n: Number(metadata.continuation ?? 0),
+    state: stateOf(marker, ended),
+    since: ended ? task.endTime : undefined,
+    marker,
+    task,
+  };
+};
 
 /**
- * Every continuation marker of an execution: its first continuation's, its handler lane's and
- * those on its tasks. The first is always main #1 and the handler lane's lane is always handlers,
- * so the server does not store them; they are filled in here.
+ * Every continuation of an execution: its first one, its handler lane's and those on its tasks.
+ * The first is always main #1, runnable until it applied; the handler lane runs when messages
+ * arrive, which only the server sees.
  */
-export const markersOf = (execution?: {
-  nativeState?: {
-    bootstrap?: Partial<TaskContinuation>;
-    handlers?: Partial<TaskContinuation>;
-  };
-  tasks?: { continuation?: TaskContinuation }[];
-}): TaskContinuation[] => {
+export const continuationsOf = (execution?: {
+  startTime?: number | string;
+  createTime?: number | string;
+  nativeState?: { bootstrap?: TaskContinuation; handlers?: TaskContinuation };
+  tasks?: ExecutionTask[];
+}): Continuation[] => {
   const state = execution?.nativeState;
   return [
-    state?.bootstrap && { lane: "main", n: 1, ...state.bootstrap },
-    state?.handlers && { lane: "handlers", ...state.handlers },
-    ...(execution?.tasks ?? []).map((task) => task.continuation),
-  ].filter(Boolean) as TaskContinuation[];
+    state?.bootstrap && {
+      lane: "main",
+      n: 1,
+      state: stateOf(state.bootstrap, true),
+      since: Number(execution?.startTime ?? execution?.createTime) || undefined,
+      marker: state.bootstrap,
+    },
+    state?.handlers && {
+      lane: "handlers",
+      n: state.handlers.n ?? 1,
+      state: stateOf(state.handlers, false),
+      marker: state.handlers,
+    },
+    ...(execution?.tasks ?? []).map(continuationOf),
+  ].filter(Boolean) as Continuation[];
 };
 
 export interface HeldMismatch {
@@ -62,13 +123,25 @@ export const canBeHeld = (execution?: object): boolean => {
 
 /**
  * Why a native workflow is held: its code no longer matches its recording. It stays running and
- * continues once a compatible build is deployed. Undefined when it is not held.
+ * continues once a compatible build is deployed. Undefined when it is not held. One continuation
+ * runs at a time, so the reason is the run's.
  */
-export const heldReason = (
-  execution?: WorkflowExecution,
-): string | undefined => {
-  if (!canBeHeld(execution)) {
-    return undefined;
-  }
-  return markersOf(execution).map(heldReasonOfMarker).find(Boolean);
+export const heldReason = (execution?: {
+  status?: unknown;
+  reasonForIncompletion?: string;
+}): string | undefined => {
+  const reason = execution?.reasonForIncompletion;
+  return canBeHeld(execution) && reason?.startsWith(HELD_PREFIX)
+    ? reason.slice(HELD_PREFIX.length)
+    : undefined;
 };
+
+/**
+ * Why the code that runs after this task is held, or undefined: the run is held at the one
+ * continuation it has leased.
+ */
+export const heldAt = (
+  execution: Parameters<typeof heldReason>[0],
+  task?: { continuation?: TaskContinuation },
+): string | undefined =>
+  task?.continuation?.leased ? heldReason(execution) : undefined;

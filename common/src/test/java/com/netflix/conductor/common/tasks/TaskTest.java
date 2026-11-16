@@ -120,7 +120,7 @@ public class TaskTest {
 
         assertEquals(expectedTaskFieldsNumber, declaredFieldsNumber);
 
-        task.setContinuation(new TaskContinuation("main", 3));
+        task.setContinuation(TaskContinuation.handlerRun(3));
         task.setCallbackAfterSeconds(111L);
         task.setCallbackFromWorker(false);
         task.setCorrelationId("correlation_id");

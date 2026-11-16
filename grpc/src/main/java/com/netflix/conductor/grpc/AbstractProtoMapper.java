@@ -1029,38 +1029,26 @@ public abstract class AbstractProtoMapper {
 
     public TaskContinuationPb.TaskContinuation toProto(TaskContinuation from) {
         TaskContinuationPb.TaskContinuation.Builder to = TaskContinuationPb.TaskContinuation.newBuilder();
-        if (from.getLane() != null) {
-            to.setLane( from.getLane() );
-        }
-        to.setN( from.getN() );
-        if (from.getState() != null) {
-            to.setState( from.getState() );
-        }
+        to.setLeased( from.isLeased() );
         to.setRetryCount( from.getRetryCount() );
-        to.setScheduledTime( from.getScheduledTime() );
         to.setEndTime( from.getEndTime() );
-        if (from.getReasonForIncompletion() != null) {
-            to.setReasonForIncompletion( from.getReasonForIncompletion() );
-        }
+        to.setDone( from.isDone() );
         for (Map.Entry<String, Object> pair : from.getRecorded().entrySet()) {
             to.putRecorded( pair.getKey(), toProto( pair.getValue() ) );
         }
         for (Map.Entry<String, Object> pair : from.getResumedWith().entrySet()) {
             to.putResumedWith( pair.getKey(), toProto( pair.getValue() ) );
         }
-        to.setDone( from.isDone() );
+        to.setN( from.getN() );
         return to.build();
     }
 
     public TaskContinuation fromProto(TaskContinuationPb.TaskContinuation from) {
         TaskContinuation to = new TaskContinuation();
-        to.setLane( from.getLane() );
-        to.setN( from.getN() );
-        to.setState( from.getState() );
+        to.setLeased( from.getLeased() );
         to.setRetryCount( from.getRetryCount() );
-        to.setScheduledTime( from.getScheduledTime() );
         to.setEndTime( from.getEndTime() );
-        to.setReasonForIncompletion( from.getReasonForIncompletion() );
+        to.setDone( from.getDone() );
         Map<String, Object> recordedMap = new HashMap<String, Object>();
         for (Map.Entry<String, Value> pair : from.getRecordedMap().entrySet()) {
             recordedMap.put( pair.getKey(), fromProto( pair.getValue() ) );
@@ -1071,7 +1059,7 @@ public abstract class AbstractProtoMapper {
             resumedWithMap.put( pair.getKey(), fromProto( pair.getValue() ) );
         }
         to.setResumedWith(resumedWithMap);
-        to.setDone( from.getDone() );
+        to.setN( from.getN() );
         return to;
     }
 

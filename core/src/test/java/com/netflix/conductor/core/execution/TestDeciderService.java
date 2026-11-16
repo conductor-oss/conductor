@@ -2140,7 +2140,7 @@ public class TestDeciderService {
         WorkflowModel workflow = new WorkflowModel();
         workflow.setWorkflowDefinition(def);
         com.netflix.conductor.common.metadata.tasks.TaskContinuation bootstrap =
-                new com.netflix.conductor.common.metadata.tasks.TaskContinuation("main", 1);
+                new com.netflix.conductor.common.metadata.tasks.TaskContinuation();
         com.netflix.conductor.common.run.NativeState state =
                 new com.netflix.conductor.common.run.NativeState();
         state.setBootstrap(bootstrap);
@@ -2149,7 +2149,7 @@ public class TestDeciderService {
         // the code has not returned yet
         assertFalse(deciderService.checkForWorkflowCompletion(workflow));
 
-        bootstrap.setState(com.netflix.conductor.common.metadata.tasks.TaskContinuation.APPLIED);
+        bootstrap.setEndTime(1);
         bootstrap.setDone(true);
         workflow.setOutput(Map.of("result", "value")); // set when the code's return applied
         assertTrue(deciderService.checkForWorkflowCompletion(workflow));
@@ -2161,13 +2161,12 @@ public class TestDeciderService {
         laneTask.setStatus(TaskModel.Status.COMPLETED);
         laneTask.setExecuted(true);
         com.netflix.conductor.common.metadata.tasks.TaskContinuation laneMarker =
-                new com.netflix.conductor.common.metadata.tasks.TaskContinuation("fork_1.0", 2);
-        laneMarker.setState(com.netflix.conductor.common.metadata.tasks.TaskContinuation.RUNNABLE);
+                new com.netflix.conductor.common.metadata.tasks.TaskContinuation();
         laneTask.setContinuation(laneMarker);
         workflow.getTasks().add(laneTask);
         assertFalse(deciderService.checkForWorkflowCompletion(workflow));
 
-        laneMarker.setState(com.netflix.conductor.common.metadata.tasks.TaskContinuation.APPLIED);
+        laneMarker.setEndTime(1);
         assertTrue(deciderService.checkForWorkflowCompletion(workflow));
     }
 }

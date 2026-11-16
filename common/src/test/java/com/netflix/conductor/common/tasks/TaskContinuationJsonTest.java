@@ -29,66 +29,56 @@ public class TaskContinuationJsonTest {
     private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
 
     @Test
-    public void aMarkerIsStoredWithItsStateOnlyNotTheFlagsDerivedFromIt() throws Exception {
-        TaskContinuation marker = new TaskContinuation("main", 2);
-        marker.setState(TaskContinuation.LEASED);
+    public void aMarkerIsStoredWithoutWhatIsDerivedFromIt() throws Exception {
+        TaskContinuation marker = new TaskContinuation();
+        marker.setLeased(true);
 
         String json = objectMapper.writeValueAsString(marker);
 
-        org.junit.Assert.assertTrue(json, json.contains("\"state\":\"LEASED\""));
-        for (String flag : new String[] {"waiting", "runnable", "leased", "applied"}) {
-            org.junit.Assert.assertFalse(json, json.contains("\"" + flag + "\""));
-        }
+        assertEquals("{\"leased\":true}", json);
     }
 
     @Test
-    public void aWaitingMarkerIsStoredAsItsLaneNumberAndStateOnly() throws Exception {
-        String json = objectMapper.writeValueAsString(new TaskContinuation("fork_1.0", 3));
-
-        assertEquals("{\"lane\":\"fork_1.0\",\"n\":3,\"state\":\"WAITING\"}", json);
+    public void aMarkerNotYetRunIsStoredEmpty() throws Exception {
+        // which continuation it is lives on the task's entry, not on the marker
+        assertEquals("{}", objectMapper.writeValueAsString(new TaskContinuation()));
     }
 
     @Test
     public void aMarkerStoredWithoutItsEmptyValuesReadsThemBack() {
-        String stored = "{\"lane\":\"main\",\"n\":3,\"state\":\"APPLIED\",\"endTime\":100}";
+        String stored = "{\"endTime\":100,\"done\":true}";
 
         TaskContinuation marker = objectMapper.readValue(stored, TaskContinuation.class);
 
-        assertEquals(3, marker.getN());
+        assertTrue(marker.isApplied());
+        assertFalse(marker.isLeased());
         assertEquals(0, marker.getRetryCount());
         assertEquals(100, marker.getEndTime());
-        assertFalse(marker.isDone());
+        assertTrue(marker.isDone());
         assertTrue(marker.getRecorded().isEmpty());
         assertTrue(marker.getResumedWith().isEmpty());
     }
 
     @Test
-    public void theFirstContinuationAndTheHandlerLaneAreStoredWithoutTheirConstantLaneAndNumber()
-            throws Exception {
+    public void theHandlerLaneIsStoredWithItsRunNumberOnly() throws Exception {
         com.netflix.conductor.common.run.NativeState state =
                 new com.netflix.conductor.common.run.NativeState();
-        state.setBootstrap(new TaskContinuation("main", 1));
-        state.getBootstrap().setState(TaskContinuation.RUNNABLE);
-        state.getBootstrap().setScheduledTime(100);
-        state.setHandlers(new TaskContinuation("handlers", 4));
+        state.setBootstrap(new TaskContinuation());
+        state.setHandlers(TaskContinuation.handlerRun(4));
 
         String json = objectMapper.writeValueAsString(state);
 
-        assertTrue(
-                json,
-                json.contains("\"bootstrap\":{\"scheduledTime\":100,\"state\":\"RUNNABLE\"}"));
-        assertTrue(json, json.contains("\"handlers\":{\"n\":4,\"state\":\"WAITING\"}"));
+        assertTrue(json, json.contains("\"bootstrap\":{}"));
+        assertTrue(json, json.contains("\"handlers\":{\"n\":4}"));
         com.netflix.conductor.common.run.NativeState back =
                 objectMapper.readValue(json, com.netflix.conductor.common.run.NativeState.class);
-        assertEquals("main", back.getBootstrap().getLane());
-        assertEquals(1, back.getBootstrap().getN());
-        assertEquals("handlers", back.getHandlers().getLane());
+        assertFalse(back.getBootstrap().isApplied());
         assertEquals(4, back.getHandlers().getN());
     }
 
     @Test
     public void aMarkerStoredByAnEarlierBuildStillReads() {
-        // fields since moved to the run (error, result), renamed or dropped: all ignored
+        // fields since moved to the run or the entry, renamed or dropped: all ignored
         String stored =
                 "{\"lane\":\"main\",\"n\":2,\"state\":\"APPLIED\",\"done\":true,\"attempts\":3,\"step\":4,"
                         + "\"worker\":\"w\",\"queue\":\"q\",\"error\":{\"message\":\"boom\"},\"result\":{},"

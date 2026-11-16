@@ -2,7 +2,7 @@ import { KeyValueTable, NavLink, Paper } from "components";
 import { type KeyValueTableRow } from "components/KeyValueTable";
 import { WorkflowExecution } from "types/Execution";
 import { useFetch } from "utils/query";
-import { heldReason } from "./held";
+import { continuationsOf, heldReason } from "./held";
 import { useWaitingForWorker } from "./useWaitingForWorker";
 import { appliedContinuations, codeTypeOf } from "./waiting";
 import {
@@ -32,6 +32,9 @@ export default function ExecutionSummary({
   );
 
   const held = heldReason(execution);
+  const continuations = continuationsOf(execution);
+  const first = execution.nativeState?.bootstrap ? continuations[0] : undefined;
+  const handlers = continuations.find((c) => c.lane === "handlers" && !c.task);
   const waitingForWorker = useWaitingForWorker(execution);
 
   // To accommodate unexecuted tasks, read type & name out of workflowTask
@@ -39,11 +42,13 @@ export default function ExecutionSummary({
     [
       { label: "Workflow id", value: execution.workflowId },
       { label: "Status", value: execution.status, type: "status" },
-      execution.reasonForIncompletion && {
-        label: "Reason for incompletion",
-        value: execution.reasonForIncompletion,
-        type: "error",
-      },
+      // a hold is explained on its own row
+      execution.reasonForIncompletion &&
+        !held && {
+          label: "Reason for incompletion",
+          value: execution.reasonForIncompletion,
+          type: "error",
+        },
       held && {
         label: "Waiting for compatible code",
         value: held,
@@ -105,15 +110,14 @@ export default function ExecutionSummary({
         label: "Native workflow",
         value: `${codeTypeOf(execution) ?? "code"} · ${appliedContinuations(execution)} continuation(s) applied`,
       },
-      execution.nativeState?.bootstrap &&
-        !execution.nativeState.bootstrap.done &&
-        execution.nativeState.bootstrap.state !== "APPLIED" && {
+      first &&
+        first.state !== "applied" && {
           label: "First continuation",
-          value: execution.nativeState.bootstrap.state.toLowerCase(),
+          value: first.state,
         },
-      execution.nativeState?.handlers && {
+      handlers && {
         label: "Handler lane",
-        value: `run #${execution.nativeState.handlers.n} ${execution.nativeState.handlers.state.toLowerCase()}`,
+        value: `run #${handlers.n} ${handlers.state === "leased" ? "running" : "idle"}`,
       },
     ] as (KeyValueTableRow | false)[]
   ).filter(Boolean) as KeyValueTableRow[];
