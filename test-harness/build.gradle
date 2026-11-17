@@ -259,10 +259,9 @@ task functionalTest(type: Test) {
 // model objects to the SDK, so the SDK has to link against this project's conductor-common, which
 // is now Jackson 3. Its compiled calls to ObjectMapperProvider.getObjectMapper() then fail to
 // resolve. Relocating the SDK's bundled copy is not an option precisely because the model types are
-// shared. They stay excluded until a conductor-client built on Jackson 3 is published; see
-// issues.md.
+// shared. They stay excluded until they stop using the SDK, or move to e2e/ where the server runs in
+// its own process; see issues.md.
 test {
-    exclude '**/integration/agent/AgentSpanDeploymentContractEndToEndTest.class'
     exclude '**/integration/http/ForkJoinSyncModeIntegrationTest.class'
     exclude '**/integration/http/HttpEndToEndTestTestHarness.class'
     exclude '**/integration/http/TestHarnessAbstractHttpEndToEndTest.class'

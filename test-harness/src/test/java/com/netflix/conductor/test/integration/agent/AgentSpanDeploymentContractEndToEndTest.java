@@ -64,8 +64,6 @@ import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import com.netflix.conductor.ConductorTestApp;
-import com.netflix.conductor.client.automator.TaskRunnerConfigurer;
-import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.worker.Worker;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
@@ -83,6 +81,7 @@ import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.s3.storage.S3PayloadStorage;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
+import com.netflix.conductor.service.TaskService;
 import com.netflix.conductor.test.config.LocalStackS3Configuration;
 
 import com.sun.net.httpserver.HttpExchange;
@@ -180,6 +179,7 @@ class AgentSpanDeploymentContractEndToEndTest {
     @Autowired private ExternalPayloadStorage externalPayloadStorage;
     @Autowired private WorkflowExecutor workflowExecutor;
     @Autowired private ExecutionService executionService;
+    @Autowired private TaskService taskService;
     @Autowired private QueueDAO queueDAO;
     @Autowired private AsyncSystemTaskExecutor asyncSystemTaskExecutor;
 
@@ -859,7 +859,7 @@ class AgentSpanDeploymentContractEndToEndTest {
         GraphStateWorker facts = new GraphStateWorker(factsWorker, "facts");
         GraphStateWorker risks = new GraphStateWorker(risksWorker, "risks");
         GraphStateWorker join = new GraphStateWorker(joinWorker, "joined");
-        TaskRunnerConfigurer runner = startWorkers(facts, risks, join);
+        WorkerPoller runner = startWorkers(facts, risks, join);
         try {
             Map<String, Object> graph =
                     Map.of(
@@ -924,7 +924,7 @@ class AgentSpanDeploymentContractEndToEndTest {
         GraphDecisionWorker router = new GraphDecisionWorker(routerWorker, "selected");
         GraphStateWorker selected = new GraphStateWorker(selectedWorker, "selected result");
         GraphStateWorker skipped = new GraphStateWorker(skippedWorker, "skipped result");
-        TaskRunnerConfigurer runner = startWorkers(classify, router, selected, skipped);
+        WorkerPoller runner = startWorkers(classify, router, selected, skipped);
         try {
             Map<String, Object> graph =
                     Map.of(
@@ -979,7 +979,7 @@ class AgentSpanDeploymentContractEndToEndTest {
         String finishWorker = "graph_llm_finish_" + suffix;
         GraphLlmPrepWorker prep = new GraphLlmPrepWorker(prepWorker);
         GraphLlmFinishWorker finish = new GraphLlmFinishWorker(finishWorker);
-        TaskRunnerConfigurer runner = startWorkers(prep, finish);
+        WorkerPoller runner = startWorkers(prep, finish);
         try {
             Map<String, Object> graph =
                     Map.of(
@@ -1074,7 +1074,7 @@ class AgentSpanDeploymentContractEndToEndTest {
         GraphDynamicRouterWorker router = new GraphDynamicRouterWorker(routerWorker);
         GraphStateWorker first = new GraphStateWorker(firstWorker, "first");
         GraphStateWorker second = new GraphStateWorker(secondWorker, "second");
-        TaskRunnerConfigurer runner = startWorkers(dispatch, router, first, second);
+        WorkerPoller runner = startWorkers(dispatch, router, first, second);
         try {
             Map<String, Object> graph =
                     Map.of(
@@ -1135,7 +1135,7 @@ class AgentSpanDeploymentContractEndToEndTest {
         String routerWorker = "cycle_router_" + suffix;
         GraphStateWorker step = new GraphStateWorker(stepWorker, "loop step");
         GraphLoopRouterWorker router = new GraphLoopRouterWorker(routerWorker);
-        TaskRunnerConfigurer runner = startWorkers(step, router);
+        WorkerPoller runner = startWorkers(step, router);
         try {
             Map<String, Object> graph =
                     Map.of(
@@ -1200,7 +1200,7 @@ class AgentSpanDeploymentContractEndToEndTest {
         GraphStateWorker facts = new GraphStateWorker(factsWorker, "facts");
         GraphStateWorker risks = new GraphStateWorker(risksWorker, "risks");
         GraphStateWorker join = new GraphStateWorker(joinWorker, "joined");
-        TaskRunnerConfigurer runner = startWorkers(prepare, facts, risks, join);
+        WorkerPoller runner = startWorkers(prepare, facts, risks, join);
         try {
             Map<String, Object> graph =
                     Map.of(
@@ -1343,7 +1343,7 @@ class AgentSpanDeploymentContractEndToEndTest {
         GraphSubgraphPrepWorker prep = new GraphSubgraphPrepWorker(prepWorker);
         GraphStateWorker childStep = new GraphStateWorker(childWorker, "child");
         GraphSubgraphFinishWorker finish = new GraphSubgraphFinishWorker(finishWorker);
-        TaskRunnerConfigurer runner = startWorkers(prep, childStep, finish);
+        WorkerPoller runner = startWorkers(prep, childStep, finish);
         try {
             Map<String, Object> childGraph =
                     Map.of(
@@ -1626,7 +1626,7 @@ class AgentSpanDeploymentContractEndToEndTest {
         String finishWorker = "langgraph_finish_" + suffix;
         GraphStateWorker prepare = new GraphStateWorker(prepareWorker, "prepared");
         GraphStateWorker finish = new GraphStateWorker(finishWorker, "finished");
-        TaskRunnerConfigurer runner = startWorkers(prepare, finish);
+        WorkerPoller runner = startWorkers(prepare, finish);
         try {
             Map<String, Object> graph =
                     Map.of(
@@ -1753,7 +1753,7 @@ class AgentSpanDeploymentContractEndToEndTest {
         String child = "hybrid_worker_child_" + suffix;
         String ordinaryWorker = "hybrid_worker_" + suffix;
         RecordingWorker worker = new RecordingWorker(ordinaryWorker);
-        TaskRunnerConfigurer runner = startWorker(worker);
+        WorkerPoller runner = startWorker(worker);
         try {
             agentService.deploy(
                     AgentStartRequest.builder()
@@ -1832,7 +1832,7 @@ class AgentSpanDeploymentContractEndToEndTest {
         String routerTask = "choose_specialist_" + suffix;
         String specialist = "specialist_" + suffix;
         SequencedRouterWorker routerWorker = new SequencedRouterWorker(routerTask, specialist);
-        TaskRunnerConfigurer routerRunner = startWorker(routerWorker);
+        WorkerPoller routerRunner = startWorker(routerWorker);
         try {
             agentService.deploy(
                     AgentStartRequest.builder()
@@ -1886,7 +1886,7 @@ class AgentSpanDeploymentContractEndToEndTest {
         String manualSpecialist = "manual_specialist_" + suffix;
         ManualSelectionWorker selectionWorker =
                 new ManualSelectionWorker(manualAgent + "_process_selection");
-        TaskRunnerConfigurer manualRunner = startWorker(selectionWorker);
+        WorkerPoller manualRunner = startWorker(selectionWorker);
         try {
             agentService.deploy(
                     AgentStartRequest.builder()
@@ -1948,7 +1948,7 @@ class AgentSpanDeploymentContractEndToEndTest {
         String harness = "plan_execute_" + suffix;
         String tool = "planned_lookup_" + suffix;
         RecordingWorker worker = new RecordingWorker(tool);
-        TaskRunnerConfigurer runner = startWorker(worker);
+        WorkerPoller runner = startWorker(worker);
         try {
             agentService.deploy(
                     AgentStartRequest.builder()
@@ -2796,7 +2796,7 @@ class AgentSpanDeploymentContractEndToEndTest {
         String agent = "worker_dispatch_agent_" + suffix;
         String workerName = "record_customer_" + suffix;
         RecordingWorker worker = new RecordingWorker(workerName);
-        TaskRunnerConfigurer runner = startWorker(worker);
+        WorkerPoller runner = startWorker(worker);
         try {
             agentService.deploy(
                     AgentStartRequest.builder()
@@ -2886,7 +2886,7 @@ class AgentSpanDeploymentContractEndToEndTest {
         String analyst = "tool_result_analyst_" + suffix;
         String workerName = "lookup_for_handoff_" + suffix;
         RecordingWorker worker = new RecordingWorker(workerName);
-        TaskRunnerConfigurer runner = startWorker(worker);
+        WorkerPoller runner = startWorker(worker);
         try {
             agentService.deploy(
                     AgentStartRequest.builder()
@@ -3028,7 +3028,7 @@ class AgentSpanDeploymentContractEndToEndTest {
         String agent = "concurrent_state_agent_" + suffix;
         String workerName = "concurrent_state_worker_" + suffix;
         ConcurrentStateWorker worker = new ConcurrentStateWorker(workerName);
-        TaskRunnerConfigurer runner = startWorker(worker);
+        WorkerPoller runner = startWorker(worker);
         try {
             agentService.deploy(
                     AgentStartRequest.builder()
@@ -3211,7 +3211,7 @@ class AgentSpanDeploymentContractEndToEndTest {
         String agent = "approval_agent_" + suffix;
         String protectedWorker = "protected_worker_" + suffix;
         RecordingWorker worker = new RecordingWorker(protectedWorker);
-        TaskRunnerConfigurer runner = startWorker(worker);
+        WorkerPoller runner = startWorker(worker);
         try {
             agentService.deploy(
                     AgentStartRequest.builder()
@@ -3329,7 +3329,7 @@ class AgentSpanDeploymentContractEndToEndTest {
         String agent = "tool_guardrail_agent_" + suffix;
         String guardedWorker = "tool_guardrail_worker_" + suffix;
         RecordingWorker worker = new RecordingWorker(guardedWorker);
-        TaskRunnerConfigurer runner = startWorker(worker);
+        WorkerPoller runner = startWorker(worker);
         try {
             GuardrailConfig guardrail =
                     GuardrailConfig.builder()
@@ -3886,7 +3886,7 @@ class AgentSpanDeploymentContractEndToEndTest {
         String analyst = "condition_analyst_" + suffix;
         String conditionName = "select_analyst_" + suffix;
         ConditionWorker conditionWorker = new ConditionWorker(conditionName);
-        TaskRunnerConfigurer runner = startWorker(conditionWorker);
+        WorkerPoller runner = startWorker(conditionWorker);
         try {
             agentService.deploy(
                     AgentStartRequest.builder()
@@ -4026,7 +4026,7 @@ class AgentSpanDeploymentContractEndToEndTest {
         String analyst = "negative_condition_analyst_" + suffix;
         String conditionName = "negative_condition_" + suffix;
         OutcomeConditionWorker conditionWorker = new OutcomeConditionWorker(conditionName);
-        TaskRunnerConfigurer runner = startWorker(conditionWorker);
+        WorkerPoller runner = startWorker(conditionWorker);
         try {
             agentService.deploy(
                     AgentStartRequest.builder()
@@ -4256,20 +4256,81 @@ class AgentSpanDeploymentContractEndToEndTest {
         metadataService.updateWorkflowDef(List.of(child));
     }
 
-    private TaskRunnerConfigurer startWorker(Worker worker) {
+    private WorkerPoller startWorker(Worker worker) {
         return startWorkers(worker);
     }
 
-    private TaskRunnerConfigurer startWorkers(Worker... workers) {
-        TaskClient taskClient = new TaskClient();
-        taskClient.setRootURI("http://localhost:" + port + "/api/");
-        TaskRunnerConfigurer runner =
-                new TaskRunnerConfigurer.Builder(taskClient, List.of(workers))
-                        .withThreadCount(1)
-                        .withTaskPollTimeout(1)
-                        .build();
-        runner.init();
-        return runner;
+    private WorkerPoller startWorkers(Worker... workers) {
+        return new WorkerPoller(taskService, List.of(workers));
+    }
+
+    /**
+     * Runs workers in this JVM against the server's {@link TaskService}: one thread polls each
+     * worker's task type, runs the worker, and reports its result.
+     *
+     * <p>This test checks the engine and the agent compiler from inside the server's JVM; the
+     * workers only complete their tasks. It does not use the Java SDK: the SDK bundles its own copy
+     * of conductor-common, which cannot share a classpath with this project's. Tests of the SDK
+     * against the server belong in {@code e2e/}, where the server runs in its own process.
+     */
+    private static final class WorkerPoller {
+        private final TaskService taskService;
+        private final List<Worker> workers;
+        private final Thread thread;
+        private volatile boolean running = true;
+
+        WorkerPoller(TaskService taskService, List<Worker> workers) {
+            this.taskService = taskService;
+            this.workers = workers;
+            this.thread = new Thread(this::run, "agentspan-e2e-workers");
+            this.thread.setDaemon(true);
+            this.thread.start();
+        }
+
+        private void run() {
+            while (running) {
+                boolean worked = false;
+                for (Worker worker : workers) {
+                    Task task;
+                    try {
+                        task = taskService.poll(worker.getTaskDefName(), "agentspan-e2e", null);
+                    } catch (RuntimeException e) {
+                        continue;
+                    }
+                    if (task == null) {
+                        continue;
+                    }
+                    worked = true;
+                    TaskResult result;
+                    try {
+                        result = worker.execute(task);
+                    } catch (RuntimeException e) {
+                        result = new TaskResult(task);
+                        result.setStatus(TaskResult.Status.FAILED);
+                        result.setReasonForIncompletion(e.toString());
+                    }
+                    taskService.updateTask(result);
+                }
+                if (!worked) {
+                    try {
+                        Thread.sleep(50);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        return;
+                    }
+                }
+            }
+        }
+
+        void shutdown() {
+            running = false;
+            thread.interrupt();
+            try {
+                thread.join(5_000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     private Task awaitScheduledLlm(String workflowId) {

@@ -80,7 +80,15 @@ The published `conductor-client` is a Jackson 2 artifact. The suites that drive 
 conductor-common model objects to the SDK, so the SDK links against this project's conductor-common,
 which is now Jackson 3, and its compiled calls to `ObjectMapperProvider.getObjectMapper()` fail to
 resolve. Relocating the SDK's bundled copy is not an option precisely because the model types are
-shared. The suites stay excluded until a conductor-client built on Jackson 3 is published.
+shared.
+
+The SDK and the server only need to share it because these suites run both in one JVM. In
+production they are separate processes that share the HTTP API and its JSON, not classes. So a
+test-harness suite, which checks the server from inside its JVM, should not use the SDK, and a test
+of the SDK against the server belongs in `e2e/`, where the server runs in its own process (as the
+`e2e/` module already does with `conductor-client` 6.x). `AgentSpanDeploymentContractEndToEndTest`
+now runs its workers in process through `TaskService` and is back in the `test` task. The other
+suites stay excluded until they get the same treatment.
 
 ## redis-concurrency-limit cannot be enabled
 
