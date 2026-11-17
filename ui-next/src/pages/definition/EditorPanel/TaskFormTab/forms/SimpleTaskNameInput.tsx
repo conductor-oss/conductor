@@ -220,8 +220,9 @@ const SimpleTaskNameInput: FunctionComponent<SimpleTaskNameInputProps> = ({
         selectOnFocus
         clearOnBlur
         handleHomeEndKeys
-        renderOption={(props, option) => (
+        renderOption={({ key, ...props }, option) => (
           <li
+            key={key}
             {...props}
             style={{
               ...props.style,

@@ -111,7 +111,7 @@ public class ScriptEvaluator {
             LOGGER.warn(
                     "GraalJS unrestricted Java host access is enabled "
                             + "(conductor.app.graaljs.restricted-host-access=false). "
-                            + "Unrestricted host access will be disabled by default in a future release. "
+                            + "Unrestricted host access will be disabled by default in Conductor 3.35. "
                             + "To retain it after upgrading, explicitly set "
                             + "conductor.app.graaljs.restricted-host-access=false. "
                             + "Set conductor.app.graaljs.restricted-host-access=true to restrict it now. "
