@@ -62,12 +62,13 @@ Pre-built compose files for other backend combinations:
 
 | Compose file | Database | Queue | Index |
 |:--|:--|:--|:--|
-| `docker-compose.yaml` | Redis | Redis | Elasticsearch 7 |
+| `docker-compose.yaml` | Redis | Redis | Elasticsearch 8 |
 | `docker-compose-es8.yaml` | Redis | Redis | Elasticsearch 8 |
+| `docker-compose-redis-es7.yaml` | Redis | Redis | Elasticsearch 7 (legacy) |
 | `docker-compose-postgres.yaml` | PostgreSQL | PostgreSQL | PostgreSQL |
-| `docker-compose-postgres-es7.yaml` | PostgreSQL | PostgreSQL | Elasticsearch 7 |
-| `docker-compose-mysql.yaml` | MySQL | Redis | Elasticsearch 7 |
-| `docker-compose-cassandra-es7.yaml` | Cassandra | Redis | Elasticsearch 7 |
+| `docker-compose-postgres-es7.yaml` | PostgreSQL | PostgreSQL | Elasticsearch 7 (legacy) |
+| `docker-compose-mysql.yaml` | MySQL | Redis | Elasticsearch 8 |
+| `docker-compose-cassandra-es7.yaml` | Cassandra | Redis | Elasticsearch 7 (legacy) |
 | `docker-compose-redis-os2.yaml` | Redis | Redis | OpenSearch 2 |
 | `docker-compose-redis-os3.yaml` | Redis | Redis | OpenSearch 3 |
 
@@ -82,8 +83,11 @@ docker compose -f docker/docker-compose-es8.yaml up
 docker compose -f docker/docker-compose-redis-os3.yaml up
 ```
 
-For Elasticsearch 8, set `conductor.indexing.type=elasticsearch8` and use
-`config-redis-es8.properties` or an equivalent custom config.
+Elasticsearch 8 is the default indexing backend. The default `docker-compose.yaml` runs ES8, and the
+default server image is built with the ES8 persistence module. Elasticsearch 7 is retained as a legacy
+opt-in (build with `-PindexingBackend=elasticsearch7`) for users not yet migrated to ES 8.x, since
+ES 7.x is EOL and carries the unpatchable CVE-2025-37731. Note that the ES8 typed client cannot talk
+to a 7.17 server, so an ES8 build requires an ES 8.x cluster.
 
 ### Custom configuration
 
@@ -221,8 +225,8 @@ conductor.indexing.type=postgres
 | Backend | Property value | When to use | Notes |
 |:--|:--|:--|:--|
 | PostgreSQL | `postgres` | Simplest stack when database is also PostgreSQL. | Set `conductor.elasticsearch.version=0` to disable ES client. |
-| Elasticsearch 7 | `elasticsearch` | Best search performance at scale. Full-text search. | Set `conductor.elasticsearch.version=7`. |
-| Elasticsearch 8 | `elasticsearch8` | Use when running the ES8 persistence module. | Set `conductor.elasticsearch.version=8`. |
+| Elasticsearch 8 (default) | `elasticsearch8` | Best search performance at scale. Full-text search. Shipped in the default image. | Requires an ES 8.x cluster. Set `conductor.elasticsearch.version=8`. |
+| Elasticsearch 7 (legacy) | `elasticsearch` | Only for clusters not yet on ES 8.x. EOL; carries CVE-2025-37731. | Requires an es7 build (`-PindexingBackend=elasticsearch7`). Set `conductor.elasticsearch.version=7`. |
 | OpenSearch 2 | `opensearch2` | Open-source ES alternative. | Compatible with ES 7 queries. |
 | OpenSearch 3 | `opensearch3` | Latest OpenSearch. | |
 | SQLite | `sqlite` | Local development only. | |
@@ -564,8 +568,9 @@ conductor.redis.queueNamespacePrefix=conductor_queues
 
 # Indexing
 conductor.indexing.enabled=true
+conductor.indexing.type=elasticsearch8
 conductor.elasticsearch.url=http://es-host:9200
-conductor.elasticsearch.version=7
+conductor.elasticsearch.version=8
 conductor.elasticsearch.indexName=conductor
 conductor.elasticsearch.clusterHealthColor=yellow
 conductor.app.asyncIndexingEnabled=true

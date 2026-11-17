@@ -1,6 +1,7 @@
 import theme from "../../theme";
 import { TaskType } from "types";
 import _isNil from "lodash/isNil";
+import { waitTaskInfoExtraHeight } from "../../components/shapes/TaskCard/waitTaskInfoLayout";
 
 export const BOTTOM_PORT_MARGIN = 10;
 const SWITCH_SIZE_INCREMENTER = 60;
@@ -59,7 +60,10 @@ export const taskToSize = (task) => {
     case TaskType.WAIT:
       return {
         width: theme.nodeTypes.WAIT.width,
-        height: task?.executionData?.status ? 100 : theme.nodeTypes.WAIT.height,
+        // Grow by however many extra lines the until/duration text wraps to.
+        height:
+          (task?.executionData?.status ? 100 : theme.nodeTypes.WAIT.height) +
+          waitTaskInfoExtraHeight(task),
       };
     case TaskType.INLINE:
     case TaskType.JSON_JQ_TRANSFORM:

@@ -32,6 +32,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.retry.RetryPolicy;
 import org.springframework.core.retry.RetryTemplate;
 
@@ -56,6 +57,7 @@ import static java.util.function.Function.identity;
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(ConductorProperties.class)
+@Import(GraalJSConfiguration.class)
 public class ConductorCoreConfiguration {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ConductorCoreConfiguration.class);
