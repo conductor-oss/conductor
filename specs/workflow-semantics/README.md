@@ -1,8 +1,7 @@
 # What a workflow means: a TLA+ specification
 
 `Workflow.tla` states what a Conductor workflow means, independent of how the server runs it. It is
-the reference that implementations are checked against: the server's decider today, and native
-workflows, whose code supplies the program as it runs.
+the reference that implementations are checked against: the server's decider today.
 
 A workflow is a program: a sequence of tasks. A leaf task is run by someone else: a worker, an HTTP
 call, an event, a person, or a wait. Every other task composes tasks:
@@ -211,7 +210,7 @@ takes the same case in every iteration.
 ## Where the server differs
 
 The spec states the intended meaning; these are places where the server did something else.
-All are fixed on this branch; each is marked *(fixed)*.
+All are fixed; each is marked *(fixed)*.
 Details, evidence, fixes and examples are in [DECIDER_BUGS.md](DECIDER_BUGS.md).
 
 **Observed on a running server** by `server_check.py`:
@@ -263,6 +262,9 @@ Details, evidence, fixes and examples are in [DECIDER_BUGS.md](DECIDER_BUGS.md).
     marked retried, and end the workflow again, cancelling the new attempt. A rerun queued the
     `JOIN`s it reopened the same way. Both now save first. Seen once, a dynamic fork whose only copy
     failed; it is a race.
+15. *(fixed)* **A rerun task a worker finished at once runs again.** The rerun saved every task of
+    the workflow after it queued the rerun task, so a completion by a fast worker in between was
+    overwritten with `SCHEDULED`. The rerun task is now left out of that write. Seen once.
 
 ## Decisions
 
