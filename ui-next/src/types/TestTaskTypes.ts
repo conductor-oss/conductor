@@ -64,4 +64,5 @@ export interface JsonSectionProps {
   value: Record<string, unknown>;
   domain: string;
   onChangeDomain: (value: string) => void;
+  inputParametersError?: string;
 }

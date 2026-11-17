@@ -13,7 +13,9 @@
 package org.conductoross.conductor.es8.config;
 
 import org.springframework.boot.autoconfigure.condition.AllNestedConditions;
+import org.springframework.boot.autoconfigure.condition.AnyNestedCondition;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Conditional;
 
 /**
  * Conditional configuration for enabling Elasticsearch 8.x as the indexing backend.
@@ -22,8 +24,16 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
  *
  * <ul>
  *   <li>{@code conductor.indexing.enabled=true} (defaults to true if not specified)
- *   <li>{@code conductor.indexing.type=elasticsearch8}
+ *   <li>{@code conductor.indexing.type} selects Elasticsearch -- either the explicit {@code
+ *       elasticsearch8} value or the generic {@code elasticsearch} value.
  * </ul>
+ *
+ * <p>The generic {@code elasticsearch} value is accepted because the build-time {@code
+ * indexingBackend} selection guarantees only one Elasticsearch persistence module is ever on the
+ * classpath. In an es8 build the generic value therefore resolves unambiguously to ES 8, which lets
+ * pre-existing configs that set {@code conductor.indexing.type=elasticsearch} keep working after
+ * the default backend moved from ES 7 to ES 8. Against an actual 7.17 cluster the es8 client fails
+ * on the real version mismatch rather than on a missing {@code IndexDAO} bean.
  */
 public class ElasticSearchConditions {
 
@@ -43,10 +53,26 @@ public class ElasticSearchConditions {
         static class enabledIndexing {}
 
         @SuppressWarnings("unused")
-        @ConditionalOnProperty(
-                name = "conductor.indexing.type",
-                havingValue = "elasticsearch8",
-                matchIfMissing = false)
-        static class enabledES8 {}
+        @Conditional(ElasticSearchTypeSelected.class)
+        static class typeSelected {}
+    }
+
+    /**
+     * Matches when {@code conductor.indexing.type} selects Elasticsearch, accepting both the
+     * explicit {@code elasticsearch8} selector and the generic {@code elasticsearch} selector.
+     */
+    static class ElasticSearchTypeSelected extends AnyNestedCondition {
+
+        ElasticSearchTypeSelected() {
+            super(ConfigurationPhase.PARSE_CONFIGURATION);
+        }
+
+        @SuppressWarnings("unused")
+        @ConditionalOnProperty(name = "conductor.indexing.type", havingValue = "elasticsearch8")
+        static class es8Selector {}
+
+        @SuppressWarnings("unused")
+        @ConditionalOnProperty(name = "conductor.indexing.type", havingValue = "elasticsearch")
+        static class elasticsearchSelector {}
     }
 }

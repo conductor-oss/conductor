@@ -219,8 +219,13 @@ function ServiceRegistryPopulator({
                   : ""
               }
               options={selectedServiceMethodsOptions ?? []}
-              renderOption={(props, option) => (
-                <Box component="li" {...props} sx={{ wordBreak: "break-word" }}>
+              renderOption={({ key, ...props }, option) => (
+                <Box
+                  component="li"
+                  key={key}
+                  {...props}
+                  sx={{ wordBreak: "break-word" }}
+                >
                   {option}
                 </Box>
               )}

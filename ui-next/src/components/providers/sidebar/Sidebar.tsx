@@ -1,5 +1,5 @@
 import { Backdrop, Box, Drawer, alpha, useTheme } from "@mui/material";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useAuth } from "components/features/auth";
 import { colors } from "theme/tokens/variables";
 import { Auth0User } from "types/User";
@@ -22,6 +22,12 @@ interface SidebarProps {
   isMobile?: boolean;
   toggleMenu?: () => void;
   onSearchClick?: () => void;
+  /**
+   * Replaces the built-in user block in the footer. Lets a consumer supply its
+   * own account section — including features OSS has no implementation for,
+   * such as copying an auth token.
+   */
+  customUserBlock?: ReactNode;
 }
 
 export const Sidebar = ({
@@ -35,6 +41,7 @@ export const Sidebar = ({
   isMobile = false,
   toggleMenu,
   onSearchClick,
+  customUserBlock,
 }: SidebarProps) => {
   const theme = useTheme();
   const [internalOpen, setInternalOpen] = useState(true);
@@ -147,6 +154,7 @@ export const Sidebar = ({
         logOut={logOut}
         conductorVersion={conductorVersion}
         uiVersion={uiVersion}
+        customUserBlock={customUserBlock}
         showCopyAlert={showCopyAlert}
         setShowCopyAlert={setShowCopyAlert}
       />

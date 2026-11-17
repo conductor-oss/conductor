@@ -13,6 +13,8 @@ dependencies {
     // supplied by the server at runtime.
     compileOnly 'org.springframework.boot:spring-boot-starter-web'
     compileOnly 'org.springframework.boot:spring-boot-autoconfigure'
+    // SchemaValidationException, which this module catches, is a jakarta.validation.ValidationException.
+    compileOnly 'org.springframework.boot:spring-boot-starter-validation'
 
     implementation project(':conductor-common')
     implementation project(':conductor-core')
@@ -53,6 +55,10 @@ dependencies {
 
 
     testImplementation 'org.springframework.boot:spring-boot-starter-web'
+    // The API only, not spring-boot-starter-validation: the starter puts hibernate-validator on
+    // the test classpath, which switches on Spring's method-validation proxying and breaks the
+    // A2A tests' mock verification. Catching SchemaValidationException only needs the class.
+    testImplementation 'jakarta.validation:jakarta.validation-api'
     testImplementation "com.squareup.okhttp3:mockwebserver:4.12.0"
     testImplementation "org.testcontainers:mongodb:${revTestContainer}"
     testImplementation "org.testcontainers:postgresql:${revTestContainer}"

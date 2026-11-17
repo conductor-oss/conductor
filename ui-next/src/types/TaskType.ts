@@ -95,6 +95,7 @@ export interface GrpcTaskDef extends CommonTaskDef {
     inputType?: string;
     methodType?: string;
     outputType?: string;
+    compressionCodec?: string;
     hedgingConfig?: { maxAttempts?: number };
   };
 }
@@ -333,7 +334,6 @@ export enum JDBCType {
 export enum QueryProcessorType {
   CONDUCTOR_API = "CONDUCTOR_API",
   METRICS = "METRICS",
-  CONDUCTOR_EVENTS = "CONDUCTOR_EVENTS",
 }
 
 export enum GetSignedJWTAlgorithmType {

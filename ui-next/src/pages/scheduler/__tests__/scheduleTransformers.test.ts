@@ -1,5 +1,6 @@
 import {
   codeToFormData,
+  cronFieldsFor,
   formToCodeData,
   getDateFromField,
   JSONParse,
@@ -26,6 +27,7 @@ const baseScheduleState: ScheduleType = {
   scheduleEndTime: "",
   priority: "5",
   zoneId: "UTC",
+  extraCronSchedules: [],
 };
 
 describe("JSONParse", () => {
@@ -237,5 +239,138 @@ describe("codeToFormData", () => {
     const result = codeToFormData("{}", baseScheduleState);
     expect(result.scheduleStartTime).toBe("");
     expect(result.scheduleEndTime).toBe("");
+  });
+});
+
+describe("multiple cron expressions", () => {
+  const withExtras = {
+    ...baseScheduleState,
+    cronExpression: "0 0 9 * * ?",
+    zoneId: "Asia/Kolkata",
+    extraCronSchedules: [
+      { cronExpression: "0 0 18 * * ?", zoneId: "America/New_York" },
+    ],
+  };
+
+  it("leaves a single-cron schedule on cronExpression", () => {
+    const result = formToCodeData(baseScheduleState, {});
+
+    expect(result!.cronExpression).toBe("0 0 12 * * ?");
+    expect(result!.zoneId).toBe("UTC");
+    expect(result!.cronSchedules).toBeUndefined();
+  });
+
+  it("sends every expression as cronSchedules once there is more than one", () => {
+    const result = formToCodeData(withExtras, {});
+
+    expect(result!.cronSchedules).toEqual([
+      { cronExpression: "0 0 9 * * ?", zoneId: "Asia/Kolkata" },
+      { cronExpression: "0 0 18 * * ?", zoneId: "America/New_York" },
+    ]);
+  });
+
+  it("leaves out the cronExpression the server would ignore anyway", () => {
+    const result = formToCodeData(withExtras, {});
+
+    expect(result!.cronExpression).toBeUndefined();
+    expect(result!.zoneId).toBeUndefined();
+  });
+
+  it("matches the saved schedule, so an untouched multi-cron form is not dirty", () => {
+    // What a multi-cron schedule looks like coming back: no cronExpression, only the list.
+    // `original` records that, `initialFormData` is derived from it and compared against form
+    // state, so the two have to split the same head and tail.
+    const saved = {
+      cronExpression: null,
+      cronSchedules: [
+        { cronExpression: "0 0 9 * * ?", zoneId: "Asia/Kolkata" },
+        { cronExpression: "0 0 18 * * ?", zoneId: "America/New_York" },
+      ],
+    };
+    const result = codeToFormData(JSON.stringify(saved), baseScheduleState);
+
+    expect(result.cronExpression).toBe(withExtras.cronExpression);
+    expect(result.zoneId).toBe(withExtras.zoneId);
+    expect(result.extraCronSchedules).toEqual(withExtras.extraCronSchedules);
+  });
+
+  it("reads the first of cronSchedules into the main section and the rest into extra rows", () => {
+    const result = codeToFormData(
+      JSON.stringify({
+        cronSchedules: [
+          { cronExpression: "0 0 9 * * ?", zoneId: "Asia/Kolkata" },
+          { cronExpression: "0 0 18 * * ?", zoneId: "America/New_York" },
+        ],
+      }),
+      baseScheduleState,
+    );
+
+    expect(result.cronExpression).toBe("0 0 9 * * ?");
+    expect(result.zoneId).toBe("Asia/Kolkata");
+    expect(result.extraCronSchedules).toEqual([
+      { cronExpression: "0 0 18 * * ?", zoneId: "America/New_York" },
+    ]);
+  });
+
+  it("round trips through the code tab unchanged", () => {
+    const code = JSON.stringify(formToCodeData(withExtras, {}));
+    const result = codeToFormData(code, baseScheduleState);
+
+    expect(result.cronExpression).toBe(withExtras.cronExpression);
+    expect(result.zoneId).toBe(withExtras.zoneId);
+    expect(result.extraCronSchedules).toEqual(withExtras.extraCronSchedules);
+  });
+
+  it("keeps a schedule that has no cronSchedules on cronExpression", () => {
+    const result = codeToFormData(
+      JSON.stringify({ cronExpression: "0 0 8 * * ?", zoneId: "UTC" }),
+      baseScheduleState,
+    );
+
+    expect(result.cronExpression).toBe("0 0 8 * * ?");
+    expect(result.extraCronSchedules).toEqual([]);
+  });
+});
+
+describe("cronFieldsFor", () => {
+  // The save, the Code tab and the save-confirmation diff all build this. They drifted once
+  // already: the confirmation kept its own copy that only ever wrote cronExpression, which
+  // dropped the extra rows on the way into the diff and back out again.
+  it("sends a lone expression the way it always has", () => {
+    expect(
+      cronFieldsFor({
+        ...baseScheduleState,
+        cronExpression: "0 0 9 * * ?",
+        zoneId: "UTC",
+      }),
+    ).toEqual({ cronExpression: "0 0 9 * * ?", zoneId: "UTC" });
+  });
+
+  it("sends every expression as one list, the main one first", () => {
+    expect(
+      cronFieldsFor({
+        ...baseScheduleState,
+        cronExpression: "0 0 9 * * ?",
+        zoneId: "Asia/Kolkata",
+        extraCronSchedules: [
+          { cronExpression: "0 0 18 * * ?", zoneId: "America/New_York" },
+        ],
+      }),
+    ).toEqual({
+      cronSchedules: [
+        { cronExpression: "0 0 9 * * ?", zoneId: "Asia/Kolkata" },
+        { cronExpression: "0 0 18 * * ?", zoneId: "America/New_York" },
+      ],
+    });
+  });
+
+  it("never sends both shapes at once", () => {
+    const withExtras = cronFieldsFor({
+      ...baseScheduleState,
+      extraCronSchedules: [{ cronExpression: "0 0 18 * * ?", zoneId: "UTC" }],
+    });
+
+    expect("cronExpression" in withExtras).toBe(false);
+    expect("zoneId" in withExtras).toBe(false);
   });
 });

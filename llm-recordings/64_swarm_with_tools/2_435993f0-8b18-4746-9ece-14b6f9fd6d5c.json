@@ -1,0 +1,107 @@
+{
+  "schemaVersion" : 3,
+  "request" : {
+    "messages" : [ {
+      "role" : "system",
+      "text" : "You are a billing specialist. Use the check_balance tool to look up account balances. Include the balance amount in your response.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "What's the balance on account ACC-456?\n\n[support -> billing_specialist]: Please look up and provide the current balance for account ACC-456.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    } ],
+    "tools" : [ {
+      "name" : "check_balance",
+      "description" : "Check the balance of a bank account.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "account_id" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "account_id" ]
+      }
+    }, {
+      "name" : "billing_specialist_transfer_to_support",
+      "description" : "Transfer the conversation to support. You are front-line customer support. Triage customer requests. Transfer to billing_specialist for account/payment questions, order_specialist for shipping/order questions. Call at most ONE transfer tool per turn.",
+      "inputSchema" : {
+        "type" : "object",
+        "required" : [ "message" ],
+        "properties" : {
+          "message" : {
+            "description" : "Hand-off note for support: what they should do next and any context they need.",
+            "type" : "string"
+          }
+        }
+      }
+    }, {
+      "name" : "billing_specialist_transfer_to_order_specialist",
+      "description" : "Transfer the conversation to order_specialist. You are an order specialist. Use the lookup_order tool to check order status. Include the shipping status and ETA in your response. Call at most ONE transfer tool per turn.",
+      "inputSchema" : {
+        "type" : "object",
+        "required" : [ "message" ],
+        "properties" : {
+          "message" : {
+            "description" : "Hand-off note for order_specialist: what they should do next and any context they need.",
+            "type" : "string"
+          }
+        }
+      }
+    } ],
+    "jsonOutput" : false,
+    "outputSchema" : null,
+    "generationOptions" : {
+      "temperature" : 0.0,
+      "maxTokens" : 16384,
+      "thinkingTokenLimit" : 0
+    }
+  },
+  "response" : {
+    "metadata" : {
+      "id" : "resp_0b1aaeb6fabe4a94006aa82c31358887d0b63b1cf4c0190040",
+      "model" : "gpt-5.6-luna",
+      "usage" : {
+        "promptTokens" : 268,
+        "completionTokens" : 21,
+        "totalTokens" : 289,
+        "nativeUsage" : null
+      },
+      "rateLimit" : {
+        "requestsLimit" : 0,
+        "requestsRemaining" : 0,
+        "requestsReset" : 0,
+        "tokensLimit" : 0,
+        "tokensRemaining" : 0,
+        "tokensReset" : 0
+      },
+      "promptMetadata" : [ ],
+      "properties" : {
+        "response_id" : "resp_0b1aaeb6fabe4a94006aa82c31358887d0b63b1cf4c0190040",
+        "reasoning_tokens" : 0
+      }
+    },
+    "results" : [ {
+      "output" : {
+        "text" : "",
+        "metadata" : {
+          "messageType" : "ASSISTANT"
+        },
+        "toolCalls" : [ {
+          "id" : "call_zedviADngeX9P3ThLZMxH1Ij",
+          "type" : "function",
+          "name" : "check_balance",
+          "arguments" : "{\"account_id\":\"ACC-456\"}"
+        } ],
+        "media" : [ ]
+      },
+      "metadata" : {
+        "finishReason" : "TOOL_CALLS",
+        "contentFilters" : [ ],
+        "properties" : { }
+      }
+    } ]
+  }
+}

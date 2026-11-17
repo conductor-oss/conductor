@@ -14,4 +14,5 @@ export const DOC_LINK_URL = {
   ENV_VARIABLES:
     "https://orkes.io/content/developer-guides/using-environment-variables",
   REMOTE_SERVICES: "https://orkes.io/content/remote-services",
+  SCHEMAS: "https://orkes.io/content/developer-guides/schema-validation",
 };

@@ -27,7 +27,7 @@ import org.testcontainers.utility.DockerImageName;
 
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 @ContextConfiguration(
         classes = {TestObjectMapperConfiguration.class, OpenSearchTest.TestConfiguration.class})

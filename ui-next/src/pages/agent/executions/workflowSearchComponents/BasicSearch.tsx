@@ -31,7 +31,7 @@ import { useAutoCompleteInputValidation } from "utils/hooks/useAutoCompleteInput
 import { useAgentNames, useWorkflowSearch } from "utils/query";
 import { getErrors } from "utils/utils";
 import { ApiSearchModalIntegration } from "../ApiSearchModalIntegration";
-import { DateControlComponent } from "../DateControlComponent";
+import { DateControlComponent } from "pages/executions/DateControlComponent";
 import ResultsTable from "../ResultsTable";
 
 const DEFAULT_SORT = "startTime:DESC";
@@ -321,9 +321,7 @@ export default function BasicSearch({
   );
 
   const handleSort = (changedColumn: string, direction: string) => {
-    const sortColumn =
-      changedColumn === "workflowType" ? "workflowName" : changedColumn;
-    const newSort = `${sortColumn}:${direction.toUpperCase()}`;
+    const newSort = `${changedColumn}:${direction.toUpperCase()}`;
 
     // Only refetch if sort actually changed
     if (sort !== newSort) {
@@ -567,8 +565,8 @@ export default function BasicSearch({
                 onChange={(__, val: string[]) => setStatus(val)}
                 value={status}
                 renderTags={renderStatusTagChip}
-                renderOption={(props, option) => (
-                  <Box component="li" {...props}>
+                renderOption={({ key, ...props }, option) => (
+                  <Box component="li" key={key} {...props}>
                     <StatusBadge status={option} />
                   </Box>
                 )}

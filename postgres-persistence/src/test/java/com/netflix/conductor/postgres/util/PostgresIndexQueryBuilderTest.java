@@ -772,4 +772,28 @@ public class PostgresIndexQueryBuilderTest {
         inOrder.verify(mockQuery).addParameter(0);
         verifyNoMoreInteractions(mockQuery);
     }
+
+    @Test
+    void shouldRejectLongInputWithoutOperatorWithoutCatastrophicBacktracking() {
+        String longInput = "a".repeat(5000);
+        try {
+            new PostgresIndexQueryBuilder(
+                    "workflow_index", longInput, "", 0, 15, new ArrayList<>(), properties);
+            fail("should have failed with IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            assertEquals("Incorrectly formatted query string: " + longInput, e.getMessage());
+        }
+    }
+
+    @Test
+    void shouldHandleVariousWhitespaceAroundOperators() throws SQLException {
+        String inputQuery = "workflowId = \"abc123\" AND status   IN   (COMPLETED,RUNNING)";
+        PostgresIndexQueryBuilder builder =
+                new PostgresIndexQueryBuilder(
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
+        String generatedQuery = builder.getQuery();
+        assertEquals(
+                "SELECT json_data::TEXT FROM table_name WHERE status = ANY(?) AND workflow_id = ? LIMIT ? OFFSET ?",
+                generatedQuery);
+    }
 }

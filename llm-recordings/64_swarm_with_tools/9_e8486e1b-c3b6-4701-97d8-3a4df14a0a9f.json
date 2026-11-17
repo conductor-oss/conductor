@@ -1,0 +1,132 @@
+{
+  "schemaVersion" : 3,
+  "request" : {
+    "messages" : [ {
+      "role" : "system",
+      "text" : "You are an order specialist. Use the lookup_order tool to check order status. Include the shipping status and ETA in your response.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "[TOOL RESULTS]\n[{\"output\":{\"eta\":\"2 days\",\"order_id\":\"ORD-789\",\"status\":\"shipped\"},\"name\":\"lookup_order\"}]\n[/TOOL RESULTS]\n\nWhere is my order ORD-789?\n\n[support -> order_specialist]: Please check order ORD-789 and provide its current shipping status and estimated delivery date to the customer.\n\n[order_specialist]: Your order **ORD-789** has **shipped** and is estimated to arrive in **2 days**.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "assistant",
+      "text" : "{}",
+      "toolCalls" : [ {
+        "reference" : "call_0",
+        "name" : "lookup_order",
+        "arguments" : {
+          "method" : "lookup_order",
+          "order_id" : "ORD-789"
+        }
+      } ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "tool",
+      "text" : "",
+      "toolCalls" : [ ],
+      "toolResults" : [ {
+        "reference" : "call_0",
+        "name" : "lookup_order",
+        "value" : {
+          "order_id" : "ORD-789",
+          "status" : "shipped",
+          "eta" : "2 days"
+        }
+      } ]
+    }, {
+      "role" : "user",
+      "text" : "Please continue where you left off.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    } ],
+    "tools" : [ {
+      "name" : "lookup_order",
+      "description" : "Look up the status of an order.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "order_id" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "order_id" ]
+      }
+    }, {
+      "name" : "order_specialist_transfer_to_support",
+      "description" : "Transfer the conversation to support. You are front-line customer support. Triage customer requests. Transfer to billing_specialist for account/payment questions, order_specialist for shipping/order questions. Call at most ONE transfer tool per turn.",
+      "inputSchema" : {
+        "type" : "object",
+        "required" : [ "message" ],
+        "properties" : {
+          "message" : {
+            "description" : "Hand-off note for support: what they should do next and any context they need.",
+            "type" : "string"
+          }
+        }
+      }
+    }, {
+      "name" : "order_specialist_transfer_to_billing_specialist",
+      "description" : "Transfer the conversation to billing_specialist. You are a billing specialist. Use the check_balance tool to look up account balances. Include the balance amount in your response. Call at most ONE transfer tool per turn.",
+      "inputSchema" : {
+        "type" : "object",
+        "required" : [ "message" ],
+        "properties" : {
+          "message" : {
+            "description" : "Hand-off note for billing_specialist: what they should do next and any context they need.",
+            "type" : "string"
+          }
+        }
+      }
+    } ],
+    "jsonOutput" : false,
+    "outputSchema" : null,
+    "generationOptions" : {
+      "temperature" : 0.0,
+      "maxTokens" : 16384,
+      "thinkingTokenLimit" : 0
+    }
+  },
+  "response" : {
+    "metadata" : {
+      "id" : "resp_0c3a6b681f4f3f4d006aa82c3f78c887d087f5d7af3a46a441",
+      "model" : "gpt-5.6-luna",
+      "usage" : {
+        "promptTokens" : 406,
+        "completionTokens" : 49,
+        "totalTokens" : 455,
+        "nativeUsage" : null
+      },
+      "rateLimit" : {
+        "requestsLimit" : 0,
+        "requestsRemaining" : 0,
+        "requestsReset" : 0,
+        "tokensLimit" : 0,
+        "tokensRemaining" : 0,
+        "tokensReset" : 0
+      },
+      "promptMetadata" : [ ],
+      "properties" : {
+        "response_id" : "resp_0c3a6b681f4f3f4d006aa82c3f78c887d087f5d7af3a46a441",
+        "reasoning_tokens" : 20
+      }
+    },
+    "results" : [ {
+      "output" : {
+        "text" : "Your order **ORD-789** has **shipped** and is estimated to arrive in **2 days**.",
+        "metadata" : {
+          "messageType" : "ASSISTANT"
+        },
+        "toolCalls" : [ ],
+        "media" : [ ]
+      },
+      "metadata" : {
+        "finishReason" : "STOP",
+        "contentFilters" : [ ],
+        "properties" : { }
+      }
+    } ]
+  }
+}

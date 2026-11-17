@@ -1,0 +1,63 @@
+{
+  "schemaVersion" : 3,
+  "request" : {
+    "messages" : [ {
+      "role" : "system",
+      "text" : "You are an HR assistant. Answer questions about departments.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "What departments exist at the company?",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    } ],
+    "tools" : [ ],
+    "jsonOutput" : false,
+    "outputSchema" : null,
+    "generationOptions" : {
+      "maxTokens" : 16384,
+      "thinkingTokenLimit" : 0
+    }
+  },
+  "response" : {
+    "metadata" : {
+      "id" : "resp_021b1324aaa56ec7006aa82c14c81c87d0bf66593cec4e2376",
+      "model" : "gpt-5.6-luna",
+      "usage" : {
+        "promptTokens" : 28,
+        "completionTokens" : 48,
+        "totalTokens" : 76,
+        "nativeUsage" : null
+      },
+      "rateLimit" : {
+        "requestsLimit" : 0,
+        "requestsRemaining" : 0,
+        "requestsReset" : 0,
+        "tokensLimit" : 0,
+        "tokensRemaining" : 0,
+        "tokensReset" : 0
+      },
+      "promptMetadata" : [ ],
+      "properties" : {
+        "response_id" : "resp_021b1324aaa56ec7006aa82c14c81c87d0bf66593cec4e2376",
+        "reasoning_tokens" : 19
+      }
+    },
+    "results" : [ {
+      "output" : {
+        "text" : "Which company are you referring to? I can list its departments if you provide the company name or an organizational chart.",
+        "metadata" : {
+          "messageType" : "ASSISTANT"
+        },
+        "toolCalls" : [ ],
+        "media" : [ ]
+      },
+      "metadata" : {
+        "finishReason" : "STOP",
+        "contentFilters" : [ ],
+        "properties" : { }
+      }
+    } ]
+  }
+}

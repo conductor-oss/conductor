@@ -61,8 +61,9 @@ export const AutoCompleteWithDescription: FunctionComponent<
       selectOnFocus
       clearOnBlur
       handleHomeEndKeys
-      renderOption={(props, option) => (
+      renderOption={({ key, ...props }, option) => (
         <li
+          key={key}
           {...props}
           style={{
             ...props.style,

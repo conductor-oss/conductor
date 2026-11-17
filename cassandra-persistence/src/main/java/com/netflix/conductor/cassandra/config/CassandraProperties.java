@@ -35,6 +35,12 @@ public class CassandraProperties {
     /** The keyspace to be used in the cassandra datastore */
     private String keyspace = "conductor";
 
+    /** The username to use when connecting to a cassandra cluster with authentication enabled */
+    private String username = "";
+
+    /** The password to use when connecting to a cassandra cluster with authentication enabled */
+    private String password = "";
+
     /**
      * The number of tasks to be stored in a single partition which will be used for sharding
      * workflows in the datastore
@@ -98,6 +104,22 @@ public class CassandraProperties {
 
     public void setKeyspace(String keyspace) {
         this.keyspace = keyspace;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public int getShardSize() {
