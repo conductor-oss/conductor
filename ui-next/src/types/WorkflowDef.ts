@@ -34,10 +34,3 @@ export type WorkflowDef = {
   tags?: TagDto[];
   inputSchema?: Record<string, unknown>;
 } & WorkflowMetadataI;
-
-export interface WorkflowDefSummary {
-  name: string;
-  version: number;
-  createTime?: number;
-  updateTime?: number;
-}

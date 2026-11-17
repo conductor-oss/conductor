@@ -6,7 +6,7 @@ import {
 } from "pages/runWorkflow/runWorkflowUtils";
 import { fetchContextNonHook, fetchWithContext } from "plugins/fetch";
 import { queryClient } from "queryClient";
-import { WorkflowDefSummary } from "types/WorkflowDef";
+import { WorkflowDef } from "types/WorkflowDef";
 import {
   fetchCloudTemplatesPreferCached,
   fetchWorkflowWithDependencies,
@@ -138,21 +138,26 @@ export const refetchCurrentWorkflowVersionsService = async ({
   workflowName,
   isNewWorkflow,
 }: DefinitionMachineContext) => {
-  if (!workflowName || isNewWorkflow || workflowName === "NEW") {
+  if (!workflowName || isNewWorkflow) {
     return { versions: [] };
   }
 
-  const url = `/metadata/workflow/${encodeURIComponent(workflowName)}/versions`;
+  const url = `/metadata/workflow?includeShared=false&name=${encodeURIComponent(
+    workflowName,
+  )}`;
 
   try {
-    const result: WorkflowDefSummary[] = await queryClient.fetchQuery(
+    const result: WorkflowDef[] = await queryClient.fetchQuery(
       [fetchContext.stack, url],
       () => fetchWithContext(url, fetchContext, { headers }),
     );
+    // Some backends ignore the `name` param and return every definition in the
+    // cluster (#1590), so keep only this workflow's versions.
     const versions =
       result
-        ?.map((item) => item?.version)
-        ?.filter((v): v is number => typeof v === "number") ?? [];
+        ?.filter((item) => item?.name === workflowName)
+        .map((item) => item?.version)
+        .filter((v): v is number => typeof v === "number") ?? [];
     return { versions };
   } catch {
     return { versions: [] };

@@ -6,29 +6,23 @@ test.describe("Workflow version dropdown (#1590)", () => {
     // 1. Generic catch-all routes
     await mockCommonApis(page);
 
-    // 2. Mock cluster-wide /api/metadata/workflow with extra workflows/versions (e.g. version 3, version 99)
-    // to verify cluster-wide definitions do not pollute this workflow's version selector.
-    await page.route("**/api/metadata/workflow", (route) =>
-      route.fulfill({
+    // 2. Mock cluster-wide /api/metadata/workflow to simulate OSS behavior:
+    // GET /api/metadata/workflow returns every definition in the cluster (including
+    // unrelated workflows with versions 3 and 99) alongside five_case_switch.
+    // The client-side filter must exclude the unrelated definitions (#1590).
+    await page.route("**/api/metadata/workflow*", (route) => {
+      const url = route.request().url();
+      if (url.includes("/metadata/workflow/five_case_switch")) {
+        return route.fulfill({ json: FIVE_CASE_SWITCH_WORKFLOW });
+      }
+      return route.fulfill({
         json: [
           { name: "other_workflow_a", version: 3 },
           { name: "other_workflow_b", version: 99 },
+          { name: "five_case_switch", version: 1 },
+          { name: "five_case_switch", version: 2 },
         ],
-      }),
-    );
-
-    // 3. Mock specific workflow definition for five_case_switch
-    await page.route("**/api/metadata/workflow/five_case_switch**", (route) => {
-      if (route.request().url().includes("/versions")) {
-        // Return exactly version 1 and version 2 for five_case_switch
-        return route.fulfill({
-          json: [
-            { name: "five_case_switch", version: 1 },
-            { name: "five_case_switch", version: 2 },
-          ],
-        });
-      }
-      return route.fulfill({ json: FIVE_CASE_SWITCH_WORKFLOW });
+      });
     });
   });
 

@@ -9,14 +9,15 @@ describe("refetchCurrentWorkflowVersionsService", () => {
     vi.restoreAllMocks();
   });
 
-  it("fetches versions using the dedicated /metadata/workflow/{name}/versions endpoint", async () => {
+  it("fetches from /metadata/workflow?includeShared=false&name={name} and filters by workflowName", async () => {
     const fetchQuerySpy = vi
       .spyOn(queryClient, "fetchQuery")
       .mockImplementation(async (_key, _fetcher: any) => {
         return [
           { name: "test_wf", version: 1 },
           { name: "test_wf", version: 2 },
-        ];
+          { name: "other_wf", version: 99 },
+        ] as any;
       });
 
     const result = await refetchCurrentWorkflowVersionsService({
@@ -26,15 +27,21 @@ describe("refetchCurrentWorkflowVersionsService", () => {
 
     expect(fetchQuerySpy).toHaveBeenCalledTimes(1);
     const queriedUrl = fetchQuerySpy.mock.calls[0][0][1];
-    expect(queriedUrl).toBe("/metadata/workflow/test_wf/versions");
+    expect(queriedUrl).toBe(
+      "/metadata/workflow?includeShared=false&name=test_wf",
+    );
+    // Only versions belonging to test_wf are kept; other_wf's version 99 is filtered out
     expect(result).toEqual({ versions: [1, 2] });
   });
 
-  it("encodes special characters in workflowName in the url", async () => {
+  it("encodes special characters in workflowName in the url and matches name", async () => {
     const fetchQuerySpy = vi
       .spyOn(queryClient, "fetchQuery")
       .mockImplementation(async () => {
-        return [{ name: "my workflow/test", version: 1 }];
+        return [
+          { name: "my workflow/test", version: 1 },
+          { name: "unrelated_wf", version: 5 },
+        ] as any;
       });
 
     const result = await refetchCurrentWorkflowVersionsService({
@@ -43,7 +50,9 @@ describe("refetchCurrentWorkflowVersionsService", () => {
     } as any);
 
     const queriedUrl = fetchQuerySpy.mock.calls[0][0][1];
-    expect(queriedUrl).toBe("/metadata/workflow/my%20workflow%2Ftest/versions");
+    expect(queriedUrl).toBe(
+      "/metadata/workflow?includeShared=false&name=my%20workflow%2Ftest",
+    );
     expect(result).toEqual({ versions: [1] });
   });
 
@@ -53,18 +62,6 @@ describe("refetchCurrentWorkflowVersionsService", () => {
     const result = await refetchCurrentWorkflowVersionsService({
       workflowName: "test_wf",
       isNewWorkflow: true,
-      authHeaders: {},
-    } as any);
-
-    expect(fetchQuerySpy).not.toHaveBeenCalled();
-    expect(result).toEqual({ versions: [] });
-  });
-
-  it("returns empty versions array when workflowName is 'NEW' without making a request", async () => {
-    const fetchQuerySpy = vi.spyOn(queryClient, "fetchQuery");
-
-    const result = await refetchCurrentWorkflowVersionsService({
-      workflowName: "NEW",
       authHeaders: {},
     } as any);
 
@@ -103,12 +100,13 @@ describe("refetchAllDefinitionsOfCurrentWorkflow", () => {
     vi.restoreAllMocks();
   });
 
-  it("calls /metadata/workflow/{name}/versions and returns summary list", async () => {
+  it("calls /metadata/workflow?name={name} and filters definitions by workflowName", async () => {
     const fetchWithContextSpy = vi
       .spyOn(fetchModule, "fetchWithContext")
       .mockResolvedValue([
         { name: "sample_wf", version: 1, updateTime: 100 },
         { name: "sample_wf", version: 2, updateTime: 200 },
+        { name: "another_wf", version: 50, updateTime: 300 },
       ] as any);
 
     const result = await refetchAllDefinitionsOfCurrentWorkflow({
@@ -118,7 +116,7 @@ describe("refetchAllDefinitionsOfCurrentWorkflow", () => {
 
     expect(fetchWithContextSpy).toHaveBeenCalledTimes(1);
     expect(fetchWithContextSpy.mock.calls[0][0]).toBe(
-      "/metadata/workflow/sample_wf/versions",
+      "/metadata/workflow?name=sample_wf",
     );
     expect(result).toEqual([
       { name: "sample_wf", version: 1, updateTime: 100 },

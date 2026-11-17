@@ -1,6 +1,6 @@
 import { removeCopyFromStorage } from "pages/definition/ConfirmLocalCopyDialog/state";
 import { fetchWithContext } from "plugins/fetch";
-import { WorkflowDef, WorkflowDefSummary } from "types/WorkflowDef";
+import { WorkflowDef } from "types/WorkflowDef";
 import { resolveAgentSnapshotsInWorkflow } from "utils/agentMetadata";
 import { SaveWorkflowMachineContext } from "./types";
 
@@ -94,9 +94,9 @@ export const refetchAllDefinitionsOfCurrentWorkflow = async ({
   if (!workflowName) {
     return [];
   }
-  const url = `/metadata/workflow/${encodeURIComponent(workflowName)}/versions`;
+  const url = `/metadata/workflow?name=${encodeURIComponent(workflowName)}`;
   try {
-    const result: WorkflowDefSummary[] = await fetchWithContext(
+    const result: WorkflowDef[] = await fetchWithContext(
       url,
       {},
       {
@@ -107,7 +107,11 @@ export const refetchAllDefinitionsOfCurrentWorkflow = async ({
         },
       },
     );
-    return Array.isArray(result) ? result : [];
+    // Some backends ignore the `name` param and return every definition in the
+    // cluster (#1590), so keep only this workflow's definitions.
+    return Array.isArray(result)
+      ? result.filter((item) => item?.name === workflowName)
+      : [];
   } catch {
     return [];
   }
