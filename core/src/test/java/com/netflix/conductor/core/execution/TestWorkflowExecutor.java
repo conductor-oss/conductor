@@ -3256,4 +3256,89 @@ public class TestWorkflowExecutor {
         verify(queueDAO, never()).push(eq(TASK_TYPE_SWITCH), anyString(), anyLong());
         assertEquals(TaskModel.Status.IN_PROGRESS, regular.getStatus());
     }
+
+    /**
+     * A workflow that was written is not deleted when a later step of the start fails (Jepsen's
+     * "lost workflows"): it stays queued for the sweeper, and the start reports it.
+     */
+    @Test
+    public void startDoesNotDeleteAWorkflowItCreatedWhenALaterStepFails() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("kept-workflow");
+        workflowDef.setVersion(1);
+        StartWorkflowInput input = new StartWorkflowInput();
+        input.setWorkflowDefinition(workflowDef);
+        input.setName(workflowDef.getName());
+        input.setVersion(workflowDef.getVersion());
+        input.setWorkflowInput(Collections.emptyMap());
+        input.setWorkflowId("kept-workflow-id");
+
+        when(executionLockService.acquireLock("kept-workflow-id")).thenReturn(true);
+        when(executionDAOFacade.getWorkflowModelFromExecutionDAO("kept-workflow-id", false))
+                .thenThrow(new NotFoundException("missing"));
+        org.mockito.Mockito.doThrow(new RuntimeException("database hiccup"))
+                .when(executionDAOFacade)
+                .populateWorkflowAndTaskPayloadData(any());
+
+        WorkflowModel created = workflowExecutor.startWorkflowIdempotent(input);
+
+        assertEquals("kept-workflow-id", created.getWorkflowId());
+        verify(executionDAOFacade, never()).removeWorkflow(anyString(), anyBoolean());
+    }
+
+    @Test
+    public void startDoesNotDeleteWhenWritingTheWorkflowFails() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("ambiguous-workflow");
+        workflowDef.setVersion(1);
+        StartWorkflowInput input = new StartWorkflowInput();
+        input.setWorkflowDefinition(workflowDef);
+        input.setName(workflowDef.getName());
+        input.setVersion(workflowDef.getVersion());
+        input.setWorkflowInput(Collections.emptyMap());
+        input.setWorkflowId("ambiguous-id");
+
+        when(executionLockService.acquireLock("ambiguous-id")).thenReturn(true);
+        when(executionDAOFacade.getWorkflowModelFromExecutionDAO("ambiguous-id", false))
+                .thenThrow(new NotFoundException("missing"));
+        org.mockito.Mockito.doThrow(new RuntimeException("connection reset"))
+                .when(executionDAOFacade)
+                .createWorkflow(any());
+
+        try {
+            workflowExecutor.startWorkflowIdempotent(input);
+            fail("the start's outcome is indefinite and must be reported as an error");
+        } catch (RuntimeException expected) {
+            // indefinite: the row may or may not exist
+        }
+        verify(executionDAOFacade, never()).removeWorkflow(anyString(), anyBoolean());
+    }
+
+    @Test
+    public void classifiesStorageOutagesAsTransient() {
+        assertTrue(
+                WorkflowExecutorOps.isTransientStorageFailure(
+                        new com.netflix.conductor.core.exception.NonTransientException(
+                                "wrapped",
+                                new java.sql.SQLException("connection refused", "08001"))));
+        assertTrue(
+                WorkflowExecutorOps.isTransientStorageFailure(
+                        new RuntimeException(
+                                new java.sql.SQLException("deadlock detected", "40P01"))));
+        assertTrue(
+                WorkflowExecutorOps.isTransientStorageFailure(
+                        new RuntimeException(
+                                new java.sql.SQLException("terminating connection", "57P01"))));
+        assertTrue( // HikariCP, no SQL state
+                WorkflowExecutorOps.isTransientStorageFailure(
+                        new com.netflix.conductor.core.exception.NonTransientException(
+                                "Connection is closed",
+                                new java.sql.SQLException("Connection is closed"))));
+        assertFalse(
+                WorkflowExecutorOps.isTransientStorageFailure(
+                        new RuntimeException(new java.sql.SQLException("syntax error", "42601"))));
+        assertFalse(
+                WorkflowExecutorOps.isTransientStorageFailure(
+                        new IllegalArgumentException("bad task")));
+    }
 }
