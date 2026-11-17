@@ -354,6 +354,7 @@ or queued continuation is the running work.
 |---|---|
 | `Conductor.task/once/now/random/async/join/fanOut/child/startWorkflow/sleep/sleepUntil/repeatUntil/forEach/awaitCondition/awaitExternal/human/http/event/llm/mcp/agent` | none |
 | `Conductor.decision(name, value)` | removed after protocol 2, replaced by `switchOn(name, value).when(key, body)…otherwise(body).get()`/`.run()`, which emits a real `SWITCH` with every declared case (02 §9); `Engine.switchOn`, implemented by `Replayer.Lane.switchOn` and `DirectEngine.switchOn` |
+| `Conductor.doWhile(name, body, condition)`, `Functions.Condition` | added: a loop the code names; `CodeLoops.enter` tags every step made from the body or condition with `name`, and `CodeReader` reads it into the registered definition. No server change |
 | `@Workflow`, `@Variable`, `@Signal`, `@Update`, `@Query`, `@Schedule`, `@WorkerTask` | none |
 | `Conductor.connect/start/workflow(...).idempotencyKey/correlationId/priority/execute/attach` | none |
 | `WorkflowHandle.signal/update/query/result/status/variables/completeTask` | `variables()` returns only `@Variable` values; replies move out of it |
