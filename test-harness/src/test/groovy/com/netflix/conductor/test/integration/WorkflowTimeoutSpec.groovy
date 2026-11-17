@@ -12,19 +12,26 @@
  */
 package com.netflix.conductor.test.integration
 
+import org.springframework.beans.factory.annotation.Autowired
+
 import com.netflix.conductor.common.metadata.tasks.TaskType
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask
 import com.netflix.conductor.common.run.Workflow
+import com.netflix.conductor.core.utils.Utils
+import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.test.base.AbstractSpecification
 
 import spock.util.concurrent.PollingConditions
 
 /**
- * The workflow timeout is only checked when the workflow is decided, so the sweeper must not
- * postpone the next decide past it while a task with a later deadline is pending (#1779).
+ * The workflow timeout is only checked when the workflow is decided, so its decider-queue entry
+ * must come due by the workflow deadline even while a task with a later deadline is pending (#1779).
  */
 class WorkflowTimeoutSpec extends AbstractSpecification {
+
+    @Autowired
+    QueueDAO queueDAO
 
     def "workflow timeout fires on time while blocked on a #waitKind WAIT"() {
         given: "a workflow with a 3s timeout blocked on a WAIT"
@@ -40,10 +47,12 @@ class WorkflowTimeoutSpec extends AbstractSpecification {
             tasks[0].taskType == TaskType.WAIT.name()
         }
 
-        and: "the sweeper times the workflow out shortly after its 3s deadline"
-        // Without the deadline cap the next decide comes after the WAIT (5m) or the
-        // workflow offset (30s), both well beyond this window.
+        and: "its decider entry comes due at the 3s deadline, and that decide times it out"
+        // Sweep due entries here rather than rely on the background sweeper thread, which does
+        // not survive the test context being stopped and restarted between specs. Without the
+        // deadline cap the entry is not due until the WAIT (5m) or the workflow offset (30s).
         new PollingConditions(timeout: 15, initialDelay: 2, delay: 0.5).eventually {
+            sweepDueWorkflows()
             assert workflowExecutionService.getExecutionStatus(workflowId, false).status ==
                     Workflow.WorkflowStatus.TIMED_OUT
         }
@@ -52,6 +61,13 @@ class WorkflowTimeoutSpec extends AbstractSpecification {
         waitKind | waitInput
         'timed'  | [duration: '5m']
         'signal' | [:]
+    }
+
+    /** Decides every workflow whose decider-queue entry is due now. */
+    private void sweepDueWorkflows() {
+        for (String workflowId : queueDAO.pop(Utils.DECIDER_QUEUE, 10, 100)) {
+            sweep(workflowId)
+        }
     }
 
     private static WorkflowDef waitWorkflow(String name, long timeoutSeconds, Map<String, Object> waitInput) {
