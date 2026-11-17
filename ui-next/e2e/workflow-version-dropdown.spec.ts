@@ -10,7 +10,7 @@ test.describe("Workflow version dropdown (#1590)", () => {
     // GET /api/metadata/workflow returns every definition in the cluster (including
     // unrelated workflows with versions 3 and 99) alongside five_case_switch.
     // The client-side filter must exclude the unrelated definitions (#1590).
-    await page.route("**/api/metadata/workflow*", (route) => {
+    await page.route("**/api/metadata/workflow**", (route) => {
       const url = route.request().url();
       if (url.includes("/metadata/workflow/five_case_switch")) {
         return route.fulfill({ json: FIVE_CASE_SWITCH_WORKFLOW });
