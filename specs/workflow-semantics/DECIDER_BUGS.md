@@ -1,13 +1,13 @@
 # Decider bugs
 
-Server bugs found while checking `Workflow.tla` against the server. All are in standard (non-native)
-workflows. All are fixed on this branch. The expected behaviour is what the
-spec states; see `README.md`.
+Server bugs found while checking `Workflow.tla` against the server. All are in standard workflows.
+All are fixed. The expected behaviour is what the spec states; see `README.md`.
 
 Bugs 1 to 8 were observed on a running server by `server_check.py`, except bug 1's example, which was
-run by hand. Bugs 9 to 13 were found by reading the code; each fix note says how it was checked.
+run by hand. Bugs 9 to 13 were found by reading the code; each fix note says how it was checked. Bugs 14 and 15
+were observed by the step-by-step check.
 
-Line numbers are from the `design/native-workflows` working tree on 2026-11-10. Execution ids are
+Line numbers are from a development tree on 2026-11-10 and can differ from this tree. Execution ids are
 from a local development server (SQLite, port 8099) and will not exist elsewhere.
 
 | # | Bug | Evidence | Priority | Status |
@@ -25,6 +25,8 @@ from a local development server (SQLite, port 8099) and will not exist elsewhere
 | 11 | A `COMPLETED` workflow can be retried | code only | low | fixed |
 | 12 | The total time budget survives a retry or rerun | code only | low | fixed |
 | 13 | Skipping can leave a workflow waiting | code only | medium | fixed |
+| 14 | A retry after a failure at a fork can fail the workflow again at once | observed once | medium | fixed |
+| 15 | A rerun task a worker finished at once runs again | observed once | medium | fixed |
 
 ## Observed on a running server
 
@@ -75,7 +77,7 @@ from a local development server (SQLite, port 8099) and will not exist elsewhere
   in its list, a static fork's branches, a dynamic fork's copies and JOIN (mapped against the tasks
   scheduled before the fork), a switch's recorded case. A finished JOIN waiting for a task that is
   gone or running again goes back to `IN_PROGRESS`. What is removed is unchanged: everything
-  scheduled after the task, as the spec says. Native executions keep their own rerun plan. Checked
+  scheduled after the task, as the spec says. Checked
   by `TestWorkflowExecutor.testRerunFromABranchSchedulesAgainWhatTheOtherBranchScheduledAfterIt`
   (fails without the fix) and live: reruns from every task of a static fork of two branches of two
   tasks, and from every copy of a dynamic fork of three, all complete.
@@ -153,9 +155,7 @@ from a local development server (SQLite, port 8099) and will not exist elsewhere
   the one they read (`ExecutionDAO.updateTaskIfStatus`), so neither can overwrite a cancellation
   or a timeout saved meanwhile. A refused poll does not hand the task out. Postgres, MySQL and
   SQLite check and write in one `UPDATE`; Redis in a Lua script. Cassandra and the in-memory Redis
-  use the interface's default, which reads, then writes, and is not atomic. A native task update
-  no longer takes the workflow lock; a native continuation's completion still does, since it
-  also changes the workflow row. Checked by
+  use the interface's default, which reads, then writes, and is not atomic. Checked by
   `ExecutionServiceTest.testPollDoesNotHandOutATaskThatChangedSinceItWasRead` (fails without the
   fix) and by `testUpdateTaskIfStatusNeverOverwritesAChangedStatus` against SQLite, Postgres,
   MySQL and Redis.
@@ -215,7 +215,7 @@ reproduced live.
 tasks left, goes back to `RUNNING` and schedules them again before its `TERMINATE` ends it once more.
 
 **Fix:** `retry` refuses a `COMPLETED` workflow with 409 Conflict, naming rerun and restart as the
-way to run it again, and ui-next no longer offers "Retry - from failed task" on one. Checked by
+way to run it again. Checked by
 `TestWorkflowExecutor.testACompletedWorkflowCannotBeRetried` (fails without the fix) and live: a
 fork whose `TERMINATE` completed the workflow and cancelled the other branch's task is refused,
 and nothing is scheduled.
@@ -269,15 +269,13 @@ run.
 
 ### 15. A rerun task a worker finished at once runs again
 
-- **Actual:** a native retry after an uncaught task failure (`operator.OperatorChecks`, the fleet
-  run). The rerun put the failed task back and queued it; its worker completed it within
+- **Actual:** a rerun from a failed task put the task back and queued it; its worker completed it within
   milliseconds; then the task was `SCHEDULED` again, and it ran a second time 30 s later, when the
   sweeper found it with no queue message.
 - **Cause:** `finalizeRerun` saved every task of the workflow, the rerun task's in-memory
   `SCHEDULED` copy included, after the rerun task was queued. A fast worker's completion in
   between was overwritten; the poll had removed the message, so only the sweeper re-queued it.
-  Standard workflows rerun from a task the same way.
-- **Example:** `f16d038b-1dbe-48c7-ae13-62c4b481bb51` (its decide trace shows `fleet_patch_4`
+- **Example:** `f16d038b-1dbe-48c7-ae13-62c4b481bb51` (its decide trace shows the task
   `COMPLETED`, then `SCHEDULED` 2 ms later, then nothing for 30 s).
 - **Fix:** `finalizeRerun` leaves the rerun task out of that write: it was saved just before it was
   queued. Checked by `TestWorkflowExecutor.aRerunTaskIsNotWrittenAgainAfterItIsQueued`, which fails
