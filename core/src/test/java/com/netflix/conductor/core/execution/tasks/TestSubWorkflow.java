@@ -312,6 +312,25 @@ public class TestSubWorkflow {
     }
 
     @Test
+    public void testCancelLeavesAChildThatAlreadyEnded() {
+        // DECIDER_BUGS item 10: the child completed while its parent ended and cancelled the
+        // task that still looked running; the child keeps its result
+        WorkflowModel workflowInstance = newParentWorkflow();
+        WorkflowModel subWorkflowInstance = new WorkflowModel();
+        subWorkflowInstance.setStatus(WorkflowModel.Status.COMPLETED);
+        TaskModel task = newTask();
+        task.setSubWorkflowId("sub-workflow-id");
+        task.setInputData(inputData("UnitWorkFlow", 2));
+        when(workflowExecutor.getWorkflow("sub-workflow-id", true)).thenReturn(subWorkflowInstance);
+        workflowInstance.setStatus(WorkflowModel.Status.FAILED);
+
+        subWorkflow.cancel(workflowInstance, task, workflowExecutor);
+
+        assertEquals(WorkflowModel.Status.COMPLETED, subWorkflowInstance.getStatus());
+        verify(workflowExecutor, never()).terminateWorkflow(any(WorkflowModel.class), any(), any());
+    }
+
+    @Test
     public void testCancelWithoutWorkflowId() {
         WorkflowModel workflowInstance = newParentWorkflow();
         TaskModel task = newTask();
@@ -460,6 +479,59 @@ public class TestSubWorkflow {
         subWorkflow.start(workflowInstance, task, workflowExecutor);
 
         assertEquals(CHILD_SUB_WORKFLOW_ID, task.getSubWorkflowId());
+    }
+
+    @Test
+    public void testStartAfterARerunRunsANewChildInsteadOfReusingTheFinishedOne() {
+        // A rerun schedules the task again with the same id and retry count, so the derived child
+        // id names the child of the earlier run. Its result must not be reused (DECIDER_BUGS
+        // item 4).
+        WorkflowModel workflowInstance = newParentWorkflow();
+        TaskModel task = newTask();
+        task.setInputData(inputData("UnitWorkFlow", 3));
+        task.setScheduledTime(2_000);
+
+        WorkflowModel earlierChild = new WorkflowModel();
+        earlierChild.setWorkflowId(CHILD_SUB_WORKFLOW_ID);
+        earlierChild.setStatus(WorkflowModel.Status.COMPLETED);
+        earlierChild.setCreateTime(1_000L);
+        WorkflowModel newChild = new WorkflowModel();
+        newChild.setWorkflowId("new-child");
+        newChild.setStatus(WorkflowModel.Status.RUNNING);
+        when(idGenerator.generateSubWorkflowId(PARENT_WORKFLOW_ID, PARENT_TASK_ID, 0))
+                .thenReturn(CHILD_SUB_WORKFLOW_ID);
+        when(idGenerator.generate()).thenReturn("new-child");
+        when(workflowExecutor.startWorkflowIdempotent(any()))
+                .thenReturn(earlierChild)
+                .thenReturn(newChild);
+
+        subWorkflow.start(workflowInstance, task, workflowExecutor);
+
+        assertEquals("new-child", task.getSubWorkflowId());
+        assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
+    }
+
+    @Test
+    public void testStartAgainAttachesToTheChildItAlreadyStarted() {
+        // A redelivered start of the same run finds the child it started, even one that has
+        // already completed, and attaches to it.
+        WorkflowModel workflowInstance = newParentWorkflow();
+        TaskModel task = newTask();
+        task.setInputData(inputData("UnitWorkFlow", 3));
+        task.setScheduledTime(2_000);
+
+        WorkflowModel child = new WorkflowModel();
+        child.setWorkflowId(CHILD_SUB_WORKFLOW_ID);
+        child.setStatus(WorkflowModel.Status.COMPLETED);
+        child.setCreateTime(2_500L);
+        when(idGenerator.generateSubWorkflowId(PARENT_WORKFLOW_ID, PARENT_TASK_ID, 0))
+                .thenReturn(CHILD_SUB_WORKFLOW_ID);
+        when(workflowExecutor.startWorkflowIdempotent(any())).thenReturn(child);
+
+        subWorkflow.start(workflowInstance, task, workflowExecutor);
+
+        assertEquals(CHILD_SUB_WORKFLOW_ID, task.getSubWorkflowId());
+        verify(idGenerator, never()).generate();
     }
 
     private WorkflowModel newParentWorkflow() {
