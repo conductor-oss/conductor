@@ -7,7 +7,7 @@ REM   Interactive:  conductor_server.bat
 REM   With args:    conductor_server.bat [PORT] [VERSION]
 REM                 conductor_server.bat 9090 3.22.0
 
-REM Check for Java and version 21+
+REM Check for Java and version 25+
 java -version >nul 2>&1
 if errorlevel 1 (
     echo Error: Java is not installed or not in PATH
@@ -25,8 +25,8 @@ if not defined JAVA_MAJOR (
     exit /b 1
 )
 
-if %JAVA_MAJOR% LSS 21 (
-    echo Error: JDK 21 or higher is required. Current version: %JAVA_VER%
+if %JAVA_MAJOR% LSS 25 (
+    echo Error: JDK 25 or higher is required. Current version: %JAVA_VER%
     exit /b 1
 )
 
