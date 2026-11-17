@@ -52,6 +52,8 @@ dependencies {
 }
 
 test {
+    // This module supplies shared fixtures and abstract suites, not executable tests of its own.
+    failOnNoDiscoveredTests = false
     testLogging {
         exceptionFormat = 'full'
     }

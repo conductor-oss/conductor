@@ -24,10 +24,12 @@ ext {
     revCommonsIo = '2.18.0'
     revElasticSearch6 = '6.8.23'
     revGrpc = '1.75.0'
-    revGuava = '33.2.1-jre'
+    revGuava = '33.7.2-jre'   // 33.7.2 clears CVE-2026-102554 (was 33.2.1-jre)
     revHamcrestAllMatchers = '1.8'
     revHealth = '1.1.4'
-    revPostgres = '42.7.11'
+    // Security: 42.7.11 is hit by CVE-2026-54291 (SCRAM MitM bypass). The Boot 4.1 BOM already
+    // manages 42.7.13; this explicit pin was holding the driver below the fix.
+    revPostgres = '42.7.13'
 
     // -----------------------------------------------------------------
     // PINNED DEPENDENCIES - do not upgrade without reading the notes.
@@ -44,10 +46,17 @@ ext {
     // Mixing versions (e.g. polyglot:24.x with js:25.x) causes a runtime
     // "polyglot version X is not compatible with Truffle Y" error.
     // When upgrading, bump revGraalVM everywhere it is referenced and test.
-    // core/build.gradle uses this variable for all five GraalVM artifacts.
-    revGraalVM = '25.0.2'
+    // core/build.gradle uses this variable for all six GraalVM artifacts, including Truffle runtime.
+    revGraalVM = '25.0.5'
     revJAXRS = '4.0.0'
     revJsonPath = '2.4.0'
+    // ACCEPTED RISK (#1750): jackson-jq 2.0.0-alpha1 is the ONLY release built
+    // against Jackson 3 (tools.jackson). The stable 1.6.x line is Jackson 2 and
+    // is API-incompatible with the Jackson 3 JsonNode we now pass it. Upstream
+    // treats 1.x as the stable branch and keeps 2.x as alpha-only with no GA date;
+    // 2.0.0-alpha2 exists on GitHub but is not published to Maven Central. Behavior
+    // here is the jq 1.6 dialect, unchanged from the previous release. Revisit when
+    // a stable 2.x (Jackson 3) lands on Maven Central.
     revJq = '2.0.0-alpha1'
     revMockServerClient = '5.12.0'
     revSpringDoc = '3.1.0'

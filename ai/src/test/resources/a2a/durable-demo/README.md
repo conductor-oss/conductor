@@ -30,7 +30,7 @@ crash and restart resumes the in-flight agent interaction to completion.
 
 ## Run it
 
-Requires **Java 21+**, **python3**, **curl** — no Docker, no Redis, no API keys.
+Requires **Java 25+**, **python3**, **curl** — no Docker, no Redis, no API keys.
 
 ```bash
 ./run-durable-demo.sh

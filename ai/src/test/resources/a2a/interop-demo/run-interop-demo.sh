@@ -6,7 +6,7 @@
 # Conductor workflow that (1) discovers the agent's Agent Card (GET_AGENT_CARD) and (2) calls it
 # (AGENT) — proving end-to-end interop over the real A2A wire protocol.
 #
-# Requires: Java 21+, curl, and either `uv` (to auto-create a Python venv) OR set A2A_VENV to a
+# Requires: Java 25+, curl, and either `uv` (to auto-create a Python venv) OR set A2A_VENV to a
 # Python that already has `a2a-sdk` + `uvicorn`. No Docker, no Redis, no API keys.
 # Usage:    ./run-interop-demo.sh
 #

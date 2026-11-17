@@ -5,7 +5,7 @@ End-to-end tests for conductor-oss covering workflow execution, task types, cont
 ## Prerequisites
 
 - Docker and Docker Compose
-- Java 21+
+- Java 25+
 - Gradle (use the `./gradlew` wrapper at the repo root)
 
 ## Quick Start
