@@ -32,7 +32,7 @@ import tools.jackson.databind.ObjectMapper;
 
 /**
  * A trace of what each decide left a workflow in, for checking runs step by step against the
- * specification ({@code proposals/workflow-semantics}). Off unless the system property {@code
+ * specification ({@code specs/workflow-semantics}). Off unless the system property {@code
  * conductor.trace.dir} names a directory: then each decide appends one line to {@code
  * <dir>/<workflowId>.jsonl} with the workflow's status and each task's reference, type, seq, status
  * and retry count. Only for tests; it changes nothing the server does.

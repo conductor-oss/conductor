@@ -61,6 +61,6 @@ docs/superpowers
 /blogs
 /design
 
-# TLC output of the specs under proposals/
-proposals/**/states/
-proposals/**/*_TTrace_*
+# TLC output of the specs under specs/
+specs/**/states/
+specs/**/*_TTrace_*
