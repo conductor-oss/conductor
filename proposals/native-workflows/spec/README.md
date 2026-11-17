@@ -97,11 +97,12 @@ SDK, interprets the program against a recorded execution step by step. It proves
 recording is exactly the execution the code denotes for its input, given the values the code does
 not determine (external results, generated ids, when handler messages arrived): every step and
 input in every lane, task outputs, the arm every `if` and `switch` took and the arms and previews
-its SWITCH shows, order within lanes and at joins, attempts, the output and the variables, and each
-child `sub_flow_1`. On 2026-11-11 the odd, even and failure executions of a `kitchensink.Main` run
-and their 13 children passed (838, 777 and 810 checks), and `kitchensink_mutants.py` showed it
-rejects 19 of 19 recordings broken in one way each (18 under `--chaos`, where an extra attempt is
-allowed). It first checks that the recording as it is passes, so a recording that does not cannot
+its SWITCH shows, order within lanes and at joins, the passes of the loops the server runs
+(`forEach`, `repeatUntil`) and the loop each `doWhile` pass is tagged with, attempts, the output and
+the variables, and each child `sub_flow_1`. On 2026-11-17 the odd, even and failure executions of a
+`kitchensink.Main` run and their 16 children passed (1,021, 980 and 1,012 checks), and
+`kitchensink_mutants.py` showed it rejects 19 of 19 recordings broken in one way each (on
+2026-11-11, 18 of 19 under `--chaos`, where an extra attempt is allowed). It first checks that the recording as it is passes, so a recording that does not cannot
 make every mutant look rejected, and a server error never counts as a rejection. It covers those executions, not every run.
 
     python3 kitchensink_spec.py --server http://localhost:8099/api <odd id> <even id> <failure id>

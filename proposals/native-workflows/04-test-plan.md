@@ -54,7 +54,10 @@ Scenario 2 is the acceptance test for the design: it is the kitchensink's `forkx
 Covered end to end by the SDK repository rather than by the harness: handlers (claimed messages,
 `replies`, `releases`, completion deferral), failover to another worker, `WAIT` and `HUMAN` timeouts,
 restart, rerun and retry (`native-examples`: kitchensink, `operator.OperatorChecks`, `chaos.sh`
-and the durability bench, see [06-implementation.md](06-implementation.md)), and `switchOn`
+and the durability bench, see [06-implementation.md](06-implementation.md)), every construct with
+its alternatives (`native-examples`' `primitives.Main`: one workflow per construct, each run against a
+server with its result, the execution's shape and a replay of the execution against the code
+checked), and `switchOn`
 (`conductor-client`'s `SwitchOnTest`: the first continuation emits the switch with every case and
 the taken body inside it; an empty case continues inline after the switch with no anchor; an
 unhandled value takes the default case; an unhandled value without `otherwise` fails the workflow

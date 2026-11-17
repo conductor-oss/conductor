@@ -233,6 +233,23 @@ class Lane:
         self.order(e)
         return taken
 
+    def server_loop(self, ref, body):
+        """A DO_WHILE the server runs (forEach, repeatUntil): body() takes the steps of its passes, in
+        this lane; the code waits for the whole loop, and every pass ends inside it."""
+        e = self.next(f'runs the loop {ref} on the server')
+        r = self.run
+        r.ok('T1', e.wtype == 'DO_WHILE' and e.ref == ref, e.ref, f'expected DO_WHILE {ref}, recorded {e.wtype} {e.ref}')
+        r.ok('T4', e.sched >= self.last_end, e.ref, 'scheduled before the step the code waited on ended')
+        start = self.i
+        self.last_end = e.sched
+        result = body()
+        for x in self.events[start:self.i]:
+            r.ok('T4', x.end <= e.end, x.ref, f'a pass of {ref} ended after the loop')
+            r.ok('T1', x.ref.rsplit('__', 1)[-1].isdigit(), x.ref, f'{x.ref} is not a pass of {ref}')
+        r.ok('T6', e.last['status'] == 'COMPLETED', e.ref, f'the loop ended {e.last["status"]}')
+        self.last_end = e.end
+        return result
+
     def fork(self, n, name='fork'):
         e = self.next(f'starts {n} lanes')
         r = self.run
@@ -549,6 +566,48 @@ def kitchensink_body(r, w, checks, children):
             main.switch(ref, 'true' if i == 1 else 'false', {'true': ['step'], 'default': ['step']}, loops=2)
             lbl = f'o{o}-' + ('first' if i == 1 else 'second')
             composed.append(main.simple('step', {'label': lbl}, {'result': lbl})['result'])
+
+    # section 5: Conductor's own constructs
+    constructs = []
+    tier = 'high' if mod > 3 else 'low'
+    main.switch('tier', tier, {'high': ['step'], 'low': ['step'], 'default': ['step']})
+    constructs.append(main.simple('step', {'label': 'tier-' + tier}, {'result': 'tier-' + tier})['result'])
+    # the switch expression is named after its value; section 4's else took switch_lane when not odd
+    size_ref = 'switch_lane' if odd else 'switch_lane_2'
+    main.switch(size_ref, '1' if lane == '1' else 'default', {'1': ['step'], 'default': ['step']})
+    size = 'size-odd' if lane == '1' else 'size-even'
+    constructs.append(main.simple('step', {'label': size}, {'result': size})['result'])
+    rounds = []
+    while True:   # doWhile: the body first, then the condition
+        item = f'round-{len(rounds) + 1}'
+        e = main.events[main.i]
+        r.ok('T1', 'label_rounds' in ((e.entry.get('metadata') or {}).get('loops') or []), e.ref, 'a doWhile pass not tagged with its loop')
+        rounds.append(main.simple('label_item', {'item': item}, {'result': f'LABEL[{item}]'})['result'])
+        if not len(rounds) < 2:
+            break
+    constructs += rounds
+    constructs += main.server_loop('server_labels', lambda: [
+        main.simple('label_item', {'item': x}, {'result': f'LABEL[{x}]'})['result'] for x in ('s1', 's2')])
+
+    def repeat():   # repeatUntil: each pass waits its backoff, then checks
+        while True:
+            main.task('poll_backoff', {}, wtype='INLINE')
+            main.task('poll_wait', {}, wtype='WAIT')
+            st = check_status(main, run_id + '-repeat')
+            if st['done']:
+                return st
+    repeated = main.server_loop('poll', repeat)
+    constructs.append('repeat-done' if repeated['done'] else 'repeat-not-done')
+    fan = main.fork(2, name='fanout')
+    constructs += [go(l, lambda l=l, x=x: l.simple('label_item', {'item': x}, {'result': f'LABEL[{x}]'})['result'])
+                   for l, x in zip(fan, ('f1', 'f2'))]
+    main.join(fan)
+    main.task('start_sub_flow_1', {'startWorkflow': {'input': {'mod': mod, 'oddEven': lane}, 'name': 'sub_flow_1', 'version': 1}},
+              wtype='START_WORKFLOW')
+    by_name = r.events['start_sub_flow_1_2'].output['workflowId']
+    sub_flow(get(f'/workflow/{by_name}?includeTasks=true'), checks)
+    children.append(by_name)
+    constructs += ['rolled', 'has id']   # random() is in [0, 1) and workflowId() is not empty
     main.finished()
 
     # T6: outcome, variables and the notes
@@ -558,7 +617,7 @@ def kitchensink_body(r, w, checks, children):
         'callbackPayload': callback.get('payload'), 'note': note if status['done'] else note + ' (job did not finish)',
         'cancelled': w['variables']['cancelled'], 'labels': labels, 'toolCount': len(tools),
         'weather': weather['content'][0]['text'], 'agentReply': reply['agentMessage']['parts'][0]['text'] if 'agentMessage' in reply else None,
-        'composed': composed}
+        'composed': composed, 'constructs': constructs}
     for k_, v in expected.items():
         if k_ == 'agentReply' and v is None:
             continue
