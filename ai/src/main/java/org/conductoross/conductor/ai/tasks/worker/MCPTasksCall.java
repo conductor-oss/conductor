@@ -35,6 +35,11 @@ import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+import static org.conductoross.conductor.ai.mcp.MCPJsonRpc.HEADER_MISMATCH;
+import static org.conductoross.conductor.ai.mcp.MCPJsonRpc.INVALID_PARAMS;
+import static org.conductoross.conductor.ai.mcp.MCPJsonRpc.MISSING_REQUIRED_CLIENT_CAPABILITY;
+import static org.conductoross.conductor.ai.mcp.MCPJsonRpc.UNSUPPORTED_PROTOCOL_VERSION;
+
 /**
  * Lifecycle of a {@code CALL_MCP_TOOL} call that selects {@code mcpOptions.protocolVersion} (the
  * MCP {@code 2026-07-28} form, which declares the MCP Tasks extension). MCP-specific; structured
@@ -163,7 +168,7 @@ final class MCPTasksCall {
             if (e.hasDefinedMeaning()) {
                 // A JSON-RPC error with a defined meaning is the MCP server's own answer, so its
                 // code decides, whatever the HTTP status.
-                if (code == MCPRequestException.INVALID_PARAMS) {
+                if (code == INVALID_PARAMS) {
                     if (deadlineExceeded(task, ttl)) {
                         // Past the deadline the server may have dropped the task, as its ttlMs
                         // allows. A retry would run into the same deadline, so do not retry.
@@ -644,7 +649,7 @@ final class MCPTasksCall {
     }
 
     private static boolean isHeaderMismatch(MCPRequestException e) {
-        return e.getCode() != null && e.getCode() == MCPRequestException.HEADER_MISMATCH;
+        return e.getCode() != null && e.getCode() == HEADER_MISMATCH;
     }
 
     /**
@@ -656,7 +661,7 @@ final class MCPTasksCall {
             MCPToolCallRequest request, MCPRequestException e) {
         String server = request.getMcpServer();
         Integer code = e.getCode();
-        if (code != null && code == MCPRequestException.UNSUPPORTED_PROTOCOL_VERSION) {
+        if (code != null && code == UNSUPPORTED_PROTOCOL_VERSION) {
             JsonNode supported = e.getData() != null ? e.getData().get("supported") : null;
             return new NonRetryableException(
                     "MCP server "
@@ -667,7 +672,7 @@ final class MCPTasksCall {
                             + (supported != null ? supported : "not given by the server")
                             + "). Remove mcpOptions.protocolVersion to use the legacy MCP request.");
         }
-        if (code != null && code == MCPRequestException.MISSING_REQUIRED_CLIENT_CAPABILITY) {
+        if (code != null && code == MISSING_REQUIRED_CLIENT_CAPABILITY) {
             JsonNode required =
                     e.getData() != null ? e.getData().get("requiredCapabilities") : null;
             return new NonRetryableException(

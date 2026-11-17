@@ -140,6 +140,24 @@ class A2ANativeAgentFacadeTest {
     }
 
     @Test
+    void agentCard_description_isTheAgentsIntroduction_whenItHasOne() {
+        when(agentService.listAgents()).thenReturn(List.of(summary("greeter")));
+        com.netflix.conductor.common.metadata.workflow.WorkflowDef def =
+                new com.netflix.conductor.common.metadata.workflow.WorkflowDef();
+        def.setName("greeter");
+        def.setMetadata(
+                java.util.Map.of(
+                        "agentDef",
+                        java.util.Map.of("name", "greeter", "introduction", "Greets people.")));
+        when(agentService.getAgentDefinition("greeter", 2)).thenReturn(def);
+
+        AgentCard card = facade.agentCard("greeter", "http://host");
+
+        assertEquals("Greets people.", card.getDescription());
+        assertEquals("Greets people.", card.getSkills().get(0).getDescription());
+    }
+
+    @Test
     void agentCard_fallbackDescription_whenNoneSet() {
         AgentSummary noDesc = AgentSummary.builder().name("greeter").version(1).build();
         when(agentService.listAgents()).thenReturn(List.of(noDesc));

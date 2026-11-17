@@ -1,0 +1,63 @@
+{
+  "name": "generate_report",
+  "description": "Builds a short report on a topic. Use it when the user asks for a report or summary on a subject. Returns the report text. Takes about as many seconds as asked.",
+  "version": 1,
+  "schemaVersion": 2,
+  "inputParameters": ["topic", "seconds"],
+  "inputSchema": {
+    "name": "generate_report_input",
+    "version": 1,
+    "type": "JSON",
+    "data": {
+      "type": "object",
+      "properties": {
+        "topic": {
+          "type": "string",
+          "description": "The subject of the report, for example \"Q3 sales\"."
+        },
+        "seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "How long to spend on the report, in seconds."
+        }
+      },
+      "required": ["topic", "seconds"]
+    }
+  },
+  "tasks": [
+    {
+      "name": "build_report",
+      "taskReferenceName": "build_report",
+      "type": "WAIT",
+      "inputParameters": {
+        "duration": "${workflow.input.seconds} seconds"
+      }
+    }
+  ],
+  "outputParameters": {
+    "report": "Report on ${workflow.input.topic}",
+    "seconds": "${workflow.input.seconds}"
+  },
+  "outputSchema": {
+    "name": "generate_report_output",
+    "version": 1,
+    "type": "JSON",
+    "data": {
+      "type": "object",
+      "properties": {
+        "report": {
+          "type": "string",
+          "description": "The report text."
+        },
+        "seconds": {
+          "type": "integer",
+          "description": "The seconds spent on the report."
+        }
+      }
+    }
+  },
+  "metadata": {
+    "mcp.enabled": true,
+    "mcp.syncWaitSeconds": 0
+  }
+}
