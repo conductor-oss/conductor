@@ -136,9 +136,10 @@ export const fetchSecretsEndEnvironmentsList = async (
 export const refetchCurrentWorkflowVersionsService = async ({
   authHeaders: headers,
   workflowName,
+  isNewWorkflow,
 }: DefinitionMachineContext) => {
-  if (!workflowName) {
-    return {};
+  if (!workflowName || isNewWorkflow) {
+    return { versions: [] };
   }
 
   const url = `/metadata/workflow?includeShared=false&name=${encodeURIComponent(
@@ -150,9 +151,15 @@ export const refetchCurrentWorkflowVersionsService = async ({
       [fetchContext.stack, url],
       () => fetchWithContext(url, fetchContext, { headers }),
     );
-    const versions = result?.map((item) => item?.version) ?? [];
+    // Some backends ignore the `name` param and return every definition in the
+    // cluster (#1590), so keep only this workflow's versions.
+    const versions =
+      result
+        ?.filter((item) => item?.name === workflowName)
+        .map((item) => item?.version)
+        .filter((v): v is number => typeof v === "number") ?? [];
     return { versions };
   } catch {
-    return {};
+    return { versions: [] };
   }
 };
