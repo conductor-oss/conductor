@@ -12,7 +12,12 @@
  */
 package com.netflix.conductor.core.execution;
 
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
+import java.sql.SQLException;
+import java.sql.SQLRecoverableException;
+import java.sql.SQLTransientException;
 import java.time.Duration;
 import java.util.*;
 import java.util.function.Consumer;
@@ -2570,13 +2575,13 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     static boolean isTransientStorageFailure(Throwable error) {
         for (Throwable t = error; t != null; t = t.getCause() == t ? null : t.getCause()) {
             if (t instanceof TransientException
-                    || t instanceof java.sql.SQLTransientException
-                    || t instanceof java.sql.SQLRecoverableException
-                    || t instanceof java.net.SocketException
-                    || t instanceof java.net.SocketTimeoutException) {
+                    || t instanceof SQLTransientException
+                    || t instanceof SQLRecoverableException
+                    || t instanceof SocketException
+                    || t instanceof SocketTimeoutException) {
                 return true;
             }
-            if (t instanceof java.sql.SQLException sql) {
+            if (t instanceof SQLException sql) {
                 String state = sql.getSQLState();
                 if (state != null
                         && (state.startsWith("08")
@@ -3399,7 +3404,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             input.setWorkflowId(
                     UUID.nameUUIDFromBytes(
                                     (name + ":" + input.getIdempotencyKey())
-                                            .getBytes(java.nio.charset.StandardCharsets.UTF_8))
+                                            .getBytes(StandardCharsets.UTF_8))
                             .toString());
         }
         if (input.getIdempotencyStrategy() == IdempotencyStrategy.FAIL) {

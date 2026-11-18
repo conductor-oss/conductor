@@ -16,6 +16,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
@@ -166,8 +167,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO
         // rest of the update commits
         String UPDATE_TASK_IF_STATUS =
                 "UPDATE task SET json_data=?, modified_on=CURRENT_TIMESTAMP WHERE task_id=? AND JSON_UNQUOTE(JSON_EXTRACT(json_data, '$.status')) = ?";
-        java.util.concurrent.atomic.AtomicBoolean updated =
-                new java.util.concurrent.atomic.AtomicBoolean();
+        AtomicBoolean updated = new AtomicBoolean();
         withTransaction(
                 connection -> {
                     int rows =

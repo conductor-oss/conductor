@@ -12,12 +12,17 @@
  */
 package com.netflix.conductor.postgres.dao;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -417,10 +422,9 @@ public class PostgresMetadataDAOTest {
     public void concurrentRegistrationOfTheSameDefinitionsSucceeds() throws Exception {
         String task = "concurrent_task_" + UUID.randomUUID();
         String workflow = "concurrent_wf_" + UUID.randomUUID();
-        java.util.concurrent.ExecutorService pool =
-                java.util.concurrent.Executors.newFixedThreadPool(8);
-        java.util.concurrent.CountDownLatch go = new java.util.concurrent.CountDownLatch(1);
-        List<java.util.concurrent.Future<?>> futures = new java.util.ArrayList<>();
+        ExecutorService pool = Executors.newFixedThreadPool(8);
+        CountDownLatch go = new CountDownLatch(1);
+        List<Future<?>> futures = new ArrayList<>();
         for (int i = 0; i < 8; i++) {
             futures.add(
                     pool.submit(
@@ -438,7 +442,7 @@ public class PostgresMetadataDAOTest {
                             }));
         }
         go.countDown();
-        for (java.util.concurrent.Future<?> f : futures) {
+        for (Future<?> f : futures) {
             f.get(); // rethrows a duplicate-key failure
         }
         pool.shutdown();

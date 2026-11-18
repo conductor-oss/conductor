@@ -35,11 +35,15 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.retry.RetryPolicy;
 import org.springframework.core.retry.RetryTemplate;
 
+import com.netflix.conductor.core.config.WorkflowMessageQueueProperties;
+import com.netflix.conductor.core.dao.JdbcWorkflowMessageQueueDAO;
 import com.netflix.conductor.core.sync.Lock;
 import com.netflix.conductor.core.sync.local.LocalOnlyLock;
+import com.netflix.conductor.dao.WorkflowMessageQueueDAO;
 import com.netflix.conductor.sqlite.dao.*;
 import com.netflix.conductor.sqlite.dao.metadata.SqliteEventHandlerMetadataDAO;
 import com.netflix.conductor.sqlite.dao.metadata.SqliteMetadataDAO;
@@ -208,14 +212,12 @@ public class SqliteConfiguration {
      * so signals, updates and queries pushed to running workflows survive a server restart.
      */
     @Bean
-    @org.springframework.context.annotation.Primary
+    @Primary
     @DependsOn("flywayForPrimaryDb")
     @ConditionalOnProperty(name = "conductor.workflow-message-queue.enabled", havingValue = "true")
-    public com.netflix.conductor.dao.WorkflowMessageQueueDAO sqliteWorkflowMessageQueueDAO(
-            ObjectMapper objectMapper,
-            com.netflix.conductor.core.config.WorkflowMessageQueueProperties properties) {
-        return new com.netflix.conductor.core.dao.JdbcWorkflowMessageQueueDAO(
-                dataSource, objectMapper, properties, false);
+    public WorkflowMessageQueueDAO sqliteWorkflowMessageQueueDAO(
+            ObjectMapper objectMapper, WorkflowMessageQueueProperties properties) {
+        return new JdbcWorkflowMessageQueueDAO(dataSource, objectMapper, properties, false);
     }
 
     @Bean

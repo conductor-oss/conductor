@@ -20,6 +20,7 @@ import java.util.Set;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -32,6 +33,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
+import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 
@@ -389,9 +391,7 @@ public class WorkflowServiceTest {
     @Test
     public void testTerminateRemoveRemovesAWorkflowThatAlreadyEnded() {
         // terminating it is refused (DECIDER_BUGS item 10); there is nothing to terminate
-        org.mockito.Mockito.doThrow(
-                        new com.netflix.conductor.core.exception.ConflictException(
-                                "Cannot terminate a FAILED workflow."))
+        Mockito.doThrow(new ConflictException("Cannot terminate a FAILED workflow."))
                 .when(workflowExecutor)
                 .terminateWorkflow("w-ended", "cleanup");
 
@@ -399,7 +399,7 @@ public class WorkflowServiceTest {
 
         verify(executionService).removeWorkflow("w-ended", false);
         // the mocks are shared with the other tests, which count calls
-        org.mockito.Mockito.reset(workflowExecutor, executionService);
+        Mockito.reset(workflowExecutor, executionService);
     }
 
     @Test

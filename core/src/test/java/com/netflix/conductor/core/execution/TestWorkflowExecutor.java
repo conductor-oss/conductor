@@ -13,6 +13,7 @@
 package com.netflix.conductor.core.execution;
 
 import java.nio.charset.StandardCharsets;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -25,6 +26,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
@@ -1335,7 +1337,7 @@ public class TestWorkflowExecutor {
         when(executionLockService.acquireLock("kept-workflow-id")).thenReturn(true);
         when(executionDAOFacade.getWorkflowModelFromExecutionDAO("kept-workflow-id", false))
                 .thenThrow(new NotFoundException("missing"));
-        org.mockito.Mockito.doThrow(new RuntimeException("database hiccup"))
+        doThrow(new RuntimeException("database hiccup"))
                 .when(executionDAOFacade)
                 .populateWorkflowAndTaskPayloadData(any());
 
@@ -1360,7 +1362,7 @@ public class TestWorkflowExecutor {
         when(executionLockService.acquireLock("ambiguous-id")).thenReturn(true);
         when(executionDAOFacade.getWorkflowModelFromExecutionDAO("ambiguous-id", false))
                 .thenThrow(new NotFoundException("missing"));
-        org.mockito.Mockito.doThrow(new RuntimeException("connection reset"))
+        doThrow(new RuntimeException("connection reset"))
                 .when(executionDAOFacade)
                 .createWorkflow(any());
 
@@ -1410,25 +1412,21 @@ public class TestWorkflowExecutor {
     public void classifiesStorageOutagesAsTransient() {
         assertTrue(
                 WorkflowExecutorOps.isTransientStorageFailure(
-                        new com.netflix.conductor.core.exception.NonTransientException(
-                                "wrapped",
-                                new java.sql.SQLException("connection refused", "08001"))));
+                        new NonTransientException(
+                                "wrapped", new SQLException("connection refused", "08001"))));
         assertTrue(
                 WorkflowExecutorOps.isTransientStorageFailure(
-                        new RuntimeException(
-                                new java.sql.SQLException("deadlock detected", "40P01"))));
+                        new RuntimeException(new SQLException("deadlock detected", "40P01"))));
         assertTrue(
                 WorkflowExecutorOps.isTransientStorageFailure(
-                        new RuntimeException(
-                                new java.sql.SQLException("terminating connection", "57P01"))));
+                        new RuntimeException(new SQLException("terminating connection", "57P01"))));
         assertTrue( // HikariCP, no SQL state
                 WorkflowExecutorOps.isTransientStorageFailure(
-                        new com.netflix.conductor.core.exception.NonTransientException(
-                                "Connection is closed",
-                                new java.sql.SQLException("Connection is closed"))));
+                        new NonTransientException(
+                                "Connection is closed", new SQLException("Connection is closed"))));
         assertFalse(
                 WorkflowExecutorOps.isTransientStorageFailure(
-                        new RuntimeException(new java.sql.SQLException("syntax error", "42601"))));
+                        new RuntimeException(new SQLException("syntax error", "42601"))));
         assertFalse(
                 WorkflowExecutorOps.isTransientStorageFailure(
                         new IllegalArgumentException("bad task")));
@@ -1982,7 +1980,7 @@ public class TestWorkflowExecutor {
         workflowExecutor.retry(workflow.getWorkflowId(), false);
 
         assertEquals(TaskModel.Status.IN_PROGRESS, joinTask.getStatus());
-        org.mockito.InOrder order = inOrder(executionDAOFacade, queueDAO);
+        InOrder order = inOrder(executionDAOFacade, queueDAO);
         order.verify(executionDAOFacade).updateTasks(any());
         order.verify(queueDAO).push(anyString(), eq(joinTask.getTaskId()), anyInt(), anyLong());
     }
@@ -2910,9 +2908,7 @@ public class TestWorkflowExecutor {
         assertEquals(TaskModel.Status.COMPLETED_WITH_ERRORS, failed.getStatus());
         // the change is saved, not only made in memory (DECIDER_BUGS item 1)
         verify(executionDAOFacade)
-                .updateTasks(
-                        org.mockito.ArgumentMatchers.argThat(
-                                (List<TaskModel> tasks) -> tasks.contains(failed)));
+                .updateTasks(argThat((List<TaskModel> tasks) -> tasks.contains(failed)));
     }
 
     private WorkflowModel running(String id, WorkflowTask... tasks) {
@@ -3010,8 +3006,7 @@ public class TestWorkflowExecutor {
 
         workflowExecutor.skipTaskFromWorkflow(workflow.getWorkflowId(), "fork", null);
 
-        org.mockito.ArgumentCaptor<List<TaskModel>> created =
-                org.mockito.ArgumentCaptor.forClass(List.class);
+        ArgumentCaptor<List<TaskModel>> created = ArgumentCaptor.forClass(List.class);
         verify(executionDAOFacade).createTasks(created.capture());
         assertEquals(
                 List.of("fork", "join"),

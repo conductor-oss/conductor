@@ -42,6 +42,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.DeciderService.DeciderOutcome;
 import com.netflix.conductor.core.execution.evaluators.Evaluator;
 import com.netflix.conductor.core.execution.mapper.DecisionTaskMapper;
@@ -55,6 +56,7 @@ import com.netflix.conductor.core.execution.mapper.SimpleTaskMapper;
 import com.netflix.conductor.core.execution.mapper.SubWorkflowTaskMapper;
 import com.netflix.conductor.core.execution.mapper.SwitchTaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
+import com.netflix.conductor.core.execution.mapper.TerminateTaskMapper;
 import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
 import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
 import com.netflix.conductor.core.execution.tasks.Decision;
@@ -181,10 +183,7 @@ public class TestDeciderOutcomes {
         taskMappers.put(EVENT.name(), new EventTaskMapper(parametersUtils));
         taskMappers.put(WAIT.name(), new WaitTaskMapper(parametersUtils));
         taskMappers.put(HTTP.name(), new HTTPTaskMapper(parametersUtils, metadataDAO));
-        taskMappers.put(
-                TaskType.TERMINATE.name(),
-                new com.netflix.conductor.core.execution.mapper.TerminateTaskMapper(
-                        parametersUtils));
+        taskMappers.put(TaskType.TERMINATE.name(), new TerminateTaskMapper(parametersUtils));
 
         this.nativeContinuationService =
                 new NativeContinuationService(
@@ -434,7 +433,7 @@ public class TestDeciderOutcomes {
         Outcome result = new Outcome();
         try {
             outcome = deciderService.decide(workflow);
-        } catch (com.netflix.conductor.core.exception.TerminateWorkflowException e) {
+        } catch (TerminateWorkflowException e) {
             result.terminated = true;
             result.finalStatus = task.getStatus();
             result.failedStatus = task.getOutputData().get("conductor.failedStatus");
@@ -450,7 +449,7 @@ public class TestDeciderOutcomes {
             task.setStatus(status);
             try {
                 outcome = deciderService.decide(workflow);
-            } catch (com.netflix.conductor.core.exception.TerminateWorkflowException e) {
+            } catch (TerminateWorkflowException e) {
                 result.terminated = true;
                 result.finalStatus = task.getStatus();
                 result.failedStatus = task.getOutputData().get("conductor.failedStatus");
