@@ -24,15 +24,34 @@
 // overridden back down to the BOM version by the dependency-management plugin.
 ext['rabbit-amqp-client.version'] = revAmqpClient
 
+// Security: the Boot 4.1 BOM pins Tomcat 11.0.24, which still carries CVE-2026-65182 /
+// CVE-2026-65905 / CVE-2026-68525 (digest-auth, FORM-auth and security-constraint bypass) plus
+// CVE-2026-65637. 11.0.25 clears all four.
+ext['tomcat.version'] = '11.0.25'
+
+// Security: the Boot 4.1 BOM ships Jackson 3 at 3.1.5 and the Jackson 2 compatibility line at
+// 2.21.5. Both are hit by CVE-2026-68497 / CVE-2026-89407 / CVE-2026-89425 / CVE-2026-91776 /
+// CVE-2026-91777 (DoS). 3.1.7 and 2.21.7 clear the lot.
+ext['jackson-bom.version'] = '3.1.7'
+ext['jackson-2-bom.version'] = '2.21.7'
+
 // Compat: Conductor ships selectable indexing backends (ES6/ES7/ES8 and OpenSearch) and picks one at
 // build time. The Spring Boot BOM tracks the latest Elasticsearch client, which does not speak to the
 // older clusters Conductor still supports, so the Elasticsearch coordinates are managed here instead.
-// Default is ES7; the ES8 branch below switches both the transport and the java client together.
+// These base values seed an ES version for non-ES backends (e.g. OpenSearch) that still resolve an
+// Elasticsearch version transitively; the indexingBackend branch below selects ES7 vs ES8.
 ext['elasticsearch.version'] = revElasticSearch7
 ext['elasticsearch-client.version'] = revElasticSearch7
 
-def indexingBackend = findProperty('indexingBackend') ?: 'elasticsearch'
-if (indexingBackend == 'elasticsearch8' || indexingBackend == 'es8') {
+// Elasticsearch is the default indexing backend and defaults to ES8 (revElasticSearch8), which clears
+// CVE-2025-37731 by dropping the ES7 core jar. ES7 stays available as an explicit opt-in. The Spring
+// Boot 4.1 BOM manages `org.elasticsearch.client:elasticsearch-rest-client` via `elasticsearch.version`
+// and `co.elastic.clients:elasticsearch-java` via `elasticsearch-client.version`.
+def indexingBackend = findProperty('indexingBackend') ?: 'elasticsearch8'
+if (indexingBackend == 'elasticsearch7' || indexingBackend == 'es7') {
+    ext['elasticsearch.version'] = revElasticSearch7
+} else if (indexingBackend == 'elasticsearch8' || indexingBackend == 'es8'
+        || indexingBackend == 'elasticsearch') {
     ext['elasticsearch.version'] = revElasticSearch8
     ext['elasticsearch-client.version'] = revElasticSearch8
 }

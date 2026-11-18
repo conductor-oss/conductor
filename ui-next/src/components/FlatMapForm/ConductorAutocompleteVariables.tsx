@@ -25,6 +25,7 @@ import {
   CSSProperties,
   FunctionComponent,
   HTMLAttributes,
+  Key,
   KeyboardEvent,
   ReactNode,
   useContext,
@@ -88,7 +89,9 @@ export type ConductorAutocompleteVariablesProps = {
    */
   clearEmptyNumberAsNull?: boolean;
   renderOption?: (
-    props: HTMLAttributes<HTMLLIElement>,
+    // Same as MUI's Autocomplete: props includes the option's key, which must
+    // be passed to the element directly rather than spread.
+    props: HTMLAttributes<HTMLLIElement> & { key: Key },
     option: string | number,
     state: AutocompleteRenderOptionState,
   ) => ReactNode;
@@ -362,12 +365,12 @@ const ConductorAutocompleteVariablesNoContext = ({
       renderOption={
         renderOption
           ? renderOption
-          : (props, option, { inputValue }) => {
+          : ({ key, ...props }, option, { inputValue }) => {
               const matches = match(option as string, inputValue);
               const parts = parse(option as string, matches);
 
               return (
-                <li {...props}>
+                <li key={key} {...props}>
                   <div>
                     {parts.map((part, index) => (
                       <span
