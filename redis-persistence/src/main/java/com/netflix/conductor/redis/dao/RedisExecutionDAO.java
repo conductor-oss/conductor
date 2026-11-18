@@ -196,6 +196,56 @@ public class RedisExecutionDAO extends BaseDynoDAO
 
     @Override
     public void updateTask(TaskModel task) {
+        updateTask(task, true);
+    }
+
+    /** Sets the task's payload only if its stored status is still ARGV[2]. */
+    private static final String SET_TASK_IF_STATUS =
+            "local stored = redis.call('GET', KEYS[1]) "
+                    + "if stored and cjson.decode(stored)['status'] == ARGV[2] then "
+                    + "redis.call('SET', KEYS[1], ARGV[1]) return 1 end return 0";
+
+    private volatile String setTaskIfStatusSha;
+
+    @Override
+    public boolean updateTaskIfStatus(TaskModel task, TaskModel.Status expected) {
+        String key = nsKey(TASK, task.getTaskId());
+        List<String> args = List.of(toJson(task), expected.name());
+        Object result;
+        try {
+            result = jedisProxy.evalsha(setTaskIfStatusSha(key), List.of(key), args);
+        } catch (RuntimeException e) {
+            if (e.getMessage() == null || !e.getMessage().contains("NOSCRIPT")) {
+                throw e;
+            }
+            // the server lost its scripts, e.g. after a restart
+            setTaskIfStatusSha = null;
+            result = jedisProxy.evalsha(setTaskIfStatusSha(key), List.of(key), args);
+        }
+        if (result == null) {
+            // a store without scripts (the in-memory one): check, then write
+            return ExecutionDAO.super.updateTaskIfStatus(task, expected);
+        }
+        if (((Number) result).longValue() == 0) {
+            return false;
+        }
+        updateTask(task, false);
+        return true;
+    }
+
+    private String setTaskIfStatusSha(String key) {
+        if (setTaskIfStatusSha == null) {
+            byte[] sha =
+                    jedisProxy.scriptLoad(
+                            SET_TASK_IF_STATUS.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                            key.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            setTaskIfStatusSha = new String(sha, java.nio.charset.StandardCharsets.UTF_8);
+        }
+        return setTaskIfStatusSha;
+    }
+
+    /** Updates the task; {@code save} false when its payload was already saved. */
+    private void updateTask(TaskModel task, boolean save) {
         Optional<TaskDef> taskDefinition = task.getTaskDefinition();
 
         if (taskDefinition.isPresent() && taskDefinition.get().concurrencyLimit() > 0) {
@@ -251,7 +301,9 @@ public class RedisExecutionDAO extends BaseDynoDAO
                 task.getWorkflowType());
 
         recordRedisDaoRequests("updateTask", task.getTaskType(), task.getWorkflowType());
-        jedisProxy.set(nsKey(TASK, task.getTaskId()), payload);
+        if (save) {
+            jedisProxy.set(nsKey(TASK, task.getTaskId()), payload);
+        }
         LOGGER.debug(
                 "Workflow task payload saved to TASK with taskKey: {}, workflowId: {}, taskId: {}, taskType: {} during updateTask",
                 nsKey(TASK, task.getTaskId()),
