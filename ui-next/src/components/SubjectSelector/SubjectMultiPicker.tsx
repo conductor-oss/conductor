@@ -86,8 +86,8 @@ export const SubjectMultiPicker: FunctionComponent<SubjectMultiPickerProps> = ({
           }
         }
       }}
-      renderOption={(props, option) => (
-        <ListItem disablePadding {...props}>
+      renderOption={({ key, ...props }, option) => (
+        <ListItem key={key} disablePadding {...props}>
           <ListItemText primary={option.display} />
         </ListItem>
       )}

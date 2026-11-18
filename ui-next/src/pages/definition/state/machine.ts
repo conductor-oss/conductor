@@ -69,6 +69,8 @@ export const workflowDefinitionMachine = createMachine<
         severity: undefined,
       },
       localCopyMessage: undefined,
+      localBackupFailed: false,
+      localBackupWarningDismissed: false,
       openedTab: WORKFLOW_TAB,
       previousTab: WORKFLOW_TAB,
       lastPerformedOperation: undefined,
@@ -1124,6 +1126,9 @@ export const workflowDefinitionMachine = createMachine<
               [LocalCopyMachineEventTypes.REMOVE_LOCAL_COPY]: {
                 target: ".removeWorkflowFromStorage",
               },
+              [DefinitionMachineEventTypes.DISMISS_LOCAL_BACKUP_WARNING_EVT]: {
+                actions: ["dismissLocalBackupWarning"],
+              },
             },
             initial: "cleanLocalCopyMessage",
             states: {
@@ -1132,6 +1137,11 @@ export const workflowDefinitionMachine = createMachine<
                 invoke: {
                   src: "persistCopyInLocalStorage",
                   onDone: {
+                    actions: ["clearLocalBackupFailed"],
+                    target: "idle",
+                  },
+                  onError: {
+                    actions: ["setLocalBackupFailed"],
                     target: "idle",
                   },
                 },

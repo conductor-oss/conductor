@@ -8,10 +8,10 @@
  * OSS LLM chat/text forms use plain Instructions / Prompt textareas (not the
  * enterprise prompt-template picker).
  *
- * Execution tests require OPENAI_API_KEY (Playwright loads ui-next/.env.local).
- * docker-compose-ui-e2e.yaml forwards it into the server at `compose up` time.
- * Without a key they are skipped. If the server was started earlier without a
- * key (SKIP_DOCKER), recreate the container after adding the key.
+ * Execution tests run against the mock-openai stub (e2e/integration/mock-openai),
+ * which the e2e compose files wire in as the server's OpenAI base URL. Its canned
+ * replies ("4", "HELLO") are what the assertions below expect. If you point the
+ * stack at real OpenAI (E2E_OPENAI_BASE_URL), the same assertions still apply.
  */
 
 import type { Locator } from "@playwright/test";
@@ -27,12 +27,9 @@ import {
 } from "./api-client";
 
 const RUN_ID = Date.now();
-const HAS_OPENAI = Boolean(process.env.OPENAI_API_KEY?.trim());
-const OPENAI_SKIP_REASON =
-  "OPENAI_API_KEY is required for successful LLM workflow execution";
-/** Live OpenAI calls can be slow under CI load — keep generous headroom. */
+/** Generous headroom in case the stack is pointed at real OpenAI. */
 const LLM_EXECUTION_TIMEOUT_MS = 180_000;
-/** One retry covers transient provider 5xx / rate-limit failures. */
+/** One retry covers transient provider 5xx / rate-limit failures (real OpenAI only). */
 const LLM_EXECUTION_ATTEMPTS = 2;
 
 const CHAT_INSTRUCTIONS =
@@ -597,7 +594,6 @@ test("clicking LLM_CHAT_COMPLETE with tools opens the task form", async ({
 test("LLM_CHAT_COMPLETE workflow execution completes successfully", async ({
   page,
 }) => {
-  test.skip(!HAS_OPENAI, OPENAI_SKIP_REASON);
   test.setTimeout(LLM_EXECUTION_TIMEOUT_MS * LLM_EXECUTION_ATTEMPTS + 60_000);
 
   const { workflowId, wf } = await runLlmWorkflowToCompletion(
@@ -633,7 +629,6 @@ test("LLM_CHAT_COMPLETE workflow execution completes successfully", async ({
 test("LLM_TEXT_COMPLETE workflow execution completes successfully", async ({
   page,
 }) => {
-  test.skip(!HAS_OPENAI, OPENAI_SKIP_REASON);
   test.setTimeout(LLM_EXECUTION_TIMEOUT_MS * LLM_EXECUTION_ATTEMPTS + 60_000);
 
   const { workflowId, wf } = await runLlmWorkflowToCompletion(
@@ -669,7 +664,6 @@ test("LLM_TEXT_COMPLETE workflow execution completes successfully", async ({
 test("LLM_CHAT_COMPLETE completed execution appears in the executions search", async ({
   page,
 }) => {
-  test.skip(!HAS_OPENAI, OPENAI_SKIP_REASON);
   test.setTimeout(LLM_EXECUTION_TIMEOUT_MS * LLM_EXECUTION_ATTEMPTS + 60_000);
 
   const { workflowId } = await runLlmWorkflowToCompletion(

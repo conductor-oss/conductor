@@ -1374,7 +1374,7 @@ public class TestWorkflowExecutor {
     }
 
     @Test
-    public void aNativeTaskUpdateTakesNoLockAndIsSavedOnlyIfTheTaskIsAsRead() {
+    public void aTaskUpdateTakesNoLockAndIsSavedOnlyIfTheTaskIsAsRead() {
         // Found by the durability bench: a late completion overwrote a timeout that decide had
         // just applied, so a superseded attempt counted as completed next to its retry. The
         // update is saved only if the task is still as it was read.
@@ -1382,7 +1382,7 @@ public class TestWorkflowExecutor {
         workflow.setWorkflowId("wf-n");
         workflow.setStatus(WorkflowModel.Status.RUNNING);
         WorkflowDef def = new WorkflowDef();
-        def.setName("native-lock");
+        def.setName("lock");
         workflow.setWorkflowDefinition(def);
         when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
         TaskModel task = new TaskModel();

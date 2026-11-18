@@ -16,8 +16,8 @@ import { tmpdir } from "os";
 import { fileURLToPath } from "url";
 import { loadIntegrationEnv } from "./load-env";
 
-// Ensure OPENAI_API_KEY from .env.local is in process.env before `compose up`
-// interpolates ${OPENAI_API_KEY:-} into the server container.
+// Load .env.local into process.env before `compose up` so any overrides there
+// (e.g. E2E_OPENAI_BASE_URL / OPENAI_API_KEY for real OpenAI) reach the server.
 loadIntegrationEnv();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
