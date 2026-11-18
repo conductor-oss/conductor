@@ -2726,6 +2726,9 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
 
     @Override
     public String startWorkflow(StartWorkflowInput input) {
+        if (StringUtils.isNotBlank(input.getIdempotencyKey())) {
+            return startWorkflowWithIdempotencyKey(input);
+        }
         WorkflowDef workflowDefinition = resolveWorkflowDefinition(input);
         String workflowId =
                 Optional.ofNullable(input.getWorkflowId()).orElseGet(idGenerator::generate);
@@ -2755,6 +2758,38 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             }
             throw e;
         }
+    }
+
+    /**
+     * A start that carries an idempotency key maps to a workflow id derived from the workflow name
+     * and the key, and goes through {@link #startWorkflowIdempotent}, so repeating the request
+     * returns the execution the first request created. With strategy FAIL a repeat is a conflict.
+     */
+    private String startWorkflowWithIdempotencyKey(StartWorkflowInput input) {
+        if (StringUtils.isBlank(input.getWorkflowId())) {
+            String name =
+                    input.getWorkflowDefinition() != null
+                            ? input.getWorkflowDefinition().getName()
+                            : input.getName();
+            input.setWorkflowId(
+                    UUID.nameUUIDFromBytes(
+                                    (name + ":" + input.getIdempotencyKey())
+                                            .getBytes(StandardCharsets.UTF_8))
+                            .toString());
+        }
+        if (input.getIdempotencyStrategy() == IdempotencyStrategy.FAIL) {
+            try {
+                executionDAOFacade.getWorkflowModelFromExecutionDAO(input.getWorkflowId(), false);
+                throw new ConflictException(
+                        "Workflow with idempotency key "
+                                + input.getIdempotencyKey()
+                                + " already exists: "
+                                + input.getWorkflowId());
+            } catch (NotFoundException expected) {
+                // first start with this key
+            }
+        }
+        return startWorkflowIdempotent(input).getWorkflowId();
     }
 
     @Override

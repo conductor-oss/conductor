@@ -39,6 +39,7 @@ import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
+import com.netflix.conductor.common.metadata.workflow.IdempotencyStrategy;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
@@ -1029,6 +1030,123 @@ public class TestWorkflowExecutor {
         verify(executionDAOFacade).createWorkflow(any());
         verify(executionDAOFacade, never()).getWorkflowModel("new-workflow-id", false);
         verify(executionLockService, atLeastOnce()).releaseLock("new-workflow-id");
+    }
+
+    private StartWorkflowInput startWithIdempotencyKey(String workflowName, String key) {
+        var workflowDef = new WorkflowDef();
+        workflowDef.setName(workflowName);
+        workflowDef.setVersion(1);
+
+        var input = new StartWorkflowInput();
+        input.setWorkflowDefinition(workflowDef);
+        input.setName(workflowName);
+        input.setVersion(1);
+        input.setWorkflowInput(Collections.emptyMap());
+        input.setIdempotencyKey(key);
+        return input;
+    }
+
+    private static String idempotentWorkflowId(String workflowName, String key) {
+        return UUID.nameUUIDFromBytes((workflowName + ":" + key).getBytes(StandardCharsets.UTF_8))
+                .toString();
+    }
+
+    @Test
+    public void startWithIdempotencyKeyCreatesWorkflowWithIdFromNameAndKey() {
+        var workflowId = idempotentWorkflowId("order", "key-1");
+        when(executionLockService.acquireLock(workflowId)).thenReturn(true);
+        when(executionDAOFacade.getWorkflowModelFromExecutionDAO(workflowId, false))
+                .thenThrow(new NotFoundException("missing"));
+
+        var started = workflowExecutor.startWorkflow(startWithIdempotencyKey("order", "key-1"));
+
+        assertEquals(workflowId, started);
+        var created = ArgumentCaptor.forClass(WorkflowModel.class);
+        verify(executionDAOFacade).createWorkflow(created.capture());
+        assertEquals(workflowId, created.getValue().getWorkflowId());
+        verify(executionLockService, atLeastOnce()).releaseLock(workflowId);
+    }
+
+    @Test
+    public void startWithSameIdempotencyKeyReturnsExistingWorkflow() {
+        var workflowId = idempotentWorkflowId("order", "key-1");
+        var existing = new WorkflowModel();
+        existing.setWorkflowId(workflowId);
+        when(executionLockService.acquireLock(workflowId)).thenReturn(true);
+        when(executionDAOFacade.getWorkflowModelFromExecutionDAO(workflowId, false))
+                .thenReturn(existing);
+
+        var started = workflowExecutor.startWorkflow(startWithIdempotencyKey("order", "key-1"));
+
+        assertEquals(workflowId, started);
+        verify(executionDAOFacade, never()).createWorkflow(any());
+    }
+
+    @Test
+    public void startWithIdempotencyKeyGivesDifferentIdsForDifferentKeysAndNames() {
+        when(executionLockService.acquireLock(anyString())).thenReturn(true);
+        when(executionDAOFacade.getWorkflowModelFromExecutionDAO(anyString(), eq(false)))
+                .thenThrow(new NotFoundException("missing"));
+
+        var first = workflowExecutor.startWorkflow(startWithIdempotencyKey("order", "key-1"));
+        var otherKey = workflowExecutor.startWorkflow(startWithIdempotencyKey("order", "key-2"));
+        var otherName = workflowExecutor.startWorkflow(startWithIdempotencyKey("refund", "key-1"));
+
+        assertEquals(idempotentWorkflowId("order", "key-1"), first);
+        assertEquals(idempotentWorkflowId("order", "key-2"), otherKey);
+        assertEquals(idempotentWorkflowId("refund", "key-1"), otherName);
+        assertNotEquals(first, otherKey);
+        assertNotEquals(first, otherName);
+    }
+
+    @Test
+    public void startWithIdempotencyKeyAndFailStrategyRejectsSecondStart() {
+        var workflowId = idempotentWorkflowId("order", "key-1");
+        var existing = new WorkflowModel();
+        existing.setWorkflowId(workflowId);
+        when(executionDAOFacade.getWorkflowModelFromExecutionDAO(workflowId, false))
+                .thenReturn(existing);
+        var input = startWithIdempotencyKey("order", "key-1");
+        input.setIdempotencyStrategy(IdempotencyStrategy.FAIL);
+
+        assertThrows(ConflictException.class, () -> workflowExecutor.startWorkflow(input));
+        verify(executionDAOFacade, never()).createWorkflow(any());
+    }
+
+    @Test
+    public void startWithIdempotencyKeyAndFailStrategyCreatesFirstWorkflow() {
+        var workflowId = idempotentWorkflowId("order", "key-1");
+        when(executionLockService.acquireLock(workflowId)).thenReturn(true);
+        when(executionDAOFacade.getWorkflowModelFromExecutionDAO(workflowId, false))
+                .thenThrow(new NotFoundException("missing"));
+        var input = startWithIdempotencyKey("order", "key-1");
+        input.setIdempotencyStrategy(IdempotencyStrategy.FAIL);
+
+        assertEquals(workflowId, workflowExecutor.startWorkflow(input));
+        verify(executionDAOFacade).createWorkflow(any());
+    }
+
+    @Test
+    public void startWithIdempotencyKeyKeepsWorkflowIdFromTheCaller() {
+        when(executionLockService.acquireLock("caller-id")).thenReturn(true);
+        when(executionDAOFacade.getWorkflowModelFromExecutionDAO("caller-id", false))
+                .thenThrow(new NotFoundException("missing"));
+        var input = startWithIdempotencyKey("order", "key-1");
+        input.setWorkflowId("caller-id");
+
+        assertEquals("caller-id", workflowExecutor.startWorkflow(input));
+        verify(executionDAOFacade).getWorkflowModelFromExecutionDAO("caller-id", false);
+    }
+
+    @Test
+    public void startWithoutIdempotencyKeyDoesNotReadAnExistingWorkflow() {
+        when(executionLockService.acquireLock(anyString())).thenReturn(true);
+
+        workflowExecutor.startWorkflow(startWithIdempotencyKey("order", null));
+
+        verify(executionDAOFacade, never())
+                .getWorkflowModelFromExecutionDAO(anyString(), eq(false));
+        verify(executionDAOFacade).createWorkflow(any());
     }
 
     @Test
