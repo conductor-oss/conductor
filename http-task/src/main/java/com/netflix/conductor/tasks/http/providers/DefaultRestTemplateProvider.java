@@ -13,7 +13,10 @@
 package com.netflix.conductor.tasks.http.providers;
 
 import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.config.ConnectionConfig;
@@ -21,6 +24,7 @@ import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.core5.util.TimeValue;
 import org.apache.hc.core5.util.Timeout;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.restclient.RestTemplateBuilder;
@@ -38,15 +42,19 @@ import com.netflix.conductor.tasks.http.HttpTask;
 @Component
 public class DefaultRestTemplateProvider implements RestTemplateProvider {
 
-    private final ThreadLocal<RestTemplateBuilder> threadLocalRestTemplateBuilder;
+    /** Pool size of each client. Shared by every HTTP task call with the same timeouts. */
+    private static final int MAX_CONNECTIONS = 500;
 
     private final int defaultReadTimeout;
     private final int defaultConnectTimeout;
 
+    // One client per (read, connect) timeout pair. Building a client per call re-scanned the
+    // classpath for Jackson modules and opened a new connection every time.
+    private final Map<List<Integer>, RestTemplate> restTemplates = new ConcurrentHashMap<>();
+
     public DefaultRestTemplateProvider(
             @Value("${conductor.tasks.http.readTimeout:150ms}") Duration readTimeout,
             @Value("${conductor.tasks.http.connectTimeout:100ms}") Duration connectTimeout) {
-        this.threadLocalRestTemplateBuilder = ThreadLocal.withInitial(RestTemplateBuilder::new);
         this.defaultReadTimeout = (int) readTimeout.toMillis();
         this.defaultConnectTimeout = (int) connectTimeout.toMillis();
     }
@@ -57,10 +65,14 @@ public class DefaultRestTemplateProvider implements RestTemplateProvider {
                 Optional.ofNullable(input.getReadTimeOut()).orElse(defaultReadTimeout);
         int connectTimeoutMillis =
                 Optional.ofNullable(input.getConnectionTimeOut()).orElse(defaultConnectTimeout);
-        Duration readTimeout = Duration.ofMillis(readTimeoutMillis);
+        return restTemplates.computeIfAbsent(
+                List.of(readTimeoutMillis, connectTimeoutMillis),
+                key -> newRestTemplate(readTimeoutMillis, connectTimeoutMillis));
+    }
 
+    private static RestTemplate newRestTemplate(int readTimeoutMillis, int connectTimeoutMillis) {
         RestTemplate restTemplate =
-                threadLocalRestTemplateBuilder.get().readTimeout(readTimeout).build();
+                new RestTemplateBuilder().readTimeout(Duration.ofMillis(readTimeoutMillis)).build();
 
         // The connect timeout belongs on the connection manager rather than the request factory:
         // Framework 7 dropped HttpComponentsClientHttpRequestFactory.setConnectTimeout, since
@@ -73,6 +85,8 @@ public class DefaultRestTemplateProvider implements RestTemplateProvider {
         PoolingHttpClientConnectionManager connectionManager =
                 PoolingHttpClientConnectionManagerBuilder.create()
                         .setDefaultConnectionConfig(connectionConfig)
+                        .setMaxConnTotal(MAX_CONNECTIONS)
+                        .setMaxConnPerRoute(MAX_CONNECTIONS)
                         .build();
         RequestConfig requestConfig =
                 RequestConfig.custom()
@@ -82,6 +96,7 @@ public class DefaultRestTemplateProvider implements RestTemplateProvider {
                 HttpClients.custom()
                         .setConnectionManager(connectionManager)
                         .setDefaultRequestConfig(requestConfig)
+                        .evictIdleConnections(TimeValue.ofSeconds(30))
                         .build();
         restTemplate.setRequestFactory(new HttpComponentsClientHttpRequestFactory(httpClient));
         return restTemplate;
