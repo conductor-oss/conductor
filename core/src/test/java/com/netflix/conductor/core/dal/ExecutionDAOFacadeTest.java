@@ -23,6 +23,7 @@ import org.apache.commons.io.IOUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.InOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -74,7 +75,7 @@ public class ExecutionDAOFacadeTest {
         when(properties.isEventExecutionIndexingEnabled()).thenReturn(true);
         when(properties.isAsyncIndexingEnabled()).thenReturn(true);
         when(properties.isTaskIndexingEnabled()).thenReturn(true);
-        when(properties.getWorkflowOffsetTimeout()).thenReturn(java.time.Duration.ofSeconds(30));
+        when(properties.getWorkflowOffsetTimeout()).thenReturn(Duration.ofSeconds(30));
         executionDAOFacade =
                 new ExecutionDAOFacade(
                         executionDAO,
@@ -97,10 +98,9 @@ public class ExecutionDAOFacadeTest {
     public void createWorkflowQueuesBeforeItWritesTheWorkflow() {
         WorkflowModel workflow = new WorkflowModel();
         workflow.setWorkflowId("wf-order");
-        workflow.setWorkflowDefinition(
-                new com.netflix.conductor.common.metadata.workflow.WorkflowDef());
+        workflow.setWorkflowDefinition(new WorkflowDef());
         executionDAOFacade.createWorkflow(workflow);
-        org.mockito.InOrder order = org.mockito.Mockito.inOrder(queueDAO, executionDAO);
+        InOrder order = inOrder(queueDAO, executionDAO);
         order.verify(queueDAO).push(eq("_deciderQueue"), eq("wf-order"), anyInt(), eq(30L));
         order.verify(executionDAO).createWorkflow(workflow);
     }

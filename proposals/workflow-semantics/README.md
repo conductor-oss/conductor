@@ -1,8 +1,7 @@
 # What a workflow means: a TLA+ specification
 
 `Workflow.tla` states what a Conductor workflow means, independent of how the server runs it. It is
-the reference that implementations are checked against: the server's decider today, and native
-workflows, whose code supplies the program as it runs.
+the reference that the server's decider is checked against.
 
 A workflow is a program: a sequence of tasks. A leaf task is run by someone else: a worker, an HTTP
 call, an event, a person, or a wait. Every other task composes tasks:

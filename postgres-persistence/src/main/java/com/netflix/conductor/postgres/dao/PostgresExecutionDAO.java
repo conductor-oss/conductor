@@ -19,6 +19,7 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
@@ -190,8 +191,7 @@ public class PostgresExecutionDAO extends PostgresBaseDAO
         // rest of the update commits
         String UPDATE_TASK_IF_STATUS =
                 "UPDATE task SET json_data=?, modified_on=CURRENT_TIMESTAMP WHERE task_id=? AND json_data::jsonb->>'status' = ?";
-        java.util.concurrent.atomic.AtomicBoolean updated =
-                new java.util.concurrent.atomic.AtomicBoolean();
+        AtomicBoolean updated = new AtomicBoolean();
         withTransaction(
                 connection -> {
                     int rows =

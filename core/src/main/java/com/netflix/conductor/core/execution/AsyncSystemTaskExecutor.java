@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.core.config.ConductorProperties;
@@ -279,8 +280,7 @@ public class AsyncSystemTaskExecutor {
     private boolean completedElsewhere(TaskModel task) {
         try {
             // the stored row only; no payloads needed to read the status
-            com.netflix.conductor.common.metadata.tasks.Task stored =
-                    executionDAOFacade.getTask(task.getTaskId());
+            Task stored = executionDAOFacade.getTask(task.getTaskId());
             return stored != null && stored.getStatus().isTerminal();
         } catch (Exception e) {
             return false; // cannot tell: save as before

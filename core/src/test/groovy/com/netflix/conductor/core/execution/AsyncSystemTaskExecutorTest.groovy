@@ -14,6 +14,7 @@ package com.netflix.conductor.core.execution
 
 import java.time.Duration
 
+import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskDef
 import com.netflix.conductor.core.config.ConductorProperties
 import com.netflix.conductor.core.dal.ExecutionDAOFacade
@@ -311,8 +312,8 @@ class AsyncSystemTaskExecutorTest extends Specification {
                 taskDefName: "taskDefName", workflowPriority: 10, responseTimeoutSeconds: 120)
         WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
         String queueName = QueueUtils.getQueueName(task)
-        def completedByTheOtherRun = new com.netflix.conductor.common.metadata.tasks.Task(taskId: taskId,
-                status: com.netflix.conductor.common.metadata.tasks.Task.Status.COMPLETED)
+        def completedByTheOtherRun = new Task(taskId: taskId,
+                status: Task.Status.COMPLETED)
 
         when:
         executor.execute(workflowSystemTask, taskId)

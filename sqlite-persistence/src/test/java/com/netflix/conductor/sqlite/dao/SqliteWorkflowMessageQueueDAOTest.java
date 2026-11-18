@@ -15,9 +15,17 @@ package com.netflix.conductor.sqlite.dao;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
 import org.sqlite.SQLiteDataSource;
@@ -48,7 +56,7 @@ public class SqliteWorkflowMessageQueueDAOTest {
                 if (!sql.isEmpty()) {
                     try {
                         s.execute(sql);
-                    } catch (java.sql.SQLException e) {
+                    } catch (SQLException e) {
                         // the same file migrated again, as after a restart
                         if (!String.valueOf(e.getMessage()).contains("duplicate column")) {
                             throw e;
@@ -113,12 +121,10 @@ public class SqliteWorkflowMessageQueueDAOTest {
         JdbcWorkflowMessageQueueDAO dao = dao(wal, 100_000);
 
         int writers = 4, perWriter = 100, total = writers * perWriter;
-        java.util.Set<String> seen = java.util.concurrent.ConcurrentHashMap.newKeySet();
-        java.util.concurrent.atomic.AtomicInteger duplicates =
-                new java.util.concurrent.atomic.AtomicInteger();
-        java.util.concurrent.ExecutorService pool =
-                java.util.concurrent.Executors.newFixedThreadPool(writers + 3);
-        java.util.List<java.util.concurrent.Future<?>> futures = new java.util.ArrayList<>();
+        Set<String> seen = ConcurrentHashMap.newKeySet();
+        AtomicInteger duplicates = new AtomicInteger();
+        ExecutorService pool = Executors.newFixedThreadPool(writers + 3);
+        List<Future<?>> futures = new ArrayList<>();
         for (int w = 0; w < writers; w++) {
             int writer = w;
             futures.add(
@@ -144,7 +150,7 @@ public class SqliteWorkflowMessageQueueDAOTest {
                                 }
                             }));
         }
-        for (java.util.concurrent.Future<?> f : futures) {
+        for (Future<?> f : futures) {
             f.get(); // rethrows any exception from the DAO
         }
         pool.shutdown();
@@ -156,7 +162,7 @@ public class SqliteWorkflowMessageQueueDAOTest {
     /**
      * A pull that runs again, because its server died mid-run or two servers ran it at once, gets
      * the messages the first run claimed; the next pull acknowledges them. Found by the durability
-     * bench on a three-server cluster: a pull reserved for an hour stalled the handler lane.
+     * bench on a three-server cluster: a pull reserved for an hour stalled the workflow's messages.
      */
     @Test
     public void claimsAreRepeatableAndAcknowledgedByTheNextClaimant() throws Exception {

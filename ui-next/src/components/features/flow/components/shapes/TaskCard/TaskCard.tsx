@@ -81,7 +81,8 @@ const TaskCard = ({
   const agentPresentation =
     type === TaskType.AGENT ? getAgentTaskPresentation(task) : undefined;
   // An agent with no card snapshot at all comes from a definition the editor never saved, such as
-  // one written in code; in a run the server found it, so it is not shown as unresolved there.
+  // one registered through an SDK; in a run the server found it, so it is not shown as unresolved
+  // there.
   // A snapshot the editor could not resolve still is.
   const unresolved =
     agentPresentation?.unresolved && !(inExecution && !task.metadata?.agent);

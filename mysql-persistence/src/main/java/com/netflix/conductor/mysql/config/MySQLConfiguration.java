@@ -32,10 +32,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.retry.RetryPolicy;
 import org.springframework.core.retry.RetryTemplate;
 
+import com.netflix.conductor.core.config.WorkflowMessageQueueProperties;
+import com.netflix.conductor.core.dao.JdbcWorkflowMessageQueueDAO;
 import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.dao.WorkflowMessageQueueDAO;
 import com.netflix.conductor.mysql.dao.MySQLExecutionDAO;
 import com.netflix.conductor.mysql.dao.MySQLMetadataDAO;
 import com.netflix.conductor.mysql.dao.MySQLQueueDAO;
@@ -94,15 +98,14 @@ public class MySQLConfiguration {
      * so signals, updates and queries pushed to running workflows survive a server restart.
      */
     @Bean
-    @org.springframework.context.annotation.Primary
+    @Primary
     @DependsOn({"flyway", "flywayInitializer"})
     @ConditionalOnProperty(name = "conductor.workflow-message-queue.enabled", havingValue = "true")
-    public com.netflix.conductor.dao.WorkflowMessageQueueDAO mySqlWorkflowMessageQueueDAO(
+    public WorkflowMessageQueueDAO mySqlWorkflowMessageQueueDAO(
             ObjectMapper objectMapper,
             DataSource dataSource,
-            com.netflix.conductor.core.config.WorkflowMessageQueueProperties properties) {
-        return new com.netflix.conductor.core.dao.JdbcWorkflowMessageQueueDAO(
-                dataSource, objectMapper, properties, true);
+            WorkflowMessageQueueProperties properties) {
+        return new JdbcWorkflowMessageQueueDAO(dataSource, objectMapper, properties, true);
     }
 
     @Bean

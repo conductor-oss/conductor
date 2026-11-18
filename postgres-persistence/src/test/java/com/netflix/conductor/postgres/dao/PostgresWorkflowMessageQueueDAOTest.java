@@ -12,8 +12,16 @@
  */
 package com.netflix.conductor.postgres.dao;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import javax.sql.DataSource;
 
@@ -100,15 +108,13 @@ public class PostgresWorkflowMessageQueueDAOTest {
      */
     @Test
     public void concurrentClaimsBySamePullGetTheSameMessages() throws Exception {
-        String wf = "wf-claims-" + java.util.UUID.randomUUID();
+        String wf = "wf-claims-" + UUID.randomUUID();
         for (int i = 0; i < 10; i++) { // the test queue holds 10
             dao.push(wf, message("m" + i, wf));
         }
-        java.util.concurrent.ExecutorService pool =
-                java.util.concurrent.Executors.newFixedThreadPool(8);
-        java.util.concurrent.CountDownLatch go = new java.util.concurrent.CountDownLatch(1);
-        java.util.List<java.util.concurrent.Future<java.util.List<String>>> runs =
-                new java.util.ArrayList<>();
+        ExecutorService pool = Executors.newFixedThreadPool(8);
+        CountDownLatch go = new CountDownLatch(1);
+        List<Future<List<String>>> runs = new ArrayList<>();
         for (int i = 0; i < 8; i++) {
             runs.add(
                     pool.submit(
@@ -120,21 +126,21 @@ public class PostgresWorkflowMessageQueueDAOTest {
                             }));
         }
         go.countDown();
-        java.util.Set<java.util.List<String>> distinct = new java.util.HashSet<>();
-        for (java.util.concurrent.Future<java.util.List<String>> r : runs) {
+        Set<List<String>> distinct = new HashSet<>();
+        for (Future<List<String>> r : runs) {
             distinct.add(r.get());
         }
         pool.shutdown();
-        assertEquals(java.util.Set.of(java.util.List.of("m0", "m1", "m2", "m3", "m4")), distinct);
+        assertEquals(Set.of(List.of("m0", "m1", "m2", "m3", "m4")), distinct);
         assertEquals(
-                java.util.List.of("m5", "m6", "m7", "m8", "m9"),
+                List.of("m5", "m6", "m7", "m8", "m9"),
                 dao.claim(wf, 5, "signal__2").stream().map(WorkflowMessage::getId).toList());
         assertEquals(5, dao.size(wf)); // m0..m4 acknowledged by the second pull
     }
 
     @Test
     public void aStalePullTakesNoNewMessages() {
-        String wf = "wf-fence-" + java.util.UUID.randomUUID();
+        String wf = "wf-fence-" + UUID.randomUUID();
         dao.push(wf, message("a", wf));
         assertEquals(1, dao.claim(wf, 5, "signal__10", 10).size());
         assertTrue(dao.claim(wf, 5, "signal__11", 11).isEmpty());

@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.redis.dao;
 
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -237,9 +238,9 @@ public class RedisExecutionDAO extends BaseDynoDAO
         if (setTaskIfStatusSha == null) {
             byte[] sha =
                     jedisProxy.scriptLoad(
-                            SET_TASK_IF_STATUS.getBytes(java.nio.charset.StandardCharsets.UTF_8),
-                            key.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-            setTaskIfStatusSha = new String(sha, java.nio.charset.StandardCharsets.UTF_8);
+                            SET_TASK_IF_STATUS.getBytes(StandardCharsets.UTF_8),
+                            key.getBytes(StandardCharsets.UTF_8));
+            setTaskIfStatusSha = new String(sha, StandardCharsets.UTF_8);
         }
         return setTaskIfStatusSha;
     }

@@ -18,6 +18,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TreeMap;
 
 import javax.sql.DataSource;
 
@@ -160,7 +161,7 @@ public class JdbcWorkflowMessageQueueDAO implements WorkflowMessageQueueDAO {
     private List<WorkflowMessage> popSingleStatement(String workflowId, int maxCount) {
         return inTransaction(
                 c -> {
-                    java.util.TreeMap<Long, WorkflowMessage> bySeq = new java.util.TreeMap<>();
+                    TreeMap<Long, WorkflowMessage> bySeq = new TreeMap<>();
                     try (PreparedStatement ps =
                             c.prepareStatement(
                                     "DELETE FROM workflow_message_queue WHERE seq IN (SELECT seq FROM"

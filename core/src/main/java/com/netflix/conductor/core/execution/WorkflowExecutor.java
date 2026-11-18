@@ -27,6 +27,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
+import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -120,8 +121,7 @@ public interface WorkflowExecutor {
      * @param workflowId id of the workflow to change and evaluate
      * @param change what to do to the workflow, read with its tasks, before deciding
      * @return updated workflow
-     * @throws com.netflix.conductor.core.exception.TransientException when another decide holds the
-     *     workflow
+     * @throws TransientException when another decide holds the workflow
      */
     WorkflowModel decide(String workflowId, Consumer<WorkflowModel> change);
 

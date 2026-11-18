@@ -12,8 +12,16 @@
  */
 package com.netflix.conductor.mysql.dao;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import javax.sql.DataSource;
 
@@ -83,7 +91,7 @@ public class MySQLWorkflowMessageQueueDAOTest {
 
     @Test
     public void popReturnsMessagesOnceInOrder() {
-        String wf = "my-pop-" + java.util.UUID.randomUUID();
+        String wf = "my-pop-" + UUID.randomUUID();
         dao.push(wf, message("a", wf));
         dao.push(wf, message("b", wf));
         assertEquals(List.of("a"), ids(dao.pop(wf, 1)));
@@ -93,7 +101,7 @@ public class MySQLWorkflowMessageQueueDAOTest {
 
     @Test
     public void claimsAreRepeatableFencedAndAcknowledged() {
-        String wf = "my-claims-" + java.util.UUID.randomUUID();
+        String wf = "my-claims-" + UUID.randomUUID();
         dao.push(wf, message("a", wf));
         dao.push(wf, message("b", wf));
         assertEquals(List.of("a", "b"), ids(dao.claim(wf, 5, "signal__1", 1)));
@@ -108,14 +116,13 @@ public class MySQLWorkflowMessageQueueDAOTest {
 
     @Test
     public void concurrentClaimsBySamePullGetTheSameMessages() throws Exception {
-        String wf = "my-concurrent-" + java.util.UUID.randomUUID();
+        String wf = "my-concurrent-" + UUID.randomUUID();
         for (int i = 0; i < 10; i++) {
             dao.push(wf, message("m" + i, wf));
         }
-        java.util.concurrent.ExecutorService pool =
-                java.util.concurrent.Executors.newFixedThreadPool(8);
-        java.util.concurrent.CountDownLatch go = new java.util.concurrent.CountDownLatch(1);
-        List<java.util.concurrent.Future<List<String>>> runs = new java.util.ArrayList<>();
+        ExecutorService pool = Executors.newFixedThreadPool(8);
+        CountDownLatch go = new CountDownLatch(1);
+        List<Future<List<String>>> runs = new ArrayList<>();
         for (int i = 0; i < 8; i++) {
             runs.add(
                     pool.submit(
@@ -125,11 +132,11 @@ public class MySQLWorkflowMessageQueueDAOTest {
                             }));
         }
         go.countDown();
-        java.util.Set<List<String>> distinct = new java.util.HashSet<>();
-        for (java.util.concurrent.Future<List<String>> r : runs) {
+        Set<List<String>> distinct = new HashSet<>();
+        for (Future<List<String>> r : runs) {
             distinct.add(r.get());
         }
         pool.shutdown();
-        assertEquals(java.util.Set.of(List.of("m0", "m1", "m2", "m3", "m4")), distinct);
+        assertEquals(Set.of(List.of("m0", "m1", "m2", "m3", "m4")), distinct);
     }
 }

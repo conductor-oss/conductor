@@ -1331,7 +1331,7 @@ public class TestDeciderService {
         assertEquals(TaskModel.Status.TIMED_OUT, task.getStatus());
     }
 
-    @Test(expected = com.netflix.conductor.core.exception.TerminateWorkflowException.class)
+    @Test(expected = TerminateWorkflowException.class)
     public void testResponseTimeout_timeOutWf_timesOutTheWorkflow() {
         deciderService.timeoutTask(
                 responseTimeoutOf(TaskDef.TimeoutPolicy.TIME_OUT_WF), silentAttempt());
@@ -1376,7 +1376,7 @@ public class TestDeciderService {
                     task,
                     createDefaultWorkflow());
             fail("expected the workflow to time out");
-        } catch (com.netflix.conductor.core.exception.TerminateWorkflowException e) {
+        } catch (TerminateWorkflowException e) {
             assertEquals(WorkflowModel.Status.TIMED_OUT, e.getWorkflowStatus());
             assertEquals(TaskModel.Status.TIMED_OUT, task.getStatus());
         }
