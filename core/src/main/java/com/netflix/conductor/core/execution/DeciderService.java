@@ -604,13 +604,27 @@ public class DeciderService {
             throw new TerminateWorkflowException(errMsg, status, task);
         }
 
-        // Guard: stop retrying if the total time budget across all attempts is exhausted.
-        // This is checked here (not only in checkTotalTimeout) so that a task timed out by a
-        // per-attempt policy with RETRY does not get re-queued once the total budget is gone.
-        if (taskDefinition.getTotalTimeoutSeconds() > 0 && task.getFirstScheduledTime() > 0) {
+        // Guard: stop retrying if the total time budget across all attempts is exhausted, as the
+        // timeout policy says. This is checked here (not only in checkTotalTimeout) so that a task
+        // that failed or timed out does not get re-queued once the total budget is gone. Under
+        // ALERT_ONLY the budget changes nothing. Under RETRY no attempt follows, so the task ends
+        // like one with no retries left. Under TIME_OUT_WF the workflow times out.
+        if (taskDefinition.getTotalTimeoutSeconds() > 0
+                && task.getFirstScheduledTime() > 0
+                && taskDefinition.getTimeoutPolicy() != TaskDef.TimeoutPolicy.ALERT_ONLY) {
             long totalElapsedSeconds =
                     (System.currentTimeMillis() - task.getFirstScheduledTime()) / 1000;
             if (totalElapsedSeconds >= taskDefinition.getTotalTimeoutSeconds()) {
+                boolean timeOutWorkflow =
+                        taskDefinition.getTimeoutPolicy() == TaskDef.TimeoutPolicy.TIME_OUT_WF;
+                if (!timeOutWorkflow
+                        && workflowTask != null
+                        && (workflowTask.isOptional() || workflowTask.isPermissive())) {
+                    return Optional.empty();
+                }
+                if (timeOutWorkflow) {
+                    task.setStatus(TIMED_OUT);
+                }
                 final String errMsg =
                         String.format(
                                 "Task %s/%s exceeded total timeout of %d seconds "
@@ -951,7 +965,8 @@ public class DeciderService {
         return true;
     }
 
-    private void timeoutTask(TaskDef taskDef, TaskModel task) {
+    @VisibleForTesting
+    void timeoutTask(TaskDef taskDef, TaskModel task) {
         String reason =
                 "responseTimeout: "
                         + taskDef.getResponseTimeoutSeconds()
@@ -960,8 +975,7 @@ public class DeciderService {
                         + " with Task Definition: "
                         + task.getTaskDefName();
         LOGGER.debug(reason);
-        task.setStatus(TIMED_OUT);
-        task.setReasonForIncompletion(reason);
+        timeoutTaskWithTimeoutPolicy(reason, taskDef, task);
     }
 
     public List<TaskModel> getTasksToBeScheduled(
