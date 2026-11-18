@@ -184,7 +184,7 @@ public class AsyncSystemTaskExecutor {
                     // this running task (#1321). If the reserve fails, the message stays leased at
                     // the queue's default unack timeout and would redeliver and run in parallel, so
                     // don't start it: leave the still-SCHEDULED message to redeliver and retry.
-                    if (!reserveInflightMessage(queueName, task)) {
+                    if (!reserveInflightMessage(queueName, task, systemTask)) {
                         LOGGER.warn(
                                 "Could not reserve in-flight message for {}/{}; skipping execution, will retry on redelivery",
                                 task.getTaskType(),
@@ -251,6 +251,18 @@ public class AsyncSystemTaskExecutor {
             Monitors.error(AsyncSystemTaskExecutor.class.getSimpleName(), "executeSystemTask");
             LOGGER.error("Error executing system task - {}, with id: {}", systemTask, taskId, e);
         } finally {
+            if (completedElsewhere(task)) {
+                // Another run finished this task while this one ran, e.g. this server was paused
+                // mid-run and its reservation lapsed. Writing this copy would overwrite that
+                // run's result (found by the durability bench: a stale pull overwrote a completed
+                // pull's messages). Leave the stored task as it is.
+                LOGGER.warn(
+                        "Task {}/{} was completed by another run meanwhile; not saving this run's copy",
+                        task.getTaskType(),
+                        task.getTaskId());
+                queueDAO.remove(queueName, task.getTaskId());
+                return;
+            }
             executionDAOFacade.updateTask(task);
             if (shouldRemoveTaskFromQueue) {
                 queueDAO.remove(queueName, task.getTaskId());
@@ -263,6 +275,18 @@ public class AsyncSystemTaskExecutor {
         }
     }
 
+    /** Whether the stored task is already terminal, finished by some other run of it. */
+    private boolean completedElsewhere(TaskModel task) {
+        try {
+            // the stored row only; no payloads needed to read the status
+            com.netflix.conductor.common.metadata.tasks.Task stored =
+                    executionDAOFacade.getTask(task.getTaskId());
+            return stored != null && stored.getStatus().isTerminal();
+        } catch (Exception e) {
+            return false; // cannot tell: save as before
+        }
+    }
+
     /**
      * Extend the popped message's unack lease so it stays reserved (unacked, not redelivered) for
      * the duration of the invocation (issue #1321), sized by {@link #reserveSeconds}. Returns
@@ -270,9 +294,11 @@ public class AsyncSystemTaskExecutor {
      * message is still leased at only the queue's default unack timeout and would otherwise
      * redeliver and run a second time in parallel.
      */
-    private boolean reserveInflightMessage(String queueName, TaskModel task) {
+    private boolean reserveInflightMessage(
+            String queueName, TaskModel task, WorkflowSystemTask systemTask) {
         try {
-            queueDAO.setUnackTimeout(queueName, task.getTaskId(), reserveSeconds(task) * 1000L);
+            queueDAO.setUnackTimeout(
+                    queueName, task.getTaskId(), reserveSeconds(task, systemTask) * 1000L);
             return true;
         } catch (Exception e) {
             LOGGER.error(
@@ -299,8 +325,8 @@ public class AsyncSystemTaskExecutor {
      * responseTimeout} (#1615). Others keep the full timeout so a long run is never redelivered and
      * executed twice (#1321).
      */
-    private long reserveSeconds(TaskModel task) {
-        return isStartIdempotent(task)
+    private long reserveSeconds(TaskModel task, WorkflowSystemTask systemTask) {
+        return isStartIdempotent(task) || systemTask.isExecuteIdempotent()
                 ? SHORT_RESERVE_CALLBACKS * systemTaskCallbackTime
                 : effectiveResponseTimeoutSeconds(task);
     }

@@ -1579,6 +1579,11 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
 
         try {
             boolean continueLoop = true;
+            // Set when an iteration changed the workflow but continued the loop without persisting
+            // it. A later iteration with nothing to schedule or update must still write the
+            // workflow row, or in-memory changes such as variables applied from a task completion
+            // are lost.
+            boolean workflowDirty = false;
             while (continueLoop) {
                 continueLoop = false;
 
@@ -1624,6 +1629,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
 
                 if (stateChanged) {
                     if (decideWatch.getTime() < maxRuntime) {
+                        workflowDirty = true;
                         continueLoop = true;
                         continue;
                     }
@@ -1639,8 +1645,11 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     return workflow;
                 }
 
-                if (!outcome.tasksToBeUpdated.isEmpty() || !tasksToBeScheduled.isEmpty()) {
+                if (workflowDirty
+                        || !outcome.tasksToBeUpdated.isEmpty()
+                        || !tasksToBeScheduled.isEmpty()) {
                     executionDAOFacade.updateWorkflow(workflow);
+                    workflowDirty = false;
                 }
 
                 Duration timeout = properties.getWorkflowOffsetTimeout();
@@ -2270,6 +2279,40 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         return s + getTaskDuration(s, executionDAOFacade.getTaskModel(task.getRetriedTaskId()));
     }
 
+    /**
+     * Whether a failure came from storage being briefly unavailable rather than from the workflow:
+     * a transient exception, or an SQL state for a lost connection (08), a rolled-back transaction
+     * (40, including deadlocks and serialization failures), exhausted resources (53) or a database
+     * shutting down (57P), anywhere in the cause chain.
+     */
+    @VisibleForTesting
+    static boolean isTransientStorageFailure(Throwable error) {
+        for (Throwable t = error; t != null; t = t.getCause() == t ? null : t.getCause()) {
+            if (t instanceof TransientException
+                    || t instanceof java.sql.SQLTransientException
+                    || t instanceof java.sql.SQLRecoverableException
+                    || t instanceof java.net.SocketException
+                    || t instanceof java.net.SocketTimeoutException) {
+                return true;
+            }
+            if (t instanceof java.sql.SQLException sql) {
+                String state = sql.getSQLState();
+                if (state != null
+                        && (state.startsWith("08")
+                                || state.startsWith("40")
+                                || state.startsWith("53")
+                                || state.startsWith("57P"))) {
+                    return true;
+                }
+                // HikariCP reports a connection closed under it with no SQL state
+                if (state == null && "Connection is closed".equals(sql.getMessage())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     @VisibleForTesting
     boolean scheduleTask(WorkflowModel workflow, List<TaskModel> tasks) {
         List<TaskModel> tasksToBeQueued;
@@ -2364,6 +2407,13 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                             taskIds, workflow.getWorkflowId());
             LOGGER.error(errorMsg, e);
             Monitors.error(CLASS_NAME, "scheduleTask");
+            if (isTransientStorageFailure(e)) {
+                // A lost database connection or a rolled-back transaction says nothing about the
+                // workflow. Creating tasks is idempotent, so abort this decide and let the
+                // sweeper run it again instead of terminating a healthy workflow.
+                throw new TransientException(
+                        errorMsg + " (transient storage failure; will retry)", e);
+            }
             throw new TerminateWorkflowException(errorMsg);
         }
 
@@ -2998,15 +3048,11 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             Monitors.recordWorkflowStartError(
                     workflowDefinition.getName(), WorkflowContext.get().getClientApp());
             LOGGER.error("Unable to start workflow: {}", workflowDefinition.getName(), e);
-
-            // It's possible the remove workflow call hits an exception as well, in that
-            // case we
-            // want to log both errors to help diagnosis.
-            try {
-                executionDAOFacade.removeWorkflow(workflowId, false);
-            } catch (Exception rwe) {
-                LOGGER.error("Could not remove the workflowId: " + workflowId, rwe);
-            }
+            // The workflow is not removed. Only taking the lock or writing the workflow can fail
+            // here, so the write may or may not have happened: the outcome is indefinite, and
+            // deleting could remove a workflow that was committed, queued and seen by others
+            // (Jepsen's "lost workflows" in Orkes Conductor 5.3.2). If it exists, its decider
+            // queue entry gets it evaluated; if not, the sweeper drops the entry.
             throw e;
         }
     }
@@ -3024,7 +3070,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             throw new TransientException("Error acquiring lock when creating workflow: {}");
         }
 
-        boolean createAttempted = false;
         try {
             try {
                 WorkflowModel existingWorkflow =
@@ -3039,7 +3084,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
 
             WorkflowModel workflow = createWorkflowModel(input, workflowDefinition, workflowId);
             validateSchema(inputSchemaOf(workflow.getWorkflowDefinition()), workflow.getInput());
-            createAttempted = true;
             createAndQueueEvaluationWithLock(workflow);
 
             Monitors.recordWorkflowStartSuccess(
@@ -3053,13 +3097,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             LOGGER.error(
                     "Unable to start workflow idempotently: {}", workflowDefinition.getName(), e);
 
-            try {
-                if (createAttempted) {
-                    executionDAOFacade.removeWorkflow(workflowId, false);
-                }
-            } catch (Exception rwe) {
-                LOGGER.error("Could not remove the workflowId: " + workflowId, rwe);
-            }
+            // Not removed, for the reason given in startWorkflow: a repeat of this start with the
+            // same key finds the workflow if it was written.
             throw e;
         } finally {
             executionLockService.releaseLock(workflowId);
@@ -3106,9 +3145,18 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 "A new instance of workflow: {} created with id: {}",
                 workflow.getWorkflowName(),
                 workflow.getWorkflowId());
-        executionDAOFacade.populateWorkflowAndTaskPayloadData(workflow);
-        notifyWorkflowStatusListener(workflow, WorkflowEventType.STARTED);
-        decide(workflow);
+        // From here the workflow exists and is in the decider queue, so the start has happened:
+        // a failure in the first evaluation is left to the sweeper instead of failing the start.
+        try {
+            executionDAOFacade.populateWorkflowAndTaskPayloadData(workflow);
+            notifyWorkflowStatusListener(workflow, WorkflowEventType.STARTED);
+            decide(workflow);
+        } catch (Exception e) {
+            LOGGER.error(
+                    "Workflow {} was created but its first evaluation failed; the sweeper will retry it",
+                    workflow.getWorkflowId(),
+                    e);
+        }
     }
 
     private void createAndQueueEvaluationWithLock(WorkflowModel workflow) {
@@ -3117,9 +3165,9 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 "A new instance of workflow: {} created with id: {}",
                 workflow.getWorkflowName(),
                 workflow.getWorkflowId());
-        executionDAOFacade.populateWorkflowAndTaskPayloadData(workflow);
-        notifyWorkflowStatusListener(workflow, WorkflowEventType.STARTED);
         try {
+            executionDAOFacade.populateWorkflowAndTaskPayloadData(workflow);
+            notifyWorkflowStatusListener(workflow, WorkflowEventType.STARTED);
             expediteLazyWorkflowEvaluation(workflow.getWorkflowId());
         } catch (Exception e) {
             LOGGER.warn(

@@ -261,6 +261,15 @@ public class Join extends WorkflowSystemTask {
         return Collections.unmodifiableMap(compact);
     }
 
+    /**
+     * Evaluating a JOIN only reads the state of its targets, so running it again is harmless and a
+     * JOIN whose server died mid-evaluation is picked up again in about a minute.
+     */
+    @Override
+    public boolean isExecuteIdempotent() {
+        return true;
+    }
+
     @Override
     public Optional<Long> getEvaluationOffset(TaskModel taskModel, long maxOffset) {
         // Check if joinMode is set to SYNC — read directly from the workflow task definition

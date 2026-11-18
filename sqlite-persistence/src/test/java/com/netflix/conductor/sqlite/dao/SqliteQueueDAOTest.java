@@ -218,6 +218,17 @@ public class SqliteQueueDAOTest {
      *
      * @since 1.8.2-rc5
      */
+    /** The same message id in two queues (two domains of one task type) are separate messages. */
+    @Test
+    public void poppingAMessageLeavesTheSameIdInAnotherQueueAlone() {
+        queueDAO.push("queue_a", "shared-id", 0, 0);
+        queueDAO.push("queue_b", "shared-id", 0, 0);
+
+        assertEquals(List.of("shared-id"), queueDAO.pop("queue_a", 1, 100));
+
+        assertEquals(List.of("shared-id"), queueDAO.pop("queue_b", 1, 100));
+    }
+
     @Test
     public void pollMessagesTest() {
         final List<Message> messages = new ArrayList<>();

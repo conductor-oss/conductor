@@ -494,36 +494,23 @@ public class PostgresMetadataDAO extends PostgresBaseDAO implements MetadataDAO,
     }
 
     private void insertOrUpdateWorkflowDef(Connection tx, WorkflowDef def) {
-        final String INSERT_WORKFLOW_DEF_QUERY =
-                "INSERT INTO meta_workflow_def (name, version, json_data) VALUES (?," + " ?, ?)";
+        // One statement on the (name, version) unique index, so concurrent registrations of the
+        // same definition from several servers do not race between an existence check and an
+        // insert.
+        final String UPSERT_WORKFLOW_DEF_QUERY =
+                "INSERT INTO meta_workflow_def (name, version, json_data) VALUES (?, ?, ?) "
+                        + "ON CONFLICT (name, version) DO UPDATE SET json_data = EXCLUDED.json_data, "
+                        + "modified_on = CURRENT_TIMESTAMP";
 
         Optional<Integer> version = getLatestVersion(tx, def.getName());
-        if (!workflowExists(tx, def)) {
-            execute(
-                    tx,
-                    INSERT_WORKFLOW_DEF_QUERY,
-                    q ->
-                            q.addParameter(def.getName())
-                                    .addParameter(def.getVersion())
-                                    .addJsonParameter(def)
-                                    .executeUpdate());
-        } else {
-            // @formatter:off
-            final String UPDATE_WORKFLOW_DEF_QUERY =
-                    "UPDATE meta_workflow_def "
-                            + "SET json_data = ?, modified_on = CURRENT_TIMESTAMP "
-                            + "WHERE name = ? AND version = ?";
-            // @formatter:on
-
-            execute(
-                    tx,
-                    UPDATE_WORKFLOW_DEF_QUERY,
-                    q ->
-                            q.addJsonParameter(def)
-                                    .addParameter(def.getName())
-                                    .addParameter(def.getVersion())
-                                    .executeUpdate());
-        }
+        execute(
+                tx,
+                UPSERT_WORKFLOW_DEF_QUERY,
+                q ->
+                        q.addParameter(def.getName())
+                                .addParameter(def.getVersion())
+                                .addJsonParameter(def)
+                                .executeUpdate());
         int maxVersion = def.getVersion();
         if (version.isPresent() && version.get() > def.getVersion()) {
             maxVersion = version.get();
@@ -612,32 +599,23 @@ public class PostgresMetadataDAO extends PostgresBaseDAO implements MetadataDAO,
     }
 
     private String insertOrUpdateTaskDef(TaskDef taskDef) {
-        final String UPDATE_TASKDEF_QUERY =
-                "UPDATE meta_task_def SET json_data = ?, modified_on = CURRENT_TIMESTAMP WHERE name = ?";
-
-        final String INSERT_TASKDEF_QUERY =
-                "INSERT INTO meta_task_def (name, json_data) VALUES (?, ?)";
+        // One statement, so two servers registering the same task at once both succeed. An
+        // UPDATE followed by an INSERT when nothing was updated let both insert, and the second
+        // failed on the primary key: workers registering their tasks at the same time crashed.
+        final String UPSERT_TASKDEF_QUERY =
+                "INSERT INTO meta_task_def (name, json_data) VALUES (?, ?) "
+                        + "ON CONFLICT (name) DO UPDATE SET json_data = EXCLUDED.json_data, "
+                        + "modified_on = CURRENT_TIMESTAMP";
 
         return getWithRetriedTransactions(
                 tx -> {
                     execute(
                             tx,
-                            UPDATE_TASKDEF_QUERY,
-                            update -> {
-                                int result =
-                                        update.addJsonParameter(taskDef)
-                                                .addParameter(taskDef.getName())
-                                                .executeUpdate();
-                                if (result == 0) {
-                                    execute(
-                                            tx,
-                                            INSERT_TASKDEF_QUERY,
-                                            insert ->
-                                                    insert.addParameter(taskDef.getName())
-                                                            .addJsonParameter(taskDef)
-                                                            .executeUpdate());
-                                }
-                            });
+                            UPSERT_TASKDEF_QUERY,
+                            upsert ->
+                                    upsert.addParameter(taskDef.getName())
+                                            .addJsonParameter(taskDef)
+                                            .executeUpdate());
 
                     taskDefCache.put(taskDef.getName(), taskDef);
                     return taskDef.getName();

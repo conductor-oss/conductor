@@ -268,13 +268,18 @@ public class ExecutionDAOFacade {
      */
     public String createWorkflow(WorkflowModel workflowModel) {
         externalizeWorkflowData(workflowModel);
-        executionDAO.createWorkflow(workflowModel);
-        // Add to decider queue
+        // Queue first, then the row. The other order leaves a RUNNING workflow that nothing will
+        // ever evaluate if the server dies between the two writes: the sweeper only reads the
+        // decider queue (Jepsen's "abandoned workflows" in Orkes Conductor 5.3.2). In this order
+        // a crash leaves a queue entry for a workflow that does not exist, which the sweeper
+        // removes. The entry is delayed by the offset timeout, so the sweeper does not see it
+        // before the row is written.
         queueDAO.push(
                 DECIDER_QUEUE,
                 workflowModel.getWorkflowId(),
                 workflowModel.getPriority(),
                 properties.getWorkflowOffsetTimeout().getSeconds());
+        executionDAO.createWorkflow(workflowModel);
         if (properties.isAsyncIndexingEnabled()) {
             indexDAO.asyncIndexWorkflow(new WorkflowSummary(workflowModel.toWorkflow()));
         } else {
