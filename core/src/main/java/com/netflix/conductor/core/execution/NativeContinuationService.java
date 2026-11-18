@@ -15,10 +15,12 @@ package com.netflix.conductor.core.execution;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +36,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.NativeState;
+import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.exception.ConflictException;
@@ -761,7 +764,7 @@ public class NativeContinuationService {
         }
         long now = System.currentTimeMillis();
         TaskModel thrown = new TaskModel();
-        thrown.setTaskId(java.util.UUID.randomUUID().toString());
+        thrown.setTaskId(UUID.randomUUID().toString());
         thrown.setReferenceTaskName(entry.getTaskReferenceName());
         thrown.setTaskType(TaskType.TERMINATE.name());
         thrown.setTaskDefName(entry.getName());
@@ -912,9 +915,7 @@ public class NativeContinuationService {
                 entry.collectTasks().forEach(t -> dropEntries.add(t.getTaskReferenceName()));
             }
         }
-        String ref =
-                com.netflix.conductor.common.utils.TaskUtils.removeIterationFromTaskRefName(
-                        rerunFrom.getReferenceTaskName());
+        String ref = TaskUtils.removeIterationFromTaskRefName(rerunFrom.getReferenceTaskName());
         Set<String> dropRefs = new HashSet<>(dropEntries);
         dropRefs.addAll(followingInItsList(def, ref));
         // in a loop holding the task: the rest of its iteration and the later iterations, which
@@ -932,8 +933,8 @@ public class NativeContinuationService {
         for (TaskModel task : workflow.getTasks()) {
             if (task.getSeq() > rerunFrom.getSeq()
                     && dropRefs.contains(
-                            com.netflix.conductor.common.utils.TaskUtils
-                                    .removeIterationFromTaskRefName(task.getReferenceTaskName()))) {
+                            TaskUtils.removeIterationFromTaskRefName(
+                                    task.getReferenceTaskName()))) {
                 dropTaskIds.add(task.getTaskId());
             }
         }
@@ -1523,7 +1524,7 @@ public class NativeContinuationService {
 
     private static int removeAll(List<WorkflowTask> list, Set<String> refs) {
         int removed = 0;
-        for (java.util.Iterator<WorkflowTask> it = list.iterator(); it.hasNext(); ) {
+        for (Iterator<WorkflowTask> it = list.iterator(); it.hasNext(); ) {
             WorkflowTask task = it.next();
             if (refs.contains(task.getTaskReferenceName())) {
                 it.remove();

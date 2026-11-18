@@ -38,12 +38,14 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
+import com.netflix.conductor.common.metadata.tasks.TaskContinuation;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskDef.TimeoutPolicy;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.common.run.NativeState;
 import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
@@ -2139,10 +2141,8 @@ public class TestDeciderService {
         def.getMetadata().put("native", Map.of("sdk", "test"));
         WorkflowModel workflow = new WorkflowModel();
         workflow.setWorkflowDefinition(def);
-        com.netflix.conductor.common.metadata.tasks.TaskContinuation bootstrap =
-                new com.netflix.conductor.common.metadata.tasks.TaskContinuation();
-        com.netflix.conductor.common.run.NativeState state =
-                new com.netflix.conductor.common.run.NativeState();
+        TaskContinuation bootstrap = new TaskContinuation();
+        NativeState state = new NativeState();
         state.setBootstrap(bootstrap);
         workflow.setNativeState(state);
 
@@ -2160,8 +2160,7 @@ public class TestDeciderService {
         laneTask.setReferenceTaskName("lane_task");
         laneTask.setStatus(TaskModel.Status.COMPLETED);
         laneTask.setExecuted(true);
-        com.netflix.conductor.common.metadata.tasks.TaskContinuation laneMarker =
-                new com.netflix.conductor.common.metadata.tasks.TaskContinuation();
+        TaskContinuation laneMarker = new TaskContinuation();
         laneTask.setContinuation(laneMarker);
         workflow.getTasks().add(laneTask);
         assertFalse(deciderService.checkForWorkflowCompletion(workflow));

@@ -399,6 +399,10 @@ public class TestDeciderOutcomes {
         String next;
     }
 
+    private Outcome failOnce(boolean optional, TaskModel.Status status) {
+        return failOnce(false, optional, status);
+    }
+
     private Outcome failOnce(boolean nativeWf, boolean optional, TaskModel.Status status) {
         WorkflowDef def = new WorkflowDef();
         def.setName("matrix");
@@ -466,21 +470,21 @@ public class TestDeciderOutcomes {
     }
 
     @Test
-    public void failureMatrixForStandardWorkflowsIsUnchanged() {
+    public void failureMatrix() {
         // not optional: retried if retriable, then the workflow ends
-        Outcome failed = failOnce(false, false, TaskModel.Status.FAILED);
+        Outcome failed = failOnce(false, TaskModel.Status.FAILED);
         assertTrue(failed.retried);
         assertTrue(failed.terminated);
-        Outcome terminal = failOnce(false, false, TaskModel.Status.FAILED_WITH_TERMINAL_ERROR);
+        Outcome terminal = failOnce(false, TaskModel.Status.FAILED_WITH_TERMINAL_ERROR);
         assertFalse(terminal.retried);
         assertTrue(terminal.terminated);
         // optional: retried if retriable, then COMPLETED_WITH_ERRORS and the next task runs
-        Outcome optFailed = failOnce(false, true, TaskModel.Status.FAILED);
+        Outcome optFailed = failOnce(true, TaskModel.Status.FAILED);
         assertTrue(optFailed.retried);
         assertFalse(optFailed.terminated);
         assertEquals(TaskModel.Status.COMPLETED_WITH_ERRORS, optFailed.finalStatus);
         assertEquals("t1", optFailed.next);
-        Outcome optTerminal = failOnce(false, true, TaskModel.Status.FAILED_WITH_TERMINAL_ERROR);
+        Outcome optTerminal = failOnce(true, TaskModel.Status.FAILED_WITH_TERMINAL_ERROR);
         assertFalse(optTerminal.retried);
         assertFalse(optTerminal.terminated);
         assertEquals(TaskModel.Status.COMPLETED_WITH_ERRORS, optTerminal.finalStatus);

@@ -188,7 +188,7 @@ public class DoWhile extends WorkflowSystemTask {
             // Scheduling the next iteration failed because storage was briefly unavailable. That
             // is not the loop's fault: leave it as it was and let the decide be retried, rather
             // than failing the loop and its workflow. Found by the durability bench: a database
-            // kill failed a native workflow's handler loop.
+            // kill failed a loop.
             doWhileTaskModel.setIteration(iterationBefore);
             doWhileTaskModel.addOutput("iteration", iterationBefore);
             throw e;

@@ -26,6 +26,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskType;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
@@ -597,8 +598,8 @@ public class WorkflowDef extends Auditable {
      * A workflow needs at least one task, except a native (code-defined) one, whose tasks are
      * appended by its code as the execution runs.
      */
-    @com.fasterxml.jackson.annotation.JsonIgnore
-    @jakarta.validation.constraints.AssertTrue(message = "WorkflowTask list cannot be empty")
+    @JsonIgnore
+    @AssertTrue(message = "WorkflowTask list cannot be empty")
     public boolean isTaskListValid() {
         return (tasks != null && !tasks.isEmpty())
                 || (metadata != null && metadata.containsKey("native"));

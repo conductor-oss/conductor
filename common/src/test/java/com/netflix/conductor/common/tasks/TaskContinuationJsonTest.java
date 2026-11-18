@@ -16,6 +16,7 @@ import org.junit.Test;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.tasks.TaskContinuation;
+import com.netflix.conductor.common.run.NativeState;
 
 import tools.jackson.databind.ObjectMapper;
 
@@ -61,8 +62,7 @@ public class TaskContinuationJsonTest {
 
     @Test
     public void theHandlerLaneIsStoredWithItsRunNumberOnly() throws Exception {
-        com.netflix.conductor.common.run.NativeState state =
-                new com.netflix.conductor.common.run.NativeState();
+        NativeState state = new NativeState();
         state.setBootstrap(new TaskContinuation());
         state.setHandlers(TaskContinuation.handlerRun(4));
 
@@ -70,8 +70,7 @@ public class TaskContinuationJsonTest {
 
         assertTrue(json, json.contains("\"bootstrap\":{}"));
         assertTrue(json, json.contains("\"handlers\":{\"n\":4}"));
-        com.netflix.conductor.common.run.NativeState back =
-                objectMapper.readValue(json, com.netflix.conductor.common.run.NativeState.class);
+        NativeState back = objectMapper.readValue(json, NativeState.class);
         assertFalse(back.getBootstrap().isApplied());
         assertEquals(4, back.getHandlers().getN());
     }

@@ -21,6 +21,8 @@ import java.util.TreeSet;
 import org.conductoross.conductor.core.listener.MetadataChangeListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.netflix.conductor.common.constraints.OwnerEmailMandatoryConstraint;
@@ -129,11 +131,9 @@ public class MetadataServiceImpl implements MetadataService {
     /**
      * @param workflowDef Workflow definition to be updated
      */
-    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    @Autowired(required = false)
     void setWorkflowMessageQueueEnabled(
-            @org.springframework.beans.factory.annotation.Value(
-                            "${conductor.workflow-message-queue.enabled:false}")
-                    boolean enabled) {
+            @Value("${conductor.workflow-message-queue.enabled:false}") boolean enabled) {
         this.workflowMessageQueueEnabled = enabled;
     }
 

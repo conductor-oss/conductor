@@ -45,6 +45,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.common.run.NativeState;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
@@ -438,7 +439,7 @@ public class TestWorkflowExecutor {
         workflow.setWorkflowId("native-postpone-1");
         workflow.setStatus(WorkflowModel.Status.RUNNING);
         workflow.setCreateTime(System.currentTimeMillis());
-        workflow.setNativeState(new com.netflix.conductor.common.run.NativeState());
+        workflow.setNativeState(new NativeState());
         TaskModel task = new TaskModel();
         task.setTaskId("t0-id");
         task.setReferenceTaskName("t0");
@@ -447,8 +448,7 @@ public class TestWorkflowExecutor {
         task.setWorkflowInstanceId("native-postpone-1");
         task.setStatus(TaskModel.Status.COMPLETED);
         task.setExecuted(true);
-        com.netflix.conductor.common.metadata.tasks.TaskContinuation marker =
-                new com.netflix.conductor.common.metadata.tasks.TaskContinuation();
+        TaskContinuation marker = new TaskContinuation();
         task.setContinuation(marker);
         workflow.getTasks().add(task);
         when(executionLockService.acquireLock(anyString())).thenReturn(true);
@@ -463,11 +463,7 @@ public class TestWorkflowExecutor {
     public void aContinuationCompletionAppendsTheFragmentAndSavesTheWorkflowFirst() {
         // The code paused on task t0 (its marker is leased); its completion arrives through the
         // ordinary task update with the next piece of the definition in the output.
-        when(metadataDAO.getTaskDef(anyString()))
-                .thenAnswer(
-                        i ->
-                                new com.netflix.conductor.common.metadata.tasks.TaskDef(
-                                        i.getArgument(0)));
+        when(metadataDAO.getTaskDef(anyString())).thenAnswer(i -> new TaskDef(i.getArgument(0)));
         WorkflowDef def = new WorkflowDef();
         def.setName("native-order");
         def.setSchemaVersion(2);
@@ -485,7 +481,7 @@ public class TestWorkflowExecutor {
         workflow.setWorkflowId("native-1");
         workflow.setStatus(WorkflowModel.Status.RUNNING);
         workflow.setCreateTime(System.currentTimeMillis());
-        workflow.setNativeState(new com.netflix.conductor.common.run.NativeState());
+        workflow.setNativeState(new NativeState());
         TaskModel awaited = new TaskModel();
         awaited.setTaskId("t0-id");
         awaited.setReferenceTaskName("t0");
@@ -494,8 +490,7 @@ public class TestWorkflowExecutor {
         awaited.setWorkflowInstanceId("native-1");
         awaited.setStatus(TaskModel.Status.COMPLETED);
         awaited.setExecuted(true);
-        com.netflix.conductor.common.metadata.tasks.TaskContinuation marker =
-                new com.netflix.conductor.common.metadata.tasks.TaskContinuation();
+        TaskContinuation marker = new TaskContinuation();
         marker.setLeased(true);
         marker.setRetryCount(4);
         awaited.setContinuation(marker);
@@ -572,7 +567,7 @@ public class TestWorkflowExecutor {
         workflow.setWorkflowDefinition(def);
         workflow.setWorkflowId("native-route-1");
         workflow.setStatus(WorkflowModel.Status.RUNNING);
-        workflow.setNativeState(new com.netflix.conductor.common.run.NativeState());
+        workflow.setNativeState(new NativeState());
         TaskModel t0 = taskOf(entry, "t0", 1);
         t0.setTaskId("t0-id");
         t0.setWorkflowInstanceId("native-route-1");
@@ -622,7 +617,7 @@ public class TestWorkflowExecutor {
         // a worker error: the continuation runs again after a backoff, under the same message id
         workflowExecutor.updateTask(continuationResult(TaskResult.Status.FAILED));
 
-        org.mockito.InOrder order = inOrder(executionDAOFacade, queueDAO);
+        InOrder order = inOrder(executionDAOFacade, queueDAO);
         order.verify(executionDAOFacade).updateWorkflow(any());
         order.verify(executionDAOFacade).updateTasks(any());
         order.verify(queueDAO).remove("native-route.v1.code", "t0-id");
@@ -1114,7 +1109,7 @@ public class TestWorkflowExecutor {
         workflow.setWorkflowDefinition(nativeDef);
         workflow.setWorkflowId("was-native-1");
         workflow.setStatus(WorkflowModel.Status.FAILED);
-        workflow.setNativeState(new com.netflix.conductor.common.run.NativeState());
+        workflow.setNativeState(new NativeState());
         WorkflowDef latest = new WorkflowDef();
         latest.setName("was_native");
         latest.setVersion(2);
@@ -2539,7 +2534,7 @@ public class TestWorkflowExecutor {
         workflow.setWorkflowId("native-rerun-1");
         workflow.setStatus(WorkflowModel.Status.COMPLETED);
         workflow.setCreateTime(System.currentTimeMillis());
-        workflow.setNativeState(new com.netflix.conductor.common.run.NativeState());
+        workflow.setNativeState(new NativeState());
         TaskModel forkTask = taskOf(fork, TaskType.TASK_TYPE_FORK, 1);
         TaskModel aTask = taskOf(a, "a", 2);
         TaskModel joinTask = taskOf(join, TaskType.TASK_TYPE_JOIN, 3);
@@ -2552,7 +2547,7 @@ public class TestWorkflowExecutor {
         workflowExecutor.rerun(request);
 
         assertEquals(TaskModel.Status.IN_PROGRESS, joinTask.getStatus());
-        org.mockito.InOrder order = inOrder(executionDAOFacade, queueDAO);
+        InOrder order = inOrder(executionDAOFacade, queueDAO);
         order.verify(executionDAOFacade).updateTask(aTask);
         order.verify(executionDAOFacade).updateTask(joinTask);
         order.verify(queueDAO).push(anyString(), eq(joinTask.getTaskId()), anyInt(), anyLong());
@@ -2631,7 +2626,7 @@ public class TestWorkflowExecutor {
         workflow.setWorkflowId("native-rerun-1");
         workflow.setStatus(WorkflowModel.Status.FAILED);
         workflow.setCreateTime(System.currentTimeMillis());
-        workflow.setNativeState(new com.netflix.conductor.common.run.NativeState());
+        workflow.setNativeState(new NativeState());
         TaskModel aTask = taskOf(a, "a", 1);
         TaskContinuation marker = new TaskContinuation();
         marker.setEndTime(1);

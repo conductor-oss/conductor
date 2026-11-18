@@ -81,7 +81,7 @@ public class NativeJoinTest {
         fork.setForkTasks(List.of(new ArrayList<>(b0), new ArrayList<>(b1)));
         WorkflowDef def = new WorkflowDef();
         def.setName("native");
-        def.getMetadata().put("native", java.util.Map.of("sdk", "test"));
+        def.getMetadata().put("native", Map.of("sdk", "test"));
         def.setTasks(new ArrayList<>(List.of(fork, joinTask)));
         WorkflowModel wf = new WorkflowModel();
         wf.setWorkflowDefinition(def);
@@ -123,7 +123,7 @@ public class NativeJoinTest {
         wf.getTasks().add(task("a2", TaskModel.Status.COMPLETED));
         assertTrue(join.execute(wf, j, null));
         assertEquals(TaskModel.Status.COMPLETED, j.getStatus());
-        assertEquals("a2", ((java.util.Map<?, ?>) j.getOutputData().get("a2")).get("from"));
+        assertEquals("a2", ((Map<?, ?>) j.getOutputData().get("a2")).get("from"));
     }
 
     @Test
@@ -160,8 +160,7 @@ public class NativeJoinTest {
         sw.setTaskReferenceName("sw");
         sw.setType(TaskType.TASK_TYPE_SWITCH);
         sw.getMetadata().put("lane", "fork_1.0");
-        sw.setDecisionCases(
-                java.util.Map.of("x", List.of(simple("a1")), "y", List.of(simple("a2"))));
+        sw.setDecisionCases(Map.of("x", List.of(simple("a1")), "y", List.of(simple("a2"))));
         WorkflowModel wf = workflow(List.of(sw), List.of(simple("b1")), jd);
         TaskModel chosen = new TaskModel();
         chosen.setReferenceTaskName("sw");
@@ -298,7 +297,7 @@ public class NativeJoinTest {
         WorkflowTask jd = joinDef();
         WorkflowDef stale = new WorkflowDef();
         stale.setName("native");
-        stale.getMetadata().put("native", java.util.Map.of("sdk", "test"));
+        stale.getMetadata().put("native", Map.of("sdk", "test"));
         stale.setTasks(new ArrayList<>(List.of(simple("before"))));
         WorkflowModel wf = new WorkflowModel();
         wf.setWorkflowDefinition(stale);

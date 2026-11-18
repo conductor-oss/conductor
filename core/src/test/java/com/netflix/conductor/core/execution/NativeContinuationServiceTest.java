@@ -14,12 +14,16 @@ package com.netflix.conductor.core.execution;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
+import org.springframework.util.unit.DataSize;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.tasks.TaskContinuation;
@@ -30,11 +34,14 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.NativeState;
 import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.execution.mapper.NoopTaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
+import com.netflix.conductor.core.execution.mapper.TaskMapperContext;
 import com.netflix.conductor.core.metadata.MetadataMapperService;
 import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.dao.WorkflowMessageQueueDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
@@ -150,9 +157,7 @@ public class NativeContinuationServiceTest {
 
     /** Completes a continuation as the worker that holds its lease, the execution's slot. */
     private NativeContinuationService.Completion completeHoldingSlot(
-            WorkflowModel workflow,
-            TaskModel awaited,
-            com.netflix.conductor.common.metadata.tasks.TaskResult result) {
+            WorkflowModel workflow, TaskModel awaited, TaskResult result) {
         return service.complete(workflow, awaited, result);
     }
 
@@ -357,13 +362,11 @@ public class NativeContinuationServiceTest {
         left.setEndTime(1);
         right.getContinuation().setLeased(false);
         right.setEndTime(2);
-        com.netflix.conductor.dao.QueueDAO queue = mock(com.netflix.conductor.dao.QueueDAO.class);
-        com.netflix.conductor.core.dal.ExecutionDAOFacade dao =
-                mock(com.netflix.conductor.core.dal.ExecutionDAOFacade.class);
+        QueueDAO queue = mock(QueueDAO.class);
+        ExecutionDAOFacade dao = mock(ExecutionDAOFacade.class);
         when(dao.getTaskModel("id-left")).thenReturn(left);
         when(dao.getTaskModel("id-right")).thenReturn(right);
-        when(dao.getWorkflowModel(anyString(), org.mockito.ArgumentMatchers.anyBoolean()))
-                .thenReturn(workflow);
+        when(dao.getWorkflowModel(anyString(), ArgumentMatchers.anyBoolean())).thenReturn(workflow);
         service.setQueueDAO(queue);
         service.setExecutionDAOFacade(dao);
 
@@ -382,9 +385,9 @@ public class NativeContinuationServiceTest {
         assertEquals(
                 null,
                 service.lease(CODE_TYPE, "id-right", dao.getTaskModel("id-right"), "worker-b"));
-        org.mockito.Mockito.verify(queue).remove(CODE_TYPE, "id-right");
-        org.mockito.Mockito.verify(dao, org.mockito.Mockito.never()).updateWorkflow(any());
-        org.mockito.Mockito.verify(dao, org.mockito.Mockito.never()).updateTask(any());
+        Mockito.verify(queue).remove(CODE_TYPE, "id-right");
+        Mockito.verify(dao, Mockito.never()).updateWorkflow(any());
+        Mockito.verify(dao, Mockito.never()).updateTask(any());
 
         // a worker error: it keeps its turn, the order replay follows is the order tasks ended
         TaskResult failed =
@@ -654,13 +657,12 @@ public class NativeContinuationServiceTest {
         assertTrue(awaited.getContinuation().isDone());
     }
 
-    private com.netflix.conductor.core.dal.ExecutionDAOFacade dao;
+    private ExecutionDAOFacade dao;
 
     private void useMockedStores(WorkflowModel workflow) {
-        dao = mock(com.netflix.conductor.core.dal.ExecutionDAOFacade.class);
-        when(dao.getWorkflowModel(anyString(), org.mockito.ArgumentMatchers.anyBoolean()))
-                .thenReturn(workflow);
-        service.setQueueDAO(mock(com.netflix.conductor.dao.QueueDAO.class));
+        dao = mock(ExecutionDAOFacade.class);
+        when(dao.getWorkflowModel(anyString(), ArgumentMatchers.anyBoolean())).thenReturn(workflow);
+        service.setQueueDAO(mock(QueueDAO.class));
         service.setExecutionDAOFacade(dao);
     }
 
@@ -932,8 +934,7 @@ public class NativeContinuationServiceTest {
 
     @Test
     public void variablesOverTheLimitChangeNothing() {
-        properties.setMaxWorkflowVariablesPayloadSizeThreshold(
-                org.springframework.util.unit.DataSize.ofBytes(100));
+        properties.setMaxWorkflowVariablesPayloadSizeThreshold(DataSize.ofBytes(100));
         WorkflowModel workflow = freshWorkflow(false);
         lease(workflow.getNativeState().getBootstrap(), 1);
         Map<String, Object> out =
@@ -1222,7 +1223,7 @@ public class NativeContinuationServiceTest {
         drawn.setType("SIMPLE");
         drawn.getMetadata().put("preview", true);
         decision.setDecisionCases(
-                new java.util.LinkedHashMap<>(
+                new LinkedHashMap<>(
                         Map.of(
                                 "x",
                                 new ArrayList<>(List.of(top.remove(1))),
@@ -1264,7 +1265,7 @@ public class NativeContinuationServiceTest {
         entry.getMetadata().put("continuation", 2);
         WorkflowModel workflow = freshWorkflow(false);
         TaskModel task =
-                com.netflix.conductor.core.execution.mapper.TaskMapperContext.newBuilder()
+                TaskMapperContext.newBuilder()
                         .withWorkflowModel(workflow)
                         .withWorkflowTask(entry)
                         .withTaskId("t-1")
