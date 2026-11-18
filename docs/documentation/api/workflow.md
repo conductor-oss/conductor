@@ -25,10 +25,11 @@ curl -X POST 'http://localhost:8080/api/workflow/3a5b8c2d-1234-5678-9abc-def0123
 | Status | Condition |
 |---|---|
 | `404 Not Found` | The WMQ feature is disabled, or the workflow does not exist. |
-| `409 Conflict` | The workflow is not `RUNNING`, including a state change that races with the push. |
+| `409 Conflict` | The workflow is not `RUNNING`. |
 | `429 Too Many Requests` | The workflow queue has reached `maxQueueSize`. |
+| `503 Service Unavailable` | The workflow is busy: another evaluation holds its execution lock. The message was not queued; retry the push. |
 
-Conductor triggers an immediate workflow evaluation after a successful push so a waiting `PULL_WORKFLOW_MESSAGES` task can resume. See [Workflow Message Queue](../../wmq/workflow-message-queue.md) and [Pull Workflow Messages task](../configuration/workflowdef/systemtasks/pull-workflow-messages-task.md) for configuration and consumption.
+Conductor pushes the message inside a workflow evaluation (decide) that holds the workflow's execution lock. The `RUNNING` check, the push, and the evaluation happen under that one lock, so a push cannot be acknowledged and then lost to a completion that commits in between: the workflow is either still `RUNNING` when the message is queued, or the push is refused with `409`. The same evaluation wakes a waiting `PULL_WORKFLOW_MESSAGES` task. Messages still queued when the workflow ends are discarded. See [Workflow Message Queue](../../wmq/workflow-message-queue.md) and [Pull Workflow Messages task](../configuration/workflowdef/systemtasks/pull-workflow-messages-task.md) for configuration and consumption.
 
 ## Retrieve Workflows
 
@@ -240,7 +241,7 @@ curl -X PUT 'http://localhost:8080/api/workflow/3a5b8c2d.../resume'
 POST /api/workflow/{workflowId}/restart?useLatestDefinitions=false
 ```
 
-Restarts a completed workflow from the beginning. Current execution history is wiped out.
+Restarts a workflow that has ended (any terminal status) from the beginning. Current execution history is wiped out. A workflow that has not ended is refused with `409 Conflict`; a `COMPLETED` workflow whose definition sets `restartable: false` is refused with `404 Not Found`. **Response** `204 No Content`.
 
 | Parameter | Description | Default |
 |---|---|---|
@@ -256,7 +257,7 @@ curl -X POST 'http://localhost:8080/api/workflow/3a5b8c2d.../restart'
 POST /api/workflow/{workflowId}/retry?resumeSubworkflowTasks=false
 ```
 
-Retries the last failed task in the workflow.
+Retries the last failed task in the workflow. Only a `FAILED`, `TIMED_OUT` or `TERMINATED` workflow can be retried.
 
 | Parameter | Description | Default |
 |---|---|---|
@@ -266,13 +267,24 @@ Retries the last failed task in the workflow.
 curl -X POST 'http://localhost:8080/api/workflow/3a5b8c2d.../retry'
 ```
 
+**Response** `204 No Content`.
+
+| Status | Condition |
+|---|---|
+| `404 Not Found` | The workflow is still running (`Workflow is still running.  status=...`). |
+| `409 Conflict` | The workflow is `COMPLETED` (`Workflow <id> is COMPLETED and cannot be retried; rerun or restart it instead`), or it has no tasks yet. |
+
+A retry gives a failed workflow another chance. A `COMPLETED` workflow can still hold tasks that did not succeed, such as those cancelled by a `TERMINATE` task with `terminationStatus: COMPLETED`; retrying them would reopen a workflow that succeeded. Use [Rerun](#rerun) or [Restart](#restart) to run it again.
+
+A retried task gets a fresh total time budget: the new attempt's `totalTimeoutSeconds` counts from when it is scheduled, not from the first attempt.
+
 ### Rerun
 
 ```
 POST /api/workflow/{workflowId}/rerun
 ```
 
-Re-runs a completed workflow from a specific task.
+Re-runs a workflow that has ended (any terminal status) from a specific task, or from the beginning when `reRunFromTaskId` is omitted. A workflow that has not ended is refused with `409 Conflict`. The `reRunFromWorkflowId` in the body is overwritten by the `{workflowId}` path parameter. The response is the workflow ID as plain text.
 
 ```shell
 curl -X POST 'http://localhost:8080/api/workflow/3a5b8c2d.../rerun' \
@@ -285,13 +297,25 @@ curl -X POST 'http://localhost:8080/api/workflow/3a5b8c2d.../rerun' \
   }'
 ```
 
+When you rerun from a task, Conductor removes every task scheduled after it and runs the workflow forward again from that task:
+
+- **The task gets a fresh total time budget.** Its `totalTimeoutSeconds` counts from the rerun, not from when the task was first scheduled.
+- **Inside a fork, other branches are redone too.** Tasks that other branches scheduled after the rerun task are removed, so finished tasks the rerun keeps schedule their successors again (the next task in the branch, a fork's branches, a switch's chosen case). A finished `JOIN` that waits for a task now removed or running again goes back to waiting.
+- **Inside a `DO_WHILE`, the loop reopens at that iteration.** The loop task goes back to `IN_PROGRESS` at the rerun task's iteration, drops the output of that iteration and later ones, and then evaluates its condition as usual.
+- **Sub-workflows start fresh.** Rerunning a `SUB_WORKFLOW` task, or rerunning from a task before it, starts a new child workflow instead of reusing the previous child's result. See [Sub Workflow](../configuration/workflowdef/operators/sub-workflow-task.md#rerun-and-retry).
+- **A task ID that a retry replaced** reruns the task's latest attempt.
+
+If `reRunFromTaskId` is not found in the workflow or any of its sub-workflows, the request fails with `400 Bad Request` (`Task <id> not found`).
+
 ### Skip Task
 
 ```
 PUT /api/workflow/{workflowId}/skiptask/{taskReferenceName}
 ```
 
-Skips a task in a running workflow and continues forward. Optionally provide updated input/output:
+Skips a task in a running workflow that has not been scheduled yet. Conductor records it as `SKIPPED`, and when the flow reaches it, treats it as finished and moves on to the next task. This holds wherever the task is: the first task, the next task in a list, a task in a fork branch, or a task in a switch case. A task that has already been scheduled cannot be skipped. Skipping a `FORK_JOIN` or `FORK_JOIN_DYNAMIC` also skips its `JOIN`, so the flow continues after the `JOIN` without running any branch.
+
+The request body is optional. When given, `taskInput` and `taskOutput` become the skipped task's input and output, which later tasks can reference:
 
 ```shell
 curl -X PUT 'http://localhost:8080/api/workflow/3a5b8c2d.../skiptask/validate_ref' \
@@ -301,6 +325,8 @@ curl -X PUT 'http://localhost:8080/api/workflow/3a5b8c2d.../skiptask/validate_re
     "taskOutput": {"skipped": true, "reason": "manual override"}
   }'
 ```
+
+Without a body, the skipped task has empty input and output.
 
 ### Reset Callbacks
 
@@ -331,6 +357,8 @@ DELETE /api/workflow/{workflowId}?reason=
 ```shell
 curl -X DELETE 'http://localhost:8080/api/workflow/3a5b8c2d...?reason=cancelled+by+user'
 ```
+
+Only a running or paused workflow can be terminated. Terminating one that is `TERMINATED` already does nothing. One that is `COMPLETED`, `FAILED` or `TIMED_OUT` is refused with `409 Conflict`, and keeps its status and `reasonForIncompletion`. `terminate-remove` removes such a workflow without terminating it.
 
 ### Remove
 

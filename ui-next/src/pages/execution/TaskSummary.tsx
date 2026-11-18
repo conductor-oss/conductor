@@ -5,9 +5,12 @@ import { NavLink, KeyValueTable } from "components";
 import { Link, Paper } from "@mui/material";
 import { ExecutionTask, TaskType } from "types";
 import { ReactNode, useMemo } from "react";
+import { continuationOf } from "./held";
 
 interface TaskSummaryProps {
   taskResult: ExecutionTask;
+  /** Why the code after this task is held, while the run is held here. */
+  held?: string;
 }
 
 type DataType = {
@@ -16,7 +19,7 @@ type DataType = {
   type?: string;
 };
 
-export default function TaskSummary({ taskResult }: TaskSummaryProps) {
+export default function TaskSummary({ taskResult, held }: TaskSummaryProps) {
   const shouldDisplayEvaluatedCase = useMemo(
     () => ["DECISION", "SWITCH"].includes(taskResult.taskType),
     [taskResult.taskType],
@@ -37,8 +40,38 @@ export default function TaskSummary({ taskResult }: TaskSummaryProps) {
     },
   ] as DataType[];
 
+  // Native workflows record where in the source each task was called.
+  const site = (
+    taskResult.workflowTask as { metadata?: Record<string, unknown> }
+  )?.metadata?.site;
+  if (typeof site === "string" && site.length > 0) {
+    data.push({ label: "Source", value: site });
+  }
   if (taskResult.domain) {
     data.push({ label: "Domain", value: taskResult.domain });
+  }
+  // Native workflows: the code paused on this task; when it finishes, the server hands the
+  // continuation to a host of the code, which appends what comes next.
+  const continuation = continuationOf(taskResult);
+  if (continuation) {
+    if (held) {
+      data.push({
+        label: "Waiting for compatible code",
+        value: `This task finished; the code after it is waiting. ${held}`,
+        type: "error",
+      });
+    }
+    data.push({
+      label: "Continuation",
+      value: `${continuation.lane} #${continuation.n} — ${continuation.state}`,
+    });
+    if (continuation.marker.endTime) {
+      data.push({
+        label: "Continuation applied",
+        value: continuation.marker.endTime,
+        type: "date",
+      });
+    }
   }
 
   if (taskResult.taskId) {

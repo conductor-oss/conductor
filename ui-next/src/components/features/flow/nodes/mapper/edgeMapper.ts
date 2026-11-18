@@ -58,7 +58,11 @@ export const edgeMapper = (
     {
       id: `edge_${sourceId}-${currentTask.taskReferenceName}`,
       from: sourceId,
-      fromPort: previousTaskSouthPortId,
+      // a fork's ports are its branches; the path after a fork with no join starts at the fork
+      fromPort: (previousTask as { detachedFork?: boolean } | undefined)
+        ?.detachedFork
+        ? undefined
+        : previousTaskSouthPortId,
       toPort: `${target}-to`,
       to: target,
       ...maybeEdgeData(

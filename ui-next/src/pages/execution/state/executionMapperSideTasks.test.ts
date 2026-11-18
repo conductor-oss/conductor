@@ -87,3 +87,61 @@ describe("side tasks on the execution definition", () => {
     ]);
   });
 });
+
+describe("held native code on the execution definition", () => {
+  const def = (taskReferenceName: string) => ({
+    name: taskReferenceName,
+    taskReferenceName,
+    type: TaskType.SIMPLE,
+    inputParameters: {},
+  });
+  // the held continuation is the one leased; why it did not apply is the run's reason
+  const ran = (taskReferenceName: string, leased = false) => ({
+    taskId: `id-${taskReferenceName}`,
+    referenceTaskName: taskReferenceName,
+    taskType: TaskType.SIMPLE,
+    workflowTask: def(taskReferenceName),
+    status: TaskStatus.COMPLETED,
+    continuation: leased ? { leased } : { endTime: 1 },
+  });
+  const execution = (status: string, deferred?: string) =>
+    ({
+      status,
+      reasonForIncompletion: deferred,
+      workflowDefinition: {
+        name: "native",
+        version: 1,
+        tasks: [
+          def("first"),
+          {
+            ...def("fork"),
+            type: TaskType.FORK_JOIN,
+            forkTasks: [[def("branch")]],
+          },
+        ],
+      },
+      tasks: [ran("first"), ran("branch", true)],
+    }) as any;
+  const refs = (tasks: any[]) => tasks.map((t) => t.taskReferenceName);
+
+  it("draws the held step right after the task the code paused on, in its branch", () => {
+    const [def] = executionToWorkflowDef(
+      execution("RUNNING", "diverged: the code changed"),
+    ) as any;
+    const branch = def.tasks[1].forkTasks[0];
+    expect(refs(branch)).toEqual(["branch", "branch__held"]);
+    expect(branch[1].type).toBe(TaskType.HELD_STEP);
+    expect(branch[1].executionData.held).toBe("the code changed");
+    expect(refs(def.tasks)).toEqual(["first", "fork"]);
+  });
+
+  it("draws nothing when the code is only retrying, or the execution has finished", () => {
+    for (const e of [
+      execution("RUNNING", "worker error"),
+      execution("TERMINATED", "diverged: the code changed"),
+    ]) {
+      const [def] = executionToWorkflowDef(e) as any;
+      expect(refs(def.tasks[1].forkTasks[0])).toEqual(["branch"]);
+    }
+  });
+});

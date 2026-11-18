@@ -1,3 +1,4 @@
+import { definitionAsDrawn } from "pages/execution/state/codeLoops";
 import { FlowActionTypes, FlowEvents } from "components/features/flow/state";
 import _first from "lodash/first";
 import _has from "lodash/has";
@@ -502,9 +503,10 @@ export const sendCrumbUpdates = sendTo<
   return {
     type: FormMachineActionTypes.UPDATE_CRUMBS,
     crumbs: ctx.selectedTaskCrumbs,
+    // looked up in the definition as drawn: a native one has loop nodes the stored one has not
     task: crumbsToTask(
       ctx.selectedTaskCrumbs,
-      ctx.workflowChanges?.tasks || [],
+      definitionAsDrawn(ctx.workflowChanges ?? {})?.tasks || [],
     ),
   };
 });

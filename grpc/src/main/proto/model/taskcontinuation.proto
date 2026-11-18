@@ -1,0 +1,18 @@
+syntax = "proto3";
+package conductor.proto;
+
+import "google/protobuf/struct.proto";
+
+option java_package = "com.netflix.conductor.proto";
+option java_outer_classname = "TaskContinuationPb";
+option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/model";
+
+message TaskContinuation {
+    bool leased = 1;
+    int32 retry_count = 2;
+    int64 end_time = 3;
+    bool done = 4;
+    map<string, google.protobuf.Value> recorded = 5;
+    map<string, google.protobuf.Value> resumed_with = 6;
+    int32 n = 7;
+}

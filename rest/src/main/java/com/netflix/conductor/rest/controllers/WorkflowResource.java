@@ -264,7 +264,7 @@ public class WorkflowResource {
     public void skipTaskFromWorkflow(
             @PathVariable("workflowId") String workflowId,
             @PathVariable("taskReferenceName") String taskReferenceName,
-            SkipTaskRequest skipTaskRequest) {
+            @RequestBody(required = false) SkipTaskRequest skipTaskRequest) {
         workflowService.skipTaskFromWorkflow(workflowId, taskReferenceName, skipTaskRequest);
     }
 

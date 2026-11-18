@@ -17,16 +17,16 @@ This should not be confused with [*Task Configurations*](workflowdef/index.md#ta
 | :-------------------------- | :----------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------- |
 | name                        | string             | Task Name. Unique name of the Task that resonates with its function.                                                                                                                                          | Must be unique                                                                   |
 | description                 | string             | Description of the task.                                                                                                                                                                                       | Optional                                                                         |
-| retryCount                  | number             | Number of retries to attempt when a Task is marked as failure.                                                                                                                                                 | Defaults to 3 with maximum allowed capped at 10                                  |
+| retryCount                  | number             | Number of retries to attempt when a Task is marked as failure, or as `TIMED_OUT` under `timeoutPolicy: RETRY`.                                                                                                | Defaults to 3. Must be 0 or greater                                              |
 | retryLogic                  | string (enum)      | Mechanism for the retries.                                                                                                                                                                                     | See [Retry Logic](#retry-logic)                                                  |
 | retryDelaySeconds           | number             | Base delay before the first retry. The meaning varies by `retryLogic`.                                                                                                                                        | Defaults to 60 seconds                                                           |
 | maxRetryDelaySeconds        | number             | Maximum delay between retries, in seconds. Caps the computed delay for `EXPONENTIAL_BACKOFF` and `LINEAR_BACKOFF` so delays never grow beyond this value. `0` disables the cap.                              | Defaults to 0 (no cap). See [Retry Logic](#retry-logic)                          |
 | backoffJitterMs             | number             | Adds a random jitter of up to this many milliseconds to each retry delay. Spreads simultaneous retries across time to prevent thundering herd. `0` disables jitter.                                          | Defaults to 0 (no jitter). See [Retry Logic](#retry-logic)                       |
-| totalTimeoutSeconds         | number             | Maximum wall-clock time (in seconds) across all retry attempts combined. Once exceeded, the task fails immediately with no further retries, regardless of `retryCount`. `0` disables this limit.             | Defaults to 0 (no limit). See [Timeout scenarios](../../devguide/architecture/tasklifecycle.md#total-timeout)  |
-| timeoutPolicy               | string (enum)      | Task's timeout policy.                                                                                                                                                                                         | Defaults to `TIME_OUT_WF`; See [Timeout Policy](#timeout-policy)                 |
-| timeoutSeconds              | number             | Time in seconds, after which the task is marked as `TIMED_OUT` if it has not reached a terminal state after transitioning to `IN_PROGRESS` status for the first time.                                                                | No timeouts if set to 0                                                          |
-| responseTimeoutSeconds      | number             | If greater than 0, the task is rescheduled if not updated with a status after this time (heartbeat mechanism). Useful when the worker polls for the task but fails to complete due to errors/network failure. | Defaults to 600                                                                 |
-| pollTimeoutSeconds          | number             | Time in seconds, after which the task is marked as `TIMED_OUT` if not polled by a worker.                                                                                                                     | No timeouts if set to 0                                                          |
+| totalTimeoutSeconds         | number             | Maximum wall-clock time (in seconds) across all retry attempts combined. Once exceeded, `timeoutPolicy` applies and no further retries are scheduled, regardless of `retryCount` (under `ALERT_ONLY` the limit is only logged). `0` disables this limit. | Defaults to 0 (no limit). See [Timeout scenarios](../../devguide/architecture/tasklifecycle.md#total-timeout)  |
+| timeoutPolicy               | string (enum)      | What happens when the task exceeds `timeoutSeconds`, `responseTimeoutSeconds`, `pollTimeoutSeconds`, or `totalTimeoutSeconds`.                                                                                | Defaults to `TIME_OUT_WF`; See [Timeout Policy](#timeout-policy)                 |
+| timeoutSeconds              | number             | Time in seconds, after which `timeoutPolicy` is applied if the task has not reached a terminal state after transitioning to `IN_PROGRESS` status for the first time.                                                                 | No timeouts if set to 0                                                          |
+| responseTimeoutSeconds      | number             | Time in seconds after which an `IN_PROGRESS` task that has not been updated with a status is timed out and `timeoutPolicy` is applied (heartbeat mechanism): `RETRY` retries it, `TIME_OUT_WF` times the workflow out, `ALERT_ONLY` only logs it. Useful when the worker polls for the task but fails to complete due to errors/network failure. Set `timeoutPolicy: RETRY` to have the task rescheduled. | Defaults to 3600. Must be at least 1 and not more than `timeoutSeconds` (when `timeoutSeconds` > 0) |
+| pollTimeoutSeconds          | number             | Time in seconds, after which `timeoutPolicy` is applied if the task is not polled by a worker.                                                                                                                 | No timeouts if set to 0                                                          |
 | inputKeys                   | array of string(s) | Array of keys of task's expected input. Used for documenting task's input.                                                                                                                                    | Optional. See [Using inputKeys and outputKeys](#using-inputkeys-and-outputkeys). |
 | outputKeys                  | array of string(s) | Array of keys of task's expected output. Used for documenting task's output.                                                                                                                                  | Optional. See [Using inputKeys and outputKeys](#using-inputkeys-and-outputkeys). |
 | inputTemplate               | object             | Define default input values.                                                                                                                                                                                  | Optional. See [Using inputTemplate](#using-inputtemplate)                        |
@@ -64,9 +64,13 @@ where `clamp` only applies when `maxRetryDelaySeconds > 0`.
 
 ### Timeout Policy
 
-* `RETRY`: Retries the task again
-* `TIME_OUT_WF`: Workflow is marked as TIMED_OUT and terminated. This is the default value.
-* `ALERT_ONLY`: Registers a counter (task_timeout)
+The timeout policy applies to every task timeout: `timeoutSeconds`, `responseTimeoutSeconds`, `pollTimeoutSeconds`, and `totalTimeoutSeconds`.
+
+* `RETRY`: The task is marked `TIMED_OUT` and retried like any failed attempt, while `retryCount` allows.
+* `TIME_OUT_WF`: The task and the workflow are marked as `TIMED_OUT` and the workflow is terminated. This is the default value.
+* `ALERT_ONLY`: Logs the timeout and registers a counter (`task_timeout`). The task's status is not changed.
+
+A response timeout also increments the `task_response_timeout` counter, whatever the policy.
 
 ### Task Concurrent Execution Limits
 
@@ -148,7 +152,7 @@ Retries up to 5 times with delays 2s, 4s, 8s, 16s, 32s — capped at 60s — plu
 }
 ```
 
-Retries every 5 seconds, but the entire sequence — all attempts combined — must finish within 2 minutes. Even if `retryCount` isn't exhausted, the task fails once the 2-minute budget is consumed.
+Retries every 5 seconds, but the entire sequence — all attempts combined — must finish within 2 minutes. Even if `retryCount` isn't exhausted, once the 2-minute budget is consumed the task and the workflow are marked `TIMED_OUT` (`timeoutPolicy: TIME_OUT_WF`). The budget runs from when the task was first scheduled and carries across automatic retries. An operator's retry (`POST /api/workflow/{workflowId}/retry`) or a rerun starts the task with a fresh budget.
 
 ### High-throughput worker with jitter
 
@@ -176,10 +180,10 @@ When thousands of notifications fail simultaneously (e.g., downstream outage), j
   "retryDelaySeconds": 10,
   "maxRetryDelaySeconds": 120,
   "backoffJitterMs": 5000,
-  "totalTimeoutSeconds": 600,
+  "totalTimeoutSeconds": 3600,
   "timeoutSeconds": 1200,
   "timeoutPolicy": "TIME_OUT_WF",
-  "responseTimeoutSeconds": 3600,
+  "responseTimeoutSeconds": 600,
   "pollTimeoutSeconds": 3600,
   "inputKeys": [
     "sourceRequestId",

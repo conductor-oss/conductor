@@ -129,14 +129,33 @@ public class Workflow extends Auditable {
     @ProtoField(id = 26)
     private List<Workflow> history = new LinkedList<>();
 
+    /** Engine state of a native (code-defined) workflow; null for other workflows. */
+    @ProtoField(id = 27)
+    private NativeState nativeState;
+
     private String idempotencyKey;
     private String rateLimitKey;
+
+    /**
+     * The task a FAILED workflow failed at: the task whose failure ended it, or for a native
+     * workflow the mark where its code threw. Null when no task caused the end.
+     */
+    private String failedTaskId;
+
     private boolean rateLimited;
 
     /** Token usage summed across this workflow and its sub-workflow tree. */
     private AggregateTokenUsage aggregateTokenUsage;
 
     public Workflow() {}
+
+    public String getFailedTaskId() {
+        return failedTaskId;
+    }
+
+    public void setFailedTaskId(String failedTaskId) {
+        this.failedTaskId = failedTaskId;
+    }
 
     public String getIdempotencyKey() {
         return idempotencyKey;
@@ -583,5 +602,13 @@ public class Workflow extends Auditable {
     @Override
     public int hashCode() {
         return Objects.hash(getWorkflowId());
+    }
+
+    public NativeState getNativeState() {
+        return nativeState;
+    }
+
+    public void setNativeState(NativeState nativeState) {
+        this.nativeState = nativeState;
     }
 }

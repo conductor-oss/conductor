@@ -16,8 +16,6 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,7 +26,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.netflix.conductor.common.model.WorkflowMessage;
+import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
+import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.dao.WorkflowMessageQueueDAO;
 import com.netflix.conductor.model.WorkflowModel;
@@ -51,9 +51,6 @@ import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
 @RequestMapping(WORKFLOW)
 @ConditionalOnProperty(name = "conductor.workflow-message-queue.enabled", havingValue = "true")
 public class WorkflowMessageQueueResource {
-
-    private static final Logger LOGGER =
-            LoggerFactory.getLogger(WorkflowMessageQueueResource.class);
 
     private final WorkflowService workflowService;
     private final WorkflowMessageQueueDAO dao;
@@ -82,66 +79,38 @@ public class WorkflowMessageQueueResource {
             @PathVariable("workflowId") String workflowId,
             @RequestBody Map<String, Object> payload) {
 
-        WorkflowModel workflow;
+        // Pushed inside a decide, in its one acquisition of the workflow's lock: a message is
+        // then either queued before a completing decide checks for pending messages (and the
+        // completion waits for it) or refused because the workflow has completed. Pushed outside
+        // it, a message could pass the RUNNING check, be acknowledged, and be discarded by a
+        // completion committing in between (found by the durability bench). The same decide
+        // wakes a waiting PULL_WORKFLOW_MESSAGES task, or a native workflow's handler lane.
+        String messageId = UUID.randomUUID().toString();
         try {
-            workflow = workflowService.getWorkflowModel(workflowId, false);
+            workflowExecutor.decide(
+                    workflowId,
+                    workflow -> {
+                        if (workflow.getStatus() != WorkflowModel.Status.RUNNING) {
+                            throw new ConflictException(
+                                    "Workflow %s is not in RUNNING state (current: %s)",
+                                    workflowId, workflow.getStatus());
+                        }
+                        dao.push(
+                                workflowId,
+                                new WorkflowMessage(
+                                        messageId, workflowId, payload, Instant.now().toString()));
+                    });
         } catch (NotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body("Workflow not found: " + workflowId);
-        }
-
-        if (workflow.getStatus() != WorkflowModel.Status.RUNNING) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(
-                            "Workflow "
-                                    + workflowId
-                                    + " is not in RUNNING state (current: "
-                                    + workflow.getStatus()
-                                    + ")");
-        }
-
-        String messageId = UUID.randomUUID().toString();
-        WorkflowMessage message =
-                new WorkflowMessage(messageId, workflowId, payload, Instant.now().toString());
-
-        try {
-            dao.push(workflowId, message);
+        } catch (ConflictException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
         } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(e.getMessage());
+        } catch (TransientException e) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body("Workflow " + workflowId + " is busy; retry the message");
         }
-
-        // Re-validate workflow status after push to catch TOCTOU races where the workflow
-        // transitioned to a terminal state between the initial check and the push.
-        WorkflowModel postPushWorkflow;
-        try {
-            postPushWorkflow = workflowService.getWorkflowModel(workflowId, false);
-        } catch (NotFoundException e) {
-            dao.delete(workflowId);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("Workflow not found after push: " + workflowId);
-        }
-        if (postPushWorkflow.getStatus() != WorkflowModel.Status.RUNNING) {
-            dao.delete(workflowId);
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(
-                            "Workflow "
-                                    + workflowId
-                                    + " transitioned out of RUNNING state during push (current: "
-                                    + postPushWorkflow.getStatus()
-                                    + ")");
-        }
-
-        // Trigger an immediate workflow evaluation so a waiting PULL_WORKFLOW_MESSAGES
-        // task can be woken up without waiting for the next poll cycle.
-        try {
-            workflowExecutor.decide(workflowId);
-        } catch (Exception e) {
-            LOGGER.warn(
-                    "Failed to trigger decide() for workflowId={}; sweeper will pick it up",
-                    workflowId,
-                    e);
-        }
-
         return ResponseEntity.ok(messageId);
     }
 }

@@ -165,19 +165,8 @@ export default function ActionModule({
     );
   } else {
     // FAILED, TIMED_OUT, TERMINATED
+    // an execution that ended cannot be terminated: the server refuses it
     const options = [];
-
-    if (["FAILED", "TIMED_OUT"].includes(execution.status)) {
-      options.push({
-        label: (
-          <>
-            <StopIcon size="16" style={{ ...style.menuIcon, color: "red" }} />
-            <span style={{ color: "red" }}>Terminate</span>
-          </>
-        ),
-        handler: onTerminateExecution,
-      });
-    }
 
     if (restartable) {
       options.push({
@@ -201,7 +190,9 @@ export default function ActionModule({
       });
     }
 
+    // a COMPLETED execution can be rerun or restarted, not retried: the server refuses it
     if (
+      execution?.status !== "COMPLETED" &&
       execution?.tasks?.some(
         (task) => !task.retried && isFailedTask(task.status),
       )

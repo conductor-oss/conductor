@@ -65,6 +65,8 @@ export const isDetached = (
   if (!referenceName || declared.size === 0) return false;
   return (
     !declared.has(referenceName) &&
+    // a run of a Java loop's step keeps its own name and is an iteration of the step's entry
+    !declared.has(task?.workflowTask?.taskReferenceName ?? referenceName) &&
     !declared.has(withoutIteration(referenceName))
   );
 };

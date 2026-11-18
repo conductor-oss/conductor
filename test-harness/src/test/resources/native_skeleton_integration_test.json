@@ -1,0 +1,9 @@
+{
+  "name": "native_skeleton",
+  "description": "Native workflow skeleton: no tasks; the workflow code grows the definition one continuation at a time.",
+  "version": 1,
+  "schemaVersion": 2,
+  "ownerEmail": "test@harness.com",
+  "metadata": { "native": { "sdk": "test-harness", "protocol": 2, "codeType": "native_skeleton.v1.code", "continuationTimeoutSeconds": 60 } },
+  "tasks": []
+}
