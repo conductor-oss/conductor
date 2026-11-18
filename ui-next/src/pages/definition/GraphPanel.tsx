@@ -34,6 +34,12 @@ const GraphPanel = ({
     definitionActor,
     (state) => state.context.localCopyMessage,
   );
+  const showLocalBackupWarning = useSelector(
+    definitionActor,
+    (state) =>
+      Boolean(state.context.localBackupFailed) &&
+      !state.context.localBackupWarningDismissed,
+  );
   const flowActor = (
     definitionActor as ActorRef<WorkflowDefinitionEvents> & {
       children: Map<string, FlowActorRef>;
@@ -115,6 +121,28 @@ const GraphPanel = ({
           }
         >
           {localCopyAlert}
+        </MuiAlert>
+      ) : null}
+
+      {showLocalBackupWarning ? (
+        <MuiAlert
+          severity="warning"
+          action={
+            <X
+              size={20}
+              style={{ cursor: "pointer" }}
+              aria-label="Dismiss"
+              onClick={() =>
+                definitionActor.send({
+                  type: DefinitionMachineEventTypes.DISMISS_LOCAL_BACKUP_WARNING_EVT,
+                })
+              }
+            />
+          }
+        >
+          This workflow is too large to back up in your browser, so unsaved
+          changes will be lost if you reload or close this page. Save the
+          workflow to keep your changes.
         </MuiAlert>
       ) : null}
 
