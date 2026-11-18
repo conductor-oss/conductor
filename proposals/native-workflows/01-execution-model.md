@@ -120,8 +120,8 @@ The bootstrap is runnable until it applies; the handler lane is runnable while m
 
 Guarantees:
 
-- Lanes never wait for each other except at a `JOIN`, or when the code itself calls
-  `Promise.get()`.
+- Lanes never wait for each other except at a `JOIN`: the code's `join(...)`, or its
+  `Future.get()` on a branch.
 - A continuation inside a `FORK_JOIN` branch becomes runnable when its task completes,
   independent of other branches.
 - A fragment pauses each lane at most once: the server refuses a fragment in which one lane

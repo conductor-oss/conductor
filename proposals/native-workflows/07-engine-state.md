@@ -348,20 +348,27 @@ or queued continuation is the running work.
 - Message de-duplication by client id, the claim fence, reply pruning, variable fencing and
   completion deferral all keep their semantics; only where the state lives changes.
 
-## 3. The SDK: internals change, the API does not
+## 3. The SDK: internals change, and a few API changes
 
 | Public API | Change |
 |---|---|
-| `Conductor.task/once/now/random/async/join/fanOut/child/startWorkflow/sleep/sleepUntil/repeatUntil/forEach/awaitCondition/awaitExternal/human/http/event/llm/mcp/agent` | none |
+| `Conductor.task/once/now/random/child/startWorkflow/sleep/sleepUntil/repeatUntil/forEach/awaitCondition/human/http/event/llm/mcp/agent` | none, except that every builder sends a fresh command per call, so one kept in a variable can be called again |
+| `LlmCall.as(Type)` | reads the model's answer (the task's `result`); a type other than `String` asks the server for JSON (`jsonOutput`) and decodes it, so `llm(..).as(Routing.class)` gives a record |
+| `Conductor.awaitExternal(ref, T).await(timeout)` | replaced by `external(ref).await(T.class, timeout)`: the result type is given when waiting, as for `human(..)` |
+| `Conductor.taskCommand`, `Conductor.spec` | removed from the public API: they returned internal types (now `TaskStubs.taskCommand`, `WorkflowSpec.forMethod`) |
+| `Conductor.async/join/fanOut` | `async` returns `java.util.concurrent.Future` (`Promise` is removed) and `join` takes futures; `fanOut`, which waits for every item, returns the `List` of results, as `forEach` does. `join` throws a branch's failure as the branch threw it, then `resultNow()` reads a result; `get()` waits too and wraps a failure in `ExecutionException`. A branch cannot be cancelled (`cancel` returns false) and `get(timeout, unit)` throws `UnsupportedOperationException` |
+| `AgentCall`, `AgentResult.needsInput`, `AgentCall.pollInterval/pushNotifications` | `agent(ref)` is a conversation: each `ask` is an AGENT task that continues it, carrying the conversation id and, after a reply that `needsInput()`, the id of the agent task it answers. `pollInterval`/`pushNotifications` say how the server waits for a long-running agent. `AgentResult.output`, never filled, is replaced by `artifacts` |
 | `Conductor.decision(name, value)` | removed after protocol 2, replaced by `switchOn(name, value).when(key, body)…otherwise(body).get()`/`.run()`, which emits a real `SWITCH` with every declared case (02 §9); `Engine.switchOn`, implemented by `Replayer.Lane.switchOn` and `DirectEngine.switchOn` |
 | `Conductor.doWhile(name, body, condition)`, `Functions.Condition` | added: a loop the code names; `CodeLoops.enter` tags every step made from the body or condition with `name`, and `CodeReader` reads it into the registered definition. No server change |
 | `@Workflow`, `@Variable`, `@Signal`, `@Update`, `@Query`, `@Schedule`, `@WorkerTask` | none |
-| `Conductor.connect/start/workflow(...).idempotencyKey/correlationId/priority/execute/attach` | none |
-| `WorkflowHandle.signal/update/query/result/status/variables/completeTask` | `variables()` returns only `@Variable` values; replies move out of it |
-| `Workers.workerId/devMode/continuationTimeout/settings/discovery/workflows/tasks/taskDefinitions/start` | none; `Workers.timeScale` is deprecated and does nothing |
-| `DurableTestEnvironment`, `TestRun`, `DirectEngine` | none |
+| `Conductor.of/start/workflow(...).idempotencyKey/correlationId/priority/execute/attach` | none |
+| `Conductor.host()` | replaced by `Conductor.workflows(...)`, `tasks(...)` and `workflows(Type.class, factory)`, each returning the `Workers` to start |
+| `WorkflowHandle.signal/update/query/result/status/variables/completeTask` | `variables()` returns only `@Variable` values; replies move out of it. `resultAsync()` is added: the result as a `CompletableFuture`. `status()` returns `Workflow.WorkflowStatus`; `result(timeout)` throws `WorkflowTimeoutException` (an `IllegalStateException`) when the wait runs out; `query` makes the instance with the factory a class is hosted with |
+| `Workers.workerId/devMode/continuationTimeout/settings/discovery/workflows/tasks/taskDefinitions/start` | `Workers` is `AutoCloseable`: `close()` replaces `shutdown()`; `start()` a second time throws. `Workers.timeScale` is removed; `registered()` is renamed `isRegistered()`; `workflow(Type.class, factory)` is `workflows(Type.class, factory)` |
+| `DurableTestEnvironment`, `TestRun`, `DirectEngine` | `env.workflow(Type.class, factory)` is `env.workflows(Type.class, factory)`, as on `Conductor` |
 | `DurableReplay.assertCompatible` | none; it reads the new recording shape |
-| `TaskFailure`, `WorkflowFailedException`, `NonDeterminismException`, `Backoff`, `Promise` | none |
+| `TaskFailure`, `WorkflowFailedException` | `TaskFailure.getStatus()` returns `Task.Status` and `getReason()` is added; a `WorkflowFailedException` thrown to a client carries `getWorkflowId()` and `getStatus()` |
+| `NonDeterminismException`, `Backoff` | none |
 
 Internals:
 

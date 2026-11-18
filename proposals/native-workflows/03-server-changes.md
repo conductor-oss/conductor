@@ -540,7 +540,7 @@ Size: 1 day.
   run from taking newer messages. `PullWorkflowMessages` keeps the same claim mechanism for JSON
   workflows (the `destructive-pull` mutant).
 - Targeted completion of a `WAIT` by reference already resolves loop-iteration names
-  (`ExecutionService.getPendingTaskForWorkflow`); the SDK uses it for `awaitExternal` and human
+  (`ExecutionService.getPendingTaskForWorkflow`); the SDK uses it for `external(..)` waits and human
   tasks. `awaitCondition` waits are completed by the handler completion's `releases` instead.
 
 Size: 0.5 day.
