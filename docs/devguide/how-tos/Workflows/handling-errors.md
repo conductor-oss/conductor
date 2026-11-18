@@ -359,16 +359,16 @@ Set the timeouts in the task definition for `call_external_api`:
 ```
 
 * **`timeoutSeconds`** — Maximum time for one attempt of the task, counted from when the attempt starts. Each retry starts a new attempt with a new timeout.
-* **`responseTimeoutSeconds`** — Maximum time to wait for a worker to update the task after it has picked the task up. If the worker does not update the task within this window, Conductor marks it as timed out.
+* **`responseTimeoutSeconds`** — Maximum time to wait for a worker to update the task after it has picked the task up. If the worker does not update the task within this window, the timeout policy is applied (with `RETRY`, as here, the task is marked `TIMED_OUT` and retried).
 * **`pollTimeoutSeconds`** — Maximum time the task can wait in the queue for a worker to poll it. If no worker polls the task within this time, the timeout policy is applied.
 
 ## Timeout policies
 
-Timeout policies determine what Conductor does when a task exceeds its `timeoutSeconds`, `responseTimeoutSeconds`, or `pollTimeoutSeconds` limit.
+Timeout policies determine what Conductor does when a task exceeds its `timeoutSeconds`, `responseTimeoutSeconds`, `pollTimeoutSeconds`, or `totalTimeoutSeconds` limit. The default is `TIME_OUT_WF`.
 
 ### RETRY
 
-Re-queue the task for another attempt. The retry counts against the task's `retryCount`.
+Mark the task `TIMED_OUT` and schedule another attempt. The retry counts against the task's `retryCount`; once retries are exhausted, the workflow is marked `TIMED_OUT`.
 
 ```json
 {
@@ -380,7 +380,7 @@ Re-queue the task for another attempt. The retry counts against the task's `retr
 
 ### TIME_OUT_WF
 
-Fail the entire workflow immediately when the task times out. Use this for tasks where a timeout indicates a critical problem that makes continuing the workflow pointless.
+Time out the entire workflow immediately when the task times out: the task and the workflow are both marked `TIMED_OUT`. This is the default policy. Use this for tasks where a timeout indicates a critical problem that makes continuing the workflow pointless.
 
 ```json
 {

@@ -328,6 +328,39 @@ class SimpleWorkflowSpec extends AbstractSpecification {
         }
     }
 
+    def "A response timeout under the default timeout policy times the workflow out"() {
+        given: "A task whose response times out after a second, with the default timeout policy"
+        def taskDef = new TaskDef('task_rt_time_out_wf', 'task_rt_time_out_wf', 'test@harness.com', 0, 120, 1)
+        metadataService.registerTaskDef([taskDef])
+        def task = new WorkflowTask()
+        task.name = 'task_rt_time_out_wf'
+        task.taskReferenceName = 't1'
+        def workflowDef = new WorkflowDef()
+        workflowDef.name = 'RTO_TIME_OUT_WF'
+        workflowDef.version = 1
+        workflowDef.ownerEmail = 'test@harness.com'
+        workflowDef.tasks.add(task)
+        metadataService.updateWorkflowDef(workflowDef)
+
+        when: "The task is polled and its worker does not respond in time"
+        def workflowInstanceId = startWorkflow('RTO_TIME_OUT_WF', 1, 'rto_time_out_wf', [:], null)
+        def polled = workflowExecutionService.poll('task_rt_time_out_wf', 'task1.integration.worker.testTimeout')
+        Thread.sleep(2000)
+
+        then: "The task and the workflow time out, and nothing is retried"
+        polled
+        await().atMost(30, TimeUnit.SECONDS).until {
+            workflowExecutor.decide(workflowInstanceId)
+            workflowExecutionService.getExecutionStatus(workflowInstanceId, false).status == Workflow.WorkflowStatus.TIMED_OUT
+        }
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            tasks.size() == 1
+            tasks[0].status == Task.Status.TIMED_OUT
+            tasks[0].reasonForIncompletion.startsWith('responseTimeout')
+        }
+        queueDAO.getSize('task_rt_time_out_wf') == 0
+    }
+
     def "Test if the workflow definitions with and without schema version can be registered"() {
         given: "A workflow definition with no schema version"
         def workflowDef1 = new WorkflowDef()

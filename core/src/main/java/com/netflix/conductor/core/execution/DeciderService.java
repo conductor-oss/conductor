@@ -181,6 +181,13 @@ public class DeciderService {
                             preScheduledTask.getReferenceTaskName(), preScheduledTask);
                 });
 
+        // A TERMINATE that ran ends the workflow as it says, whatever else failed: a retry
+        // reopens the cancelled tasks, and judging them first ended the workflow TERMINATED
+        // instead.
+        if (hasSuccessfulTerminateTask) {
+            pendingTasks.clear();
+        }
+
         // A new workflow does not enter this code branch
         for (TaskModel pendingTask : pendingTasks) {
 
@@ -365,10 +372,7 @@ public class DeciderService {
                     workflowDef
                             .getTasks()
                             .get(0); // Nothing is running yet - so schedule the first task
-            // Loop until a non-skipped task is found
-            while (isTaskSkipped(taskToSchedule, workflow)) {
-                taskToSchedule = workflowDef.getNextTask(taskToSchedule.getTaskReferenceName());
-            }
+            taskToSchedule = passOverSkipped(workflow, taskToSchedule);
 
             // In case of a new workflow, the first non-skippable task will be scheduled
             return getTasksToBeScheduled(workflow, taskToSchedule, 0);
@@ -524,10 +528,8 @@ public class DeciderService {
                 task.isLoopOverTask()
                         ? TaskUtils.removeIterationFromTaskRefName(task.getReferenceTaskName())
                         : task.getReferenceTaskName();
-        WorkflowTask taskToSchedule = workflowDef.getNextTask(taskReferenceName);
-        while (isTaskSkipped(taskToSchedule, workflow)) {
-            taskToSchedule = workflowDef.getNextTask(taskToSchedule.getTaskReferenceName());
-        }
+        WorkflowTask taskToSchedule =
+                passOverSkipped(workflow, workflowDef.getNextTask(taskReferenceName));
         if (taskToSchedule != null && TaskType.DO_WHILE.name().equals(taskToSchedule.getType())) {
             // check if already has this DO_WHILE task, ignore it if it already exists
             String nextTaskReferenceName = taskToSchedule.getTaskReferenceName();
@@ -551,10 +553,7 @@ public class DeciderService {
         final WorkflowDef def = workflow.getWorkflowDefinition();
 
         String taskReferenceName = task.getReferenceTaskName();
-        WorkflowTask taskToSchedule = def.getNextTask(taskReferenceName);
-        while (isTaskSkipped(taskToSchedule, workflow)) {
-            taskToSchedule = def.getNextTask(taskToSchedule.getTaskReferenceName());
-        }
+        WorkflowTask taskToSchedule = passOverSkipped(workflow, def.getNextTask(taskReferenceName));
         return taskToSchedule == null ? null : taskToSchedule.getTaskReferenceName();
     }
 
@@ -605,13 +604,27 @@ public class DeciderService {
             throw new TerminateWorkflowException(errMsg, status, task);
         }
 
-        // Guard: stop retrying if the total time budget across all attempts is exhausted.
-        // This is checked here (not only in checkTotalTimeout) so that a task timed out by a
-        // per-attempt policy with RETRY does not get re-queued once the total budget is gone.
-        if (taskDefinition.getTotalTimeoutSeconds() > 0 && task.getFirstScheduledTime() > 0) {
+        // Guard: stop retrying if the total time budget across all attempts is exhausted, as the
+        // timeout policy says. This is checked here (not only in checkTotalTimeout) so that a task
+        // that failed or timed out does not get re-queued once the total budget is gone. Under
+        // ALERT_ONLY the budget changes nothing. Under RETRY no attempt follows, so the task ends
+        // like one with no retries left. Under TIME_OUT_WF the workflow times out.
+        if (taskDefinition.getTotalTimeoutSeconds() > 0
+                && task.getFirstScheduledTime() > 0
+                && taskDefinition.getTimeoutPolicy() != TaskDef.TimeoutPolicy.ALERT_ONLY) {
             long totalElapsedSeconds =
                     (System.currentTimeMillis() - task.getFirstScheduledTime()) / 1000;
             if (totalElapsedSeconds >= taskDefinition.getTotalTimeoutSeconds()) {
+                boolean timeOutWorkflow =
+                        taskDefinition.getTimeoutPolicy() == TaskDef.TimeoutPolicy.TIME_OUT_WF;
+                if (!timeOutWorkflow
+                        && workflowTask != null
+                        && (workflowTask.isOptional() || workflowTask.isPermissive())) {
+                    return Optional.empty();
+                }
+                if (timeOutWorkflow) {
+                    task.setStatus(TIMED_OUT);
+                }
                 final String errMsg =
                         String.format(
                                 "Task %s/%s exceeded total timeout of %d seconds "
@@ -952,7 +965,8 @@ public class DeciderService {
         return true;
     }
 
-    private void timeoutTask(TaskDef taskDef, TaskModel task) {
+    @VisibleForTesting
+    void timeoutTask(TaskDef taskDef, TaskModel task) {
         String reason =
                 "responseTimeout: "
                         + taskDef.getResponseTimeoutSeconds()
@@ -961,8 +975,7 @@ public class DeciderService {
                         + " with Task Definition: "
                         + task.getTaskDefName();
         LOGGER.debug(reason);
-        task.setStatus(TIMED_OUT);
-        task.setReasonForIncompletion(reason);
+        timeoutTaskWithTimeoutPolicy(reason, taskDef, task);
     }
 
     public List<TaskModel> getTasksToBeScheduled(
@@ -975,6 +988,16 @@ public class DeciderService {
             WorkflowTask taskToSchedule,
             int retryCount,
             String retriedTaskId) {
+        // A skipped task counts as finished when the flow reaches it, wherever that is: the
+        // first task, the next one in a list, a fork's branch or a switch's case. Schedule what
+        // follows it instead.
+        WorkflowTask reached = passOverSkipped(workflow, taskToSchedule);
+        if (reached == null) {
+            return new LinkedList<>();
+        }
+        if (reached != taskToSchedule) {
+            return getTasksToBeScheduled(workflow, reached, retryCount, retriedTaskId);
+        }
         Map<String, Object> input =
                 parametersUtils.getTaskInput(
                         taskToSchedule.getInputParameters(), workflow, null, null);
@@ -1023,6 +1046,16 @@ public class DeciderService {
     private int applyMaxRetryDelayCap(int delaySeconds, TaskDef taskDef) {
         int cap = taskDef.getMaxRetryDelaySeconds();
         return (cap > 0 && delaySeconds > cap) ? cap : delaySeconds;
+    }
+
+    /** The given task, or the first one after it that an operator has not skipped. */
+    private WorkflowTask passOverSkipped(WorkflowModel workflow, WorkflowTask task) {
+        while (task != null
+                && task.getTaskReferenceName() != null
+                && isTaskSkipped(task, workflow)) {
+            task = workflow.getWorkflowDefinition().getNextTask(task.getTaskReferenceName());
+        }
+        return task;
     }
 
     private boolean isTaskSkipped(WorkflowTask taskToSchedule, WorkflowModel workflow) {

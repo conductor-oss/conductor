@@ -407,4 +407,45 @@ public class PostgresMetadataDAOTest {
         assertNotNull(empty);
         assertTrue(empty.isEmpty());
     }
+
+    /**
+     * Several servers registering the same definitions at once, as worker processes do when they
+     * start together: every registration must succeed. Found by the durability bench on a
+     * three-server cluster, where two of three workers crashed on a duplicate key.
+     */
+    @Test
+    public void concurrentRegistrationOfTheSameDefinitionsSucceeds() throws Exception {
+        String task = "concurrent_task_" + UUID.randomUUID();
+        String workflow = "concurrent_wf_" + UUID.randomUUID();
+        java.util.concurrent.ExecutorService pool =
+                java.util.concurrent.Executors.newFixedThreadPool(8);
+        java.util.concurrent.CountDownLatch go = new java.util.concurrent.CountDownLatch(1);
+        List<java.util.concurrent.Future<?>> futures = new java.util.ArrayList<>();
+        for (int i = 0; i < 8; i++) {
+            futures.add(
+                    pool.submit(
+                            () -> {
+                                go.await();
+                                TaskDef def = new TaskDef(task);
+                                def.setOwnerEmail("test@example.com");
+                                metadataDAO.updateTaskDef(def);
+                                WorkflowDef wf = new WorkflowDef();
+                                wf.setName(workflow);
+                                wf.setVersion(1);
+                                wf.setOwnerEmail("test@example.com");
+                                metadataDAO.updateWorkflowDef(wf);
+                                return null;
+                            }));
+        }
+        go.countDown();
+        for (java.util.concurrent.Future<?> f : futures) {
+            f.get(); // rethrows a duplicate-key failure
+        }
+        pool.shutdown();
+        assertEquals(task, metadataDAO.getTaskDef(task).getName());
+        assertTrue(metadataDAO.getWorkflowDef(workflow, 1).isPresent());
+        // other tests count every definition
+        metadataDAO.removeTaskDef(task);
+        metadataDAO.removeWorkflowDef(workflow, 1);
+    }
 }

@@ -14,6 +14,7 @@ package com.netflix.conductor.core.execution;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import org.conductoross.conductor.common.metadata.agent.AgentConfig;
 import org.conductoross.conductor.common.metadata.agent.AgentStartRequest;
@@ -110,6 +111,19 @@ public interface WorkflowExecutor {
      * @return updated workflow
      */
     WorkflowModel decide(String workflowId);
+
+    /**
+     * Applies a change to the workflow and decides it, in one acquisition of the workflow's lock
+     * (the one decide takes): the change is ordered with every other decide. A change that throws
+     * is not decided and its exception propagates.
+     *
+     * @param workflowId id of the workflow to change and evaluate
+     * @param change what to do to the workflow, read with its tasks, before deciding
+     * @return updated workflow
+     * @throws com.netflix.conductor.core.exception.TransientException when another decide holds the
+     *     workflow
+     */
+    WorkflowModel decide(String workflowId, Consumer<WorkflowModel> change);
 
     /**
      * @param workflow workflow to be evaluated

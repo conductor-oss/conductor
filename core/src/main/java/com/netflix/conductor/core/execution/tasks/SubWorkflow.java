@@ -196,9 +196,14 @@ public class SubWorkflow extends WorkflowSystemTask {
             // initial decide continues asynchronously through the decider queue.
             WorkflowModel subWorkflow =
                     workflowExecutor.startWorkflowIdempotent(startWorkflowInput);
-            if (subWorkflow.getStatus().isTerminal() && !subWorkflow.getStatus().isSuccessful()) {
-                // The deterministic ID collides with a previously-terminated child (e.g. after a
-                // rerun). Start a fresh child with a new random ID instead of reusing the dead one.
+            if (subWorkflow.getStatus().isTerminal()
+                    && (!subWorkflow.getStatus().isSuccessful()
+                            || (subWorkflow.getCreateTime() != null
+                                    && subWorkflow.getCreateTime() < task.getScheduledTime()))) {
+                // The deterministic ID collides with a previously-terminated child, or with one
+                // created before this task was last scheduled: a rerun schedules the task again
+                // with the same id and retry count, and must run a new child, not reuse the old
+                // one's result. Start a fresh child with a new random ID.
                 startWorkflowInput.setWorkflowId(idGenerator.generate());
                 subWorkflow = workflowExecutor.startWorkflowIdempotent(startWorkflowInput);
             }
@@ -300,6 +305,11 @@ public class SubWorkflow extends WorkflowSystemTask {
             LOGGER.warn(
                     "Cannot cancel sub-workflow {} — not found in store (already deleted?).",
                     workflowId);
+            return;
+        }
+        if (subWorkflow.getStatus().isTerminal()) {
+            // it ended on its own while the parent was ending; its result stands, and reaches
+            // the parent's task as usual
             return;
         }
         subWorkflow.setStatus(WorkflowModel.Status.TERMINATED);

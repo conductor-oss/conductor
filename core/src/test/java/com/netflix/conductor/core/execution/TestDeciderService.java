@@ -1283,31 +1283,103 @@ public class TestDeciderService {
                 task.getStatus());
     }
 
-    /**
-     * When a worker explicitly fails a task and the total budget is already exhausted, the retry()
-     * guard throws TerminateWorkflowException regardless of the per-attempt policy. This documents
-     * the intended behavior: totalTimeoutSeconds is a hard budget; the per-attempt timeoutPolicy
-     * controls single-attempt timeouts, not the total limit.
-     */
-    @Test(expected = com.netflix.conductor.core.exception.TerminateWorkflowException.class)
-    public void testRetry_totalTimeoutExceeded_alertOnlyPolicy_stillTerminates() {
-        WorkflowModel workflow = createDefaultWorkflow();
+    private TaskModel failedOverBudget() {
         TaskModel task = new TaskModel();
-        task.setStatus(TaskModel.Status.FAILED); // worker explicitly failed it
+        task.setStatus(TaskModel.Status.FAILED);
         task.setTaskId("t1");
+        task.setTaskType("SIMPLE");
         task.setReasonForIncompletion("worker failure");
         task.setFirstScheduledTime(System.currentTimeMillis() - 200_000);
+        return task;
+    }
 
+    private TaskDef budgetOf60Seconds(TaskDef.TimeoutPolicy policy) {
         TaskDef taskDef = new TaskDef();
         taskDef.setRetryCount(10);
         taskDef.setRetryDelaySeconds(1);
         taskDef.setRetryLogic(TaskDef.RetryLogic.FIXED);
         taskDef.setTotalTimeoutSeconds(60);
-        taskDef.setTimeoutPolicy(TaskDef.TimeoutPolicy.ALERT_ONLY);
-        WorkflowTask workflowTask = new WorkflowTask();
+        taskDef.setTimeoutPolicy(policy);
+        return taskDef;
+    }
 
-        // Must throw — total budget exhausted regardless of ALERT_ONLY policy
-        deciderService.retry(taskDef, workflowTask, task, workflow);
+    private TaskModel silentAttempt() {
+        TaskModel task = new TaskModel();
+        task.setStatus(TaskModel.Status.IN_PROGRESS);
+        task.setTaskId("t1");
+        return task;
+    }
+
+    private TaskDef responseTimeoutOf(TaskDef.TimeoutPolicy policy) {
+        TaskDef taskDef = new TaskDef();
+        taskDef.setResponseTimeoutSeconds(10);
+        taskDef.setTimeoutPolicy(policy);
+        return taskDef;
+    }
+
+    @Test
+    public void testResponseTimeout_alertOnly_leavesTheAttemptRunning() {
+        TaskModel task = silentAttempt();
+        deciderService.timeoutTask(responseTimeoutOf(TaskDef.TimeoutPolicy.ALERT_ONLY), task);
+        assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
+    }
+
+    @Test
+    public void testResponseTimeout_retry_timesOutTheAttempt() {
+        TaskModel task = silentAttempt();
+        deciderService.timeoutTask(responseTimeoutOf(TaskDef.TimeoutPolicy.RETRY), task);
+        assertEquals(TaskModel.Status.TIMED_OUT, task.getStatus());
+    }
+
+    @Test(expected = com.netflix.conductor.core.exception.TerminateWorkflowException.class)
+    public void testResponseTimeout_timeOutWf_timesOutTheWorkflow() {
+        deciderService.timeoutTask(
+                responseTimeoutOf(TaskDef.TimeoutPolicy.TIME_OUT_WF), silentAttempt());
+    }
+
+    /** ALERT_ONLY changes nothing: a spent total budget does not stop retries. */
+    @Test
+    public void testRetry_totalTimeoutExceeded_alertOnlyPolicy_stillRetries() {
+        Optional<TaskModel> retried =
+                deciderService.retry(
+                        budgetOf60Seconds(TaskDef.TimeoutPolicy.ALERT_ONLY),
+                        new WorkflowTask(),
+                        failedOverBudget(),
+                        createDefaultWorkflow());
+        assertTrue(retried.isPresent());
+    }
+
+    /** Under RETRY a spent budget allows no attempt, so an optional task completes with errors. */
+    @Test
+    public void testRetry_totalTimeoutExceeded_retryPolicy_optionalNotRetried() {
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setOptional(true);
+        Optional<TaskModel> retried =
+                deciderService.retry(
+                        budgetOf60Seconds(TaskDef.TimeoutPolicy.RETRY),
+                        workflowTask,
+                        failedOverBudget(),
+                        createDefaultWorkflow());
+        assertFalse(retried.isPresent());
+    }
+
+    /** Under TIME_OUT_WF the workflow times out, even for an optional task that merely failed. */
+    @Test
+    public void testRetry_totalTimeoutExceeded_timeOutWfPolicy_timesOutWorkflow() {
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setOptional(true);
+        TaskModel task = failedOverBudget();
+        try {
+            deciderService.retry(
+                    budgetOf60Seconds(TaskDef.TimeoutPolicy.TIME_OUT_WF),
+                    workflowTask,
+                    task,
+                    createDefaultWorkflow());
+            fail("expected the workflow to time out");
+        } catch (com.netflix.conductor.core.exception.TerminateWorkflowException e) {
+            assertEquals(WorkflowModel.Status.TIMED_OUT, e.getWorkflowStatus());
+            assertEquals(TaskModel.Status.TIMED_OUT, task.getStatus());
+        }
     }
 
     @Test(expected = com.netflix.conductor.core.exception.TerminateWorkflowException.class)
