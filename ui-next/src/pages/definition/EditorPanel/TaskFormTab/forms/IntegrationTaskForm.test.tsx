@@ -3,8 +3,9 @@ import { MemoryRouter } from "react-router";
 import { Provider as ThemeProvider } from "theme/material/provider";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { MCPTaskForm } from "./MCPTaskForm";
+import { IntegrationTaskForm } from "./IntegrationTaskForm";
 import { TaskFormProps } from "./types";
+import { SUMMARY_MIN_LENGTH } from "./zipFile";
 import { useFetch } from "utils/query";
 
 const FORM_SCHEMA = {
@@ -68,11 +69,11 @@ const FORM_SCHEMA = {
 };
 
 vi.mock("utils/query", () => ({ useFetch: vi.fn() }));
-vi.mock("utils/hooks/useMCPIntegrations", () => ({
-  useMCPIntegrations: () => ({
+vi.mock("utils/hooks/useIntegrationProviders", () => ({
+  useIntegrationProviders: () => ({
     integrations: [{ name: "test-integration", status: "active" }],
   }),
-  useMCPTools: () => ({ tools: [{ api: "Create Function" }] }),
+  useIntegrationApis: () => ({ tools: [{ api: "Create Function" }] }),
 }));
 vi.mock("./MaybeVariable", () => ({
   MaybeVariable: ({ children }: { children: React.ReactNode }) => children,
@@ -90,7 +91,7 @@ function Harness({ initial = {} }: { initial?: Record<string, unknown> }) {
   return (
     <ThemeProvider>
       <MemoryRouter>
-        <MCPTaskForm task={task} onChange={setTask} />
+        <IntegrationTaskForm task={task} onChange={setTask} />
         <output data-testid="input">
           {JSON.stringify(task.inputParameters)}
         </output>
@@ -104,7 +105,7 @@ const selectSource = (value: string) => {
   fireEvent.click(screen.getByRole("option", { name: value }));
 };
 
-describe("MCPTaskForm", () => {
+describe("IntegrationTaskForm", () => {
   const serve = () =>
     vi.mocked(useFetch).mockReturnValue({
       data: { inputSchema: { data: FORM_SCHEMA } },
@@ -169,6 +170,8 @@ describe("MCPTaskForm", () => {
     serve();
     render(<Harness />);
     const picker = await screen.findByLabelText(/choose zip for/i);
+    const helper = /choose a zip up to 10 mib/i;
+    expect(screen.getByText(helper)).toBeInTheDocument();
     const file = new File(
       [new Uint8Array([80, 75, 3, 4, 116, 101, 115, 116])],
       "function.zip",
@@ -183,10 +186,23 @@ describe("MCPTaskForm", () => {
     );
     expect(input().unrelated).toBe("preserved");
     expect(input().source).not.toHaveProperty("fileName");
-    // Selecting the same file again remains possible.
-    fireEvent.change(picker, { target: { files: [file] } });
+    // Once loaded, the field needs no guidance text.
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Choose ZIP" })).toBeEnabled(),
+      expect(screen.queryByText(helper)).not.toBeInTheDocument(),
+    );
+    // Even a tiny ZIP is summarized rather than shown as Base64.
+    expect(
+      await screen.findByDisplayValue("ZIP file · 8 B"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("textbox", { name: /zip.*base.*64/i }),
+    ).toHaveAttribute("readonly");
+    // Selecting the same file again remains possible.
+    fireEvent.change(screen.getByLabelText(/choose zip for/i), {
+      target: { files: [file] },
+    });
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Replace" })).toBeEnabled(),
     );
     selectSource("CLOUD_LOCATION");
     await screen.findByRole("textbox", { name: /source location/i });
@@ -226,12 +242,10 @@ describe("MCPTaskForm", () => {
   );
 
   it("does not restore ZIP data after the user switches to a cloud source during a read", async () => {
-    let pending: FileReader;
+    // Hold the read open; the reader is recovered from the mock's `this`.
     const read = vi
       .spyOn(FileReader.prototype, "readAsDataURL")
-      .mockImplementation(function (this: FileReader) {
-        pending = this;
-      });
+      .mockImplementation(() => {});
     try {
       serve();
       render(<Harness />);
@@ -240,16 +254,133 @@ describe("MCPTaskForm", () => {
       });
       selectSource("CLOUD_LOCATION");
       await screen.findByRole("textbox", { name: /source location/i });
-      Object.defineProperty(pending!, "result", {
+      const pending = read.mock.contexts[0] as FileReader;
+      Object.defineProperty(pending, "result", {
         value: "data:application/zip;base64,UEsDBA==",
       });
-      pending!.dispatchEvent(new ProgressEvent("load"));
+      pending.dispatchEvent(new ProgressEvent("load"));
       await waitFor(() =>
         expect(input().source).toEqual({ sourceType: "CLOUD_LOCATION" }),
       );
     } finally {
       read.mockRestore();
     }
+  });
+
+  it("summarizes a large value instead of rendering its Base64, and removing restores the text field", async () => {
+    serve();
+    const large = "QUFB".repeat(2000); // 8000 chars, 6000 bytes
+    render(
+      <Harness
+        initial={{ source: { sourceType: "BASE64", zipFileBase64: large } }}
+      />,
+    );
+    expect(
+      await screen.findByDisplayValue("ZIP file · 5.9 KiB"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("textbox", { name: /zip.*base.*64/i }),
+    ).toHaveAttribute("readonly");
+    expect(screen.queryByDisplayValue(large)).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/choose zip for/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+    await waitFor(() =>
+      expect(input().source).toEqual({ sourceType: "BASE64" }),
+    );
+    expect(
+      await screen.findByRole("textbox", { name: /zip.*base.*64/i }),
+    ).toHaveValue("");
+    expect(screen.getByRole("button", { name: "Choose ZIP" })).toBeEnabled();
+    expect(
+      screen.getByText("ZIP removed.", { exact: false }),
+    ).toBeInTheDocument();
+  });
+
+  it("restores a removed ZIP with Undo", async () => {
+    serve();
+    const large = "QUFB".repeat(2000);
+    render(
+      <Harness
+        initial={{ source: { sourceType: "BASE64", zipFileBase64: large } }}
+      />,
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "Remove" }));
+    await waitFor(() =>
+      expect(input().source).toEqual({ sourceType: "BASE64" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    await waitFor(() => expect(input().source.zipFileBase64).toBe(large));
+    expect(
+      await screen.findByDisplayValue("ZIP file · 5.9 KiB"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Undo" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("drops the Undo option once a new value is entered", async () => {
+    serve();
+    render(
+      <Harness
+        initial={{
+          source: { sourceType: "BASE64", zipFileBase64: "QUFB".repeat(2000) },
+        }}
+      />,
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "Remove" }));
+    const field = await screen.findByRole("textbox", {
+      name: /zip.*base.*64/i,
+    });
+    fireEvent.change(field, { target: { value: "${workflow.input.zip}" } });
+    await waitFor(() =>
+      expect(input().source.zipFileBase64).toBe("${workflow.input.zip}"),
+    );
+    expect(
+      screen.queryByRole("button", { name: "Undo" }),
+    ).not.toBeInTheDocument();
+    // Expressions aren't ZIP data, so they stay editable as text.
+    expect(field).toHaveValue("${workflow.input.zip}");
+  });
+
+  it("switches to the summary after choosing a ZIP above the display threshold", async () => {
+    serve();
+    render(<Harness />);
+    const bytes = new Uint8Array(SUMMARY_MIN_LENGTH);
+    bytes.set([80, 75, 3, 4]);
+    fireEvent.change(await screen.findByLabelText(/choose zip for/i), {
+      target: { files: [new File([bytes], "function.zip")] },
+    });
+    expect(
+      await screen.findByDisplayValue("ZIP file · 4.0 KiB"),
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(input().source?.zipFileBase64).toMatch(/^UEsDBA/),
+    );
+    expect(
+      screen.getByRole("textbox", { name: /zip.*base.*64/i }),
+    ).toHaveAttribute("readonly");
+    expect(screen.getByRole("button", { name: "Replace" })).toBeEnabled();
+  });
+
+  it("shows schema validation errors while summarized", async () => {
+    const schema = structuredClone(FORM_SCHEMA);
+    Object.assign(schema.properties.source.properties.zipFileBase64, {
+      maxLength: 5000,
+    });
+    vi.mocked(useFetch).mockReturnValue({
+      data: { inputSchema: { data: schema } },
+      isLoading: false,
+    } as ReturnType<typeof useFetch>);
+    render(
+      <Harness
+        initial={{
+          source: { sourceType: "BASE64", zipFileBase64: "QUFB".repeat(2000) },
+        }}
+      />,
+    );
+    expect(
+      await screen.findByText(/must not have more than 5000 characters/i),
+    ).toBeInTheDocument();
   });
 
   it("surfaces read errors and retains the previous Base64 input", async () => {
@@ -362,9 +493,7 @@ it("renders ordinary inputs without UI metadata or conditional filtering", async
   };
   render(<Harness initial={{ source }} />);
   await screen.findByRole("textbox", { name: /source location/i });
-  expect(
-    screen.getByRole("textbox", { name: /zip.*base.*64/i }),
-  ).toBeInTheDocument();
+  expect(screen.getByDisplayValue(/^ZIP file · /)).toBeInTheDocument();
   selectSource("CLOUD_LOCATION");
   await waitFor(() => expect(input().source.sourceType).toBe("CLOUD_LOCATION"));
   expect(input().source.zipFileBase64).toBe(source.zipFileBase64);
@@ -393,7 +522,10 @@ it("emits defaults without mutating the editor's original task inputs", async ()
   render(
     <ThemeProvider>
       <MemoryRouter>
-        <MCPTaskForm task={{ inputParameters: original }} onChange={onChange} />
+        <IntegrationTaskForm
+          task={{ inputParameters: original }}
+          onChange={onChange}
+        />
       </MemoryRouter>
     </ThemeProvider>,
   );

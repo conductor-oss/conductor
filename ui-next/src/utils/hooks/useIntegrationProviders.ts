@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { FEATURES } from "utils/flags";
 import { useFetch } from "utils/query";
 
-export const useMCPIntegrations = () => {
+export const useIntegrationProviders = () => {
   const integrationsUrl = `/integrations/def`;
   const providersUrl = `/integrations/provider?category=MCP&activeOnly=false`;
 
@@ -52,7 +52,7 @@ export const useMCPIntegrations = () => {
   };
 };
 
-type MCPToolDefinition = {
+type IntegrationApiDefinition = {
   api: string;
   inputSchema?: {
     data?: {
@@ -61,7 +61,7 @@ type MCPToolDefinition = {
   };
 };
 
-export const useMCPTools = (
+export const useIntegrationApis = (
   integrationName?: string,
   configuration?: Record<string, unknown>,
 ) => {
@@ -69,11 +69,14 @@ export const useMCPTools = (
     ? `/integrations/${integrationName}/def/apis`
     : "";
 
-  const { data: tools, isLoading } = useFetch<MCPToolDefinition[]>(toolsUrl, {
-    enterpriseApiFeature: FEATURES.INTEGRATIONS,
-    when: Boolean(integrationName),
-    keepPreviousData: false,
-  });
+  const { data: tools, isLoading } = useFetch<IntegrationApiDefinition[]>(
+    toolsUrl,
+    {
+      enterpriseApiFeature: FEATURES.INTEGRATIONS,
+      when: Boolean(integrationName),
+      keepPreviousData: false,
+    },
+  );
 
   // Match schema requirements against saved settings; unrestricted operations stay available.
   const availableTools = useMemo(
