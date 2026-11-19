@@ -74,20 +74,14 @@ const TaskCard = ({
 }) => {
   const { mode } = useContext(ColorModeContext);
   const darkMode = mode === "dark";
-  const { onSelectTask, inExecution } = useContext(FlowExecutionContext);
+  const { onSelectTask } = useContext(FlowExecutionContext);
 
   const { task, status } = nodeData;
   const { name, type, taskReferenceName } = task;
   const agentPresentation =
     type === TaskType.AGENT ? getAgentTaskPresentation(task) : undefined;
-  // An agent with no card snapshot at all comes from a definition the editor never saved, such as
-  // one registered through an SDK; in a run the server found it, so it is not shown as unresolved
-  // there.
-  // A snapshot the editor could not resolve still is.
-  const unresolved =
-    agentPresentation?.unresolved && !(inExecution && !task.metadata?.agent);
   const primaryLabel = agentPresentation
-    ? unresolved
+    ? agentPresentation.unresolved
       ? `UNRESOLVED: ${agentPresentation.name}`
       : agentPresentation.name
     : name;

@@ -272,10 +272,6 @@ public class Monitors {
         counter("native_stale_completion", "workflowName", workflowName);
     }
 
-    public static void recordWorkflowMessagesDiscarded(String workflowName) {
-        counter("workflow_messages_discarded", "workflowName", workflowName);
-    }
-
     public static void recordTaskTimeout(String taskType) {
         counter("task_timeout", "taskType", taskType);
     }

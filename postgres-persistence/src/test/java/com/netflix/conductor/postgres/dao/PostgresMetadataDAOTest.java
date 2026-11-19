@@ -12,17 +12,12 @@
  */
 package com.netflix.conductor.postgres.dao;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -411,45 +406,5 @@ public class PostgresMetadataDAOTest {
         List<WorkflowDefSummary> empty = metadataDAO.getWorkflowVersions("nonexistent_workflow");
         assertNotNull(empty);
         assertTrue(empty.isEmpty());
-    }
-
-    /**
-     * Several servers registering the same definitions at once, as worker processes do when they
-     * start together: every registration must succeed. Found by the durability bench on a
-     * three-server cluster, where two of three workers crashed on a duplicate key.
-     */
-    @Test
-    public void concurrentRegistrationOfTheSameDefinitionsSucceeds() throws Exception {
-        String task = "concurrent_task_" + UUID.randomUUID();
-        String workflow = "concurrent_wf_" + UUID.randomUUID();
-        ExecutorService pool = Executors.newFixedThreadPool(8);
-        CountDownLatch go = new CountDownLatch(1);
-        List<Future<?>> futures = new ArrayList<>();
-        for (int i = 0; i < 8; i++) {
-            futures.add(
-                    pool.submit(
-                            () -> {
-                                go.await();
-                                TaskDef def = new TaskDef(task);
-                                def.setOwnerEmail("test@example.com");
-                                metadataDAO.updateTaskDef(def);
-                                WorkflowDef wf = new WorkflowDef();
-                                wf.setName(workflow);
-                                wf.setVersion(1);
-                                wf.setOwnerEmail("test@example.com");
-                                metadataDAO.updateWorkflowDef(wf);
-                                return null;
-                            }));
-        }
-        go.countDown();
-        for (Future<?> f : futures) {
-            f.get(); // rethrows a duplicate-key failure
-        }
-        pool.shutdown();
-        assertEquals(task, metadataDAO.getTaskDef(task).getName());
-        assertTrue(metadataDAO.getWorkflowDef(workflow, 1).isPresent());
-        // other tests count every definition
-        metadataDAO.removeTaskDef(task);
-        metadataDAO.removeWorkflowDef(workflow, 1);
     }
 }

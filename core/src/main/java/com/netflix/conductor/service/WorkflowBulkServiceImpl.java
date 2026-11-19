@@ -21,7 +21,6 @@ import org.springframework.stereotype.Service;
 import com.netflix.conductor.annotations.Audit;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.model.BulkResponse;
-import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -212,8 +211,6 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
             try {
                 workflowExecutor.terminateWorkflow(workflowId, reason);
                 bulkResponse.appendSuccessResponse(workflowId);
-            } catch (ConflictException e) {
-                // it already ended: there is nothing to terminate, only to remove
             } catch (Exception e) {
                 LOGGER.error(
                         "bulk terminate exception, workflowId {}, message: {} ",

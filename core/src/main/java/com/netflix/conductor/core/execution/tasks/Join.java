@@ -109,24 +109,24 @@ public class Join extends WorkflowSystemTask {
         }
 
         boolean allTasksTerminal =
-                joinOn.stream().map(ref -> awaited(workflow, ref)).allMatch(Join::isSettled);
+                joinOn.stream()
+                        .map(workflow::getTaskByRefName)
+                        .allMatch(t -> t != null && t.getStatus().isTerminal());
 
         for (String joinOnRef : joinOn) {
-            TaskModel forkedTask = awaited(workflow, joinOnRef);
-            if (!isSettled(forkedTask)) {
-                // Not scheduled yet, still running, or failed and not yet decided on: wait
+            TaskModel forkedTask = workflow.getTaskByRefName(joinOnRef);
+            if (forkedTask == null) {
+                // Continue checking other tasks if a referenced task is not yet scheduled
                 continue;
             }
 
             TaskModel.Status taskStatus = forkedTask.getStatus();
 
-            // Only add to task output if it's not empty. The output is the named task's own,
-            // also when it is a switch the JOIN waited past.
-            TaskModel namedTask = workflow.getTaskByRefName(joinOnRef);
-            if (!namedTask.getOutputData().isEmpty()) {
-                Map<String, Object> forkOutput = namedTask.getOutputData();
+            // Only add to task output if it's not empty.
+            if (!forkedTask.getOutputData().isEmpty()) {
+                Map<String, Object> forkOutput = forkedTask.getOutputData();
                 if (agentExecution) {
-                    forkOutput = prepareAgentOutput(namedTask);
+                    forkOutput = prepareAgentOutput(forkedTask);
                 }
                 task.addOutput(joinOnRef, forkOutput);
             }
@@ -141,7 +141,7 @@ public class Join extends WorkflowSystemTask {
             if (isJoinFailure) {
                 final String failureReasons =
                         joinOn.stream()
-                                .map(ref -> awaited(workflow, ref))
+                                .map(workflow::getTaskByRefName)
                                 .filter(Objects::nonNull)
                                 .filter(t -> !t.getStatus().isSuccessful())
                                 .map(TaskModel::getReasonForIncompletion)
@@ -155,7 +155,7 @@ public class Join extends WorkflowSystemTask {
                 // still wins and fails the join.
                 boolean hasNonCanceledFailure =
                         joinOn.stream()
-                                .map(ref -> awaited(workflow, ref))
+                                .map(workflow::getTaskByRefName)
                                 .filter(Objects::nonNull)
                                 .filter(t -> t.getStatus().isTerminal())
                                 .filter(t -> !t.getStatus().isSuccessful())
@@ -194,51 +194,6 @@ public class Join extends WorkflowSystemTask {
 
         // Task execution not complete, waiting on more tasks to reach terminal state.
         return false;
-    }
-
-    /**
-     * The task the JOIN waits for when it names {@code ref}. A switch completes as soon as it picks
-     * a case, so a JOIN naming one waits for the last task of the case it took, following a switch
-     * that ends that case too. An empty case leaves the switch itself; a case task not scheduled
-     * yet is {@code null}, which the JOIN waits for.
-     */
-    private static TaskModel awaited(WorkflowModel workflow, String ref) {
-        TaskModel task = workflow.getTaskByRefName(ref);
-        while (task != null
-                && (TaskType.TASK_TYPE_SWITCH.equals(task.getTaskType())
-                        || TaskType.TASK_TYPE_DECISION.equals(task.getTaskType()))
-                && task.getStatus() == TaskModel.Status.COMPLETED
-                && task.getWorkflowTask() != null
-                && task.getInputData().get("case") != null) {
-            WorkflowTask entry = task.getWorkflowTask();
-            List<WorkflowTask> caseTasks =
-                    entry.getDecisionCases().get(String.valueOf(task.getInputData().get("case")));
-            if (caseTasks == null) {
-                caseTasks = entry.getDefaultCase();
-            }
-            if (caseTasks == null || caseTasks.isEmpty()) {
-                return task;
-            }
-            String last = caseTasks.get(caseTasks.size() - 1).getTaskReferenceName();
-            task =
-                    workflow.getTaskByRefName(
-                            task.isLoopOverTask()
-                                    ? TaskUtils.appendIteration(last, task.getIteration())
-                                    : last);
-        }
-        return task;
-    }
-
-    /**
-     * Whether a task the JOIN waits for is over. A failed attempt is over only once the decider has
-     * looked at it: it may still be retried. The JOIN can run on a copy of the workflow loaded
-     * after the attempt failed and before the decider scheduled its retry, and must not fail the
-     * workflow on the attempt the retry replaces.
-     */
-    private static boolean isSettled(TaskModel task) {
-        return task != null
-                && task.getStatus().isTerminal()
-                && (task.getStatus().isSuccessful() || task.isExecuted() || task.isRetried());
     }
 
     private static boolean isAgentExecution(WorkflowModel workflow) {
@@ -396,15 +351,6 @@ public class Join extends WorkflowSystemTask {
         WorkflowTask last = tasks.get(tasks.size() - 1);
         List<WorkflowTask> caseTasks = takenCase(workflow, last);
         return caseTasks.isEmpty() ? last.getTaskReferenceName() : lastTaskRef(workflow, caseTasks);
-    }
-
-    /**
-     * Evaluating a JOIN only reads the state of its targets, so running it again is harmless and a
-     * JOIN whose server died mid-evaluation is picked up again in about a minute.
-     */
-    @Override
-    public boolean isExecuteIdempotent() {
-        return true;
     }
 
     @Override

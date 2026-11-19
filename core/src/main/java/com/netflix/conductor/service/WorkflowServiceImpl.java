@@ -29,7 +29,6 @@ import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
-import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.StartWorkflowInput;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
@@ -208,11 +207,7 @@ public class WorkflowServiceImpl implements WorkflowService {
      * @param archiveWorkflow Archives the workflow and associated tasks instead of removing them.
      */
     public void terminateRemove(String workflowId, String reason, boolean archiveWorkflow) {
-        try {
-            workflowExecutor.terminateWorkflow(workflowId, reason);
-        } catch (ConflictException e) {
-            // it already ended: there is nothing to terminate, only to remove
-        }
+        workflowExecutor.terminateWorkflow(workflowId, reason);
         executionService.removeWorkflow(workflowId, archiveWorkflow);
     }
 

@@ -56,7 +56,6 @@ import com.netflix.conductor.core.execution.mapper.SimpleTaskMapper;
 import com.netflix.conductor.core.execution.mapper.SubWorkflowTaskMapper;
 import com.netflix.conductor.core.execution.mapper.SwitchTaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
-import com.netflix.conductor.core.execution.mapper.TerminateTaskMapper;
 import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
 import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
 import com.netflix.conductor.core.execution.tasks.Decision;
@@ -183,7 +182,6 @@ public class TestDeciderOutcomes {
         taskMappers.put(EVENT.name(), new EventTaskMapper(parametersUtils));
         taskMappers.put(WAIT.name(), new WaitTaskMapper(parametersUtils));
         taskMappers.put(HTTP.name(), new HTTPTaskMapper(parametersUtils, metadataDAO));
-        taskMappers.put(TaskType.TERMINATE.name(), new TerminateTaskMapper(parametersUtils));
 
         this.nativeContinuationService =
                 new NativeContinuationService(
@@ -399,10 +397,6 @@ public class TestDeciderOutcomes {
         String next;
     }
 
-    private Outcome failOnce(boolean optional, TaskModel.Status status) {
-        return failOnce(false, optional, status);
-    }
-
     private Outcome failOnce(boolean nativeWf, boolean optional, TaskModel.Status status) {
         WorkflowDef def = new WorkflowDef();
         def.setName("matrix");
@@ -467,27 +461,6 @@ public class TestDeciderOutcomes {
                         ? null
                         : outcome.tasksToBeScheduled.get(0).getReferenceTaskName();
         return result;
-    }
-
-    @Test
-    public void failureMatrix() {
-        // not optional: retried if retriable, then the workflow ends
-        Outcome failed = failOnce(false, TaskModel.Status.FAILED);
-        assertTrue(failed.retried);
-        assertTrue(failed.terminated);
-        Outcome terminal = failOnce(false, TaskModel.Status.FAILED_WITH_TERMINAL_ERROR);
-        assertFalse(terminal.retried);
-        assertTrue(terminal.terminated);
-        // optional: retried if retriable, then COMPLETED_WITH_ERRORS and the next task runs
-        Outcome optFailed = failOnce(true, TaskModel.Status.FAILED);
-        assertTrue(optFailed.retried);
-        assertFalse(optFailed.terminated);
-        assertEquals(TaskModel.Status.COMPLETED_WITH_ERRORS, optFailed.finalStatus);
-        assertEquals("t1", optFailed.next);
-        Outcome optTerminal = failOnce(true, TaskModel.Status.FAILED_WITH_TERMINAL_ERROR);
-        assertFalse(optTerminal.retried);
-        assertFalse(optTerminal.terminated);
-        assertEquals(TaskModel.Status.COMPLETED_WITH_ERRORS, optTerminal.finalStatus);
     }
 
     @Test

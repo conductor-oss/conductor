@@ -56,7 +56,6 @@ import { RightPanel } from "./RightPanel";
 import { TaskList } from "./TaskList/TaskList";
 import Timeline from "./Timeline";
 import { FlowExecutionContextProvider } from "./state";
-import { failedTaskOf } from "./state/failedTask";
 import { useExecutionMachine } from "./state/hook";
 import { CountdownEvents, ExecutionTabs } from "./state/types";
 
@@ -577,8 +576,12 @@ export default function Execution() {
   );
 
   const failedTaskWithReason = useMemo(
-    () => failedTaskOf(execution?.tasks, execution?.failedTaskId),
-    [execution?.tasks, execution?.failedTaskId],
+    () =>
+      execution?.tasks?.find(
+        (task) =>
+          task?.status === TaskStatus.FAILED && task?.reasonForIncompletion,
+      ),
+    [execution?.tasks],
   );
 
   const handleJumpToTask = () => {

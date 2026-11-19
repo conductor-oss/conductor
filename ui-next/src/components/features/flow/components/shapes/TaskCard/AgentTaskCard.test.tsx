@@ -2,7 +2,6 @@ import { render, screen } from "@testing-library/react";
 import { ColorModeContext } from "theme/material/ColorModeContext";
 import { colors } from "theme/tokens/variables";
 import { AgentTaskDef, TaskStatus, TaskType } from "types";
-import { FlowExecutionContextProvider } from "pages/execution/state";
 import TaskCard from "./TaskCard";
 
 vi.mock("./CardIcon", () => ({ default: () => null }));
@@ -107,72 +106,6 @@ describe("AGENT task diagram card", () => {
       screen.getByText("UNRESOLVED: ${workflow.input.agentUrl}"),
     ).toBeInTheDocument();
     expect(screen.getByText("A2A AGENT")).toBeInTheDocument();
-  });
-
-  it("does not mark an agent with no snapshot as unresolved in a run", () => {
-    render(
-      <FlowExecutionContextProvider
-        onExpandDynamic={vi.fn()}
-        onCollapseDynamic={vi.fn()}
-      >
-        <TaskCard
-          nodeData={{
-            crumbs: [],
-            status: TaskStatus.COMPLETED,
-            task: {
-              ...baseTask,
-              taskReferenceName: "billing_agent",
-              inputParameters: {
-                agentType: "a2a",
-                agentUrl: "http://agents/a2a/billing",
-              },
-            } as AgentTaskDef,
-          }}
-          onClick={vi.fn()}
-          isInconsistent={false}
-        />
-      </FlowExecutionContextProvider>,
-    );
-
-    expect(screen.getByText("http://agents/a2a/billing")).toBeInTheDocument();
-    expect(screen.queryByText(/UNRESOLVED/)).not.toBeInTheDocument();
-  });
-
-  it("still marks an agent the editor could not resolve in a run", () => {
-    render(
-      <FlowExecutionContextProvider
-        onExpandDynamic={vi.fn()}
-        onCollapseDynamic={vi.fn()}
-      >
-        <TaskCard
-          nodeData={{
-            crumbs: [],
-            status: TaskStatus.IN_PROGRESS,
-            task: {
-              ...baseTask,
-              inputParameters: {
-                agentType: "a2a",
-                agentUrl: "http://agents/x",
-              },
-              metadata: {
-                agent: {
-                  schemaVersion: 1,
-                  agentType: "a2a",
-                  displayName: "http://agents/x",
-                  source: { url: "http://agents/x" },
-                  resolved: false,
-                  a2a: { url: "http://agents/x" },
-                },
-              },
-            } as AgentTaskDef,
-          }}
-          onClick={vi.fn()}
-          isInconsistent={false}
-        />
-      </FlowExecutionContextProvider>,
-    );
-
-    expect(screen.getByText("UNRESOLVED: http://agents/x")).toBeInTheDocument();
   });
 
   it("keeps the compact agent identity legible in dark mode", () => {

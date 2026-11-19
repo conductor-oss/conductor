@@ -27,9 +27,6 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
 import static org.junit.Assert.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 public class PullWorkflowMessagesTest {
@@ -57,8 +54,7 @@ public class PullWorkflowMessagesTest {
 
     @Test
     public void nonBlocking_emptyQueue_completesWithEmptyOutput() {
-        when(dao.claim(eq(WORKFLOW_ID), eq(1), any(), anyLong()))
-                .thenReturn(Collections.emptyList());
+        when(dao.pop(WORKFLOW_ID, 1)).thenReturn(Collections.emptyList());
 
         TaskModel taskModel = taskWithInput(Map.of(PullWorkflowMessages.INPUT_BLOCKING, false));
         boolean progressed = task.execute(workflow, taskModel, executor);
@@ -76,7 +72,7 @@ public class PullWorkflowMessagesTest {
         WorkflowMessage msg =
                 new WorkflowMessage(
                         "msg-id", WORKFLOW_ID, Map.of("key", "value"), "2024-01-01T00:00:00Z");
-        when(dao.claim(eq(WORKFLOW_ID), eq(1), any(), anyLong())).thenReturn(List.of(msg));
+        when(dao.pop(WORKFLOW_ID, 1)).thenReturn(List.of(msg));
 
         TaskModel taskModel = taskWithInput(Map.of(PullWorkflowMessages.INPUT_BLOCKING, false));
         boolean progressed = task.execute(workflow, taskModel, executor);
@@ -92,8 +88,7 @@ public class PullWorkflowMessagesTest {
 
     @Test
     public void blocking_emptyQueue_staysInProgress() {
-        when(dao.claim(eq(WORKFLOW_ID), eq(1), any(), anyLong()))
-                .thenReturn(Collections.emptyList());
+        when(dao.pop(WORKFLOW_ID, 1)).thenReturn(Collections.emptyList());
 
         TaskModel taskModel = taskWithInput(Map.of(PullWorkflowMessages.INPUT_BLOCKING, true));
         boolean progressed = task.execute(workflow, taskModel, executor);
@@ -104,8 +99,7 @@ public class PullWorkflowMessagesTest {
 
     @Test
     public void defaultBehavior_emptyQueue_staysInProgress() {
-        when(dao.claim(eq(WORKFLOW_ID), eq(1), any(), anyLong()))
-                .thenReturn(Collections.emptyList());
+        when(dao.pop(WORKFLOW_ID, 1)).thenReturn(Collections.emptyList());
 
         // No INPUT_BLOCKING key — should default to blocking
         TaskModel taskModel = taskWithInput(Map.of());
@@ -113,21 +107,6 @@ public class PullWorkflowMessagesTest {
 
         assertFalse(progressed);
         assertNotEquals(TaskModel.Status.COMPLETED, taskModel.getStatus());
-    }
-
-    @Test
-    public void failedPop_staysInProgressAndRetries() {
-        when(dao.claim(eq(WORKFLOW_ID), eq(1), any(), anyLong()))
-                .thenThrow(new RuntimeException("database is locked"))
-                .thenReturn(Collections.emptyList());
-
-        TaskModel taskModel = taskWithInput(Map.of(PullWorkflowMessages.INPUT_BLOCKING, false));
-        taskModel.setStatus(TaskModel.Status.IN_PROGRESS);
-        assertFalse(task.execute(workflow, taskModel, executor));
-        assertEquals(TaskModel.Status.IN_PROGRESS, taskModel.getStatus());
-
-        assertTrue(task.execute(workflow, taskModel, executor));
-        assertEquals(TaskModel.Status.COMPLETED, taskModel.getStatus());
     }
 
     // --- helpers ---

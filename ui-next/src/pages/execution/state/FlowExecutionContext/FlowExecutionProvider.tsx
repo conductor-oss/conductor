@@ -6,12 +6,7 @@ export const FlowExecutionContextProvider: FunctionComponent<
   FlowExecutionContextProviderProps
 > = ({ children, onExpandDynamic, onCollapseDynamic, onSelectTask }) => (
   <FlowExecutionContext.Provider
-    value={{
-      onExpandDynamic,
-      onCollapseDynamic,
-      onSelectTask,
-      inExecution: true,
-    }}
+    value={{ onExpandDynamic, onCollapseDynamic, onSelectTask }}
   >
     {children}
   </FlowExecutionContext.Provider>

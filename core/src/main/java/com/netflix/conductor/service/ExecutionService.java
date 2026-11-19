@@ -204,7 +204,6 @@ public class ExecutionService {
                     continue;
                 }
 
-                TaskModel.Status readStatus = taskModel.getStatus();
                 taskModel.setStatus(TaskModel.Status.IN_PROGRESS);
                 if (taskModel.getStartTime() == 0) {
                     taskModel.setStartTime(System.currentTimeMillis());
@@ -215,12 +214,7 @@ public class ExecutionService {
                         0); // reset callbackAfterSeconds when giving the task to the worker
                 taskModel.setWorkerId(workerId);
                 taskModel.incrementPollCount();
-                if (!executionDAOFacade.updateTaskIfStatus(taskModel, readStatus)) {
-                    // changed since it was read, e.g. cancelled when its workflow ended: a write
-                    // now would overwrite that, so the task is not handed out
-                    queueDAO.remove(queueName, taskId);
-                    continue;
-                }
+                executionDAOFacade.updateTask(taskModel);
                 adjustDeciderQueuePostpone(taskModel, taskDef);
                 Task task = taskModel.toTask();
                 // Secrets substitution only sees taskModel.getInputData(); when input has been
