@@ -13,11 +13,13 @@
 package com.netflix.conductor.core.execution.tasks;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
+import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
@@ -40,6 +42,8 @@ public class TestJoin {
             boolean isPermissive) {
         TaskModel task = new TaskModel();
         task.setStatus(status);
+        // a finished task the decider has looked at: it will not be retried
+        task.setExecuted(status.isTerminal());
         task.setReferenceTaskName(referenceName);
         WorkflowTask workflowTask = new WorkflowTask();
         workflowTask.setOptional(isOptional);
@@ -72,6 +76,117 @@ public class TestJoin {
         var join = new Join(properties);
         var result = join.execute(wfJoinPair.getLeft(), wfJoinPair.getRight(), executor);
         assertFalse(result);
+    }
+
+    @Test
+    public void testJoinWaitsForAFailedAttemptTheDeciderHasNotLookedAt() {
+        // The JOIN can run on a copy of the workflow loaded after the attempt failed and before
+        // the decider scheduled its retry. It must wait, not fail on the attempt the retry
+        // replaces (DECIDER_BUGS item 2).
+        var task1 = createTask("task1", TaskModel.Status.COMPLETED, false, false);
+        var task2 = createTask("task2", TaskModel.Status.FAILED, false, false);
+        task2.setExecuted(false);
+
+        var wfJoinPair = createJoinWorkflow(List.of(task1, task2));
+
+        var join = new Join(properties);
+        assertFalse(join.execute(wfJoinPair.getLeft(), wfJoinPair.getRight(), executor));
+        assertNotEquals(TaskModel.Status.FAILED, wfJoinPair.getRight().getStatus());
+
+        // once the decider has looked at it and not retried it, the JOIN fails
+        task2.setExecuted(true);
+        assertTrue(join.execute(wfJoinPair.getLeft(), wfJoinPair.getRight(), executor));
+        assertEquals(TaskModel.Status.FAILED, wfJoinPair.getRight().getStatus());
+    }
+
+    private static WorkflowTask entry(String ref) {
+        WorkflowTask entry = new WorkflowTask();
+        entry.setName(ref);
+        entry.setTaskReferenceName(ref);
+        return entry;
+    }
+
+    /** A switch that took case "x"; it completed as soon as it picked it. */
+    private TaskModel switchTask(String ref, Map<String, List<WorkflowTask>> cases) {
+        TaskModel task = createTask(ref, TaskModel.Status.COMPLETED, false, false);
+        task.setTaskType(TaskType.TASK_TYPE_SWITCH);
+        task.getWorkflowTask().setTaskReferenceName(ref);
+        task.getWorkflowTask().setDecisionCases(cases);
+        task.getInputData().put("case", "x");
+        task.getOutputData().put("selectedCase", "x");
+        return task;
+    }
+
+    @Test
+    public void testJoinNamingASwitchWaitsForTheCaseItTook() {
+        // DECIDER_BUGS item 9
+        var sw = switchTask("sw", Map.of("x", List.of(entry("a"), entry("b"))));
+        var a = createTask("a", TaskModel.Status.COMPLETED, false, false);
+        var b = createTask("b", TaskModel.Status.IN_PROGRESS, false, false);
+        var wfJoinPair = createJoinWorkflow(List.of(sw, a, b));
+        wfJoinPair.getRight().getInputData().put("joinOn", List.of("sw"));
+        var join = new Join(properties);
+
+        assertFalse(join.execute(wfJoinPair.getLeft(), wfJoinPair.getRight(), executor));
+
+        b.setStatus(TaskModel.Status.COMPLETED);
+        b.setExecuted(true);
+        assertTrue(join.execute(wfJoinPair.getLeft(), wfJoinPair.getRight(), executor));
+        assertEquals(TaskModel.Status.COMPLETED, wfJoinPair.getRight().getStatus());
+        // the output under the switch's name is still the switch's own
+        assertEquals(Map.of("selectedCase", "x"), wfJoinPair.getRight().getOutputData().get("sw"));
+    }
+
+    @Test
+    public void testJoinFollowsASwitchThatEndsTheCase() {
+        var inner = switchTask("inner", Map.of("x", List.of(entry("c"))));
+        var outer = switchTask("outer", Map.of("x", List.of(entry("a"), entry("inner"))));
+        var a = createTask("a", TaskModel.Status.COMPLETED, false, false);
+        var wfJoinPair = createJoinWorkflow(List.of(outer, a, inner));
+        wfJoinPair.getRight().getInputData().put("joinOn", List.of("outer"));
+        var join = new Join(properties);
+
+        // the inner case's task is not scheduled yet
+        assertFalse(join.execute(wfJoinPair.getLeft(), wfJoinPair.getRight(), executor));
+
+        wfJoinPair
+                .getLeft()
+                .getTasks()
+                .add(createTask("c", TaskModel.Status.COMPLETED, false, false));
+        assertTrue(join.execute(wfJoinPair.getLeft(), wfJoinPair.getRight(), executor));
+    }
+
+    @Test
+    public void testJoinNamingASwitchWithAnEmptyCaseCompletesWithTheSwitch() {
+        var sw = switchTask("sw", Map.of("x", List.of()));
+        var wfJoinPair = createJoinWorkflow(List.of(sw));
+        var join = new Join(properties);
+
+        assertTrue(join.execute(wfJoinPair.getLeft(), wfJoinPair.getRight(), executor));
+        assertEquals(TaskModel.Status.COMPLETED, wfJoinPair.getRight().getStatus());
+    }
+
+    @Test
+    public void testJoinInALoopWaitsForTheCaseOfTheSameIteration() {
+        var sw = switchTask("sw__2", Map.of("x", List.of(entry("a"))));
+        sw.setIteration(2);
+        var earlier = createTask("a__1", TaskModel.Status.COMPLETED, false, false);
+        var wfJoinPair = createJoinWorkflow(List.of(earlier, sw));
+        TaskModel joinTask = wfJoinPair.getRight();
+        joinTask.setIteration(2);
+        joinTask.getInputData().put("joinOn", List.of("sw"));
+        joinTask.setWorkflowTask(new WorkflowTask());
+        joinTask.getWorkflowTask().setTaskReferenceName("join");
+        joinTask.setReferenceTaskName("join__2");
+        var join = new Join(properties);
+
+        assertFalse(join.execute(wfJoinPair.getLeft(), joinTask, executor));
+
+        wfJoinPair
+                .getLeft()
+                .getTasks()
+                .add(createTask("a__2", TaskModel.Status.COMPLETED, false, false));
+        assertTrue(join.execute(wfJoinPair.getLeft(), joinTask, executor));
     }
 
     @Test

@@ -936,6 +936,9 @@ These workers communicate with the Conductor server via REST/gRPC, allowing them
 
 Conductor handles scheduling, retries, and state persistence. Your worker just focuses on business logic.
 
+!!! Note
+    Workers should be **idempotent**, since Conductor can retry a task after a timeout or failure — executing the same task input more than once should not produce duplicate side effects.
+
 
 ## Worker configuration
 
@@ -1181,13 +1184,14 @@ import {
 } from "@io-orkes/conductor-javascript";
 import type { Task } from "@io-orkes/conductor-javascript";
 
-@worker({ taskDefName: "greet" })
-async function greet(task: Task) {
-  return {
-    status: "COMPLETED" as const,
-    outputData: { result: `Hello ${task.inputData.name}` },
-  };
-}
+const greet = worker({ taskDefName: "greet" })(
+  async (task: Task) => {
+    return {
+      status: "COMPLETED" as const,
+      outputData: { result: `Hello ${task.inputData?.name}` },
+    };
+  }
+);
 
 async function main() {
   const clients = await OrkesClients.from();
@@ -1210,11 +1214,11 @@ main();
 <p class="worker-language-guide__heading" role="heading" aria-level="3">3. Run and verify</p>
 
 ```bash
-npx ts-node quickstart.ts
+npx tsx quickstart.ts
 # Hello Conductor
 ```
 
-See the [JavaScript SDK guide](../documentation/clientsdks/js-sdk.md) for TypeScript 5 decorators, worker health, and production configuration.
+See the [JavaScript SDK guide](../documentation/clientsdks/js-sdk.md) for worker health and production configuration.
 
   </section>
 
@@ -2120,10 +2124,7 @@ A realistic saga implementation involves a main workflow that processes an order
         "customerId": "${workflow.input.customerId}",
         "amount": "${workflow.input.totalAmount}"
       },
-      "type": "SIMPLE",
-      "retryCount": 2,
-      "retryLogic": "EXPONENTIAL_BACKOFF",
-      "retryDelaySeconds": 5
+      "type": "SIMPLE"
     },
     {
       "name": "reserve_inventory",
@@ -2133,10 +2134,7 @@ A realistic saga implementation involves a main workflow that processes an order
         "items": "${workflow.input.items}",
         "paymentTransactionId": "${charge_payment_ref.output.transactionId}"
       },
-      "type": "SIMPLE",
-      "retryCount": 2,
-      "retryLogic": "FIXED",
-      "retryDelaySeconds": 3
+      "type": "SIMPLE"
     },
     {
       "name": "arrange_shipping",
@@ -2147,10 +2145,7 @@ A realistic saga implementation involves a main workflow that processes an order
         "items": "${workflow.input.items}",
         "inventoryReservationId": "${reserve_inventory_ref.output.reservationId}"
       },
-      "type": "SIMPLE",
-      "retryCount": 1,
-      "retryLogic": "FIXED",
-      "retryDelaySeconds": 10
+      "type": "SIMPLE"
     }
   ],
   "restartable": true,
@@ -2159,6 +2154,34 @@ A realistic saga implementation involves a main workflow that processes an order
   "timeoutPolicy": "TIME_OUT_WF",
   "timeoutSeconds": 600
 }
+```
+
+Register a task definition for each task, with the same name as the task. Retry settings are read from the task definition. If you set them on the workflow task instead, they are dropped when the workflow is saved.
+
+```json
+[
+  {
+    "name": "charge_payment",
+    "retryCount": 2,
+    "retryLogic": "EXPONENTIAL_BACKOFF",
+    "retryDelaySeconds": 5,
+    "ownerEmail": "order-team@example.com"
+  },
+  {
+    "name": "reserve_inventory",
+    "retryCount": 2,
+    "retryLogic": "FIXED",
+    "retryDelaySeconds": 3,
+    "ownerEmail": "order-team@example.com"
+  },
+  {
+    "name": "arrange_shipping",
+    "retryCount": 1,
+    "retryLogic": "FIXED",
+    "retryDelaySeconds": 10,
+    "ownerEmail": "order-team@example.com"
+  }
+]
 ```
 
 **Compensation workflow** — `order_compensation` reverses each completed step in reverse order: cancel the shipment, restore inventory, and refund the payment.
@@ -2177,10 +2200,7 @@ A realistic saga implementation involves a main workflow that processes an order
         "shipmentId": "${workflow.input.failedWorkflow.tasks[arrange_shipping_ref].output.shipmentId}"
       },
       "type": "SIMPLE",
-      "optional": true,
-      "retryCount": 3,
-      "retryLogic": "FIXED",
-      "retryDelaySeconds": 5
+      "optional": true
     },
     {
       "name": "restore_inventory",
@@ -2190,10 +2210,7 @@ A realistic saga implementation involves a main workflow that processes an order
         "reservationId": "${workflow.input.failedWorkflow.tasks[reserve_inventory_ref].output.reservationId}"
       },
       "type": "SIMPLE",
-      "optional": true,
-      "retryCount": 3,
-      "retryLogic": "FIXED",
-      "retryDelaySeconds": 5
+      "optional": true
     },
     {
       "name": "refund_payment",
@@ -2203,10 +2220,7 @@ A realistic saga implementation involves a main workflow that processes an order
         "transactionId": "${workflow.input.failedWorkflow.tasks[charge_payment_ref].output.transactionId}",
         "amount": "${workflow.input.failedWorkflow.input.totalAmount}"
       },
-      "type": "SIMPLE",
-      "retryCount": 5,
-      "retryLogic": "EXPONENTIAL_BACKOFF",
-      "retryDelaySeconds": 10
+      "type": "SIMPLE"
     }
   ],
   "restartable": true,
@@ -2217,15 +2231,48 @@ A realistic saga implementation involves a main workflow that processes an order
 }
 ```
 
+The task definitions for the compensation tasks:
+
+```json
+[
+  {
+    "name": "cancel_shipment",
+    "retryCount": 3,
+    "retryLogic": "FIXED",
+    "retryDelaySeconds": 5,
+    "ownerEmail": "order-team@example.com"
+  },
+  {
+    "name": "restore_inventory",
+    "retryCount": 3,
+    "retryLogic": "FIXED",
+    "retryDelaySeconds": 5,
+    "ownerEmail": "order-team@example.com"
+  },
+  {
+    "name": "refund_payment",
+    "retryCount": 5,
+    "retryLogic": "EXPONENTIAL_BACKOFF",
+    "retryDelaySeconds": 10,
+    "ownerEmail": "order-team@example.com"
+  }
+]
+```
+
 Notice that compensation tasks are marked `optional: true` for steps that may not have completed before the failure occurred. The refund task uses aggressive retries with exponential backoff because it is critical that the customer receives their money back.
 
 ## Retry strategies
 
-When a task fails, Conductor can automatically retry it according to the retry logic configured on the task definition. You control the retry behavior with three parameters:
+When a task fails, Conductor can automatically retry it according to the retry settings in the task definition. The task definition is either registered with the same name as the task, or embedded in the workflow task in `taskDefinition`. You control the retry behavior with these task definition parameters:
 
-* **`retryCount`** — Maximum number of retry attempts.
+* **`retryCount`** — Maximum number of retry attempts. If the workflow task also sets `retryCount`, that value is used instead.
 * **`retryLogic`** — The backoff strategy between retries.
 * **`retryDelaySeconds`** — The base delay between retries, in seconds.
+* **`backoffScaleFactor`** — Multiplier used by LINEAR_BACKOFF. Default 1. It has no effect on FIXED or EXPONENTIAL_BACKOFF.
+
+A SIMPLE task without a task definition uses the default settings: FIXED, 60 seconds between retries, and 3 retries unless the workflow task sets `retryCount`. A system task such as INLINE without a task definition is not retried, and `retryCount` on the workflow task is ignored.
+
+Some system tasks that run inside the Conductor server, such as JSON_JQ_TRANSFORM, are retried immediately: `retryDelaySeconds` and `retryLogic` do not delay the retry.
 
 ### FIXED
 
@@ -2243,7 +2290,7 @@ This retries up to 3 times, waiting exactly 5 seconds between each attempt.
 
 ### EXPONENTIAL_BACKOFF
 
-Each retry waits exponentially longer than the previous one. The delay is calculated as `retryDelaySeconds * 2^(attemptNumber)`. This reduces load on downstream services that may be experiencing pressure.
+Each retry waits exponentially longer than the previous one. The delay is calculated as `retryDelaySeconds * 2^n`, where `n` is the number of retries already made (0 for the first retry). This reduces load on downstream services that may be experiencing pressure.
 
 ```json
 {
@@ -2257,7 +2304,7 @@ This retries up to 4 times with delays of approximately 2, 4, 8, and 16 seconds.
 
 ### LINEAR_BACKOFF
 
-Each retry waits incrementally longer by a fixed amount. The delay is calculated as `retryDelaySeconds * attemptNumber`. This provides a gentler ramp-up than exponential backoff.
+Each retry waits incrementally longer by a fixed amount. The delay is calculated as `retryDelaySeconds * backoffScaleFactor * (n + 1)`, where `n` is the number of retries already made (0 for the first retry) and `backoffScaleFactor` defaults to 1. This provides a gentler ramp-up than exponential backoff.
 
 ```json
 {
@@ -2290,10 +2337,19 @@ Setting `optional` to `true` on a task tells Conductor to continue the workflow 
   "name": "send_analytics_event",
   "taskReferenceName": "send_analytics_ref",
   "type": "SIMPLE",
-  "optional": true,
+  "optional": true
+}
+```
+
+The task definition for `send_analytics_event`:
+
+```json
+{
+  "name": "send_analytics_event",
   "retryCount": 2,
   "retryLogic": "FIXED",
-  "retryDelaySeconds": 3
+  "retryDelaySeconds": 3,
+  "ownerEmail": "order-team@example.com"
 }
 ```
 
@@ -2313,23 +2369,33 @@ You can set timeouts on individual tasks to prevent them from blocking the workf
 {
   "name": "call_external_api",
   "taskReferenceName": "call_api_ref",
-  "type": "SIMPLE",
-  "timeoutSeconds": 120,
-  "responseTimeoutSeconds": 60,
-  "timeoutPolicy": "RETRY"
+  "type": "SIMPLE"
 }
 ```
 
-* **`timeoutSeconds`** — Maximum total time for the task, including all retries.
-* **`responseTimeoutSeconds`** — Maximum time to wait for a worker to pick up and respond to the task. If a worker does not update the task within this window, Conductor marks it as timed out.
+Set the timeouts in the task definition for `call_external_api`:
+
+```json
+{
+  "name": "call_external_api",
+  "timeoutSeconds": 120,
+  "responseTimeoutSeconds": 60,
+  "timeoutPolicy": "RETRY",
+  "ownerEmail": "order-team@example.com"
+}
+```
+
+* **`timeoutSeconds`** — Maximum time for one attempt of the task, counted from when the attempt starts. Each retry starts a new attempt with a new timeout.
+* **`responseTimeoutSeconds`** — Maximum time to wait for a worker to update the task after it has picked the task up. If the worker does not update the task within this window, the timeout policy is applied (with `RETRY`, as here, the task is marked `TIMED_OUT` and retried).
+* **`pollTimeoutSeconds`** — Maximum time the task can wait in the queue for a worker to poll it. If no worker polls the task within this time, the timeout policy is applied.
 
 ## Timeout policies
 
-Timeout policies determine what Conductor does when a task exceeds its `timeoutSeconds` or `responseTimeoutSeconds` limit.
+Timeout policies determine what Conductor does when a task exceeds its `timeoutSeconds`, `responseTimeoutSeconds`, `pollTimeoutSeconds`, or `totalTimeoutSeconds` limit. The default is `TIME_OUT_WF`.
 
 ### RETRY
 
-Re-queue the task for another attempt. The retry counts against the task's `retryCount`.
+Mark the task `TIMED_OUT` and schedule another attempt. The retry counts against the task's `retryCount`; once retries are exhausted, the workflow is marked `TIMED_OUT`.
 
 ```json
 {
@@ -2341,7 +2407,7 @@ Re-queue the task for another attempt. The retry counts against the task's `retr
 
 ### TIME_OUT_WF
 
-Fail the entire workflow immediately when the task times out. Use this for tasks where a timeout indicates a critical problem that makes continuing the workflow pointless.
+Time out the entire workflow immediately when the task times out: the task and the workflow are both marked `TIMED_OUT`. This is the default policy. Use this for tasks where a timeout indicates a critical problem that makes continuing the workflow pointless.
 
 ```json
 {
@@ -2531,7 +2597,16 @@ Here are the recovery options:
 | Restart with Current Definitions | Restart the workflow from the beginning using the same workflow definition that was used in the original execution. This option is useful if the workflow definition has changed and you want to run the execution instance using the original definition.            |
 | Restart with Latest Definitions | Restart the workflow from the beginning using the latest workflow definition. This option is useful if changes were made to the workflow definition and you want to run the execution instance with the latest definition. |
 | Rerun from a specific task | Re-execute the workflow from a specific task, reusing the outputs of all prior tasks. This option is useful when a task in the middle of the workflow failed and you want to fix and re-run it without re-executing everything before it. |
-| Retry - From failed task | Retry the workflow from the last failed task.           |
+| Retry - From failed task | Retry the workflow from the last failed task. Not available for a `COMPLETED` workflow. |
+
+A rerun from a task removes every task scheduled after it, then runs forward from that task:
+
+* The rerun task gets a fresh total time budget (`totalTimeoutSeconds` counts from the rerun). A retry does the same for the retried task.
+* In a fork, tasks that other branches scheduled after the rerun task run again, and a `JOIN` that waits for a task now removed or running again goes back to waiting.
+* In a `DO_WHILE`, the loop reopens at the rerun task's iteration and evaluates its condition again from there.
+* A `SUB_WORKFLOW` task that is rerun, or reached again after rerunning from an earlier task, starts a new child workflow instead of reusing the old child's result.
+
+See [Rerun](../../../documentation/api/workflow.md#rerun) for details.
 
 CLI equivalents:
 
@@ -2552,10 +2627,14 @@ After recovery, run `conductor workflow status <workflow-id>` and verify that th
 
 1. In the workflow execution details page, select **Actions** in the top right corner.
 2. Select one of the following options:
-    - Restart with Current Definitions
-    - Restart with Latest Definitions
-    - Rerun from a specific task
-    - Retry - From failed task
+    - **Restart with current definitions** or **Restart with latest definitions** (only when the workflow definition is restartable).
+    - **Re-run workflow**: rerun from the beginning.
+    - **Retry - from failed task**: offered for a `FAILED`, `TIMED_OUT`, or `TERMINATED` execution with a failed, timed-out, or canceled task that has not been retried yet. Not offered for a `COMPLETED` execution.
+    - **Retry - resume subworkflow**: offered for a `FAILED` or `TIMED_OUT` execution with a failed `SUB_WORKFLOW` task.
+
+To rerun from a specific task, select the task in the execution diagram and select **Re-Run from Task** in the task details panel.
+
+**Terminate** is offered only for `RUNNING` and `PAUSED` executions; an execution that has ended cannot be terminated.
 
 ### Using APIs
 
@@ -2565,7 +2644,7 @@ You can rerun a workflow from a specific task using the Rerun Workflow API (`POS
 
 Likewise, you can retry workflow executions from the last failed task using the Retry Workflow API (`POST api/workflow/{workflowId}/retry`) or the Bulk Retry Workflow API (`POST api/workflow/bulk/retry`).
 
-All three recovery operations — restart, rerun, and retry — work on workflows in any terminal state (COMPLETED, FAILED, TIMED_OUT, TERMINATED) and are available indefinitely. Conductor preserves the full execution history, so you can replay any workflow even months after the original run.
+Restart and rerun work on workflows in any terminal state (COMPLETED, FAILED, TIMED_OUT, TERMINATED). Retry works on workflows that ended without succeeding (FAILED, TIMED_OUT, TERMINATED); a COMPLETED workflow is refused with `409 Conflict`, so rerun or restart it instead. All three are available indefinitely. Conductor preserves the full execution history, so you can replay any workflow even months after the original run.
 
 ## Limitations and next step
 
@@ -2579,7 +2658,7 @@ During a workflow execution, each task transitions through a series of states. U
 
 ## State diagram
 
-Every task starts in `SCHEDULED` when it enters its queue. A worker poll moves it to `IN_PROGRESS`, and a successful result moves it to `COMPLETED`. The other transitions cover failure: `FAILED` and `TIMED_OUT` tasks return to `SCHEDULED` for retry until their retries are exhausted, and every other state is terminal.
+Every task starts in `SCHEDULED` when it enters its queue. A worker poll moves it to `IN_PROGRESS`, and a successful result moves it to `COMPLETED`. The other transitions cover failure: `FAILED` tasks return to `SCHEDULED` for retry until their retries are exhausted, `TIMED_OUT` tasks do so only when the task definition's `timeoutPolicy` is `RETRY` (see [Timeout scenarios](#timeout-scenarios)), and every other state is terminal. A retry schedules a new task execution with a new task ID; the failed or timed-out execution stays in its terminal state.
 
 ```mermaid
 stateDiagram-v2
@@ -2592,13 +2671,13 @@ stateDiagram-v2
     IN_PROGRESS --> FAILED_WITH_TERMINAL_ERROR : Non-retryable failure
     IN_PROGRESS --> TIMED_OUT : Response/task timeout exceeded
     IN_PROGRESS --> COMPLETED_WITH_ERRORS : Optional task fails
-    SCHEDULED --> SKIPPED : Skip Task API called
+    [*] --> SKIPPED : Skip Task API called before the task is scheduled
     FAILED --> SCHEDULED : Retry (after delay)
-    TIMED_OUT --> SCHEDULED : Retry (after delay)
+    TIMED_OUT --> SCHEDULED : Retry (timeoutPolicy RETRY, after delay)
     COMPLETED --> [*]
-    FAILED --> [*] : Retries exhausted or totalTimeoutSeconds exceeded
+    FAILED --> [*] : Retries exhausted
     FAILED_WITH_TERMINAL_ERROR --> [*]
-    TIMED_OUT --> [*] : Retries exhausted or totalTimeoutSeconds exceeded
+    TIMED_OUT --> [*] : TIME_OUT_WF policy, retries exhausted, or totalTimeoutSeconds exceeded
     CANCELED --> [*]
     SKIPPED --> [*]
     COMPLETED_WITH_ERRORS --> [*]
@@ -2613,9 +2692,9 @@ stateDiagram-v2
 | `COMPLETED` | Task completed successfully. |
 | `FAILED` | Task failed due to an error. Conductor will retry based on the task definition's retry configuration. |
 | `FAILED_WITH_TERMINAL_ERROR` | Task failed with a non-retryable error. No retries will be attempted. |
-| `TIMED_OUT` | Task exceeded its configured timeout. Conductor will retry based on the retry configuration. |
+| `TIMED_OUT` | Task exceeded its configured timeout. With `timeoutPolicy: RETRY`, Conductor retries it based on the retry configuration. With `TIME_OUT_WF` (the default), the workflow times out. |
 | `CANCELED` | Task was canceled because the workflow was terminated. |
-| `SKIPPED` | Task was skipped via the Skip Task API. The workflow continues to the next task. |
+| `SKIPPED` | Task was skipped via the [Skip Task API](../../documentation/api/workflow.md#skip-task) before it was scheduled. When the flow reaches it, it counts as finished and the workflow continues to the next task, whether it is the first task, the next task in a list, a fork branch, or a switch case. Skipping a `FORK_JOIN` or `FORK_JOIN_DYNAMIC` also skips its `JOIN`. |
 | `COMPLETED_WITH_ERRORS` | Task failed but is marked as optional in the workflow definition. The workflow continues. |
 
 
@@ -2657,6 +2736,12 @@ Retry behavior is controlled by the task definition:
 
 ## Timeout scenarios
 
+Every timeout below (poll, response, task, and total) applies the task definition's `timeoutPolicy`:
+
+- `RETRY`: the task is marked `TIMED_OUT` and retried like any failed attempt, while `retryCount` allows.
+- `TIME_OUT_WF` (default): the task is marked `TIMED_OUT` and the workflow is marked `TIMED_OUT`.
+- `ALERT_ONLY`: the timeout is only logged and counted. The task's status is not changed.
+
 ### Poll timeout
 
 If no worker polls the task within `pollTimeoutSeconds`, it is marked as `TIMED_OUT`.
@@ -2669,14 +2754,14 @@ sequenceDiagram
     C->>C: Schedule task T1
     Note over C,W: No worker polls within 60s
     C->>C: Mark T1 as TIMED_OUT
-    C->>C: Schedule retry (if retries remain)
+    C->>C: Schedule retry (timeoutPolicy RETRY, if retries remain)
 ```
 
 This typically indicates a backlogged task queue or insufficient workers.
 
 ### Response timeout
 
-If a worker polls a task but doesn't report back within `responseTimeoutSeconds`, the task is marked as `TIMED_OUT`. This handles cases where a worker crashes mid-execution.
+If a worker polls a task but doesn't report back within `responseTimeoutSeconds`, the task's `timeoutPolicy` is applied, the same as for `timeoutSeconds`. Under `RETRY` and `TIME_OUT_WF` the task is marked as `TIMED_OUT`. This handles cases where a worker crashes mid-execution. To have Conductor retry the task on another worker, set `timeoutPolicy` to `RETRY`; under the default `TIME_OUT_WF`, a response timeout times the workflow out.
 
 ```mermaid
 sequenceDiagram
@@ -2690,8 +2775,12 @@ sequenceDiagram
     Note over W: Worker crashes
     Note over C: responseTimeoutSeconds (20s) elapsed
     C->>C: Mark T1 as TIMED_OUT
-    Note over C: Wait retryDelaySeconds (5s)
-    C->>C: Schedule new T1 execution
+    alt timeoutPolicy RETRY (retries remain)
+        Note over C: Wait retryDelaySeconds (5s)
+        C->>C: Schedule new T1 execution
+    else timeoutPolicy TIME_OUT_WF (default)
+        C->>C: Mark workflow as TIMED_OUT
+    end
 ```
 
 Workers can extend the response timeout by sending `IN_PROGRESS` status updates with a `callbackAfterSeconds` value.
@@ -2716,14 +2805,14 @@ sequenceDiagram
     Note over C: Cycle repeats...
     Note over C: timeoutSeconds (30s) elapsed
     C->>C: Mark T1 as TIMED_OUT
-    C->>C: Schedule retry (if retries remain)
+    C->>C: Schedule retry (timeoutPolicy RETRY, if retries remain)
     W->>C: Report COMPLETED (at 32s)
     Note over C: Ignored — T1 already terminal
 ```
 
 ### Total timeout
 
-`totalTimeoutSeconds` limits the total wall-clock time across **all** retry attempts. Once this budget is consumed, no further retries are scheduled regardless of how many remain in `retryCount`.
+`totalTimeoutSeconds` limits the total wall-clock time across **all** retry attempts. Once this budget is consumed, no further retries are scheduled regardless of how many remain in `retryCount` (unless `timeoutPolicy` is `ALERT_ONLY`, in which case the budget is only logged). The budget runs from when the task was first scheduled and carries across automatic retries. An operator's retry (`POST /api/workflow/{workflowId}/retry`) or a rerun starts the task with a fresh budget.
 
 ```mermaid
 sequenceDiagram
@@ -2738,9 +2827,8 @@ sequenceDiagram
     W->>C: FAILED (at t=20s)
     Note over C: Retry delay 5s
     C->>W: Task T1 (attempt 3, at t=25s)
-    W->>C: FAILED (at t=28s)
-    Note over C: t=28s ≥ 30s → total budget exhausted
-    C->>C: Mark workflow FAILED — no more retries
+    Note over C: t=30s ≥ 30s → total budget exhausted
+    C->>C: Mark T1 and workflow TIMED_OUT (default TIME_OUT_WF) — no more retries
 ```
 
 This is useful when you need a hard SLA on how long a task can run across all its attempts, independent of how many retries are configured.
@@ -2750,10 +2838,10 @@ This is useful when you need a hard SLA on how long a task can run across all it
 | Parameter | Description | Default |
 | :--- | :--- | :--- |
 | `pollTimeoutSeconds` | Max time for a worker to poll the task. | No timeout |
-| `responseTimeoutSeconds` | Max time for a worker to respond after polling. | 600s |
+| `responseTimeoutSeconds` | Max time for a worker to respond after polling. Exceeding it applies `timeoutPolicy`. | 3600s |
 | `timeoutSeconds` | SLA per individual attempt (from first `IN_PROGRESS` to terminal). | No timeout |
 | `totalTimeoutSeconds` | Hard budget across all attempts combined. Overrides `retryCount`. | No timeout |
-| `timeoutPolicy` | Action on timeout: `RETRY`, `TIME_OUT_WF` (fail workflow), or `ALERT_ONLY`. | `TIME_OUT_WF` |
+| `timeoutPolicy` | Action on any of the timeouts above: `RETRY`, `TIME_OUT_WF` (time out the workflow), or `ALERT_ONLY`. | `TIME_OUT_WF` |
 
 
 <!-- Source: devguide/how-tos/Workflows/versioning-workflows.md -->
@@ -3126,7 +3214,7 @@ The zeroed timestamps are a placeholder, not a real creation date — the short 
 
 ## Versioning
 
-A schema is addressed by name **and** version; the pair is unique. A save that names no version is stored at version `1`.
+A schema is addressed by name **and** version; the pair is unique. `version` defaults to `1`.
 
 There are two ways to save, and the difference matters:
 
@@ -3135,7 +3223,7 @@ There are two ways to save, and the difference matters:
 | `false` (default) | Overwrites whatever is stored at the version in the payload |
 | `true` | Stores at one past the highest version currently registered under that name |
 
-Use `newVersion=true` to evolve a contract. Definitions that name an older version keep resolving to the schema they were written against; ones that omit the version move to the new one — see [Referring to a registered schema](schema-validation.md#referring-to-a-registered-schema):
+Use `newVersion=true` to evolve a contract. Definitions pinned to an older version keep resolving to the schema they were written against:
 
 ```shell
 curl -X POST "$CONDUCTOR_SERVER_URL/schema?newVersion=true" \
@@ -3468,6 +3556,12 @@ Using the workflow ID, the application can check the Conductor server for the wo
   <a class="cookbook-card" href="http-poll-long-running-job.html">
     <span class="cookbook-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/><circle cx="12" cy="12" r="2.5"/></svg></span>
     <span class="cookbook-card__body"><strong>Polling a long-running job</strong><span>Wait on a slow third-party API with one HTTP_POLL task, backoff, and a poll ceiling.</span></span>
+    <span class="cookbook-card__arrow" aria-hidden="true">&#8594;</span>
+  </a>
+
+  <a class="cookbook-card" href="ai-decision-routing.html">
+    <span class="cookbook-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 12h6"/><path d="M10 12l4-6h6"/><path d="M10 12l4 6h6"/></svg></span>
+    <span class="cookbook-card__body"><strong>AI decision routing</strong><span>Answer one fixed choice question and route with a decision-backed SWITCH.</span></span>
     <span class="cookbook-card__arrow" aria-hidden="true">&#8594;</span>
   </a>
 
@@ -4217,7 +4311,7 @@ Retries with exponential backoff for a task that calls an external API. The cap 
 
 ### Lease extension for long-running workers
 
-`responseTimeoutSeconds` is the heartbeat window: if the worker doesn't report back within this duration, Conductor marks the task `TIMED_OUT` and retries it. For tasks that take longer than the heartbeat window, workers extend the lease by posting an `IN_PROGRESS` update with `callbackAfterSeconds`.
+`responseTimeoutSeconds` is the heartbeat window: if the worker doesn't report back within this duration, Conductor applies the task's `timeoutPolicy`. With `timeoutPolicy: RETRY` (as in this recipe), it marks the task `TIMED_OUT` and retries it while `retryCount` allows. Under the default `TIME_OUT_WF`, it marks the task `TIMED_OUT` and times the workflow out. For tasks that take longer than the heartbeat window, workers extend the lease by posting an `IN_PROGRESS` update with `callbackAfterSeconds`.
 
 **Task definition**
 
@@ -4234,7 +4328,7 @@ Retries with exponential backoff for a task that calls an external API. The cap 
 }
 ```
 
-`responseTimeoutSeconds: 30` — Conductor will reschedule the task if the worker is silent for 30 seconds.
+`responseTimeoutSeconds: 30` — Conductor will time the task out if the worker is silent for 30 seconds; `timeoutPolicy: RETRY` makes it schedule a retry.
 `timeoutSeconds: 3600` — the task itself can take up to 1 hour across all heartbeats.
 
 **Worker: extend the lease every 25 seconds**
@@ -4274,7 +4368,7 @@ def transcode_video(task):
 
 ```
 t=0s   Worker polls task → IN_PROGRESS
-t=30s  responseTimeoutSeconds expires → TIMED_OUT → retry scheduled
+t=30s  responseTimeoutSeconds expires → TIMED_OUT → retry scheduled (timeoutPolicy RETRY)
 t=40s  Worker finishes (too late, task already terminated)
 ```
 
@@ -4308,9 +4402,9 @@ Use `totalTimeoutSeconds` when you need a guaranteed upper bound on how long a t
 ```
 
 `retryCount: 20` — would normally allow 20 retries.
-`totalTimeoutSeconds: 120` — but if the 2-minute wall-clock budget is consumed first, no more retries are queued and the workflow is failed.
+`totalTimeoutSeconds: 120` — but if the 2-minute wall-clock budget is consumed first, no more retries are queued and, with `timeoutPolicy: TIME_OUT_WF`, the task and the workflow are marked `TIMED_OUT`. The budget runs from when the task was first scheduled and carries across automatic retries. An operator's retry (`POST /api/workflow/{workflowId}/retry`) or a rerun starts the task with a fresh budget.
 
-This is useful for SLA-sensitive tasks where you need to know that, regardless of transient failures, the workflow will either succeed or surface as failed within a bounded time window.
+This is useful for SLA-sensitive tasks where you need to know that, regardless of transient failures, the workflow will either succeed or surface as timed out within a bounded time window.
 
 **Timeline example** (`retryDelaySeconds=5`, `totalTimeoutSeconds=30`):
 
@@ -4321,8 +4415,8 @@ t=10s  Attempt 3 → FAILED
 t=15s  Attempt 4 → FAILED
 t=20s  Attempt 5 → FAILED
 t=25s  Attempt 6 → FAILED
-t=30s  totalTimeoutSeconds exceeded → workflow FAILED, no more retries
-        (10 retries still remained in retryCount)
+t=30s  totalTimeoutSeconds exceeded → workflow TIMED_OUT, no more retries
+        (most of the 20 retries in retryCount still remained)
 ```
 
 ---
@@ -4354,7 +4448,7 @@ With `backoffJitterMs: 5000`, 500 tasks that all fail at `t=0` will retry at uni
 | Scenario | Recommended config |
 | :--- | :--- |
 | External API with rate limits | `EXPONENTIAL_BACKOFF` + `maxRetryDelaySeconds` + `backoffJitterMs` |
-| Long-running processing job | `responseTimeoutSeconds` (short) + heartbeats from worker + `timeoutSeconds` (long) |
+| Long-running processing job | `responseTimeoutSeconds` (short) + heartbeats from worker + `timeoutSeconds` (long) + `timeoutPolicy: RETRY` to retry a silent worker |
 | SLA-bounded task | `totalTimeoutSeconds` + `FIXED` or `EXPONENTIAL_BACKOFF` |
 | High fan-out with many concurrent failures | `backoffJitterMs` + `concurrentExecLimit` |
 | Non-retryable error | Return `FAILED_WITH_TERMINAL_ERROR` from the worker |
@@ -4714,7 +4808,7 @@ curl -X POST 'http://localhost:8080/api/workflow/mcp_ai_agent_workflow' \
 
 ### Image generation
 
-Generate images from a text prompt using DALL-E or another supported provider.
+Generate images from a text prompt using gpt-image-1 or another supported provider.
 
 ```json
 {
@@ -4729,7 +4823,7 @@ Generate images from a text prompt using DALL-E or another supported provider.
       "type": "GENERATE_IMAGE",
       "inputParameters": {
         "llmProvider": "openai",
-        "model": "dall-e-3",
+        "model": "gpt-image-1",
         "prompt": "${workflow.input.prompt}",
         "width": 1024,
         "height": 1024,

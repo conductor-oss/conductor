@@ -1,5 +1,5 @@
 ---
-description: Architecture reference for the Workflow Message Queue (WMQ) feature in Conductor OSS — push-based message delivery into running workflows via Redis-backed queues, the PULL_WORKFLOW_MESSAGES system task, and cleanup lifecycle hooks.
+description: Architecture reference for the Workflow Message Queue (WMQ) feature in Conductor OSS — push-based message delivery into running workflows via per-workflow queues in the configured store, the PULL_WORKFLOW_MESSAGES system task, and cleanup lifecycle hooks.
 ---
 
 # Workflow Message Queue (WMQ) — Architecture
@@ -8,7 +8,7 @@ description: Architecture reference for the Workflow Message Queue (WMQ) feature
 
 The Workflow Message Queue (WMQ) is an opt-in Conductor feature that lets external systems push arbitrary JSON messages into a running workflow at any time. The workflow consumes those messages at defined checkpoints using a new system task type: `PULL_WORKFLOW_MESSAGES`.
 
-WMQ introduces a per-workflow message buffer backed by Redis. External callers push messages to a REST endpoint. The workflow reads them via the task, which either completes immediately if messages are waiting or stays `IN_PROGRESS` until they arrive.
+WMQ introduces a per-workflow message buffer, kept in the server's persistence store (SQLite, Postgres, MySQL or Redis), or in memory when no store provides one. External callers push messages to a REST endpoint. The workflow reads them via the task, which either completes immediately if messages are waiting or stays `IN_PROGRESS` until they arrive.
 
 This is a distinct capability from existing Conductor mechanisms. See [Why not existing mechanisms](#why-not-existing-mechanisms) below.
 
@@ -36,29 +36,32 @@ This is a distinct capability from existing Conductor mechanisms. See [Why not e
 
 ### 1. Message queue storage
 
-The storage layer is defined as an interface in `core` and implemented in `redis-persistence`.
+The storage layer is an interface in `core` with one implementation per store.
 
 **Interface:** `com.netflix.conductor.dao.WorkflowMessageQueueDAO`
 
 Operations:
-- `push(workflowId, message)` — append a message to the workflow's queue
-- `pop(workflowId, maxCount)` — atomically dequeue up to `maxCount` messages from the head
+- `push(workflowId, message)` — append a message to the workflow's queue; throws `IllegalStateException` when the queue is full
+- `pop(workflowId, maxCount)` — remove and return up to `maxCount` messages from the head
+- `claim(workflowId, maxCount, claimant, ordinal)` — return up to `maxCount` messages for a claimant without losing them if the caller fails before recording them: a repeated call by the same claimant returns the same messages, messages claimed by any other claimant of the workflow are deleted first, and a claimant with a lower `ordinal` than one that has already claimed gets no new messages. Stores without claims (`supportsClaims()` false) fall back to `pop`.
 - `size(workflowId)` — return the current queue depth
-- `delete(workflowId)` — remove the entire queue key
+- `delete(workflowId)` — remove the whole queue
 
-**Redis implementation:** `com.netflix.conductor.redis.dao.RedisWorkflowMessageQueueDAO`
+**Implementations**
 
-Redis data structure: one List per workflow.
+| Implementation | Wired by | Durable | Claims |
+|---|---|---|---|
+| `JdbcWorkflowMessageQueueDAO` (table `workflow_message_queue`) | `SqliteConfiguration`, `PostgresConfiguration`, `MySQLConfiguration` | yes | yes |
+| `RedisWorkflowMessageQueueDAO` (one List per workflow, key `wmq:{workflowId}`) | `RedisWorkflowMessageQueueConfiguration` | yes, with a TTL | no: `RPUSH` to enqueue, `LRANGE` then `LTRIM` to dequeue |
+| `InMemoryWorkflowMessageQueueDAO` | `WorkflowMessageQueueConfiguration`, when no other bean exists | no: lost on restart | no |
 
 | Property | Detail |
 |---|---|
-| Key pattern | `wmq:{workflowId}` |
-| Enqueue | `RPUSH` — appended to tail for FIFO ordering |
-| Dequeue | `LRANGE` to read + `LTRIM` to remove. Safe without an atomic Lua script because Conductor holds a per-workflow execution lock during the decide cycle. For Redis 6.2+, `LPOP key count` could simplify this. |
-| TTL | Configurable; default 24 hours (86,400 seconds). Reset to full TTL on every `RPUSH`. |
-| Max size | Configurable cap; default 1,000 messages. `push` returns an error if the queue is at capacity. |
+| Order | FIFO: by an auto-increment sequence (JDBC) or list order (Redis, in memory). |
+| TTL | Redis only: configurable, default 24 hours (86,400 seconds), reset on every push. |
+| Max size | Configurable cap; default 1,000 messages. A push to a full queue is refused (HTTP 429). |
 
-Each message stored in the Redis list is a JSON string conforming to the message schema described below.
+Each stored message is a JSON string conforming to the message schema described below.
 
 
 ### 2. Message schema
@@ -99,7 +102,17 @@ Every message is a JSON object with the following fields:
 
 **Feature flag guard:** The REST controller bean is only registered when the WMQ feature is enabled (see [Feature flag](#6-feature-flag)). When disabled, the endpoint does not exist at all — it is absent from Swagger UI and returns 404.
 
-**Side effect after push:** After storing the message in Redis, the endpoint calls `workflowExecutor.decide(workflowId)`. This triggers an immediate workflow evaluation cycle, allowing an in-progress `PULL_WORKFLOW_MESSAGES` task to be woken up without waiting for the next SystemTaskWorker poll interval. See [Interaction with WorkflowSweeper](#interaction-with-workflowsweeper).
+**Push inside a decide:** The endpoint pushes the message inside `workflowExecutor.decide(workflowId, change)`, which acquires the workflow's execution lock once, loads the workflow, runs the `RUNNING` check and `dao.push()` as the change, and then evaluates the workflow under the same lock. A message is therefore either queued while the workflow is `RUNNING`, or refused because it is not; a push can never pass the check, be acknowledged, and then be discarded by a completion that commits in between. The same evaluation wakes an in-progress `PULL_WORKFLOW_MESSAGES` task without waiting for the next SystemTaskWorker poll interval. See [Interaction with WorkflowSweeper](#interaction-with-workflowsweeper).
+
+**Responses:**
+
+| Status | Condition |
+|---|---|
+| `200 OK` | The message was queued. Body: the message ID. |
+| `404 Not Found` | The workflow does not exist, or the WMQ feature is disabled. |
+| `409 Conflict` | The workflow is not `RUNNING`. |
+| `429 Too Many Requests` | `dao.push()` refused the message because the queue is at `maxQueueSize`. |
+| `503 Service Unavailable` | The workflow is busy: another decide holds its execution lock. Nothing was queued; the caller should retry. |
 
 
 ### 4. PULL_WORKFLOW_MESSAGES system task
@@ -117,9 +130,10 @@ Every message is a JSON object with the following fields:
 **Lifecycle:**
 
 1. **`start()`** — Called once when the task enters `SCHEDULED` state. Sets the task status to `IN_PROGRESS`.
-2. **`execute()`** — Called by `SystemTaskWorker` on each poll cycle. Checks the Redis queue.
-   - If the queue is **empty**: returns `false`. The task stays `IN_PROGRESS`. `AsyncSystemTaskExecutor` re-queues the task message with a short `callbackAfterSeconds`.
-   - If the queue is **non-empty**: atomically pops up to `batchSize` messages, writes the output, sets status to `COMPLETED`, returns `true`.
+2. **`execute()`** — Called by `SystemTaskWorker` on each poll cycle. Claims up to `batchSize` messages under the task's reference name, fenced by its loop iteration (`dao.claim(workflowId, batchSize, referenceTaskName, iteration)`), so running the task again, after its server died mid-run or when two servers run it at once, returns the same messages instead of losing some.
+   - If no message is waiting: returns `false`. The task stays `IN_PROGRESS`. `AsyncSystemTaskExecutor` re-queues the task message with a short `callbackAfterSeconds`.
+   - If messages are returned: writes the output, sets status to `COMPLETED`, returns `true`.
+   - If the store throws: logs a warning and returns `false`; the messages are still queued and the task tries again on the next poll.
 
 **Output fields (on COMPLETED):**
 
@@ -152,17 +166,16 @@ conductor.workflow-message-queue.enabled=false
 When `false` (the default):
 - The REST controller bean is not created.
 - The `PULL_WORKFLOW_MESSAGES` system task bean is not created. The task type is unknown to `SystemTaskRegistry`. Any workflow definition referencing it will fail validation.
-- The `RedisWorkflowMessageQueueDAO` bean is not created.
-- The `WorkflowMessageQueueCleanupListener` bean is not created.
+- No `WorkflowMessageQueueDAO` bean (JDBC, Redis or in-memory) is created.
 
 The feature has zero runtime footprint when disabled. Existing deployments are unaffected.
 
 
 ### 7. Lifecycle cleanup
 
-Queue cleanup relies on the Redis TTL configured via `conductor.workflow-message-queue.ttlSeconds` (default 24 hours). The TTL is reset on every `push`, so active queues are never prematurely expired.
+When a workflow ends, `WorkflowExecutor` deletes its queue (`dao.delete(workflowId)`) as part of completing or terminating it (terminating also covers `FAILED` and `TIMED_OUT`). Messages still queued at that point were accepted but will never be handled, so Conductor logs a warning with the count and records the `workflow_messages_discarded` counter and the `workflow_messages_discarded_count` distribution summary, tagged with `workflowName`. This is done in the executor, not through a `WorkflowStatusListener`, so it does not conflict with other listener implementations such as the archiving listener.
 
-There is no explicit `WorkflowStatusListener` implementation for cleanup. `WorkflowStatusListener` is a single-bean interface; adding a WMQ implementation would conflict with other listener implementations (e.g., the archiving listener). The Redis TTL is sufficient: any orphaned queue (e.g., after a server crash before a workflow completes) will expire automatically.
+The Redis TTL configured via `conductor.workflow-message-queue.ttlSeconds` (default 24 hours) is a backstop: any orphaned queue (e.g., after a server crash before a workflow completes) expires automatically. The TTL is reset on every `push`, so active queues are never prematurely expired.
 
 
 ## Data flows
@@ -173,13 +186,17 @@ There is no explicit `WorkflowStatusListener` implementation for cleanup. `Workf
 External caller
   └─ POST /api/workflow/{wfId}/messages  (JSON payload)
        └─ WorkflowMessageQueueResource
-            ├─ Validate workflow exists and is RUNNING
             ├─ Generate message ID (UUID v4)
-            ├─ Serialize message to JSON
-            ├─ dao.push(workflowId, message)
-            │    └─ RPUSH wmq:{workflowId} <json>
-            │    └─ EXPIRE wmq:{workflowId} <ttlSeconds>
-            ├─ workflowExecutor.decide(workflowId)   ← triggers immediate re-evaluation
+            ├─ workflowExecutor.decide(workflowId, change)
+            │    ├─ acquire execution lock          ← busy: 503, nothing queued
+            │    ├─ load workflow                   ← unknown: 404
+            │    ├─ change:
+            │    │    ├─ check workflow is RUNNING  ← not RUNNING: 409
+            │    │    └─ dao.push(workflowId, message)   ← queue full: 429
+            │    │         └─ RPUSH wmq:{workflowId} <json>
+            │    │         └─ EXPIRE wmq:{workflowId} <ttlSeconds>
+            │    ├─ decide (wakes a waiting PULL_WORKFLOW_MESSAGES task)
+            │    └─ release execution lock
             └─ Return message ID to caller
 ```
 
@@ -192,7 +209,7 @@ WorkflowExecutor schedules PULL_WORKFLOW_MESSAGES task
             └─ PullWorkflowMessages.start()
                  └─ task status: IN_PROGRESS
                       └─ AsyncSystemTaskExecutor calls PullWorkflowMessages.execute()
-                           └─ dao.pop(workflowId, batchSize) → [message1, ...]
+                           └─ dao.claim(workflowId, batchSize, ref, iteration) → [message1, ...]
                                 └─ task output: { messages: [...], count: N }
                                 └─ task status: COMPLETED
                                      └─ WorkflowExecutor.decide() advances workflow
@@ -202,23 +219,23 @@ WorkflowExecutor schedules PULL_WORKFLOW_MESSAGES task
 
 ```
 PullWorkflowMessages.execute()
-  └─ dao.pop(workflowId, batchSize) → []   (queue empty)
+  └─ dao.claim(workflowId, batchSize, ref, iteration) → []   (queue empty)
        └─ return false
             └─ AsyncSystemTaskExecutor re-queues task with callbackAfterSeconds
                  └─ SystemTaskWorker polls again at next interval
                       └─ [repeat until message arrives]
 
 [Meanwhile, external caller pushes a message via POST /api/workflow/{wfId}/messages]
-  └─ workflowExecutor.decide(workflowId) called after push
+  └─ the push's own decide (under the execution lock) evaluates the workflow
        └─ AsyncSystemTaskExecutor.execute() triggered
             └─ PullWorkflowMessages.execute()
-                 └─ dao.pop() → [message]
+                 └─ dao.claim(...) → [message]
                       └─ task COMPLETED, workflow advances
 ```
 
 ### Cleanup
 
-Queue keys expire automatically via Redis TTL (default 24 hours, reset on every push). No explicit cleanup hook is triggered on workflow completion.
+When the workflow ends, the executor deletes its queue and logs and counts any messages it discards (see [Lifecycle cleanup](#7-lifecycle-cleanup)). Queue keys left behind otherwise expire via Redis TTL (default 24 hours, reset on every push).
 
 
 ## Interaction with WorkflowSweeper
@@ -229,7 +246,7 @@ Queue keys expire automatically via Redis TTL (default 24 hours, reset on every 
 2. `SystemTaskWorkerCoordinator` registers the task with `SystemTaskWorker` at startup, which begins polling its queue.
 3. `AsyncSystemTaskExecutor.execute()` is called for each poll. It calls `start()` on first execution and `execute()` on subsequent calls.
 4. When `execute()` returns `false` (queue empty), `AsyncSystemTaskExecutor` re-pushes the task ID into the system task queue with a delay of `systemTaskCallbackTime` seconds (configured via `conductor.app.systemTaskWorkerCallbackDuration`).
-5. When a message is pushed via the REST API, `workflowExecutor.decide(workflowId)` is called immediately. The sweeper re-evaluates the workflow and triggers `AsyncSystemTaskExecutor` for any `IN_PROGRESS` async tasks. This reduces wake-up latency to near-real-time rather than waiting for the full poll interval.
+5. When a message is pushed via the REST API, the push runs inside `workflowExecutor.decide(workflowId, change)`, so the workflow is evaluated immediately. The sweeper re-evaluates the workflow and triggers `AsyncSystemTaskExecutor` for any `IN_PROGRESS` async tasks. This reduces wake-up latency to near-real-time rather than waiting for the full poll interval.
 
 `PULL_WORKFLOW_MESSAGES` overrides `getEvaluationOffset()` to return `Optional.of(1L)`, so the task is re-evaluated every 1 second while waiting for messages instead of the default `systemTaskWorkerCallbackDuration` (30 seconds).
 
@@ -238,21 +255,22 @@ Queue keys expire automatically via Redis TTL (default 24 hours, reset on every 
 
 | Scenario | Behavior |
 |---|---|
-| **Redis is unavailable during push** | `dao.push()` throws an exception. The REST endpoint returns HTTP 500. No message is stored. The caller must retry. There is no message loss because nothing was persisted. |
-| **Redis is unavailable during pull** | `dao.pop()` throws an exception. `PullWorkflowMessages.execute()` propagates the error. `AsyncSystemTaskExecutor` handles task-level failures per the standard retry/timeout configuration. The task may be retried or timed out. |
-| **Workflow terminates while PULL_WORKFLOW_MESSAGES is IN_PROGRESS** | The WorkflowSweeper detects the terminal state and cancels pending tasks. The `WorkflowMessageQueueCleanupListener` deletes the queue key. |
-| **Workflow is paused while PULL_WORKFLOW_MESSAGES is IN_PROGRESS** | The task stays `IN_PROGRESS`. Messages pushed during the pause queue up in Redis (subject to `maxQueueSize`). When the workflow is resumed, `workflowExecutor.decide()` is called, the sweeper re-evaluates, and the task picks up queued messages on the next poll. |
-| **Queue size exceeded** | `dao.push()` returns an error when the queue has reached `maxQueueSize`. The REST endpoint returns HTTP 429 (Too Many Requests) or HTTP 400. The caller must handle backpressure. |
-| **Very large message payloads** | Payloads are stored inline in the Redis list entry. For very large data, use an external storage reference pattern: store the data in an object store (S3, GCS, etc.) and put only the reference URL or key in the WMQ payload. This is the same pattern used for Conductor's external payload storage. |
-| **Duplicate delivery** | The Lua dequeue script is atomic within a single Redis instance, so the same message is not delivered twice within one `execute()` call. However, at-least-once semantics apply at the system level — callers and workflow designers should treat consumed messages as idempotent where possible. |
-| **Network partition between Conductor nodes** | If multiple Conductor instances are running, the Redis List is shared. The atomic Lua dequeue ensures that two concurrent `execute()` calls for the same workflow do not return overlapping messages. Workflow-level locking (`ExecutionLockService`) provides an additional guard on the decide path. |
+| **Store unavailable during push** | `dao.push()` throws an exception. The REST endpoint returns HTTP 500. No message is stored. The caller must retry. |
+| **Store unavailable during pull** | `dao.claim()` throws an exception. `PullWorkflowMessages.execute()` logs a warning and leaves the task `IN_PROGRESS`; the messages are still queued, and the next poll tries again. |
+| **Workflow terminates while PULL_WORKFLOW_MESSAGES is IN_PROGRESS** | Terminating cancels the pending tasks and deletes the queue key; any messages still queued are discarded, logged, and counted. |
+| **Workflow is paused while PULL_WORKFLOW_MESSAGES is IN_PROGRESS** | The task stays `IN_PROGRESS`. Pushes during the pause are refused with HTTP 409, because the workflow is not `RUNNING`; messages queued before the pause stay queued. When the workflow is resumed, `workflowExecutor.decide()` is called, the sweeper re-evaluates, and the task picks up queued messages on the next poll. |
+| **Workflow is busy during push** | Another decide holds the workflow's execution lock. The REST endpoint returns HTTP 503 and nothing is queued. The caller must retry. |
+| **Queue size exceeded** | `dao.push()` returns an error when the queue has reached `maxQueueSize`. The REST endpoint returns HTTP 429 (Too Many Requests). The caller must handle backpressure. |
+| **Very large message payloads** | Payloads are stored inline in the queue entry. For very large data, use an external storage reference pattern: store the data in an object store (S3, GCS, etc.) and put only the reference URL or key in the WMQ payload. This is the same pattern used for Conductor's external payload storage. |
+| **Duplicate delivery** | With a JDBC store, a pull's claim is keyed by the task, so a re-run of the same pull gets the same messages and a later pull deletes them once the earlier one's result is recorded: a message reaches one pull. Redis and the in-memory store pop instead: a server that dies after popping and before saving the task's output loses those messages. Treat consumed messages as idempotent where possible. |
+| **Several Conductor servers** | The queue is shared through the store. With a JDBC store, two servers running the same pull at once get the same claimed messages, and a stale run of an older pull iteration claims nothing new (the `ordinal` fence). |
 
 
 ## Security and access control considerations
 
 - The push endpoint receives arbitrary JSON. Conductor does not validate payload structure. Implementors should add authentication/authorization at the API gateway layer.
 - The `workflowId` parameter in the push URL is sufficient to target any running workflow. Callers must be trusted or the endpoint must be protected.
-- Payload data is stored in Redis with the configured TTL. Sensitive data in payloads is subject to Redis access controls. Consider encrypting sensitive fields at the application level if required.
+- Payload data is stored in the persistence store (with the configured TTL on Redis). Sensitive data in payloads is subject to that store's access controls. Consider encrypting sensitive fields at the application level if required.
 
 
 ## Summary of components
@@ -263,7 +281,9 @@ Queue keys expire automatically via Redis TTL (default 24 hours, reset on every 
 | `WorkflowMessage` | `common` | POJO representing a single message |
 | `WorkflowMessageQueueProperties` | `core` | `@ConfigurationProperties` for all WMQ settings |
 | `PullWorkflowMessages` | `core` (system tasks) | System task that dequeues messages into workflow output |
+| `JdbcWorkflowMessageQueueDAO` | `core` (wired by `sqlite-persistence`, `postgres-persistence`, `mysql-persistence`) | Durable SQL implementation with claims |
 | `RedisWorkflowMessageQueueDAO` | `redis-persistence` | Redis List implementation of the DAO |
+| `InMemoryWorkflowMessageQueueDAO` | `core` | Non-durable fallback |
 | `WorkflowMessageQueueConfiguration` | `core` | Spring `@Configuration` that wires up the InMemory DAO (default fallback) |
 | `RedisWorkflowMessageQueueConfiguration` | `redis-persistence` | Spring `@Configuration` that wires up the Redis DAO when Redis is active |
 | `WorkflowMessageQueueResource` | `rest` | REST controller for the push endpoint |

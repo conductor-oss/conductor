@@ -17,6 +17,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask
 import com.netflix.conductor.common.utils.TaskUtils
 import com.netflix.conductor.core.dal.ExecutionDAOFacade
 import com.netflix.conductor.core.exception.TerminateWorkflowException
+import com.netflix.conductor.core.exception.TransientException
 import com.netflix.conductor.core.execution.WorkflowExecutor
 import com.netflix.conductor.core.utils.ParametersUtils
 import com.netflix.conductor.model.TaskModel
@@ -151,6 +152,34 @@ class DoWhileSpec extends Specification {
 
         and: "verify whether the first task in the next iteration is scheduled"
         1 * workflowExecutor.scheduleNextIteration(doWhileTaskModel, workflowModel)
+    }
+
+    def "next iteration - a transient storage failure while scheduling leaves the loop as it was"() {
+        given: "a completed iteration, and storage that fails while the next one is scheduled"
+        taskModel1 = createTaskModel(task1)
+        taskModel2 = createTaskModel(task2)
+        WorkflowTask doWhileWorkflowTask = new WorkflowTask(taskReferenceName: 'doWhileTask', type: TASK_TYPE_DO_WHILE)
+        doWhileWorkflowTask.loopCondition = "if (\$.doWhileTask['iteration'] < 2) { true; } else { false; }"
+        doWhileWorkflowTask.loopOver = [task1, task2]
+        doWhileTaskModel = new TaskModel(workflowTask: doWhileWorkflowTask, taskId: UUID.randomUUID().toString(),
+                taskType: TASK_TYPE_DO_WHILE, referenceTaskName: doWhileWorkflowTask.taskReferenceName)
+        doWhileTaskModel.iteration = 1
+        doWhileTaskModel.outputData['iteration'] = 1
+        doWhileTaskModel.status = TaskModel.Status.IN_PROGRESS
+        def workflowModel = new WorkflowModel(workflowDefinition: new WorkflowDef(name: 'test_workflow'))
+        workflowModel.tasks = [doWhileTaskModel, taskModel1, taskModel2]
+
+        when:
+        doWhile.execute(workflowModel, doWhileTaskModel, workflowExecutor)
+
+        then: "the failure propagates so the decide is retried; the loop neither fails nor advances"
+        1 * workflowExecutor.scheduleNextIteration(doWhileTaskModel, workflowModel) >> {
+            throw new TransientException("Connection is closed")
+        }
+        thrown(TransientException)
+        doWhileTaskModel.iteration == 1
+        doWhileTaskModel.outputData['iteration'] == 1
+        doWhileTaskModel.status == TaskModel.Status.IN_PROGRESS
     }
 
     def "next iteration - a task failed in the previous iteration"() {

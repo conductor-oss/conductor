@@ -125,12 +125,13 @@ For full configuration and examples, see the [Operators reference](../../documen
 - **retryCount / retryLogic / retryDelaySeconds** — How many times to retry a failed task, the backoff strategy, and the initial delay between retries.
 - **maxRetryDelaySeconds** — Caps the computed backoff delay. Prevents exponential growth from becoming arbitrarily large.
 - **backoffJitterMs** — Adds random milliseconds to each retry delay to spread concurrent retries over time (thundering herd prevention).
-- **totalTimeoutSeconds** — Hard wall-clock budget across all retry attempts combined. Once exceeded, no further retries are attempted regardless of `retryCount`.
-- **timeoutSeconds** — Maximum wall-clock time per individual attempt before the task is marked `TIMED_OUT`.
-- **responseTimeoutSeconds** — Maximum time to wait for a worker to respond after picking up a task. Useful for detecting unresponsive workers.
+- **totalTimeoutSeconds** — Hard wall-clock budget across all retry attempts combined. Once exceeded, no further retries are attempted regardless of `retryCount`. Retrying the workflow or rerunning it from the task through the API starts a new budget.
+- **timeoutSeconds** — Maximum wall-clock time per individual attempt before the task times out according to its `timeoutPolicy`.
+- **responseTimeoutSeconds** — Maximum time to wait for a worker to respond after picking up a task. Useful for detecting unresponsive workers. When it is exceeded, the task times out according to its `timeoutPolicy`.
 - **pollTimeoutSeconds** — Maximum time a task can wait in the queue for a worker to poll it. If no worker polls the task within this time, the task times out according to its `timeoutPolicy`.
+- **timeoutPolicy** (not set above, so the default `TIME_OUT_WF` applies) — What every timeout above does: `RETRY` marks the task `TIMED_OUT` and retries it while `retryCount` allows, `TIME_OUT_WF` marks the task and the workflow `TIMED_OUT`, and `ALERT_ONLY` only logs the timeout. To retry a task whose worker stops responding, set `RETRY`.
 
-When using Worker tasks (`SIMPLE`), register a task definition for each task. Without one, the task still runs with default settings: 3 retries and a fixed 60 second delay between retries.
+When using Worker tasks (`SIMPLE`), register a task definition for each task. Without one, the task still runs with default settings: 3 retries and a fixed 60 second delay between retries, a `responseTimeoutSeconds` of 3600, and the `TIME_OUT_WF` timeout policy (so a worker that stops responding for an hour times the workflow out).
 
 Because system tasks are managed by Conductor, it is not necessary to add a task definition for system tasks unless you wish to customize its default parameters, such as `retryCount`, `retryLogic`, `retryDelaySeconds`, and more. For example, a system task is not retried without a task definition. To retry it, add a task definition (registered with the same name as the task, or embedded in the workflow task) and set `retryCount` there.
 

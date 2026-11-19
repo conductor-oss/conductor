@@ -23,6 +23,7 @@ import org.apache.commons.io.IOUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.InOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -55,6 +56,7 @@ public class ExecutionDAOFacadeTest {
     private ExecutionDAO executionDAO;
     private IndexDAO indexDAO;
     private ExecutionDAOFacade executionDAOFacade;
+    private QueueDAO queueDAO;
     private ExternalPayloadStorageUtils externalPayloadStorageUtils;
 
     @Autowired private ObjectMapper objectMapper;
@@ -62,7 +64,7 @@ public class ExecutionDAOFacadeTest {
     @Before
     public void setUp() {
         executionDAO = mock(ExecutionDAO.class);
-        QueueDAO queueDAO = mock(QueueDAO.class);
+        queueDAO = mock(QueueDAO.class);
         indexDAO = mock(IndexDAO.class);
         externalPayloadStorageUtils = mock(ExternalPayloadStorageUtils.class);
         RateLimitingDAO rateLimitingDao = mock(RateLimitingDAO.class);
@@ -73,6 +75,7 @@ public class ExecutionDAOFacadeTest {
         when(properties.isEventExecutionIndexingEnabled()).thenReturn(true);
         when(properties.isAsyncIndexingEnabled()).thenReturn(true);
         when(properties.isTaskIndexingEnabled()).thenReturn(true);
+        when(properties.getWorkflowOffsetTimeout()).thenReturn(Duration.ofSeconds(30));
         executionDAOFacade =
                 new ExecutionDAOFacade(
                         executionDAO,
@@ -84,6 +87,22 @@ public class ExecutionDAOFacadeTest {
                         objectMapper,
                         properties,
                         externalPayloadStorageUtils);
+    }
+
+    /**
+     * The decider queue entry is written before the workflow: a crash between the two then leaves
+     * an entry for a missing workflow, which the sweeper drops, instead of a RUNNING workflow that
+     * nothing evaluates (Jepsen's "abandoned workflows").
+     */
+    @Test
+    public void createWorkflowQueuesBeforeItWritesTheWorkflow() {
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("wf-order");
+        workflow.setWorkflowDefinition(new WorkflowDef());
+        executionDAOFacade.createWorkflow(workflow);
+        InOrder order = inOrder(queueDAO, executionDAO);
+        order.verify(queueDAO).push(eq("_deciderQueue"), eq("wf-order"), anyInt(), eq(30L));
+        order.verify(executionDAO).createWorkflow(workflow);
     }
 
     @Test

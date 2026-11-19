@@ -41,24 +41,24 @@ Conductor provides **at-least-once delivery** for all tasks:
 - If the worker completes the task, it reports `COMPLETED` and Conductor advances the workflow.
 - If the worker fails or crashes, the task is **redelivered** based on the retry and timeout configuration.
 
-A task is never silently lost. If a worker polls a task but never responds, the response timeout triggers redelivery.
+A task is never silently lost. If a worker polls a task but never responds, the response timeout (`responseTimeoutSeconds`) times the task out, and the task's `timeoutPolicy` decides what happens next: `RETRY` schedules a new attempt (while `retryCount` allows), `TIME_OUT_WF` (the default) times the workflow out, and `ALERT_ONLY` only logs and counts the timeout. To have Conductor redeliver work after an unresponsive worker, set `timeoutPolicy` to `RETRY`.
 
 ```mermaid
 flowchart LR
     sched["Task SCHEDULED<br/>in persistent queue"] --> prog["Worker polls<br/>task IN_PROGRESS"]
     prog --> done["Worker reports COMPLETED<br/>workflow advances"]
     prog --> fail["Worker fails, crashes,<br/>or never responds"]
-    fail -- "retry / response timeout" --> sched
+    fail -- "retry / response timeout<br/>(timeoutPolicy RETRY)" --> sched
 ```
 
 ## Failure matrix
 
-Here is exactly what happens in each failure scenario:
+Here is exactly what happens in each failure scenario. The response-timeout rows assume the task definition sets `timeoutPolicy: RETRY`. Under the default `TIME_OUT_WF`, a response timeout marks the task `TIMED_OUT` and times the workflow out instead of retrying.
 
 | Scenario | What Conductor does | Outcome |
 |---|---|---|
-| **Worker crashes after poll, before any work** | Response timeout fires. Task returns to `SCHEDULED`. New worker picks it up. | Task is retried automatically. No data loss. |
-| **Worker crashes after side effect, before completion update** | Response timeout fires. Task is redelivered to another worker. | Task executes again. Workers must be idempotent for side effects, or use the task's `updateTime` to detect redelivery. |
+| **Worker crashes after poll, before any work** | Response timeout fires. The task is marked `TIMED_OUT` and a new attempt is scheduled. New worker picks it up. | Task is retried automatically. No data loss. |
+| **Worker crashes after side effect, before completion update** | Response timeout fires. The task is marked `TIMED_OUT` and a new attempt is delivered to another worker. | Task executes again. Workers must be idempotent for side effects, or use the task's `updateTime` to detect redelivery. |
 | **Worker reports FAILED** | Conductor creates a new task execution based on retry configuration (`retryCount`, `retryDelaySeconds`, `retryLogic`). | Retried up to the configured limit. After exhaustion, task moves to `FAILED` and the workflow's failure handling kicks in. |
 | **Worker reports FAILED_WITH_TERMINAL_ERROR** | No retry. Task is terminal. | Workflow fails or executes the configured `failureWorkflow`. |
 | **Server restarts during workflow execution** | On restart, the sweeper service picks up in-progress workflows from persistent storage and re-evaluates them. | Execution resumes from the last persisted state. No manual intervention needed. |
@@ -66,7 +66,7 @@ Here is exactly what happens in each failure scenario:
 | **Signal/webhook arrives for a paused workflow** | The Task Update API or event handler sets the WAIT/HUMAN task to `COMPLETED` with the provided output. | Workflow resumes immediately with the signal payload available as task output. |
 | **Workflow definition updated while executions are running** | Running executions continue using the **snapshot** of the definition taken at start time. New executions use the updated definition. | No running execution is affected by definition changes. Zero-downtime upgrades. |
 | **Workflow version deleted while executions are running** | Running executions are decoupled from the metadata store. They continue using their embedded definition snapshot. | Existing executions complete normally. Only new starts are affected. |
-| **Network partition between worker and server** | Worker's updates don't reach the server. Response timeout fires, task is requeued. | After partition heals, a new worker (or the same one) picks up the task. |
+| **Network partition between worker and server** | Worker's updates don't reach the server. Response timeout fires, the task is marked `TIMED_OUT` and a new attempt is scheduled. | After partition heals, a new worker (or the same one) picks up the task. |
 
 
 ## Task state transitions
@@ -80,12 +80,12 @@ SCHEDULED ──→ IN_PROGRESS ──→ COMPLETED
      │              │
      │              ├──→ FAILED_WITH_TERMINAL_ERROR
      │              │
-     │              └──→ TIMED_OUT ──→ SCHEDULED (retry)
+     │              └──→ TIMED_OUT ──→ SCHEDULED (retry, timeoutPolicy RETRY)
      │
      └──→ CANCELED (workflow terminated)
 ```
 
-**Terminal states**: `COMPLETED`, `FAILED` (after retries exhausted), `FAILED_WITH_TERMINAL_ERROR`, `CANCELED`, `COMPLETED_WITH_ERRORS` (optional tasks).
+**Terminal states**: `COMPLETED`, `FAILED`, `FAILED_WITH_TERMINAL_ERROR`, `TIMED_OUT`, `CANCELED`, `COMPLETED_WITH_ERRORS` (optional tasks), `SKIPPED`. A retry does not reopen a terminal task: it schedules a new task execution with a new task ID.
 
 Each transition is persisted before any subsequent action is taken.
 
@@ -97,12 +97,12 @@ Durability is configurable per task via the [task definition](../documentation/c
 | Parameter | What it controls |
 |---|---|
 | `timeoutSeconds` | Maximum wall-clock time for the task to reach a terminal state. |
-| `responseTimeoutSeconds` | Maximum time to wait for a worker status update before requeuing. |
+| `responseTimeoutSeconds` | Maximum time to wait for a worker status update on an `IN_PROGRESS` task before timing it out. What happens next is set by `timeoutPolicy`. |
 | `pollTimeoutSeconds` | Maximum time a scheduled task waits to be polled before timeout. |
-| `retryCount` | Number of retry attempts on failure or timeout. |
+| `retryCount` | Number of retry attempts on failure, or on timeout when `timeoutPolicy` is `RETRY`. |
 | `retryLogic` | `FIXED`, `EXPONENTIAL_BACKOFF`, or `LINEAR_BACKOFF`. |
 | `retryDelaySeconds` | Base delay between retries. |
-| `timeoutPolicy` | `RETRY`, `TIME_OUT_WF`, or `ALERT_ONLY`. |
+| `timeoutPolicy` | What happens when `timeoutSeconds`, `responseTimeoutSeconds`, `pollTimeoutSeconds`, or `totalTimeoutSeconds` is exceeded: `RETRY`, `TIME_OUT_WF` (default), or `ALERT_ONLY`. |
 
 
 ## Workflow-level durability

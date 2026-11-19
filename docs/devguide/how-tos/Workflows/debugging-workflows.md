@@ -78,7 +78,16 @@ Here are the recovery options:
 | Restart with Current Definitions | Restart the workflow from the beginning using the same workflow definition that was used in the original execution. This option is useful if the workflow definition has changed and you want to run the execution instance using the original definition.            |
 | Restart with Latest Definitions | Restart the workflow from the beginning using the latest workflow definition. This option is useful if changes were made to the workflow definition and you want to run the execution instance with the latest definition. |
 | Rerun from a specific task | Re-execute the workflow from a specific task, reusing the outputs of all prior tasks. This option is useful when a task in the middle of the workflow failed and you want to fix and re-run it without re-executing everything before it. |
-| Retry - From failed task | Retry the workflow from the last failed task.           |
+| Retry - From failed task | Retry the workflow from the last failed task. Not available for a `COMPLETED` workflow. |
+
+A rerun from a task removes every task scheduled after it, then runs forward from that task:
+
+* The rerun task gets a fresh total time budget (`totalTimeoutSeconds` counts from the rerun). A retry does the same for the retried task.
+* In a fork, tasks that other branches scheduled after the rerun task run again, and a `JOIN` that waits for a task now removed or running again goes back to waiting.
+* In a `DO_WHILE`, the loop reopens at the rerun task's iteration and evaluates its condition again from there.
+* A `SUB_WORKFLOW` task that is rerun, or reached again after rerunning from an earlier task, starts a new child workflow instead of reusing the old child's result.
+
+See [Rerun](../../../documentation/api/workflow.md#rerun) for details.
 
 CLI equivalents:
 
@@ -99,10 +108,14 @@ After recovery, run `conductor workflow status <workflow-id>` and verify that th
 
 1. In the workflow execution details page, select **Actions** in the top right corner.
 2. Select one of the following options:
-    - Restart with Current Definitions
-    - Restart with Latest Definitions
-    - Rerun from a specific task
-    - Retry - From failed task
+    - **Restart with current definitions** or **Restart with latest definitions** (only when the workflow definition is restartable).
+    - **Re-run workflow**: rerun from the beginning.
+    - **Retry - from failed task**: offered for a `FAILED`, `TIMED_OUT`, or `TERMINATED` execution with a failed, timed-out, or canceled task that has not been retried yet. Not offered for a `COMPLETED` execution.
+    - **Retry - resume subworkflow**: offered for a `FAILED` or `TIMED_OUT` execution with a failed `SUB_WORKFLOW` task.
+
+To rerun from a specific task, select the task in the execution diagram and select **Re-Run from Task** in the task details panel.
+
+**Terminate** is offered only for `RUNNING` and `PAUSED` executions; an execution that has ended cannot be terminated.
 
 ### Using APIs
 
@@ -112,7 +125,7 @@ You can rerun a workflow from a specific task using the Rerun Workflow API (`POS
 
 Likewise, you can retry workflow executions from the last failed task using the Retry Workflow API (`POST api/workflow/{workflowId}/retry`) or the Bulk Retry Workflow API (`POST api/workflow/bulk/retry`).
 
-All three recovery operations — restart, rerun, and retry — work on workflows in any terminal state (COMPLETED, FAILED, TIMED_OUT, TERMINATED) and are available indefinitely. Conductor preserves the full execution history, so you can replay any workflow even months after the original run.
+Restart and rerun work on workflows in any terminal state (COMPLETED, FAILED, TIMED_OUT, TERMINATED). Retry works on workflows that ended without succeeding (FAILED, TIMED_OUT, TERMINATED); a COMPLETED workflow is refused with `409 Conflict`, so rerun or restart it instead. All three are available indefinitely. Conductor preserves the full execution history, so you can replay any workflow even months after the original run.
 
 ## Limitations and next step
 

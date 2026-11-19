@@ -34,7 +34,10 @@ import org.springframework.context.annotation.*;
 import org.springframework.core.retry.RetryPolicy;
 import org.springframework.core.retry.RetryTemplate;
 
+import com.netflix.conductor.core.config.WorkflowMessageQueueProperties;
+import com.netflix.conductor.core.dao.JdbcWorkflowMessageQueueDAO;
 import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.dao.WorkflowMessageQueueDAO;
 import com.netflix.conductor.postgres.dao.*;
 
 import jakarta.annotation.*;
@@ -141,6 +144,19 @@ public class PostgresConfiguration {
             @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper) {
         return new PostgresLockDAO(retryTemplate, objectMapper, dataSource);
+    }
+
+    /**
+     * Durable workflow message queue, replacing the in-memory fallback when the queue is enabled,
+     * so signals, updates and queries pushed to running workflows survive a server restart.
+     */
+    @Bean
+    @Primary
+    @DependsOn("flywayForPrimaryDb")
+    @ConditionalOnProperty(name = "conductor.workflow-message-queue.enabled", havingValue = "true")
+    public WorkflowMessageQueueDAO postgresWorkflowMessageQueueDAO(
+            ObjectMapper objectMapper, WorkflowMessageQueueProperties properties) {
+        return new JdbcWorkflowMessageQueueDAO(dataSource, objectMapper, properties, true);
     }
 
     @Bean

@@ -19,6 +19,7 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
@@ -181,6 +182,39 @@ public class SqliteExecutionDAO extends SqliteBaseDAO
     @Override
     public void updateTask(TaskModel task) {
         withTransaction(connection -> updateTask(connection, task));
+        releaseConcurrencySlot(task);
+    }
+
+    @Override
+    public boolean updateTaskIfStatus(TaskModel task, TaskModel.Status expected) {
+        // the status check and the write are one statement, and the row stays locked until the
+        // rest of the update commits
+        String UPDATE_TASK_IF_STATUS =
+                "UPDATE task SET json_data=?, modified_on=CURRENT_TIMESTAMP WHERE task_id=? AND json_extract(json_data, '$.status') = ?";
+        AtomicBoolean updated = new AtomicBoolean();
+        withTransaction(
+                connection -> {
+                    int rows =
+                            query(
+                                    connection,
+                                    UPDATE_TASK_IF_STATUS,
+                                    q ->
+                                            q.addJsonParameter(task)
+                                                    .addParameter(task.getTaskId())
+                                                    .addParameter(expected.name())
+                                                    .executeUpdate());
+                    if (rows > 0) {
+                        updateTask(connection, task);
+                        updated.set(true);
+                    }
+                });
+        if (updated.get()) {
+            releaseConcurrencySlot(task);
+        }
+        return updated.get();
+    }
+
+    private void releaseConcurrencySlot(TaskModel task) {
         Optional<TaskDef> taskDefinition = task.getTaskDefinition();
         if (taskDefinition.isPresent()
                 && taskDefinition.get().concurrencyLimit() > 0

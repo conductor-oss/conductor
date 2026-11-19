@@ -259,6 +259,10 @@ public class Monitors {
                 .record(count);
     }
 
+    public static void recordWorkflowMessagesDiscarded(String workflowName) {
+        counter("workflow_messages_discarded", "workflowName", workflowName);
+    }
+
     public static void recordTaskTimeout(String taskType) {
         counter("task_timeout", "taskType", taskType);
     }

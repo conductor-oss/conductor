@@ -60,3 +60,7 @@ docs/superpowers
 # local working notes, not part of the published repo
 /blogs
 /design
+
+# TLC output of the specs under proposals/
+proposals/**/states/
+proposals/**/*_TTrace_*
