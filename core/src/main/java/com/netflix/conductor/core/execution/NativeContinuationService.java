@@ -531,11 +531,12 @@ public class NativeContinuationService {
         task.setContinuation(marker);
         Map<String, Object> input = new HashMap<>();
         if (id.isHandlers() && workflowMessageQueueDAO != null) {
-            // claimed under the run's number, so a re-run of this continuation gets the same
-            // messages and the next run acknowledges them (see JdbcWorkflowMessageQueueDAO)
+            // claimed under the lane, with the run's number as the ordinal, so a re-run of this
+            // continuation gets the same messages and the next run deletes them (see
+            // JdbcWorkflowMessageQueueDAO)
             var messages =
                     workflowMessageQueueDAO.claim(
-                            workflow.getWorkflowId(), HANDLER_BATCH_SIZE, id.key(), id.n());
+                            workflow.getWorkflowId(), HANDLER_BATCH_SIZE, id.lane(), id.n());
             input.put(INPUT_MESSAGES, messages);
         }
         task.setInputData(input);
