@@ -100,18 +100,60 @@ public class MySQLWorkflowMessageQueueDAOTest {
     }
 
     @Test
-    public void claimsAreRepeatableFencedAndAcknowledged() {
+    public void claimsAreRepeatableFencedAndDeletedByTheNextIteration() {
         String wf = "my-claims-" + UUID.randomUUID();
         dao.push(wf, message("a", wf));
         dao.push(wf, message("b", wf));
-        assertEquals(List.of("a", "b"), ids(dao.claim(wf, 5, "signal__1", 1)));
-        assertEquals(List.of("a", "b"), ids(dao.claim(wf, 5, "signal__1", 1))); // repeatable
-        assertTrue(dao.claim(wf, 5, "signal__2", 2).isEmpty()); // acknowledges a and b
+        assertEquals(List.of("a", "b"), ids(dao.claim(wf, 5, "pull", 1)));
+        assertEquals(List.of("a", "b"), ids(dao.claim(wf, 5, "pull", 1))); // repeatable
+        assertEquals(0, dao.size(wf)); // claimed messages are not queued
+        assertTrue(dao.claim(wf, 5, "pull", 2).isEmpty()); // deletes a and b
         dao.push(wf, message("close", wf));
-        assertTrue(dao.claim(wf, 5, "signal__1", 1).isEmpty()); // a stale pull takes nothing new
-        assertEquals(List.of("close"), ids(dao.claim(wf, 5, "signal__2", 2)));
+        assertTrue(dao.claim(wf, 5, "pull", 1).isEmpty()); // a stale run takes nothing new
+        assertEquals(List.of("close"), ids(dao.claim(wf, 5, "pull", 2)));
         dao.delete(wf);
         assertEquals(0, dao.size(wf));
+    }
+
+    /** The iteration of one pull says nothing about another pull. */
+    @Test
+    public void aPullAfterALoopOrInASecondLoopGetsMessages() {
+        String wf = "my-loops-" + UUID.randomUUID();
+        dao.push(wf, message("a", wf));
+        assertEquals(List.of("a"), ids(dao.claim(wf, 5, "loop_pull", 3)));
+        dao.push(wf, message("b", wf));
+        dao.push(wf, message("c", wf));
+
+        assertEquals(List.of("b"), ids(dao.claim(wf, 1, "final_pull", 0)));
+        assertEquals(List.of("c"), ids(dao.claim(wf, 1, "second_loop_pull", 1)));
+    }
+
+    /** Two pulls in parallel branches keep their claims; claimed messages are not queued. */
+    @Test
+    public void aClaimLeavesTheClaimsOfOtherPulls() {
+        String wf = "my-parallel-" + UUID.randomUUID();
+        dao.push(wf, message("a", wf));
+        dao.push(wf, message("b", wf));
+        dao.push(wf, message("c", wf));
+
+        assertEquals(List.of("a"), ids(dao.claim(wf, 1, "pull_a", 0)));
+        assertEquals(List.of("b"), ids(dao.claim(wf, 1, "pull_b", 0)));
+        assertEquals(List.of("a"), ids(dao.claim(wf, 1, "pull_a", 0)));
+        assertEquals(List.of("b"), ids(dao.claim(wf, 1, "pull_b", 0)));
+        assertEquals(1, dao.size(wf));
+    }
+
+    /** Claimed messages are delivered: they leave room in the queue (10 in this test). */
+    @Test
+    public void claimedMessagesDoNotCountTowardTheMaximum() {
+        String wf = "my-max-" + UUID.randomUUID();
+        for (int i = 0; i < 10; i++) {
+            dao.push(wf, message("m" + i, wf));
+        }
+        assertEquals(10, dao.claim(wf, 10, "pull", 0).size());
+
+        dao.push(wf, message("next", wf));
+        assertEquals(1, dao.size(wf));
     }
 
     @Test
@@ -128,7 +170,7 @@ public class MySQLWorkflowMessageQueueDAOTest {
                     pool.submit(
                             () -> {
                                 go.await();
-                                return ids(dao.claim(wf, 5, "signal__1", 1));
+                                return ids(dao.claim(wf, 5, "pull", 1));
                             }));
         }
         go.countDown();

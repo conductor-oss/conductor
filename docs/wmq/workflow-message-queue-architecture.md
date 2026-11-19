@@ -43,7 +43,7 @@ The storage layer is an interface in `core` with one implementation per store.
 Operations:
 - `push(workflowId, message)` — append a message to the workflow's queue; throws `IllegalStateException` when the queue is full
 - `pop(workflowId, maxCount)` — remove and return up to `maxCount` messages from the head
-- `claim(workflowId, maxCount, claimant, ordinal)` — return up to `maxCount` messages for a claimant without losing them if the caller fails before recording them: a repeated call by the same claimant returns the same messages, messages claimed by any other claimant of the workflow are deleted first, and a claimant with a lower `ordinal` than one that has already claimed gets no new messages. Stores without claims fall back to `pop`.
+- `claim(workflowId, maxCount, claimant, ordinal)` — return up to `maxCount` messages for a claimant without losing them if the caller fails before recording them. `claimant` names the pull and is the same for every run of it; `ordinal` tells the runs apart (the loop iteration). A repeated call with the same claimant and ordinal returns the same messages. A call with a higher ordinal deletes what the same claimant claimed with a lower one. After that, a call with a lower ordinal gets no new messages. Claims of other claimants stay. Stores without claims fall back to `pop`.
 - `size(workflowId)` — return the current queue depth
 - `delete(workflowId)` — remove the whole queue
 
@@ -59,7 +59,7 @@ Operations:
 |---|---|
 | Order | FIFO: by an auto-increment sequence (JDBC) or list order (Redis, in memory). |
 | TTL | Redis only: configurable, default 24 hours (86,400 seconds), reset on every push. |
-| Max size | Configurable cap; default 1,000 messages. A push to a full queue is refused (HTTP 429). |
+| Max size | Configurable cap; default 1,000 messages. A push to a full queue is refused (HTTP 429). With a JDBC store, claimed messages do not count. |
 
 Each stored message is a JSON string conforming to the message schema described below.
 
@@ -120,7 +120,7 @@ Every message is a JSON object with the following fields:
 **Lifecycle:**
 
 1. **`start()`** — Called once when the task enters `SCHEDULED` state. Sets the task status to `IN_PROGRESS`.
-2. **`execute()`** — Called by `SystemTaskWorker` on each poll cycle. Claims up to `batchSize` messages under the task's reference name, fenced by its loop iteration (`dao.claim(workflowId, batchSize, referenceTaskName, iteration)`), so running the task again, after its server died mid-run or when two servers run it at once, returns the same messages instead of losing some.
+2. **`execute()`** — Called by `SystemTaskWorker` on each poll cycle. Claims up to `batchSize` messages under the task's reference name without the loop iteration, with the iteration as the ordinal (`dao.claim(workflowId, batchSize, name, iteration)`), so running the task again, after its server died mid-run or when two servers run it at once, returns the same messages instead of losing some.
    - If no message is waiting: returns `false`. The task stays `IN_PROGRESS`. `AsyncSystemTaskExecutor` re-queues the task message with a short `callbackAfterSeconds`.
    - If messages are returned: writes the output, sets status to `COMPLETED`, returns `true`.
    - If the store throws: logs a warning and returns `false`; the messages are still queued and the task tries again on the next poll.
@@ -158,14 +158,14 @@ When `false` (the default):
 - The `PULL_WORKFLOW_MESSAGES` system task bean is not created. The task type is unknown to `SystemTaskRegistry`. Any workflow definition referencing it will fail validation.
 - No `WorkflowMessageQueueDAO` bean (JDBC, Redis or in-memory) is created.
 
-The feature has zero runtime footprint when disabled. Existing deployments are unaffected.
+With the feature disabled, no WMQ bean is created and existing deployments behave as before. The only effect is in SQL deployments: the migrations (SQLite `V9`, Postgres `V20`, MySQL `V12`) create the tables `workflow_message_queue` and `workflow_message_claim`, which stay empty.
 
 
 ### 7. Lifecycle cleanup
 
 When a workflow ends, `WorkflowExecutor` deletes its queue (`dao.delete(workflowId)`) as part of completing or terminating it (terminating also covers `FAILED` and `TIMED_OUT`). Messages still queued at that point are deleted.
 
-The Redis TTL configured via `conductor.workflow-message-queue.ttlSeconds` (default 24 hours) is a backstop: any orphaned queue (e.g., after a server crash before a workflow completes) expires automatically. The TTL is reset on every `push`, so active queues are never prematurely expired.
+The Redis TTL configured via `conductor.workflow-message-queue.ttlSeconds` (default 24 hours) is a backstop: any orphaned queue (e.g., after a server crash before a workflow completes) expires automatically. The TTL is reset on every `push`, so active queues are never prematurely expired. The SQL store has no TTL: Conductor deletes a workflow's queue when the workflow ends or is removed.
 
 
 ## Data flows
@@ -176,7 +176,6 @@ The Redis TTL configured via `conductor.workflow-message-queue.ttlSeconds` (defa
 External caller
   └─ POST /api/workflow/{wfId}/messages  (JSON payload)
        └─ WorkflowMessageQueueResource
-            ├─ Generate message ID (UUID v4)
             ├─ Validate workflow exists and is RUNNING
             ├─ Generate message ID (UUID v4)
             ├─ Serialize message to JSON
@@ -248,8 +247,8 @@ When the workflow ends, the executor deletes its queue (see [Lifecycle cleanup](
 | **Workflow is paused while PULL_WORKFLOW_MESSAGES is IN_PROGRESS** | The task stays `IN_PROGRESS`. Messages pushed during the pause queue up (subject to `maxQueueSize`). When the workflow is resumed, `workflowExecutor.decide()` is called, the sweeper re-evaluates, and the task picks up queued messages on the next poll. |
 | **Queue size exceeded** | `dao.push()` returns an error when the queue has reached `maxQueueSize`. The REST endpoint returns HTTP 429 (Too Many Requests). The caller must handle backpressure. |
 | **Very large message payloads** | Payloads are stored inline in the queue entry. For very large data, use an external storage reference pattern: store the data in an object store (S3, GCS, etc.) and put only the reference URL or key in the WMQ payload. This is the same pattern used for Conductor's external payload storage. |
-| **Duplicate delivery** | With a JDBC store, a pull's claim is keyed by the task, so a re-run of the same pull gets the same messages and a later pull deletes them once the earlier one's result is recorded: a message reaches one pull. Redis and the in-memory store pop instead: a server that dies after popping and before saving the task's output loses those messages. Treat consumed messages as idempotent where possible. |
-| **Several Conductor servers** | The queue is shared through the store. With a JDBC store, two servers running the same pull at once get the same claimed messages, and a stale run of an older pull iteration claims nothing new (the `ordinal` fence). |
+| **Duplicate delivery** | With a JDBC store, a claim is kept under the pull that made it, so a re-run of the same pull gets the same messages and no other pull gets them. The messages stay claimed until the same pull claims in a later loop iteration, or until the workflow ends. Redis and the in-memory store pop instead: a server that dies after popping and before saving the task's output loses those messages. Treat consumed messages as idempotent where possible. |
+| **Several Conductor servers** | The queue is shared through the store. With a JDBC store, two servers running the same pull at once get the same claimed messages, and a stale run of an older iteration of a pull claims nothing new (the `ordinal` fence, one for each pull). |
 
 
 ## Security and access control considerations

@@ -115,6 +115,39 @@ public class PullWorkflowMessagesTest {
         assertNotEquals(TaskModel.Status.COMPLETED, taskModel.getStatus());
     }
 
+    // --- what the task claims under ---
+
+    @Test
+    public void claimsUnderItsReferenceName() {
+        TaskModel taskModel = taskWithInput(Map.of(PullWorkflowMessages.INPUT_BLOCKING, false));
+        taskModel.setReferenceTaskName("pull_ref");
+
+        task.execute(workflow, taskModel, executor);
+
+        verify(dao).claim(WORKFLOW_ID, 1, "pull_ref", 0L);
+    }
+
+    @Test
+    public void inALoop_claimsUnderTheNameWithoutTheIteration_withTheIterationAsOrdinal() {
+        TaskModel taskModel = taskWithInput(Map.of(PullWorkflowMessages.INPUT_BLOCKING, false));
+        taskModel.setReferenceTaskName("pull_ref__3");
+        taskModel.setIteration(3);
+
+        task.execute(workflow, taskModel, executor);
+
+        verify(dao).claim(WORKFLOW_ID, 1, "pull_ref", 3L);
+    }
+
+    @Test
+    public void outsideALoop_aNameThatLooksLikeALoopNameIsKept() {
+        TaskModel taskModel = taskWithInput(Map.of(PullWorkflowMessages.INPUT_BLOCKING, false));
+        taskModel.setReferenceTaskName("pull__1");
+
+        task.execute(workflow, taskModel, executor);
+
+        verify(dao).claim(WORKFLOW_ID, 1, "pull__1", 0L);
+    }
+
     @Test
     public void failedPop_staysInProgressAndRetries() {
         when(dao.claim(eq(WORKFLOW_ID), eq(1), any(), anyLong()))

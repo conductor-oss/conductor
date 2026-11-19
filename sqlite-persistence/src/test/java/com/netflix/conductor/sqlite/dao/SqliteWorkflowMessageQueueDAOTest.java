@@ -161,52 +161,89 @@ public class SqliteWorkflowMessageQueueDAOTest {
 
     /**
      * A pull that runs again, because its server died mid-run or two servers ran it at once, gets
-     * the messages the first run claimed; the next pull acknowledges them. Found by the durability
-     * bench on a three-server cluster: a pull reserved for an hour stalled the workflow's messages.
+     * the messages the first run claimed. The next iteration of the same pull deletes them.
      */
     @Test
-    public void claimsAreRepeatableAndAcknowledgedByTheNextClaimant() throws Exception {
+    public void claimsAreRepeatableAndDeletedByTheNextIterationOfThePull() throws Exception {
         JdbcWorkflowMessageQueueDAO dao = dao(dataSource(Files.createTempFile("wmq", ".db")), 100);
         dao.push("wf", message("a", "wf"));
         dao.push("wf", message("b", "wf"));
         dao.push("wf", message("c", "wf"));
 
-        List<WorkflowMessage> first = dao.claim("wf", 2, "signal__1");
-        assertEquals(List.of("a", "b"), first.stream().map(WorkflowMessage::getId).toList());
-        // the same pull again: same messages, nothing new claimed, nothing lost
-        assertEquals(
-                List.of("a", "b"),
-                dao.claim("wf", 2, "signal__1").stream().map(WorkflowMessage::getId).toList());
-        assertEquals(3, dao.size("wf"));
-
-        // the next pull acknowledges a and b, and claims c
-        assertEquals(
-                List.of("c"),
-                dao.claim("wf", 2, "signal__2").stream().map(WorkflowMessage::getId).toList());
+        assertEquals(List.of("a", "b"), ids(dao.claim("wf", 2, "pull", 1)));
+        // the same run again: same messages, nothing new claimed, nothing lost
+        assertEquals(List.of("a", "b"), ids(dao.claim("wf", 2, "pull", 1)));
+        // claimed messages are delivered: only c is still queued
         assertEquals(1, dao.size("wf"));
-        assertTrue(dao.claim("wf", 2, "signal__3").isEmpty());
+
+        // the next iteration deletes a and b, and claims c
+        assertEquals(List.of("c"), ids(dao.claim("wf", 2, "pull", 2)));
         assertEquals(0, dao.size("wf"));
+        assertTrue(dao.claim("wf", 2, "pull", 3).isEmpty());
     }
 
     /**
-     * A stale run of an older pull, resumed after a pause, takes no new messages once a newer pull
-     * has claimed: otherwise the newer pull would delete them as delivered though no handler saw
-     * them. Found by the durability bench on a three-server cluster.
+     * A stale run of an older iteration, resumed after a pause, takes no new messages once a later
+     * iteration of the same pull has claimed: no task would record them.
      */
     @Test
-    public void aStalePullTakesNoNewMessages() throws Exception {
+    public void aStaleRunOfAPullTakesNoNewMessages() throws Exception {
         JdbcWorkflowMessageQueueDAO dao = dao(dataSource(Files.createTempFile("wmq", ".db")), 100);
         dao.push("wf", message("a", "wf"));
-        assertEquals(List.of("a"), ids(dao.claim("wf", 5, "signal__10", 10)));
-        assertTrue(dao.claim("wf", 5, "signal__11", 11).isEmpty()); // acknowledges a
+        assertEquals(List.of("a"), ids(dao.claim("wf", 5, "pull", 10)));
+        assertTrue(dao.claim("wf", 5, "pull", 11).isEmpty()); // deletes a
         dao.push("wf", message("close", "wf"));
-        // the stale pull of iteration 10 resumes: it must not take the new message
-        assertTrue(dao.claim("wf", 5, "signal__10", 10).isEmpty());
-        assertEquals(List.of("close"), ids(dao.claim("wf", 5, "signal__11", 11)));
-        // after the execution ends its fence is gone, so a restart starts from iteration 1
+        // the stale run of iteration 10 resumes: it must not take the new message
+        assertTrue(dao.claim("wf", 5, "pull", 10).isEmpty());
+        assertEquals(List.of("close"), ids(dao.claim("wf", 5, "pull", 11)));
+        // after the execution ends its fences are gone, so a restart starts from iteration 1
         dao.delete("wf");
         dao.push("wf", message("again", "wf"));
-        assertEquals(List.of("again"), ids(dao.claim("wf", 5, "signal__1", 1)));
+        assertEquals(List.of("again"), ids(dao.claim("wf", 5, "pull", 1)));
+    }
+
+    /**
+     * The iteration of one pull says nothing about another pull: after a pull in iteration 3 of a
+     * loop, a pull after the loop (iteration 0) and a pull in a second loop (iteration 1) still get
+     * messages.
+     */
+    @Test
+    public void aPullAfterALoopOrInASecondLoopGetsMessages() throws Exception {
+        JdbcWorkflowMessageQueueDAO dao = dao(dataSource(Files.createTempFile("wmq", ".db")), 100);
+        dao.push("wf", message("a", "wf"));
+        assertEquals(List.of("a"), ids(dao.claim("wf", 5, "loop_pull", 3)));
+        dao.push("wf", message("b", "wf"));
+        dao.push("wf", message("c", "wf"));
+
+        assertEquals(List.of("b"), ids(dao.claim("wf", 1, "final_pull", 0)));
+        assertEquals(List.of("c"), ids(dao.claim("wf", 1, "second_loop_pull", 1)));
+    }
+
+    /** Two pulls in parallel branches keep their claims: a re-run of either gets its own again. */
+    @Test
+    public void aClaimLeavesTheClaimsOfOtherPulls() throws Exception {
+        JdbcWorkflowMessageQueueDAO dao = dao(dataSource(Files.createTempFile("wmq", ".db")), 100);
+        dao.push("wf", message("a", "wf"));
+        dao.push("wf", message("b", "wf"));
+        dao.push("wf", message("c", "wf"));
+
+        assertEquals(List.of("a"), ids(dao.claim("wf", 1, "pull_a", 0)));
+        assertEquals(List.of("b"), ids(dao.claim("wf", 1, "pull_b", 0)));
+        assertEquals(List.of("a"), ids(dao.claim("wf", 1, "pull_a", 0)));
+        assertEquals(List.of("b"), ids(dao.claim("wf", 1, "pull_b", 0)));
+        assertEquals(1, dao.size("wf")); // only c is still queued
+    }
+
+    /** Claimed messages are delivered: they leave room in the queue for new ones. */
+    @Test
+    public void claimedMessagesDoNotCountTowardTheMaximum() throws Exception {
+        JdbcWorkflowMessageQueueDAO dao = dao(dataSource(Files.createTempFile("wmq", ".db")), 2);
+        dao.push("wf", message("a", "wf"));
+        dao.push("wf", message("b", "wf"));
+        assertEquals(List.of("a", "b"), ids(dao.claim("wf", 5, "pull", 0)));
+
+        dao.push("wf", message("c", "wf"));
+        assertEquals(1, dao.size("wf"));
     }
 
     private static List<String> ids(List<WorkflowMessage> messages) {

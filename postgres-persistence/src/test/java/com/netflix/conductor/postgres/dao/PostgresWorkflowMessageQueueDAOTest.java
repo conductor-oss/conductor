@@ -120,7 +120,7 @@ public class PostgresWorkflowMessageQueueDAOTest {
                     pool.submit(
                             () -> {
                                 go.await();
-                                return dao.claim(wf, 5, "signal__1").stream()
+                                return dao.claim(wf, 5, "pull", 1).stream()
                                         .map(WorkflowMessage::getId)
                                         .toList();
                             }));
@@ -134,18 +134,59 @@ public class PostgresWorkflowMessageQueueDAOTest {
         assertEquals(Set.of(List.of("m0", "m1", "m2", "m3", "m4")), distinct);
         assertEquals(
                 List.of("m5", "m6", "m7", "m8", "m9"),
-                dao.claim(wf, 5, "signal__2").stream().map(WorkflowMessage::getId).toList());
-        assertEquals(5, dao.size(wf)); // m0..m4 acknowledged by the second pull
+                dao.claim(wf, 5, "pull", 2).stream().map(WorkflowMessage::getId).toList());
+        assertEquals(0, dao.size(wf)); // m0..m4 deleted by the next iteration, m5..m9 claimed
     }
 
     @Test
-    public void aStalePullTakesNoNewMessages() {
+    public void aStaleRunOfAPullTakesNoNewMessages() {
         String wf = "wf-fence-" + UUID.randomUUID();
         dao.push(wf, message("a", wf));
-        assertEquals(1, dao.claim(wf, 5, "signal__10", 10).size());
-        assertTrue(dao.claim(wf, 5, "signal__11", 11).isEmpty());
+        assertEquals(1, dao.claim(wf, 5, "pull", 10).size());
+        assertTrue(dao.claim(wf, 5, "pull", 11).isEmpty());
         dao.push(wf, message("close", wf));
-        assertTrue(dao.claim(wf, 5, "signal__10", 10).isEmpty());
-        assertEquals("close", dao.claim(wf, 5, "signal__11", 11).get(0).getId());
+        assertTrue(dao.claim(wf, 5, "pull", 10).isEmpty());
+        assertEquals("close", dao.claim(wf, 5, "pull", 11).get(0).getId());
+    }
+
+    /** The iteration of one pull says nothing about another pull. */
+    @Test
+    public void aPullAfterALoopOrInASecondLoopGetsMessages() {
+        String wf = "wf-loops-" + UUID.randomUUID();
+        dao.push(wf, message("a", wf));
+        assertEquals("a", dao.claim(wf, 5, "loop_pull", 3).get(0).getId());
+        dao.push(wf, message("b", wf));
+        dao.push(wf, message("c", wf));
+
+        assertEquals("b", dao.claim(wf, 1, "final_pull", 0).get(0).getId());
+        assertEquals("c", dao.claim(wf, 1, "second_loop_pull", 1).get(0).getId());
+    }
+
+    /** Two pulls in parallel branches keep their claims; claimed messages are not queued. */
+    @Test
+    public void aClaimLeavesTheClaimsOfOtherPulls() {
+        String wf = "wf-parallel-" + UUID.randomUUID();
+        dao.push(wf, message("a", wf));
+        dao.push(wf, message("b", wf));
+        dao.push(wf, message("c", wf));
+
+        assertEquals("a", dao.claim(wf, 1, "pull_a", 0).get(0).getId());
+        assertEquals("b", dao.claim(wf, 1, "pull_b", 0).get(0).getId());
+        assertEquals("a", dao.claim(wf, 1, "pull_a", 0).get(0).getId());
+        assertEquals("b", dao.claim(wf, 1, "pull_b", 0).get(0).getId());
+        assertEquals(1, dao.size(wf));
+    }
+
+    /** Claimed messages are delivered: they leave room in the queue (10 in this test). */
+    @Test
+    public void claimedMessagesDoNotCountTowardTheMaximum() {
+        String wf = "wf-max-" + UUID.randomUUID();
+        for (int i = 0; i < 10; i++) {
+            dao.push(wf, message("m" + i, wf));
+        }
+        assertEquals(10, dao.claim(wf, 10, "pull", 0).size());
+
+        dao.push(wf, message("next", wf));
+        assertEquals(1, dao.size(wf));
     }
 }

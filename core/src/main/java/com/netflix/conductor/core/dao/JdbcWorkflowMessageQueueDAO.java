@@ -34,9 +34,11 @@ import tools.jackson.databind.ObjectMapper;
  * workflow_message_queue} created by each persistence module's migrations.
  *
  * <p>Messages pushed to a running workflow survive a server restart. Messages are ordered by an
- * auto-increment sequence. A pop reads and deletes in one transaction, so a message is delivered
- * once; the PULL_WORKFLOW_MESSAGES task that receives it records it in its output, which is durable
- * from then on.
+ * auto-increment sequence. A pop reads and deletes in one transaction. A claim marks the messages
+ * with the pull that took them ({@code claimed_by}, {@code claim_ordinal}) and keeps them, so a
+ * second run of that pull gets them again. Claimed messages are deleted when the same pull claims
+ * in a later loop iteration, or when the workflow ends. They do not count in {@link #size} or
+ * toward the maximum queue size.
  *
  * <p>On SQLite, push and pop are each one write statement ({@code INSERT ... SELECT ... WHERE} and
  * {@code DELETE ... RETURNING}). A transaction that reads and then writes would have to upgrade its
@@ -103,7 +105,8 @@ public class JdbcWorkflowMessageQueueDAO implements WorkflowMessageQueueDAO {
                     List<Long> seqs = new ArrayList<>();
                     List<WorkflowMessage> messages = new ArrayList<>();
                     String select =
-                            "SELECT seq, json_data FROM workflow_message_queue WHERE workflow_id = ? ORDER BY seq LIMIT ?"
+                            "SELECT seq, json_data FROM workflow_message_queue WHERE workflow_id = ?"
+                                    + " AND claimed_by IS NULL ORDER BY seq LIMIT ?"
                                     + (selectForUpdate ? " FOR UPDATE" : "");
                     try (PreparedStatement ps = c.prepareStatement(select)) {
                         ps.setString(1, workflowId);
@@ -140,7 +143,7 @@ public class JdbcWorkflowMessageQueueDAO implements WorkflowMessageQueueDAO {
                                     c.prepareStatement(
                                             "INSERT INTO workflow_message_queue (message_id, workflow_id, json_data)"
                                                     + " SELECT ?, ?, ? WHERE (SELECT COUNT(*) FROM workflow_message_queue"
-                                                    + " WHERE workflow_id = ?) < ?")) {
+                                                    + " WHERE workflow_id = ? AND claimed_by IS NULL) < ?")) {
                                 ps.setString(1, message.getId());
                                 ps.setString(2, workflowId);
                                 ps.setString(3, objectMapper.writeValueAsString(message));
@@ -165,7 +168,8 @@ public class JdbcWorkflowMessageQueueDAO implements WorkflowMessageQueueDAO {
                     try (PreparedStatement ps =
                             c.prepareStatement(
                                     "DELETE FROM workflow_message_queue WHERE seq IN (SELECT seq FROM"
-                                            + " workflow_message_queue WHERE workflow_id = ? ORDER BY seq LIMIT ?)"
+                                            + " workflow_message_queue WHERE workflow_id = ? AND claimed_by IS NULL"
+                                            + " ORDER BY seq LIMIT ?)"
                                             + " RETURNING seq, json_data")) {
                         ps.setString(1, workflowId);
                         ps.setInt(2, maxCount);
@@ -186,16 +190,15 @@ public class JdbcWorkflowMessageQueueDAO implements WorkflowMessageQueueDAO {
     public List<WorkflowMessage> claim(
             String workflowId, int maxCount, String claimant, long ordinal) {
         String lock = selectForUpdate ? " FOR UPDATE" : "";
+        String mine =
+                "SELECT seq, json_data FROM workflow_message_queue WHERE workflow_id = ?"
+                        + " AND claimed_by = ? AND claim_ordinal = ? ORDER BY seq";
         return inTransaction(
                 c -> {
-                    if (!advanceFence(c, workflowId, ordinal)) {
-                        // a newer pull has claimed: this run is stale and takes nothing new
-                        return select(
-                                c,
-                                "SELECT seq, json_data FROM workflow_message_queue WHERE workflow_id = ?"
-                                        + " AND claimed_by = ? ORDER BY seq",
-                                workflowId,
-                                claimant);
+                    if (!advanceFence(c, workflowId, claimant, ordinal)) {
+                        // a later run of this pull has claimed: this run is stale, takes nothing
+                        // new
+                        return select(c, mine, workflowId, claimant, ordinal);
                     }
                     if (selectForUpdate) {
                         // Serialize claims of one workflow: a second run of the same pull waits
@@ -207,25 +210,21 @@ public class JdbcWorkflowMessageQueueDAO implements WorkflowMessageQueueDAO {
                             ps.executeQuery().close();
                         }
                     }
-                    // earlier pulls' results are recorded: their messages are delivered
+                    // an earlier iteration of this pull has recorded its result: the loop only
+                    // came here after it. Claims of other pulls stay.
                     try (PreparedStatement ps =
                             c.prepareStatement(
                                     "DELETE FROM workflow_message_queue WHERE workflow_id = ?"
-                                            + " AND claimed_by IS NOT NULL AND claimed_by <> ?")) {
+                                            + " AND claimed_by = ? AND claim_ordinal < ?")) {
                         ps.setString(1, workflowId);
                         ps.setString(2, claimant);
+                        ps.setLong(3, ordinal);
                         ps.executeUpdate();
                     }
-                    List<WorkflowMessage> mine =
-                            select(
-                                    c,
-                                    "SELECT seq, json_data FROM workflow_message_queue WHERE workflow_id = ?"
-                                            + " AND claimed_by = ? ORDER BY seq"
-                                            + lock,
-                                    workflowId,
-                                    claimant);
-                    if (!mine.isEmpty()) {
-                        return mine;
+                    List<WorkflowMessage> again =
+                            select(c, mine + lock, workflowId, claimant, ordinal);
+                    if (!again.isEmpty()) {
+                        return again;
                     }
                     List<Long> seqs = new ArrayList<>();
                     List<WorkflowMessage> claimed = new ArrayList<>();
@@ -248,10 +247,12 @@ public class JdbcWorkflowMessageQueueDAO implements WorkflowMessageQueueDAO {
                     if (!seqs.isEmpty()) {
                         try (PreparedStatement ps =
                                 c.prepareStatement(
-                                        "UPDATE workflow_message_queue SET claimed_by = ? WHERE seq = ?")) {
+                                        "UPDATE workflow_message_queue SET claimed_by = ?, claim_ordinal = ?"
+                                                + " WHERE seq = ?")) {
                             for (Long seq : seqs) {
                                 ps.setString(1, claimant);
-                                ps.setLong(2, seq);
+                                ps.setLong(2, ordinal);
+                                ps.setLong(3, seq);
                                 ps.addBatch();
                             }
                             ps.executeBatch();
@@ -262,26 +263,32 @@ public class JdbcWorkflowMessageQueueDAO implements WorkflowMessageQueueDAO {
     }
 
     /**
-     * Raises the workflow's claim fence to {@code ordinal}, or reports that a higher ordinal has
-     * already claimed. Holds the fence row for the rest of the transaction.
+     * Raises the fence of this pull to {@code ordinal}, or reports that a higher ordinal of the
+     * same pull has already claimed. Each pull of a workflow has its own fence: the ordinal is a
+     * loop iteration, which means nothing across pulls. Holds the fence row for the rest of the
+     * transaction.
      */
-    private boolean advanceFence(Connection c, String workflowId, long ordinal) throws Exception {
+    private boolean advanceFence(Connection c, String workflowId, String claimant, long ordinal)
+            throws Exception {
         boolean mysql = c.getMetaData().getDatabaseProductName().toLowerCase().contains("mysql");
         String insert =
                 mysql
-                        ? "INSERT IGNORE INTO workflow_message_claim (workflow_id, ordinal) VALUES (?, ?)"
-                        : "INSERT INTO workflow_message_claim (workflow_id, ordinal) VALUES (?, ?) ON CONFLICT (workflow_id) DO NOTHING";
+                        ? "INSERT IGNORE INTO workflow_message_claim (workflow_id, claimant, ordinal) VALUES (?, ?, ?)"
+                        : "INSERT INTO workflow_message_claim (workflow_id, claimant, ordinal) VALUES (?, ?, ?)"
+                                + " ON CONFLICT (workflow_id, claimant) DO NOTHING";
         try (PreparedStatement ps = c.prepareStatement(insert)) {
             ps.setString(1, workflowId);
-            ps.setLong(2, ordinal);
+            ps.setString(2, claimant);
+            ps.setLong(3, ordinal);
             ps.executeUpdate();
         }
         long current;
         try (PreparedStatement ps =
                 c.prepareStatement(
-                        "SELECT ordinal FROM workflow_message_claim WHERE workflow_id = ?"
+                        "SELECT ordinal FROM workflow_message_claim WHERE workflow_id = ? AND claimant = ?"
                                 + (selectForUpdate ? " FOR UPDATE" : ""))) {
             ps.setString(1, workflowId);
+            ps.setString(2, claimant);
             try (ResultSet rs = ps.executeQuery()) {
                 current = rs.next() ? rs.getLong(1) : ordinal;
             }
@@ -292,9 +299,11 @@ public class JdbcWorkflowMessageQueueDAO implements WorkflowMessageQueueDAO {
         if (ordinal > current) {
             try (PreparedStatement ps =
                     c.prepareStatement(
-                            "UPDATE workflow_message_claim SET ordinal = ? WHERE workflow_id = ?")) {
+                            "UPDATE workflow_message_claim SET ordinal = ?"
+                                    + " WHERE workflow_id = ? AND claimant = ?")) {
                 ps.setLong(1, ordinal);
                 ps.setString(2, workflowId);
+                ps.setString(3, claimant);
                 ps.executeUpdate();
             }
         }
@@ -302,11 +311,13 @@ public class JdbcWorkflowMessageQueueDAO implements WorkflowMessageQueueDAO {
     }
 
     private List<WorkflowMessage> select(
-            Connection c, String sql, String workflowId, String claimant) throws Exception {
+            Connection c, String sql, String workflowId, String claimant, long ordinal)
+            throws Exception {
         List<WorkflowMessage> out = new ArrayList<>();
         try (PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, workflowId);
             ps.setString(2, claimant);
+            ps.setLong(3, ordinal);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     out.add(objectMapper.readValue(rs.getString(2), WorkflowMessage.class));
@@ -331,7 +342,7 @@ public class JdbcWorkflowMessageQueueDAO implements WorkflowMessageQueueDAO {
                         ps.setString(1, workflowId);
                         ps.executeUpdate();
                     }
-                    // the fence goes too, so a restarted execution's pulls start from iteration 1
+                    // the fences go too, so a restarted execution's pulls start from iteration 1
                     try (PreparedStatement ps =
                             c.prepareStatement(
                                     "DELETE FROM workflow_message_claim WHERE workflow_id = ?")) {
@@ -345,7 +356,8 @@ public class JdbcWorkflowMessageQueueDAO implements WorkflowMessageQueueDAO {
     private static long count(Connection c, String workflowId) throws SQLException {
         try (PreparedStatement ps =
                 c.prepareStatement(
-                        "SELECT COUNT(*) FROM workflow_message_queue WHERE workflow_id = ?")) {
+                        "SELECT COUNT(*) FROM workflow_message_queue WHERE workflow_id = ?"
+                                + " AND claimed_by IS NULL")) {
             ps.setString(1, workflowId);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() ? rs.getLong(1) : 0;

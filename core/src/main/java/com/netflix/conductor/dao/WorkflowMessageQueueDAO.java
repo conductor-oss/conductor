@@ -64,11 +64,10 @@ public interface WorkflowMessageQueueDAO {
     /**
      * Returns up to {@code maxCount} messages for {@code claimant}, without losing them if the
      * caller fails before recording them. The first call claims messages from the head of the
-     * queue; a repeated call with the same claimant returns the same messages; messages claimed by
-     * any other claimant of this workflow are deleted first, since a later claimant only runs after
-     * the earlier one's result was recorded. A PULL_WORKFLOW_MESSAGES task claims under its
-     * reference name, so a re-run of the task, after its server died mid-run or when two servers
-     * run it at once, gets the same messages instead of losing some.
+     * queue; a repeated call with the same claimant returns the same messages. Claims of other
+     * claimants stay. A PULL_WORKFLOW_MESSAGES task claims under its reference name, so a re-run of
+     * the task, after its server died mid-run or when two servers run it at once, gets the same
+     * messages instead of losing some.
      *
      * <p>The default pops, for queues without claims.
      */
@@ -77,11 +76,15 @@ public interface WorkflowMessageQueueDAO {
     }
 
     /**
-     * As {@link #claim(String, int, String)}, fenced by {@code ordinal} (a PULL task's loop
-     * iteration): once a claimant with a higher ordinal has claimed, a claimant with a lower one
-     * gets only what it claimed before, never new messages. A stale run of an old pull, resumed
-     * after a pause, would otherwise claim fresh messages whose claim the current pull then deletes
-     * as delivered, though no handler ever saw them.
+     * As {@link #claim(String, int, String)}, for a claimant that runs more than once.
+     *
+     * <p>{@code claimant} names the pull and is the same for every run of it: for a task in a loop,
+     * the reference name without the iteration. {@code ordinal} tells the runs apart and only
+     * grows: the loop iteration. A claim with a higher ordinal deletes what the same claimant
+     * claimed with a lower one, because the loop only continues after that result was recorded.
+     * Once a higher ordinal has claimed, a run with a lower one gets only what it claimed before,
+     * never new messages: a stale run, resumed after a pause, would otherwise take messages that no
+     * task records.
      */
     default List<WorkflowMessage> claim(
             String workflowId, int maxCount, String claimant, long ordinal) {

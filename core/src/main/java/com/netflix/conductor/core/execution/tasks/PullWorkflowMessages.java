@@ -21,6 +21,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.model.WorkflowMessage;
+import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.config.WorkflowMessageQueueProperties;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.dao.WorkflowMessageQueueDAO;
@@ -80,14 +81,14 @@ public class PullWorkflowMessages extends WorkflowSystemTask {
         int batchSize = getBatchSize(task);
         List<WorkflowMessage> messages;
         try {
-            // claimed under the task's reference name (unique per loop iteration) and fenced by
-            // the iteration: running this task again returns the same messages rather than
-            // losing the first run's, and a stale run of an older pull takes nothing new
+            // claimed under the task's reference name without the iteration, with the iteration
+            // as the ordinal: running this task again returns the same messages rather than
+            // losing the first run's, and a stale run of an older iteration takes nothing new
             messages =
                     dao.claim(
                             workflow.getWorkflowId(),
                             batchSize,
-                            task.getReferenceTaskName(),
+                            claimant(task),
                             task.getIteration());
         } catch (RuntimeException e) {
             // The claim rolled back, so the messages are still queued. Stay IN_PROGRESS and try
@@ -109,6 +110,15 @@ public class PullWorkflowMessages extends WorkflowSystemTask {
         task.addOutput(OUTPUT_COUNT, messages.size());
         task.setStatus(TaskModel.Status.COMPLETED);
         return true;
+    }
+
+    /** The name of this pull for claims: the reference name, without the loop iteration. */
+    static String claimant(TaskModel task) {
+        String name = task.getReferenceTaskName();
+        String suffix = TaskUtils.getLoopOverTaskRefNameSuffix(task.getIteration());
+        return task.getIteration() > 0 && name.endsWith(suffix)
+                ? name.substring(0, name.length() - suffix.length())
+                : name;
     }
 
     @Override
