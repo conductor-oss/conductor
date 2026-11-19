@@ -1,7 +1,7 @@
 # Decider bugs
 
 Server bugs found while checking `Workflow.tla` against the server. All are in standard workflows.
-All are fixed. The expected behaviour is what the spec states; see `README.md`.
+All are fixed, except the second half of bug 4. The expected behaviour is what the spec states; see `README.md`.
 
 Bugs 1 to 8 were observed on a running server by `server_check.py`, except bug 1's example, which was
 run by hand. Bugs 9 to 13 were found by reading the code; each fix note says how it was checked. Bugs 14 and 15
@@ -15,7 +15,7 @@ from a local development server (SQLite, port 8099) and will not exist elsewhere
 | 1 | An optional task that fails last keeps `FAILED` | observed, frequent | high | fixed |
 | 2 | A JOIN can fail the workflow while a branch task still has a retry | observed twice | high | fixed |
 | 3 | A rerun from a task in a fork loses what other branches scheduled after it | observed, repeated | high | fixed |
-| 4 | A rerun from a `SUB_WORKFLOW` task does not run the child again | observed, repeated | high | fixed |
+| 4 | A rerun from a `SUB_WORKFLOW` task does not run the child again | observed, repeated | high | partly fixed |
 | 5 | A rerun from a task inside a loop can hang | observed, repeated | high | fixed |
 | 6 | A retry after a failing `TERMINATE` ends the workflow `TERMINATED` | observed, repeated | medium | fixed |
 | 7 | A workflow can end with a task stuck `IN_PROGRESS` | observed once | medium | fixed |
@@ -93,17 +93,23 @@ from a local development server (SQLite, port 8099) and will not exist elsewhere
   target also skips the removal of later tasks and resets the failed ones through `finalizeRerun`.
 - **Examples:** `5017e32c-2cd3-4d27-84f1-891e0202cbb4` (inside a loop),
   `12946a01-5151-4d59-98bd-017fbaf5804d` (the child finished in 1 ms).
-- **Fix:** a direct rerun from a `SUB_WORKFLOW` task now takes the common rerun path, so later
-  tasks are removed (and scheduled again by bug 3's fix), the enclosing loop reopens, and the task
-  starts a child at once. `SubWorkflow.start` no longer reuses a finished child created before the
-  task was last scheduled; it starts one with a new id. A redelivered start of the same run still
-  attaches to the child it started. Checked by
+- **Fix:** `SubWorkflow.start` no longer reuses a finished child created before the task was last
+  scheduled; it starts one with a new id. A redelivered start of the same run still attaches to
+  the child it started. Checked by
   `TestSubWorkflow.testStartAfterARerunRunsANewChildInsteadOfReusingTheFinishedOne` (fails without
-  the fix) and live, in sequence and in a fork: a new child runs and the task after it runs again.
+  the fix) and live: a rerun from a `COMPLETED` `SUB_WORKFLOW` task starts a child with a new id.
+- **Open:** the path through `rerunWF` for a direct `SUB_WORKFLOW` target is not changed. Later
+  tasks are kept, the failed ones are reset through `finalizeRerun`, and an enclosing loop does not
+  reopen. Live: in `SUB_WORKFLOW` then `TERMINATE`, the rerun starts a new child, the kept
+  `TERMINATE` ends the workflow `FAILED` again and the new child is cancelled. The common rerun
+  path fixes this, but it also removes the tasks of the other fork branches scheduled after the
+  target and bug 3's fix schedules them again, so a `COMPLETED` sibling `SUB_WORKFLOW` runs a
+  second time. The e2e test `WorkflowRerunTests`, "Rerun CANCELLED sibling SUB_WORKFLOW task in
+  parent reschedules FAILED sibling, leaves COMPLETED sibling alone", requires that the sibling is
+  kept. To fix both, the rerun must tell the tasks after the target from the tasks beside it.
 - **Left:** the rerun starts the child before it saves the parent task. A child that finishes
   within milliseconds can have its completion overwritten, and the parent then notices only at
-  the next sweep (30 s on the test server). The old path did the same. The final state is
-  correct.
+  the next sweep (30 s on the test server). The final state is correct.
 
 ### 5. A rerun from a task inside a loop can hang
 

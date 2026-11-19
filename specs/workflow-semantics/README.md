@@ -175,7 +175,9 @@ fork ended in a state the spec does not reach; these fit items 3, 4, 5 and 8 but
 one by one. With item 5 fixed, the same 400 shapes gave 389 matches: no loop mismatch is left
 except a rerun of a `SUB_WORKFLOW` inside a loop, which takes item 4's path. The other 10 are 6 of
 item 1, 1 of item 6, 1 dynamic-fork rerun (item 3), 1 `SUB_WORKFLOW` rerun (item 4) and 2 reruns
-that never settled. With items 1 to 4 and 8 also fixed, all 400 matched.
+that never settled. With items 1 to 4 and 8 also fixed, all 400 matched. That run had the common rerun path for a
+`SUB_WORKFLOW` target, which this tree does not have (item 4); the `SUB_WORKFLOW` rerun mismatches
+can show again.
 
 **Reviews.** Three independent reviews, each given only the code and the spec, found rules that
 disagreed with the server and properties that could not fail; this version addresses them.
@@ -225,9 +227,9 @@ Details, evidence, fixes and examples are in [DECIDER_BUGS.md](DECIDER_BUGS.md).
    removes every task with a later `seq` and does not create those again. In a static fork the `JOIN`
    then waits forever. In a dynamic fork the workflow completes without the later copies, or never
    settles.
-4. *(fixed)* **A rerun from a `SUB_WORKFLOW` task does not run the child again.** Child ids are deterministic,
-   so the old child's result is reused. That path also keeps the tasks after it, and resets failed
-   ones, so they run at the same time.
+4. *(partly fixed)* **A rerun from a `SUB_WORKFLOW` task does not run the child again.** Child ids are deterministic,
+   so the old child's result is reused; this is fixed. That path also keeps the tasks after it, and resets failed
+   ones, so they run at the same time; this is open, see `DECIDER_BUGS.md`.
 5. *(fixed)* **A rerun from a task inside a loop can hang.** The workflow stays `RUNNING` with nothing running.
 6. *(fixed)* **A retry after a `TERMINATE` that failed the workflow ends it `TERMINATED`,** not `FAILED`: the
    cancelled `JOIN` ends the workflow before the `TERMINATE` is looked at.

@@ -2653,7 +2653,9 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             // an async decider that runs between the workflow-RUNNING write above and the
             // rerunFromTask-SCHEDULED write below can see all tasks as terminal and re-terminate
             // the workflow before PATH 3 gets a chance to reset rerunFromTask.
-            if (rerunFromTask.getTaskId().equals(taskId)) {
+            if (rerunFromTask.getTaskId().equals(taskId)
+                    && !TaskType.TASK_TYPE_SUB_WORKFLOW.equalsIgnoreCase(
+                            rerunFromTask.getTaskType())) {
                 rerunFromTask.setStatus(SCHEDULED);
                 executionDAOFacade.updateTask(rerunFromTask);
             }
@@ -2699,6 +2701,38 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     workflow.getTasks().stream()
                             .filter(t -> !t.getTaskId().equals(rerunTaskId))
                             .collect(Collectors.toList()));
+            // Direct rerun targeting a SUB_WORKFLOW task: seq-based removal would strip parallel
+            // fork branches — instead reset the task in-place, start a fresh child
+            // synchronously so the task is IN_PROGRESS immediately, then let finalizeRerun
+            // reset all terminal-unsuccessful siblings before the decider runs.
+            if (rerunFromTask.getTaskId().equals(taskId)
+                    && rerunFromTask
+                            .getTaskType()
+                            .equalsIgnoreCase(TaskType.TASK_TYPE_SUB_WORKFLOW)) {
+                rerunFromTask.setScheduledTime(System.currentTimeMillis());
+                rerunFromTask.setStartTime(0);
+                rerunFromTask.setUpdateTime(0);
+                rerunFromTask.setEndTime(0);
+                rerunFromTask.clearOutput();
+                rerunFromTask.setRetried(false);
+                rerunFromTask.setExecuted(false);
+                rerunFromTask.setPollCount(0);
+                rerunFromTask.setSubWorkflowId(null);
+                rerunFromTask.setStatus(SCHEDULED);
+                rerunFromTask.setReasonForIncompletion(null);
+                // Start the child workflow synchronously so the task is IN_PROGRESS before we
+                // return — tests that read state immediately after rerun() need this.
+                systemTaskRegistry
+                        .get(TaskType.TASK_TYPE_SUB_WORKFLOW)
+                        .start(workflow, rerunFromTask, this);
+                if (rerunFromTask.getStatus() == SCHEDULED) {
+                    // start() hit a transient error — fall back to async queue processing.
+                    addTaskToQueue(rerunFromTask);
+                }
+                executionDAOFacade.updateTask(rerunFromTask);
+                finalizeRerun(workflow, rerunFromTask);
+                return true;
+            }
             // Remove all tasks after the "rerunFromTask"
             List<TaskModel> filteredTasks = new ArrayList<>();
             for (TaskModel task : workflow.getTasks()) {
@@ -2722,18 +2756,9 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             rerunFromTask.setExecuted(false);
             rerunFromTask.setPollCount(0);
             if (rerunFromTask.getTaskType().equalsIgnoreCase(TaskType.TASK_TYPE_SUB_WORKFLOW)) {
-                // a new child: SubWorkflow.start does not reuse one created before the task was
-                // scheduled again
-                if (taskInput != null) {
-                    rerunFromTask.setInputData(taskInput);
-                }
-                clearLegacySubWorkflowId(rerunFromTask);
-                rerunFromTask.setStatus(SCHEDULED);
-                rerunFromTask.setReasonForIncompletion(null);
-                // start the child now so the task is IN_PROGRESS when the rerun returns
-                systemTaskRegistry
-                        .get(TaskType.TASK_TYPE_SUB_WORKFLOW)
-                        .start(workflow, rerunFromTask, this);
+                // if task is sub workflow set task as IN_PROGRESS and reset start time
+                rerunFromTask.setStatus(IN_PROGRESS);
+                rerunFromTask.setStartTime(System.currentTimeMillis());
             } else {
                 if (taskInput != null) {
                     rerunFromTask.setInputData(taskInput);
