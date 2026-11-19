@@ -271,11 +271,14 @@ public class JdbcWorkflowMessageQueueDAO implements WorkflowMessageQueueDAO {
     private boolean advanceFence(Connection c, String workflowId, String claimant, long ordinal)
             throws Exception {
         boolean mysql = c.getMetaData().getDatabaseProductName().toLowerCase().contains("mysql");
+        // MySQL: INSERT IGNORE would take a shared lock on an existing row, and the SELECT ... FOR
+        // UPDATE below would then deadlock with another run that did the same. This takes the
+        // exclusive lock at once.
         String insert =
-                mysql
-                        ? "INSERT IGNORE INTO workflow_message_claim (workflow_id, claimant, ordinal) VALUES (?, ?, ?)"
-                        : "INSERT INTO workflow_message_claim (workflow_id, claimant, ordinal) VALUES (?, ?, ?)"
-                                + " ON CONFLICT (workflow_id, claimant) DO NOTHING";
+                "INSERT INTO workflow_message_claim (workflow_id, claimant, ordinal) VALUES (?, ?, ?)"
+                        + (mysql
+                                ? " ON DUPLICATE KEY UPDATE ordinal = ordinal"
+                                : " ON CONFLICT (workflow_id, claimant) DO NOTHING");
         try (PreparedStatement ps = c.prepareStatement(insert)) {
             ps.setString(1, workflowId);
             ps.setString(2, claimant);

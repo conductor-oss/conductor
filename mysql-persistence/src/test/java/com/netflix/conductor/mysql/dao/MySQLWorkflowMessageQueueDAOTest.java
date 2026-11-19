@@ -156,29 +156,35 @@ public class MySQLWorkflowMessageQueueDAOTest {
         assertEquals(1, dao.size(wf));
     }
 
+    /**
+     * Many runs of the same pull at once, on a workflow with no fence row yet and then with one:
+     * each gets the same messages, and none fails on a deadlock.
+     */
     @Test
     public void concurrentClaimsBySamePullGetTheSameMessages() throws Exception {
-        String wf = "my-concurrent-" + UUID.randomUUID();
-        for (int i = 0; i < 10; i++) {
-            dao.push(wf, message("m" + i, wf));
+        for (int round = 0; round < 25; round++) {
+            String wf = "my-concurrent-" + UUID.randomUUID();
+            for (int i = 0; i < 10; i++) {
+                dao.push(wf, message("m" + i, wf));
+            }
+            ExecutorService pool = Executors.newFixedThreadPool(24);
+            CountDownLatch go = new CountDownLatch(1);
+            List<Future<List<String>>> runs = new ArrayList<>();
+            for (int i = 0; i < 24; i++) {
+                runs.add(
+                        pool.submit(
+                                () -> {
+                                    go.await();
+                                    return ids(dao.claim(wf, 5, "pull", 1));
+                                }));
+            }
+            go.countDown();
+            Set<List<String>> distinct = new HashSet<>();
+            for (Future<List<String>> r : runs) {
+                distinct.add(r.get());
+            }
+            pool.shutdown();
+            assertEquals(Set.of(List.of("m0", "m1", "m2", "m3", "m4")), distinct);
         }
-        ExecutorService pool = Executors.newFixedThreadPool(8);
-        CountDownLatch go = new CountDownLatch(1);
-        List<Future<List<String>>> runs = new ArrayList<>();
-        for (int i = 0; i < 8; i++) {
-            runs.add(
-                    pool.submit(
-                            () -> {
-                                go.await();
-                                return ids(dao.claim(wf, 5, "pull", 1));
-                            }));
-        }
-        go.countDown();
-        Set<List<String>> distinct = new HashSet<>();
-        for (Future<List<String>> r : runs) {
-            distinct.add(r.get());
-        }
-        pool.shutdown();
-        assertEquals(Set.of(List.of("m0", "m1", "m2", "m3", "m4")), distinct);
     }
 }
