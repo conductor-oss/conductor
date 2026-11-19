@@ -108,10 +108,8 @@ public class MySQLPollDataBufferTest {
         dao.updateLastPollData("task-a", "domain-a", "worker-old");
         dao.updateLastPollData("task-a", "domain-a", "worker-new");
 
-        // No database writes should happen before the flush.
         assertEquals(0, countPollDataRows("task-a", "domain-a"));
 
-        // Reads must immediately see the latest buffered value.
         PollData buffered = dao.getPollData("task-a", "domain-a");
 
         assertNotNull(buffered);
@@ -119,7 +117,6 @@ public class MySQLPollDataBufferTest {
 
         dao.flushData();
 
-        // Only one record should be persisted.
         assertEquals(1, countPollDataRows("task-a", "domain-a"));
 
         PollData persisted = dao.getPollData("task-a", "domain-a");
@@ -133,12 +130,10 @@ public class MySQLPollDataBufferTest {
         MySQLExecutionDAO immediateDAO = createDAO(Duration.ZERO, dataSource);
         MySQLExecutionDAO bufferedDAO = createDAO(Duration.ofSeconds(60), dataSource);
 
-        // Existing database records.
         immediateDAO.updateLastPollData("task-a", "domain-a", "db-worker-a");
         immediateDAO.updateLastPollData("task-a", "domain-b", "db-worker-b");
         immediateDAO.updateLastPollData("task-b", "domain-x", "db-worker-x");
 
-        // Buffered updates.
         bufferedDAO.updateLastPollData("task-a", "domain-a", "buffer-worker-a");
         bufferedDAO.updateLastPollData("task-a", "domain-c", "buffer-worker-c");
 
@@ -200,7 +195,6 @@ public class MySQLPollDataBufferTest {
 
         dao.flushData();
 
-        // All three rows should be written in one transaction.
         assertEquals(1, trackingDataSource.getCommitCount());
 
         assertEquals(1, countPollDataRows("task-a", "domain-a"));
@@ -217,26 +211,17 @@ public class MySQLPollDataBufferTest {
 
         dao.updateLastPollData("task-a", "domain-a", "worker-a");
         dao.updateLastPollData("task-b", "domain-b", "worker-b");
-
-        // The first transaction will fail at commit.
         dao.flushData();
 
         assertEquals(1, trackingDataSource.getCommitCount());
-
-        // The failed transaction must not persist partial data.
         assertEquals(0, countPollDataRows("task-a", "domain-a"));
         assertEquals(0, countPollDataRows("task-b", "domain-b"));
-
-        // Buffered data must remain available.
         assertEquals("worker-a", dao.getPollData("task-a", "domain-a").getWorkerId());
-
         assertEquals("worker-b", dao.getPollData("task-b", "domain-b").getWorkerId());
 
-        // A subsequent flush should successfully persist the entries.
         dao.flushData();
 
         assertEquals(2, trackingDataSource.getCommitCount());
-
         assertEquals(1, countPollDataRows("task-a", "domain-a"));
         assertEquals(1, countPollDataRows("task-b", "domain-b"));
     }
@@ -246,13 +231,10 @@ public class MySQLPollDataBufferTest {
         MySQLExecutionDAO dao = createDAO(Duration.ofSeconds(60), dataSource);
 
         dao.updateLastPollData("task-a", "domain-a", "worker-old");
-
-        // First flush persists the original update.
         dao.flushData();
 
         assertEquals("worker-old", dao.getPollData("task-a", "domain-a").getWorkerId());
 
-        // A newer update after the first flush must be buffered independently.
         dao.updateLastPollData("task-a", "domain-a", "worker-new");
 
         assertEquals("worker-new", dao.getPollData("task-a", "domain-a").getWorkerId());
@@ -260,7 +242,6 @@ public class MySQLPollDataBufferTest {
         dao.flushData();
 
         assertEquals(1, countPollDataRows("task-a", "domain-a"));
-
         assertEquals("worker-new", dao.getPollData("task-a", "domain-a").getWorkerId());
     }
 
