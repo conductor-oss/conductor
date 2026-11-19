@@ -22,6 +22,7 @@ dependencies {
 }
 
 test {
+    doNotTrackState("e2e runs against an external server that Gradle cannot see")
     useJUnitPlatform()
     maxParallelForks = 4
     minHeapSize = '512m'
