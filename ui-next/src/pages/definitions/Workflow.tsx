@@ -55,8 +55,6 @@ Read more:
 * [Core Concepts: Workflows](https://orkes.io/content/core-concepts#workflow-definition)
 * [Developer Guides: Workflows](https://orkes.io/content/developer-guides/workflows)
 * [Workflow API Reference](https://orkes.io/content/reference-docs/api/workflow)
-
-Browse our templates to get started with easy examples!
 `;
 
 export default function WorkflowDefinitions() {
