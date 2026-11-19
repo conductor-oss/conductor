@@ -16,6 +16,9 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
@@ -35,11 +38,14 @@ import com.netflix.conductor.dao.RateLimitingDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.mysql.config.MySQLProperties;
 import com.netflix.conductor.mysql.util.Query;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.ObjectMapper;
 
@@ -48,15 +54,46 @@ public class MySQLExecutionDAO extends MySQLBaseDAO
         implements ExecutionDAO, RateLimitingDAO, PollDataDAO, ConcurrentExecutionLimitDAO {
 
     private final QueueDAO queueDAO;
+    private final long pollDataFlushInterval;
+
+    private final Object pollDataLock = new Object();
+    private final Object flushLock = new Object();
+
+    private final Map<PollDataKey, PollData> pendingPollData = new HashMap<>();
+
+    private ScheduledExecutorService flushExecutor;
+
+    private record PollDataKey(String taskDefName, String domain) {}
 
     public MySQLExecutionDAO(
             RetryTemplate retryTemplate,
             ObjectMapper objectMapper,
             DataSource dataSource,
-            QueueDAO queueDAO) {
+            QueueDAO queueDAO,
+            MySQLProperties properties) {
         super(retryTemplate, objectMapper, dataSource);
         this.queueDAO = queueDAO;
+        this.pollDataFlushInterval = properties.getPollDataFlushInterval().toMillis();
+        Preconditions.checkArgument(
+                pollDataFlushInterval >= 0, "pollDataFlushInterval cannot be negative");
         log.info("MySQL ExecutionDAO initialized {}", queueDAO);
+    }
+
+    @PostConstruct
+    public void schedulePollDataFlush() {
+        if (pollDataFlushInterval > 0) {
+            flushExecutor = Executors.newSingleThreadScheduledExecutor();
+
+            flushExecutor.scheduleWithFixedDelay(
+                    this::flushData,
+                    pollDataFlushInterval,
+                    pollDataFlushInterval,
+                    TimeUnit.MILLISECONDS);
+
+            log.info(
+                    "MySQL pollData write buffer enabled. Flush interval: {} ms",
+                    pollDataFlushInterval);
+        }
     }
 
     private static String dateStr(Long timeInMs) {
@@ -550,31 +587,59 @@ public class MySQLExecutionDAO extends MySQLBaseDAO
     public void updateLastPollData(String taskDefName, String domain, String workerId) {
         Preconditions.checkNotNull(taskDefName, "taskDefName name cannot be null");
         PollData pollData = new PollData(taskDefName, domain, workerId, System.currentTimeMillis());
-        String effectiveDomain = (domain == null) ? "DEFAULT" : domain;
-        withTransaction(tx -> insertOrUpdatePollData(tx, pollData, effectiveDomain));
+
+        String effectiveDomain = domain == null ? "DEFAULT" : domain;
+
+        if (pollDataFlushInterval == 0) {
+            withTransaction(tx -> insertOrUpdatePollData(tx, pollData, effectiveDomain));
+            return;
+        }
+
+        PollDataKey key = new PollDataKey(taskDefName, effectiveDomain);
+
+        synchronized (pollDataLock) {
+            pendingPollData.put(key, pollData);
+        }
     }
 
     @Override
     public PollData getPollData(String taskDefName, String domain) {
         Preconditions.checkNotNull(taskDefName, "taskDefName name cannot be null");
         String effectiveDomain = (domain == null) ? "DEFAULT" : domain;
+
+        // Check the buffered snapshot first
+        Map<PollDataKey, PollData> snapshot = getPendingPollDataSnapshot();
+        PollDataKey key = new PollDataKey(taskDefName, effectiveDomain);
+
+        if (snapshot.containsKey(key)) {
+            return snapshot.get(key);
+        }
+
+        // If there is no buffered value, query MySQL as before
         return getWithRetriedTransactions(tx -> readPollData(tx, taskDefName, effectiveDomain));
     }
 
     @Override
     public List<PollData> getPollData(String taskDefName) {
         Preconditions.checkNotNull(taskDefName, "taskDefName name cannot be null");
-        return readAllPollData(taskDefName);
+
+        Map<PollDataKey, PollData> snapshot = getPendingPollDataSnapshot();
+        List<PollData> databaseData = readAllPollData(taskDefName);
+
+        return mergePollData(databaseData, snapshot, taskDefName);
     }
 
     @Override
     public List<PollData> getAllPollData() {
+        Map<PollDataKey, PollData> snapshot = getPendingPollDataSnapshot();
+        List<PollData> databaseData;
+
         try (Connection tx = dataSource.getConnection()) {
             boolean previousAutoCommitMode = tx.getAutoCommit();
             tx.setAutoCommit(true);
             try {
                 String GET_ALL_POLL_DATA = "SELECT json_data FROM poll_data ORDER BY queue_name";
-                return query(tx, GET_ALL_POLL_DATA, q -> q.executeAndFetch(PollData.class));
+                databaseData = query(tx, GET_ALL_POLL_DATA, q -> q.executeAndFetch(PollData.class));
             } catch (Throwable th) {
                 throw new NonTransientException(th.getMessage(), th);
             } finally {
@@ -583,6 +648,8 @@ public class MySQLExecutionDAO extends MySQLBaseDAO
         } catch (SQLException ex) {
             throw new NonTransientException(ex.getMessage(), ex);
         }
+
+        return mergePollData(databaseData, snapshot, null);
     }
 
     private List<TaskModel> getTasks(Connection connection, List<String> taskIds) {
@@ -631,6 +698,46 @@ public class MySQLExecutionDAO extends MySQLBaseDAO
 
         workflow.setTasks(tasks);
         return workflow.getWorkflowId();
+    }
+
+    void flushData() {
+
+        synchronized (flushLock) {
+            Map<PollDataKey, PollData> snapshot;
+
+            synchronized (pollDataLock) {
+                if (pendingPollData.isEmpty()) {
+                    return;
+                }
+
+                snapshot = new HashMap<>(pendingPollData);
+            }
+
+            try {
+                withTransaction(
+                        tx -> {
+                            for (Map.Entry<PollDataKey, PollData> entry : snapshot.entrySet()) {
+
+                                insertOrUpdatePollData(
+                                        tx, entry.getValue(), entry.getKey().domain());
+                            }
+                        });
+
+                synchronized (pollDataLock) {
+                    snapshot.forEach(
+                            (key, value) -> {
+                                if (pendingPollData.get(key) == value) {
+                                    pendingPollData.remove(key);
+                                }
+                            });
+                }
+
+                log.debug("Successfully flushed {} MySQL pollData entries", snapshot.size());
+
+            } catch (Exception e) {
+                log.error("MySQL pollData cache flush failed", e);
+            }
+        }
     }
 
     private void updateTask(Connection connection, TaskModel task) {
@@ -1085,5 +1192,53 @@ public class MySQLExecutionDAO extends MySQLBaseDAO
                 task.getWorkflowInstanceId(), "Workflow instance id cannot be null");
         Preconditions.checkNotNull(
                 task.getReferenceTaskName(), "Task reference name cannot be null");
+    }
+
+    private Map<PollDataKey, PollData> getPendingPollDataSnapshot() {
+        synchronized (pollDataLock) {
+            return new HashMap<>(pendingPollData);
+        }
+    }
+
+    private List<PollData> mergePollData(
+            List<PollData> databaseData,
+            Map<PollDataKey, PollData> bufferedData,
+            String taskDefName) {
+
+        Map<PollDataKey, PollData> merged = new LinkedHashMap<>();
+
+        for (PollData pollData : databaseData) {
+            String domain = pollData.getDomain() == null ? "DEFAULT" : pollData.getDomain();
+
+            merged.put(new PollDataKey(pollData.getQueueName(), domain), pollData);
+        }
+
+        bufferedData.forEach(
+                (key, value) -> {
+                    if (taskDefName == null || taskDefName.equals(key.taskDefName())) {
+                        merged.put(key, value);
+                    }
+                });
+
+        return new ArrayList<>(merged.values());
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        if (flushExecutor != null) {
+            flushExecutor.shutdown();
+
+            try {
+                if (!flushExecutor.awaitTermination(30, TimeUnit.SECONDS)) {
+                    flushExecutor.shutdownNow();
+                    flushExecutor.awaitTermination(30, TimeUnit.SECONDS);
+                }
+            } catch (InterruptedException e) {
+                flushExecutor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        flushData();
     }
 }
