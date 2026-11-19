@@ -37,9 +37,9 @@ import org.springframework.ai.chat.prompt.Prompt;
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -57,6 +57,8 @@ class FileLLMCallRecorderTest {
     @Test
     void recordingJsonDoesNotChangeSharedMapperConfiguration() throws Exception {
         ObjectMapper shared = objectMapper;
+        boolean failOnTrailingTokens =
+                shared.isEnabled(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
         LLMRecording recording = recording();
         Path path = recorder.writeRecording(recording);
         assertSaved(recording, path);
@@ -65,10 +67,12 @@ class FileLLMCallRecorderTest {
                         new Prompt("hello"),
                         RecordedRequestNormalizer.options(new ChatCompletion()));
         assertFalse(shared.isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES));
-        assertFalse(shared.isEnabled(DeserializationFeature.FAIL_ON_TRAILING_TOKENS));
+        assertEquals(
+                failOnTrailingTokens,
+                shared.isEnabled(DeserializationFeature.FAIL_ON_TRAILING_TOKENS));
         assertEquals(
                 JsonInclude.Include.NON_NULL,
-                shared.getSerializationConfig().getDefaultPropertyInclusion().getValueInclusion());
+                shared.serializationConfig().getDefaultPropertyInclusion().getValueInclusion());
     }
 
     @Test

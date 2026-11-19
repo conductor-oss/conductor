@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Box, Button, Stack } from "@mui/material";
-import Highlight from "react-highlight";
+import { LazyHighlight } from "components/ui/LazyHighlight";
 
 export const CodeSnippet = ({
   code,
@@ -31,7 +31,7 @@ export const CodeSnippet = ({
         },
       }}
     >
-      <Highlight className={className}>{code}</Highlight>
+      <LazyHighlight className={className}>{code}</LazyHighlight>
       {!noCopyToClipboard && (
         <Stack
           sx={{

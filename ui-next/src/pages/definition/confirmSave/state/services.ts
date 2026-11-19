@@ -44,7 +44,6 @@ export const createWorkflow = async (
           "Content-Type": "application/json",
           ...authHeaders,
         },
-
         body: editorChanges,
       },
     );
@@ -92,6 +91,9 @@ export const refetchAllDefinitionsOfCurrentWorkflow = async ({
   authHeaders: headers,
   workflowName,
 }: SaveWorkflowMachineContext) => {
+  if (!workflowName) {
+    return [];
+  }
   const url = `/metadata/workflow?name=${encodeURIComponent(workflowName)}`;
   try {
     const result: WorkflowDef[] = await fetchWithContext(
@@ -105,8 +107,12 @@ export const refetchAllDefinitionsOfCurrentWorkflow = async ({
         },
       },
     );
-    return result;
+    // Some backends ignore the `name` param and return every definition in the
+    // cluster (#1590), so keep only this workflow's definitions.
+    return Array.isArray(result)
+      ? result.filter((item) => item?.name === workflowName)
+      : [];
   } catch {
-    return {};
+    return [];
   }
 };

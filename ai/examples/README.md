@@ -47,14 +47,16 @@ conductor.vectordb.instances[0].postgres.dimensions=1536
 Install and start the MCP test server:
 
 ```bash
-# Install mcp-testkit — a test MCP server with 65 deterministic tools
-pip install mcp-testkit
+# Install mcp-testkit — a test MCP server with deterministic tools
+pip install 'mcp-testkit>=1.1.0'
 
 # Start the server in HTTP mode
 mcp-testkit --transport http
 ```
 
-The server will be available at `http://localhost:3001/mcp`.
+The server will be available at `http://localhost:3001/mcp`. From 1.1.0 it also speaks MCP
+`2026-07-28` with the Tasks extension: its `task_scripted` and `task_run` tools answer with a task,
+so a `CALL_MCP_TOOL` that sets `mcpOptions.protocolVersion` can be tried against it.
 
 ---
 

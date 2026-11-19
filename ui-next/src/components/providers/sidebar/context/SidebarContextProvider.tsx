@@ -1,10 +1,11 @@
-import { ReactNode, useContext, useMemo, useState } from "react";
+import { memo, useContext, useLayoutEffect, useMemo, useState } from "react";
 
 import { Theme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useSelector } from "@xstate/react";
 import {
   SidebarContext,
+  SidebarContextState,
   SidebarProviderProps,
 } from "components/providers/sidebar/context/SidebarContext";
 import { useLocation } from "react-router";
@@ -24,15 +25,20 @@ const isPlayground = featureFlags.isEnabled(FEATURES.PLAYGROUND);
 const isAiStudioBannerFlagOn = featureFlags.isEnabled(
   FEATURES.SHOW_AI_STUDIO_BANNER_FLAG,
 );
-const SidebarContextWrapper = ({
+/**
+ * Runs useSidebarMenu (which needs the sidebar actor) and publishes the
+ * resulting context value up to SidebarProvider. It renders nothing, so it
+ * can come and go without touching the position of `children`.
+ */
+const SidebarValueSource = memo(function SidebarValueSource({
   sidebarActor,
   isMobile,
-  children,
+  onValue,
 }: {
   sidebarActor: ActorRef<PersistableSidebarEvent>;
   isMobile: boolean;
-  children: ReactNode;
-}) => {
+  onValue: (value: SidebarContextState | null) => void;
+}) {
   const {
     isSidebarExpanded,
     location,
@@ -101,30 +107,32 @@ const SidebarContextWrapper = ({
     sidebarActor,
   ]);
 
-  return (
-    <SidebarContext.Provider value={memoContextValue}>
-      {children}
-    </SidebarContext.Provider>
-  );
-};
+  // Layout effects commit before paint, so no frame is painted with the
+  // default value once the actor exists (consumers render once with the
+  // default before this publish).
+  useLayoutEffect(() => {
+    onValue(memoContextValue);
+  }, [memoContextValue, onValue]);
 
-// Inner component that uses useSelector (only rendered when authService is available)
-const SidebarProviderWithAuth = ({
-  children,
+  useLayoutEffect(() => () => onValue(null), [onValue]);
+
+  return null;
+});
+
+// Only rendered when authService is available (selectors need it). Decides
+// whether the sidebar machine should drive the context.
+const SidebarAuthGate = ({
   authService,
   isMobile,
-  defaultContextValue,
+  onValue,
 }: {
-  children: ReactNode;
   authService: ActorRef<any>;
   isMobile: boolean;
-  defaultContextValue: any;
+  onValue: (value: SidebarContextState | null) => void;
 }) => {
   const isAuthenticated = useSelector(authService, getIsAuthenticated);
   const noUserManagement = useSelector(authService, getIsNoUserManagement);
-
   const isSideBarState = useSelector(authService, isSidebarInitialized);
-
   const sidebarActor = useSelector(
     authService,
     (state: State<AuthProviderMachineContext>) =>
@@ -132,23 +140,20 @@ const SidebarProviderWithAuth = ({
   );
 
   const userManagementIsNotAvailable = noUserManagement && isSideBarState;
-
   const withUserManagement = isAuthenticated && isSideBarState;
-
   const withSidebarSupport =
     isPlayground && authService?.getSnapshot().children["sidebarMachine"];
 
-  return userManagementIsNotAvailable ||
-    withUserManagement ||
-    withSidebarSupport ? (
-    <SidebarContextWrapper sidebarActor={sidebarActor} isMobile={isMobile}>
-      {children}
-    </SidebarContextWrapper>
-  ) : (
-    <SidebarContext.Provider value={defaultContextValue}>
-      {children}
-    </SidebarContext.Provider>
-  );
+  const active =
+    userManagementIsNotAvailable || withUserManagement || withSidebarSupport;
+
+  return active && sidebarActor ? (
+    <SidebarValueSource
+      sidebarActor={sidebarActor}
+      isMobile={isMobile}
+      onValue={onValue}
+    />
+  ) : null;
 };
 
 export const SidebarProvider = ({ children }: SidebarProviderProps) => {
@@ -179,23 +184,25 @@ export const SidebarProvider = ({ children }: SidebarProviderProps) => {
     };
   }, [isMobile, location.pathname]);
 
-  // If authService is not available, use default context
-  if (!authService) {
-    return (
-      <SidebarContext.Provider value={defaultContextValue}>
-        {children}
-      </SidebarContext.Provider>
-    );
-  }
+  // The sidebar machine's value, published by SidebarValueSource once the
+  // sidebar actor exists. Null until then, and again if it goes away.
+  const [sidebarValue, setSidebarValue] = useState<SidebarContextState | null>(
+    null,
+  );
 
-  // authService is available, render the inner component with selectors
+  // The Provider and `children` stay at the same tree position whatever the
+  // auth state does, so the app below is never remounted as auth settles.
+  // Only the context value varies.
   return (
-    <SidebarProviderWithAuth
-      authService={authService}
-      isMobile={isMobile}
-      defaultContextValue={defaultContextValue}
-    >
+    <SidebarContext.Provider value={sidebarValue ?? defaultContextValue}>
+      {authService ? (
+        <SidebarAuthGate
+          authService={authService}
+          isMobile={isMobile}
+          onValue={setSidebarValue}
+        />
+      ) : null}
       {children}
-    </SidebarProviderWithAuth>
+    </SidebarContext.Provider>
   );
 };

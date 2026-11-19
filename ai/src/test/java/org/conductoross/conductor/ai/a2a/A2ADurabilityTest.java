@@ -27,8 +27,8 @@ import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.OkHttpClient;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.conductoross.conductor.ai.a2a.A2AWorkerTestSupport.invoke;
 import static org.conductoross.conductor.ai.a2a.A2AWorkerTestSupport.unusedAgentClient;

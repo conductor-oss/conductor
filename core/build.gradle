@@ -17,10 +17,10 @@ dependencies {
 
     compileOnly 'org.springframework.boot:spring-boot-starter'
     compileOnly 'org.springframework.boot:spring-boot-starter-validation'
-    compileOnly 'org.springframework.retry:spring-retry'
 
-    implementation "com.fasterxml.jackson.core:jackson-annotations:${revFasterXml}"
-    implementation "com.fasterxml.jackson.core:jackson-databind:${revFasterXml}"
+    implementation "com.fasterxml.jackson.core:jackson-annotations"
+    implementation "com.networknt:json-schema-validator:${revJSonSchemaValidator}"
+    implementation "tools.jackson.core:jackson-databind"
 
     implementation "commons-io:commons-io:${revCommonsIo}"
 
@@ -28,7 +28,7 @@ dependencies {
 
     implementation "org.apache.commons:commons-lang3"
 
-    implementation "com.fasterxml.jackson.core:jackson-core:${revFasterXml}"
+    implementation "tools.jackson.core:jackson-core"
 
     implementation "com.spotify:completable-futures:${revSpotifyCompletableFutures}"
 
@@ -43,8 +43,12 @@ dependencies {
     // Nashorn is deprecated and removed in Java 15+, replaced by GraalJS
     // implementation "org.openjdk.nashorn:nashorn-core:15.4"
 
-    implementation "io.micrometer:micrometer-core:${revMicrometer}"
+    implementation "io.micrometer:micrometer-core"
     implementation "com.google.guava:guava:${revGuava}"
+    // FileStorageServiceImpl uses org.checkerframework.checker.nullness.qual annotations, which
+    // guava transitively supplied before 33.6.0 but no longer does. Declare it explicitly
+    // (compile-time only -- the annotations are not needed at runtime).
+    compileOnly "org.checkerframework:checker-qual:3.51.1"
 
     //GraalVM dependencies for executing JavaScript and Python
     // PINNED (#964): all GraalVM artifacts must use the same version (revGraalVM in dependencies.gradle)
@@ -59,17 +63,17 @@ dependencies {
 
     // JAXB is not bundled with Java 11, dependencies added explicitly
     // These are needed by Apache BVAL
-    implementation "jakarta.xml.bind:jakarta.xml.bind-api:${revJAXB}"
-    implementation "jakarta.activation:jakarta.activation-api:${revActivation}"
+    implementation "jakarta.xml.bind:jakarta.xml.bind-api"
+    implementation "jakarta.activation:jakarta.activation-api"
 
     // Only add it as a test dependency. The actual jaxb runtime provider is provided when building the server.
-    testImplementation "org.glassfish.jaxb:jaxb-runtime:${revJAXB}"
+    testImplementation "org.glassfish.jaxb:jaxb-runtime"
 
     testImplementation 'org.springframework.boot:spring-boot-starter-validation'
-    testImplementation 'org.springframework.retry:spring-retry'
-    testImplementation project(':conductor-common').sourceSets.test.output
+    testImplementation rootProject.project(':conductor-common').sourceSets.test.output
 
-    testImplementation "org.apache.groovy:groovy-all:${revGroovy}"
+    testImplementation "org.apache.groovy:groovy"
+    testImplementation "org.apache.groovy:groovy-json"
     testImplementation "org.spockframework:spock-core:${revSpock}"
     testImplementation "org.spockframework:spock-spring:${revSpock}"
     testImplementation "org.junit.vintage:junit-vintage-engine"
@@ -81,6 +85,39 @@ dependencies {
     // arch only; add other -macos-x86_64 / -linux-x86_64 / -linux-arm64 variants for prod.
     testImplementation "com.caoccao.javet:javet:4.1.2"
     testImplementation "com.caoccao.javet:javet-v8-macos-arm64:4.1.2"
+}
+
+// Each policy gets its own JVM because the evaluator's policy is fixed after initialization.
+def unrestrictedGraalJSTest = tasks.register('testUnrestrictedGraalJS', Test) {
+    group = 'verification'
+    description = 'Verifies the explicit unrestricted GraalJS host-access configuration'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform()
+    filter {
+        includeTestsMatching 'com.netflix.conductor.core.config.GraalJSUnrestrictedHostAccessTest'
+    }
+}
+
+def restrictedGraalJSTest = tasks.register('testRestrictedGraalJS', Test) {
+    group = 'verification'
+    description = 'Verifies the opt-in restricted GraalJS host-access configuration'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform()
+    filter {
+        includeTestsMatching 'com.netflix.conductor.core.config.GraalJSRestrictedHostAccessTest'
+        includeTestsMatching 'com.netflix.conductor.core.events.TestScriptEvaluatorSandbox'
+        includeTestsMatching 'com.netflix.conductor.core.execution.tasks.InlineTest'
+    }
+}
+
+test {
+    dependsOn unrestrictedGraalJSTest, restrictedGraalJSTest
+    exclude '**/GraalJSUnrestrictedHostAccessTest.class'
+    exclude '**/GraalJSRestrictedHostAccessTest.class'
+    exclude '**/TestScriptEvaluatorSandbox.class'
+    exclude '**/InlineTest.class'
 }
 
 // Standalone benchmark runner for comparing JS engines on representative Inline-task scripts.

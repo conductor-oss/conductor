@@ -71,7 +71,7 @@ import { updateField } from "utils/fieldHelpers";
 import { FEATURES, featureFlags } from "utils/flags";
 import { TaskStats } from "./TaskStats/TaskStats";
 import { ConductorCacheOutput } from "./forms/ConductorCacheOutputForm";
-import { MCPTaskForm } from "./forms/MCPTaskForm";
+import { IntegrationTaskForm } from "./forms/IntegrationTaskForm";
 import { MaybeVariable } from "./forms/MaybeVariable";
 import { Optional } from "./forms/OptionalFieldForm";
 import TaskFormSection from "./forms/TaskFormSection";
@@ -119,7 +119,7 @@ const getTaskForm = (type: string) => {
     case TaskType.UPDATE_TASK:
       return UpdateTaskForm;
     case TaskType.INTEGRATION:
-      return MCPTaskForm;
+      return IntegrationTaskForm;
 
     // Operators
     case TaskType.DECISION:

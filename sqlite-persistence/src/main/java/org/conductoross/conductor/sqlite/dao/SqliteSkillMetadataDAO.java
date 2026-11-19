@@ -21,11 +21,11 @@ import java.util.Optional;
 import javax.sql.DataSource;
 
 import org.conductoross.conductor.dao.SkillMetadataDAO;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.sqlite.dao.SqliteBaseDAO;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /** SQLite {@link SkillMetadataDAO} — table {@code skill_metadata}. */
 public class SqliteSkillMetadataDAO extends SqliteBaseDAO implements SkillMetadataDAO {

@@ -437,8 +437,8 @@ export const WorkflowPropertiesForm: FunctionComponent<
                               getOptionLabel={(option) =>
                                 getTimeoutPolicyLabel(option)
                               }
-                              renderOption={(props, option) => (
-                                <li {...props}>
+                              renderOption={({ key, ...props }, option) => (
+                                <li key={key} {...props}>
                                   {getTimeoutPolicyLabel(option)}
                                 </li>
                               )}

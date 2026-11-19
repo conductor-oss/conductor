@@ -22,11 +22,11 @@ import org.junit.Test;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.Workflow;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.Any;
 import com.google.protobuf.Struct;
 import com.google.protobuf.Value;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -43,8 +43,6 @@ public class ConductorObjectMapperTest {
 
     @Test
     public void testSimpleMapping() throws IOException {
-        assertTrue(objectMapper.canSerialize(Any.class));
-
         Struct struct1 =
                 Struct.newBuilder()
                         .putFields(
@@ -55,6 +53,12 @@ public class ConductorObjectMapperTest {
 
         StringWriter buf = new StringWriter();
         objectMapper.writer().writeValue(buf, source);
+
+        // Jackson 3 dropped ObjectMapper.canSerialize. The @type key proves the same thing the old
+        // capability check did: JsonProtoModule's Any serializer is registered, since a default
+        // bean
+        // serializer would not emit it.
+        assertTrue(buf.toString().contains("@type"));
 
         Any dest = objectMapper.reader().forType(Any.class).readValue(buf.toString());
         assertEquals(source.getTypeUrl(), dest.getTypeUrl());
@@ -67,7 +71,7 @@ public class ConductorObjectMapperTest {
     }
 
     @Test
-    public void testNullOnWrite() throws JsonProcessingException {
+    public void testNullOnWrite() throws JacksonException {
         Map<String, Object> data = new HashMap<>();
         data.put("someKey", null);
         data.put("someId", "abc123");

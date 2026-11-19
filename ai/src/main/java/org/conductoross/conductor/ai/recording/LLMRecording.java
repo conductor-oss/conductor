@@ -21,7 +21,7 @@ import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.Validate;
 import org.springframework.ai.chat.messages.MessageType;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 
 /** A normalized request and the complete model response it produced. */
 public record LLMRecording(int schemaVersion, Request request, JsonNode response) {

@@ -856,6 +856,19 @@ export const cleanLocalCopyMessage = assign<DefinitionMachineContext>({
   localCopyMessage: undefined,
 });
 
+export const setLocalBackupFailed = assign<DefinitionMachineContext>({
+  localBackupFailed: true,
+});
+
+export const clearLocalBackupFailed = assign<DefinitionMachineContext>({
+  localBackupFailed: false,
+  localBackupWarningDismissed: false,
+});
+
+export const dismissLocalBackupWarning = assign<DefinitionMachineContext>({
+  localBackupWarningDismissed: true,
+});
+
 export const updateWfFromLocalStorage = assign<
   DefinitionMachineContext,
   DoneInvokeEvent<
