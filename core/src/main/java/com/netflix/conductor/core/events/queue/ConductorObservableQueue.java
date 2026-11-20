@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.core.events.queue;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -103,8 +104,12 @@ public class ConductorObservableQueue implements ObservableQueue {
     }
 
     private List<Message> receiveMessages() {
+        return receiveMessages(pollCount, longPollTimeout);
+    }
+
+    private List<Message> receiveMessages(int batchSize, int timeoutMs) {
         try {
-            List<Message> messages = queueDAO.pollMessages(queueName, pollCount, longPollTimeout);
+            List<Message> messages = queueDAO.pollMessages(queueName, batchSize, timeoutMs);
             Monitors.recordEventQueueMessagesProcessed(QUEUE_TYPE, queueName, messages.size());
             Monitors.recordEventQueuePollSize(queueName, messages.size());
             return messages;
@@ -113,6 +118,19 @@ public class ConductorObservableQueue implements ObservableQueue {
             Monitors.recordObservableQMessageReceivedErrors(QUEUE_TYPE);
         }
         return new ArrayList<>();
+    }
+
+    /**
+     * Passive read used by the adaptive scheduler. Delegates to {@link QueueDAO#pollMessages} with
+     * caller-supplied batch and timeout, bypassing the RxJava interval entirely.
+     */
+    @Override
+    public List<Message> poll(int batchSize, Duration timeout) {
+        if (!isRunning()) {
+            return Collections.emptyList();
+        }
+        int timeoutMs = (int) Math.max(0L, timeout.toMillis());
+        return receiveMessages(batchSize, timeoutMs);
     }
 
     private OnSubscribe<Message> getOnSubscribe() {
