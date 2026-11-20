@@ -39,7 +39,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.common.model.WorkflowMessage;
 import com.netflix.conductor.core.config.WorkflowMessageQueueProperties;
-import com.netflix.conductor.core.dao.JdbcWorkflowMessageQueueDAO;
 import com.netflix.conductor.postgres.config.PostgresConfiguration;
 
 import tools.jackson.databind.ObjectMapper;
@@ -65,14 +64,14 @@ public class PostgresWorkflowMessageQueueDAOTest {
 
     @Autowired private Flyway flyway;
 
-    private JdbcWorkflowMessageQueueDAO dao;
+    private PostgresWorkflowMessageQueueDAO dao;
 
     @Before
     public void before() {
         flyway.migrate();
         WorkflowMessageQueueProperties props = new WorkflowMessageQueueProperties();
         props.setMaxQueueSize(10);
-        dao = new JdbcWorkflowMessageQueueDAO(dataSource, objectMapper, props, true);
+        dao = new PostgresWorkflowMessageQueueDAO(dataSource, objectMapper, props);
         dao.delete("pg-wf-1");
         dao.delete("pg-wf-2");
     }

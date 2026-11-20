@@ -25,8 +25,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.core.config.WorkflowMessageQueueConfiguration;
-import com.netflix.conductor.core.dao.JdbcWorkflowMessageQueueDAO;
 import com.netflix.conductor.dao.WorkflowMessageQueueDAO;
+import com.netflix.conductor.sqlite.dao.SqliteWorkflowMessageQueueDAO;
 
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -77,7 +77,7 @@ public class SqliteWorkflowMessageQueueWiringTest {
 
         @Test
         public void theDurableStoreIsTheOneInjected() {
-            assertTrue(dao instanceof JdbcWorkflowMessageQueueDAO);
+            assertTrue(dao instanceof SqliteWorkflowMessageQueueDAO);
         }
     }
 }

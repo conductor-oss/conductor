@@ -18,7 +18,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.TreeMap;
 
 import javax.sql.DataSource;
 
@@ -30,8 +29,10 @@ import com.netflix.conductor.dao.WorkflowMessageQueueDAO;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * A durable workflow message queue on a SQL database (SQLite, Postgres, MySQL), in the table {@code
- * workflow_message_queue} created by each persistence module's migrations.
+ * The durable workflow message queue on a SQL database, in the table {@code workflow_message_queue}
+ * that each persistence module creates with its migrations. This class has the rules that are the
+ * same on every database. Each persistence module has its own subclass for what differs: how a row
+ * is locked, how a fence row is inserted, and on SQLite how a message is pushed and popped.
  *
  * <p>Messages pushed to a running workflow survive a server restart. Messages are ordered by an
  * auto-increment sequence. A pop reads and deletes in one transaction. A claim marks the messages
@@ -39,40 +40,36 @@ import tools.jackson.databind.ObjectMapper;
  * second run of that pull gets them again. Claimed messages are deleted when the same pull claims
  * in a later loop iteration, or when the workflow ends. They do not count in {@link #size} or
  * toward the maximum queue size.
- *
- * <p>On SQLite, push and pop are each one write statement ({@code INSERT ... SELECT ... WHERE} and
- * {@code DELETE ... RETURNING}). A transaction that reads and then writes would have to upgrade its
- * lock, and SQLite fails such an upgrade at once with SQLITE_BUSY instead of waiting out
- * busy_timeout, so concurrent pushes and pulls would fail under load.
  */
-public class JdbcWorkflowMessageQueueDAO implements WorkflowMessageQueueDAO {
+public abstract class JdbcWorkflowMessageQueueDAO implements WorkflowMessageQueueDAO {
 
     private final DataSource dataSource;
-    private final ObjectMapper objectMapper;
-    private final int maxQueueSize;
-    private final boolean selectForUpdate;
+    protected final ObjectMapper objectMapper;
+    protected final int maxQueueSize;
 
-    /**
-     * @param selectForUpdate lock the popped rows ({@code SELECT ... FOR UPDATE}); true for
-     *     Postgres and MySQL, false for SQLite, which serializes writers itself
-     */
-    public JdbcWorkflowMessageQueueDAO(
+    protected JdbcWorkflowMessageQueueDAO(
             DataSource dataSource,
             ObjectMapper objectMapper,
-            WorkflowMessageQueueProperties properties,
-            boolean selectForUpdate) {
+            WorkflowMessageQueueProperties properties) {
         this.dataSource = dataSource;
         this.objectMapper = objectMapper;
         this.maxQueueSize = properties.getMaxQueueSize();
-        this.selectForUpdate = selectForUpdate;
     }
+
+    /**
+     * What a SELECT ends with to lock the rows it reads until the transaction ends, such as {@code
+     * " FOR UPDATE"}; empty on a database that serializes writers itself.
+     */
+    protected abstract String forUpdate();
+
+    /**
+     * An INSERT into {@code workflow_message_claim (workflow_id, claimant, ordinal)} that does
+     * nothing when the row is there, and holds the row until the transaction ends.
+     */
+    protected abstract String insertFenceIfAbsent();
 
     @Override
     public void push(String workflowId, WorkflowMessage message) {
-        if (!selectForUpdate) {
-            pushSingleStatement(workflowId, message);
-            return;
-        }
         inTransaction(
                 c -> {
                     long size = count(c, workflowId);
@@ -97,9 +94,6 @@ public class JdbcWorkflowMessageQueueDAO implements WorkflowMessageQueueDAO {
 
     @Override
     public List<WorkflowMessage> pop(String workflowId, int maxCount) {
-        if (!selectForUpdate) {
-            return popSingleStatement(workflowId, maxCount);
-        }
         return inTransaction(
                 c -> {
                     List<Long> seqs = new ArrayList<>();
@@ -107,7 +101,7 @@ public class JdbcWorkflowMessageQueueDAO implements WorkflowMessageQueueDAO {
                     String select =
                             "SELECT seq, json_data FROM workflow_message_queue WHERE workflow_id = ?"
                                     + " AND claimed_by IS NULL ORDER BY seq LIMIT ?"
-                                    + (selectForUpdate ? " FOR UPDATE" : "");
+                                    + forUpdate();
                     try (PreparedStatement ps = c.prepareStatement(select)) {
                         ps.setString(1, workflowId);
                         ps.setInt(2, maxCount);
@@ -135,61 +129,10 @@ public class JdbcWorkflowMessageQueueDAO implements WorkflowMessageQueueDAO {
                 });
     }
 
-    private void pushSingleStatement(String workflowId, WorkflowMessage message) {
-        int inserted =
-                inTransaction(
-                        c -> {
-                            try (PreparedStatement ps =
-                                    c.prepareStatement(
-                                            "INSERT INTO workflow_message_queue (message_id, workflow_id, json_data)"
-                                                    + " SELECT ?, ?, ? WHERE (SELECT COUNT(*) FROM workflow_message_queue"
-                                                    + " WHERE workflow_id = ? AND claimed_by IS NULL) < ?")) {
-                                ps.setString(1, message.getId());
-                                ps.setString(2, workflowId);
-                                ps.setString(3, objectMapper.writeValueAsString(message));
-                                ps.setString(4, workflowId);
-                                ps.setInt(5, maxQueueSize);
-                                return ps.executeUpdate();
-                            }
-                        });
-        if (inserted == 0) {
-            throw new IllegalStateException(
-                    "Workflow message queue for workflowId="
-                            + workflowId
-                            + " has reached the maximum size of "
-                            + maxQueueSize);
-        }
-    }
-
-    private List<WorkflowMessage> popSingleStatement(String workflowId, int maxCount) {
-        return inTransaction(
-                c -> {
-                    TreeMap<Long, WorkflowMessage> bySeq = new TreeMap<>();
-                    try (PreparedStatement ps =
-                            c.prepareStatement(
-                                    "DELETE FROM workflow_message_queue WHERE seq IN (SELECT seq FROM"
-                                            + " workflow_message_queue WHERE workflow_id = ? AND claimed_by IS NULL"
-                                            + " ORDER BY seq LIMIT ?)"
-                                            + " RETURNING seq, json_data")) {
-                        ps.setString(1, workflowId);
-                        ps.setInt(2, maxCount);
-                        try (ResultSet rs = ps.executeQuery()) {
-                            while (rs.next()) {
-                                bySeq.put(
-                                        rs.getLong(1),
-                                        objectMapper.readValue(
-                                                rs.getString(2), WorkflowMessage.class));
-                            }
-                        }
-                    }
-                    return new ArrayList<>(bySeq.values());
-                });
-    }
-
     @Override
     public List<WorkflowMessage> claim(
             String workflowId, int maxCount, String claimant, long ordinal) {
-        String lock = selectForUpdate ? " FOR UPDATE" : "";
+        String lock = forUpdate();
         String mine =
                 "SELECT seq, json_data FROM workflow_message_queue WHERE workflow_id = ?"
                         + " AND claimed_by = ? AND claim_ordinal = ? ORDER BY seq";
@@ -200,7 +143,7 @@ public class JdbcWorkflowMessageQueueDAO implements WorkflowMessageQueueDAO {
                         // new
                         return select(c, mine, workflowId, claimant, ordinal);
                     }
-                    if (selectForUpdate) {
+                    if (!lock.isEmpty()) {
                         // Serialize claims of one workflow: a second run of the same pull waits
                         // here, then sees the first run's claims instead of claiming other rows.
                         try (PreparedStatement ps =
@@ -270,16 +213,7 @@ public class JdbcWorkflowMessageQueueDAO implements WorkflowMessageQueueDAO {
      */
     private boolean advanceFence(Connection c, String workflowId, String claimant, long ordinal)
             throws Exception {
-        boolean mysql = c.getMetaData().getDatabaseProductName().toLowerCase().contains("mysql");
-        // MySQL: INSERT IGNORE would take a shared lock on an existing row, and the SELECT ... FOR
-        // UPDATE below would then deadlock with another run that did the same. This takes the
-        // exclusive lock at once.
-        String insert =
-                "INSERT INTO workflow_message_claim (workflow_id, claimant, ordinal) VALUES (?, ?, ?)"
-                        + (mysql
-                                ? " ON DUPLICATE KEY UPDATE ordinal = ordinal"
-                                : " ON CONFLICT (workflow_id, claimant) DO NOTHING");
-        try (PreparedStatement ps = c.prepareStatement(insert)) {
+        try (PreparedStatement ps = c.prepareStatement(insertFenceIfAbsent())) {
             ps.setString(1, workflowId);
             ps.setString(2, claimant);
             ps.setLong(3, ordinal);
@@ -289,7 +223,7 @@ public class JdbcWorkflowMessageQueueDAO implements WorkflowMessageQueueDAO {
         try (PreparedStatement ps =
                 c.prepareStatement(
                         "SELECT ordinal FROM workflow_message_claim WHERE workflow_id = ? AND claimant = ?"
-                                + (selectForUpdate ? " FOR UPDATE" : ""))) {
+                                + forUpdate())) {
             ps.setString(1, workflowId);
             ps.setString(2, claimant);
             try (ResultSet rs = ps.executeQuery()) {
@@ -369,7 +303,7 @@ public class JdbcWorkflowMessageQueueDAO implements WorkflowMessageQueueDAO {
     }
 
     @FunctionalInterface
-    private interface TxFunction<R> {
+    protected interface TxFunction<R> {
         R apply(Connection connection) throws Exception;
     }
 
@@ -381,7 +315,7 @@ public class JdbcWorkflowMessageQueueDAO implements WorkflowMessageQueueDAO {
      * write after another connection committed, which busy_timeout does not cover, and Postgres and
      * MySQL report serialization failures and deadlocks the same way.
      */
-    private <R> R inTransaction(TxFunction<R> function) {
+    protected <R> R inTransaction(TxFunction<R> function) {
         for (int attempt = 1; ; attempt++) {
             try {
                 return inTransactionOnce(function);

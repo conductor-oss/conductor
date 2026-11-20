@@ -51,7 +51,7 @@ Operations:
 
 | Implementation | Wired by | Durable | Claims |
 |---|---|---|---|
-| `JdbcWorkflowMessageQueueDAO` (table `workflow_message_queue`) | `SqliteConfiguration`, `PostgresConfiguration`, `MySQLConfiguration` | yes | yes |
+| `SqliteWorkflowMessageQueueDAO`, `PostgresWorkflowMessageQueueDAO`, `MySQLWorkflowMessageQueueDAO` (table `workflow_message_queue`; shared rules in `JdbcWorkflowMessageQueueDAO`) | `SqliteConfiguration`, `PostgresConfiguration`, `MySQLConfiguration` | yes | yes |
 | `RedisWorkflowMessageQueueDAO` (one List per workflow, key `wmq:{workflowId}`) | `RedisWorkflowMessageQueueConfiguration` | yes, with a TTL | no: `RPUSH` to enqueue, `LRANGE` then `LTRIM` to dequeue |
 | `InMemoryWorkflowMessageQueueDAO` | `WorkflowMessageQueueConfiguration`, when no other bean exists | no: lost on restart | no |
 
@@ -266,7 +266,10 @@ When the workflow ends, the executor deletes its queue (see [Lifecycle cleanup](
 | `WorkflowMessage` | `common` | POJO representing a single message |
 | `WorkflowMessageQueueProperties` | `core` | `@ConfigurationProperties` for all WMQ settings |
 | `PullWorkflowMessages` | `core` (system tasks) | System task that dequeues messages into workflow output |
-| `JdbcWorkflowMessageQueueDAO` | `core` (wired by `sqlite-persistence`, `postgres-persistence`, `mysql-persistence`) | Durable SQL implementation with claims |
+| `JdbcWorkflowMessageQueueDAO` | `core` | Abstract base of the durable SQL stores: the rules that are the same on every database, with claims |
+| `SqliteWorkflowMessageQueueDAO` | `sqlite-persistence` | Durable store on SQLite |
+| `PostgresWorkflowMessageQueueDAO` | `postgres-persistence` | Durable store on Postgres |
+| `MySQLWorkflowMessageQueueDAO` | `mysql-persistence` | Durable store on MySQL |
 | `RedisWorkflowMessageQueueDAO` | `redis-persistence` | Redis List implementation of the DAO |
 | `InMemoryWorkflowMessageQueueDAO` | `core` | Non-durable fallback |
 | `WorkflowMessageQueueConfiguration` | `core` | Spring `@Configuration` that wires up the InMemory DAO (default fallback) |
