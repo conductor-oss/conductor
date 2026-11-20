@@ -1,0 +1,36 @@
+{
+  "name": "do_while_list_iteration",
+  "description": "DO_WHILE with native list iteration using items parameter",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "list_loop",
+      "taskReferenceName": "list_loop",
+      "inputParameters": {},
+      "type": "DO_WHILE",
+      "items": "${workflow.input.items}",
+      "loopOver": [
+        {
+          "name": "LAMBDA_TASK",
+          "taskReferenceName": "process_item",
+          "inputParameters": {
+            "scriptExpression": "return { processedItem: $.list_loop.loopItem, index: $.list_loop.loopIndex }",
+            "list_loop": "${list_loop.output}"
+          },
+          "type": "LAMBDA",
+          "startDelay": 0,
+          "optional": false,
+          "asyncComplete": false
+        }
+      ]
+    }
+  ],
+  "inputParameters": ["items"],
+  "outputParameters": {},
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "ownerEmail": "test@harness.com"
+}
