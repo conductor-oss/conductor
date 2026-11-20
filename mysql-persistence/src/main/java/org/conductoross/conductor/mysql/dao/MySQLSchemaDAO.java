@@ -19,13 +19,13 @@ import java.util.Objects;
 import javax.sql.DataSource;
 
 import org.conductoross.conductor.dao.schema.SchemaDAO;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.common.metadata.SchemaDef;
 import com.netflix.conductor.mysql.dao.MySQLBaseDAO;
 import com.netflix.conductor.mysql.util.Query;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /** MySQL {@link SchemaDAO} — table {@code meta_schema_def}. */
 public class MySQLSchemaDAO extends MySQLBaseDAO implements SchemaDAO {

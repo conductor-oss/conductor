@@ -28,8 +28,8 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.sdk.workflow.executor.task.TaskContext;
 import com.netflix.conductor.sdk.workflow.task.InputParam;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
 
 // Annotations copied from java-sdk to avoid external dependency
 
@@ -42,8 +42,14 @@ public class AnnotatedMethodParameterMapper {
     private final ObjectMapper objectMapper;
 
     public AnnotatedMethodParameterMapper() {
-        this.objectMapper = new ObjectMapperProvider().getObjectMapper();
-        this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        // Worker payloads routinely carry fields the target type does not declare, so unknown
+        // properties are ignored. Jackson 3 mappers are immutable, hence the derived copy.
+        this.objectMapper =
+                new ObjectMapperProvider()
+                        .getObjectMapper()
+                        .rebuild()
+                        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                        .build();
     }
 
     /**

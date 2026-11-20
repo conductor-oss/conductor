@@ -30,8 +30,8 @@ import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_EVENT;
 
@@ -93,7 +93,7 @@ public class Event extends WorkflowSystemTask {
                 task.setStatus(TaskModel.Status.COMPLETED);
                 return true;
             }
-        } catch (JsonProcessingException jpe) {
+        } catch (JacksonException jpe) {
             task.setStatus(TaskModel.Status.FAILED);
             task.setReasonForIncompletion("Error serializing JSON payload: " + jpe.getMessage());
             LOGGER.error(
@@ -169,7 +169,7 @@ public class Event extends WorkflowSystemTask {
         }
     }
 
-    Message getPopulatedMessage(TaskModel task) throws JsonProcessingException {
+    Message getPopulatedMessage(TaskModel task) throws JacksonException {
         String payloadJson = objectMapper.writeValueAsString(task.getOutputData());
         return new Message(task.getTaskId(), payloadJson, task.getTaskId());
     }

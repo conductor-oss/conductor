@@ -25,7 +25,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 public class StringTemplate {
 

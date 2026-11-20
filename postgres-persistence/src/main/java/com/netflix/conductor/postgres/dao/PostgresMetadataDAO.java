@@ -22,7 +22,7 @@ import java.util.function.Consumer;
 
 import javax.sql.DataSource;
 
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -38,9 +38,9 @@ import com.netflix.conductor.postgres.config.PostgresProperties;
 import com.netflix.conductor.postgres.util.ExecuteFunction;
 import com.netflix.conductor.postgres.util.ExecutorsUtil;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import jakarta.annotation.*;
+import tools.jackson.databind.ObjectMapper;
 
 public class PostgresMetadataDAO extends PostgresBaseDAO implements MetadataDAO, EventHandlerDAO {
 

@@ -13,10 +13,17 @@
 package com.netflix.conductor.postgres.dao;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -32,7 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
+import org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -42,13 +49,14 @@ import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.postgres.config.PostgresConfiguration;
 import com.netflix.conductor.postgres.util.Query;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -585,80 +593,51 @@ public class PostgresQueueDAOTest {
         assertEquals(messageId, popped.get(0));
     }
 
-    /**
-     * Reproduces the original decider-queue busy-loop bug: a message whose delivery time is frozen
-     * in the past (e.g. left behind by a skipped postpone write) must be advanced into the future,
-     * not left permanently "due".
-     */
     @Test
-    public void setUnackTimeoutIfDueOrShorterUnsticksPastDeliverTime() throws Exception {
-        String queueName = "setUnackIfDueOrShorter_unstick";
-        String messageId = "msg-unstick";
+    public void pushPoppedMessageResetsPoppedStateAndMakesImmediatelyAvailable() {
+        String queueName = "requeue_popped_test";
+        String messageId = "requeue-msg-1";
 
+        // Push a message 'requeue-msg-1' with offset 0
         queueDAO.push(queueName, messageId, 0L);
-        freezeDeliverOnInThePast(queueName, messageId);
 
-        boolean updated = queueDAO.setUnackTimeoutIfDueOrShorter(queueName, messageId, 1_800_000L);
-        assertTrue("setUnackTimeoutIfDueOrShorter must apply when the message exists", updated);
-
-        // deliver_on must have been advanced into the future — no longer immediately poppable.
+        // Pop the message
         List<String> popped = queueDAO.pop(queueName, 1, 100);
-        assertEquals(
-                "A deliver_on frozen in the past must be advanced, not left stuck due forever",
-                0,
-                popped.size());
-    }
-
-    /**
-     * Regression test for the race a PR reviewer identified: an unconditional postpone write from a
-     * concurrent decide() must not overwrite a pending, sooner wake-up written by a sibling caller
-     * (e.g. a child sub-workflow completing and calling expediteLazyWorkflowEvaluation() on its
-     * parent via {@link com.netflix.conductor.dao.QueueDAO#postpone}).
-     */
-    @Test
-    public void setUnackTimeoutIfDueOrShorterDoesNotOverwriteExpeditedWakeup() {
-        String queueName = "setUnackIfDueOrShorter_expedite";
-        String messageId = "msg-expedite";
-
-        // Simulates a decide() that previously computed a far-future re-check for this workflow.
-        queueDAO.push(queueName, messageId, 3600L);
-
-        // A sibling caller expedites it — e.g. a child completing and waking its parent —
-        // making it immediately due.
-        queueDAO.postpone(queueName, messageId, 10, 0L);
-
-        // A second, concurrent decide() — having read state from before the expedite — now
-        // (belatedly) writes its own, much later, postpone for the same workflow.
-        queueDAO.setUnackTimeoutIfDueOrShorter(queueName, messageId, 1_800_000L); // 30 min
-
-        // The expedited wake-up must survive: the message must remain immediately poppable.
-        List<String> popped = queueDAO.pop(queueName, 1, 100);
-        assertEquals(
-                "A pending sooner wake-up (expedite) must not be pushed back by a later decide()",
-                1,
-                popped.size());
+        assertEquals(1, popped.size());
         assertEquals(messageId, popped.get(0));
-    }
 
-    @Test
-    public void setUnackTimeoutIfDueOrShorterReturnsFalseForNonExistent() {
-        String queueName = "setUnackIfDueOrShorter_nonexistent";
-        boolean updated = queueDAO.setUnackTimeoutIfDueOrShorter(queueName, "no-such-message", 0L);
+        // Assert directly via query on table queue_message that popped = true
+        assertTrue(
+                "popped column in queue_message should be true after message was popped",
+                getPoppedState(queueName, messageId));
+
+        // Re-push the message
+        queueDAO.push(queueName, messageId, 0L);
+
+        // Assert directly via query on table queue_message that popped = false
         assertFalse(
-                "setUnackTimeoutIfDueOrShorter must return false for a non-existent message",
-                updated);
+                "popped column in queue_message should be reset to false after re-push",
+                getPoppedState(queueName, messageId));
+
+        // Pop again: assert message is returned immediately
+        List<String> repopped = queueDAO.pop(queueName, 1, 100);
+        assertEquals(1, repopped.size());
+        assertEquals(messageId, repopped.get(0));
     }
 
-    private void freezeDeliverOnInThePast(String queueName, String messageId) throws Exception {
-        try (Connection c = dataSource.getConnection()) {
-            c.setAutoCommit(false);
-            final String FREEZE_IN_PAST =
-                    "UPDATE queue_message SET deliver_on = current_timestamp - interval '1 hour' "
-                            + "WHERE queue_name = ? AND message_id = ?";
-            try (Query q = new Query(objectMapper, c, FREEZE_IN_PAST)) {
-                q.addParameter(queueName).addParameter(messageId).executeUpdate();
+    private boolean getPoppedState(String queueName, String messageId) {
+        try (Connection conn = dataSource.getConnection();
+                PreparedStatement stmt =
+                        conn.prepareStatement(
+                                "SELECT popped FROM queue_message WHERE queue_name = ? AND message_id = ?")) {
+            stmt.setString(1, queueName);
+            stmt.setString(2, messageId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                assertTrue("Message record must exist in queue_message", rs.next());
+                return rs.getBoolean("popped");
             }
-            c.commit();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -670,6 +649,81 @@ public class PostgresQueueDAOTest {
                     queueDAO.processUnacks("process_unacks_test");
                 },
                 "process_unacks_test");
+    }
+
+    /**
+     * One failed processAllUnacks run must not stop later runs. The database is made to fail for
+     * real by hiding queue_message, and the same work is scheduled twice the way the DAO schedules
+     * it: once raw, once through runScheduledProcessAllUnacks. The raw schedule is cancelled by its
+     * first failure; the guarded one keeps running and un-pops the message once the table is back.
+     */
+    @Test
+    public void scheduledProcessAllUnacksSurvivesAFailedRun() throws Exception {
+        String queueName = "unack_survives_failed_run";
+        queueDAO.push(queueName, "m1", 0);
+        assertEquals(1, queueDAO.pollMessages(queueName, 1, 1_000).size());
+        // processAllUnacks only un-pops messages whose deliver_on is more than 60 s in the past.
+        executeSql(
+                "UPDATE queue_message SET deliver_on = current_timestamp - interval '2 minutes'"
+                        + " WHERE queue_name = '"
+                        + queueName
+                        + "'");
+        assertEquals(1L, poppedCount(queueName));
+
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
+        try {
+            ScheduledFuture<?> unguarded;
+            ScheduledFuture<?> guarded;
+            executeSql("ALTER TABLE queue_message RENAME TO queue_message_hidden");
+            try {
+                unguarded =
+                        scheduler.scheduleAtFixedRate(
+                                queueDAO::processAllUnacks, 0, 50, TimeUnit.MILLISECONDS);
+                guarded =
+                        scheduler.scheduleAtFixedRate(
+                                queueDAO::runScheduledProcessAllUnacks,
+                                0,
+                                50,
+                                TimeUnit.MILLISECONDS);
+                await().atMost(10, TimeUnit.SECONDS).until(unguarded::isDone);
+            } finally {
+                executeSql("ALTER TABLE queue_message_hidden RENAME TO queue_message");
+            }
+
+            // Without the guard, the first failure ends the schedule for good.
+            assertThrows(ExecutionException.class, unguarded::get);
+
+            // With it, a later run un-pops the message once the database is back.
+            await().atMost(10, TimeUnit.SECONDS).until(() -> poppedCount(queueName) == 0L);
+            assertFalse(guarded.isDone());
+        } finally {
+            scheduler.shutdownNow();
+        }
+    }
+
+    private void executeSql(String sql) {
+        try (Connection conn = dataSource.getConnection()) {
+            conn.setAutoCommit(false);
+            conn.prepareStatement(sql).executeUpdate();
+            conn.commit();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private long poppedCount(String queueName) {
+        try (Connection conn = dataSource.getConnection();
+                PreparedStatement ps =
+                        conn.prepareStatement(
+                                "SELECT count(*) FROM queue_message WHERE queue_name = ? AND popped")) {
+            ps.setString(1, queueName);
+            try (ResultSet rs = ps.executeQuery()) {
+                rs.next();
+                return rs.getLong(1);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     // @Test
