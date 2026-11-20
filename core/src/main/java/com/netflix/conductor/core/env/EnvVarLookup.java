@@ -26,7 +26,7 @@ public final class EnvVarLookup {
         if (value == null) {
             value = System.getProperty(full);
         }
-        return value;
+        return value != null ? value.strip() : null;
     }
 
     /**
@@ -42,14 +42,15 @@ public final class EnvVarLookup {
                         (k, v) -> {
                             String ks = String.valueOf(k);
                             if (ks.startsWith(prefix)) {
-                                out.put(ks.substring(prefix.length()), String.valueOf(v));
+                                String val = String.valueOf(v);
+                                out.put(ks.substring(prefix.length()), val != null ? val.strip() : null);
                             }
                         });
         System.getenv()
                 .forEach(
                         (k, v) -> {
                             if (k.startsWith(prefix)) {
-                                out.put(k.substring(prefix.length()), v);
+                                out.put(k.substring(prefix.length()), v != null ? v.strip() : null);
                             }
                         });
         return out;
