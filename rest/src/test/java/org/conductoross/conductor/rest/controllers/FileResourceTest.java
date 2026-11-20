@@ -15,11 +15,13 @@ package org.conductoross.conductor.rest.controllers;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import org.conductoross.conductor.controllers.FileResource;
 import org.conductoross.conductor.core.exception.FileStorageException;
 import org.conductoross.conductor.core.storage.FileContent;
 import org.conductoross.conductor.core.storage.FileStorageService;
+import org.conductoross.conductor.model.file.FileHandle;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -45,6 +47,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -64,6 +67,32 @@ public class FileResourceTest {
                 MockMvcBuilders.standaloneSetup(new FileResource(fileStorageService))
                         .setControllerAdvice(new ApplicationExceptionMapper())
                         .build();
+    }
+
+    @Test
+    public void listsFilesVisibleToTheWorkflow() throws Exception {
+        FileHandle handle = new FileHandle();
+        handle.setFileHandleId("conductor://file/" + FILE_ID);
+        handle.setFileName("report.md");
+        handle.setWorkflowId("wf-child");
+        when(fileStorageService.listFiles(WORKFLOW_ID)).thenReturn(List.of(handle));
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/files").param("workflowId", WORKFLOW_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].fileHandleId").value("conductor://file/" + FILE_ID))
+                .andExpect(jsonPath("$[0].fileName").value("report.md"))
+                .andExpect(jsonPath("$[0].workflowId").value("wf-child"));
+
+        verify(fileStorageService).listFiles(WORKFLOW_ID);
+    }
+
+    @Test
+    public void listingFilesWithoutWorkflowIdIsABadRequest() throws Exception {
+        when(fileStorageService.listFiles(null))
+                .thenThrow(new IllegalArgumentException("workflowId is required"));
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/files"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

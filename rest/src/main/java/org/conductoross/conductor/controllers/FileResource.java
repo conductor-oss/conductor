@@ -13,6 +13,7 @@
 package org.conductoross.conductor.controllers;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.conductoross.conductor.core.storage.FileContent;
 import org.conductoross.conductor.core.storage.FileStorageService;
@@ -51,6 +52,14 @@ public class FileResource {
     @Operation(summary = "Create a file record and get upload URL")
     public FileUploadResponse createFile(@Valid @RequestBody FileUploadRequest request) {
         return fileStorageService.createFile(request);
+    }
+
+    @GetMapping
+    @Operation(summary = "List uploaded files visible to a workflow's family")
+    public List<FileHandle> listFiles(
+            @RequestParam(value = "workflowId", required = false) String workflowId) {
+        // Optional here so the service's validation answers 400, not a generic 500.
+        return fileStorageService.listFiles(workflowId);
     }
 
     @GetMapping("/{workflowId}/{fileId}/upload-url")

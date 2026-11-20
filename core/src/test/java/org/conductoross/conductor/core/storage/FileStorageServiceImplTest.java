@@ -17,6 +17,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.conductoross.conductor.model.FileModel;
 import org.conductoross.conductor.model.file.FileDownloadUrlResponse;
@@ -413,6 +414,51 @@ public class FileStorageServiceImplTest {
         service.abortMultipartUpload(WORKFLOW_ID, fileId, "upload-123");
 
         assertTrue(fileStorage.wasMultipartUploadAborted(storagePath, "upload-123"));
+    }
+
+    @Test
+    public void testListFilesReturnsUploadedFilesOfTheWholeFamily() {
+        String parentId = "wf-parent";
+        String childId = "wf-child";
+        service =
+                new FileStorageServiceImpl(
+                        fileStorage,
+                        fileMetadataDAO,
+                        properties,
+                        wfId -> Set.of(parentId, childId));
+
+        String parentFile = uploadFile("plan.md", parentId);
+        String childFile = uploadFile("notes.md", childId);
+        service.createFile(newRequestWithWorkflow("pending.md", childId));
+        uploadFile("other.md", "wf-unrelated");
+
+        List<FileHandle> files = service.listFiles(childId);
+
+        assertEquals(
+                Set.of(
+                        FileIdToFileHandleIdConverter.toFileHandleId(parentFile),
+                        FileIdToFileHandleIdConverter.toFileHandleId(childFile)),
+                files.stream().map(FileHandle::getFileHandleId).collect(Collectors.toSet()));
+        assertEquals(2, files.size());
+        assertTrue(files.get(0).getCreatedAt() <= files.get(1).getCreatedAt());
+    }
+
+    @Test
+    public void testListFilesIsEmptyWhenTheFamilyHasNoFiles() {
+        assertTrue(service.listFiles(WORKFLOW_ID).isEmpty());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testListFilesRequiresWorkflowId() {
+        service.listFiles(" ");
+    }
+
+    private String uploadFile(String name, String workflowId) {
+        FileUploadResponse created = service.createFile(newRequestWithWorkflow(name, workflowId));
+        String fileId = FileIdToFileHandleIdConverter.toFileId(created.getFileHandleId());
+        simulateFileOnStorage(fileId);
+        service.confirmUpload(workflowId, fileId);
+        return fileId;
     }
 
     private String createTestFileId() {

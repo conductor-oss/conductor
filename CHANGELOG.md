@@ -33,6 +33,10 @@
 - **Deep copy protection** to prevent PolyglotMap issues in workflow task data
   - Enterprise stability improvement
 
+### Added
+- **`GET /api/files?workflowId=` lists a workflow's files**: returns the uploaded files the workflow
+  can read, owned by itself, its ancestors or its descendants, using the same family rule as downloads
+
 ### Fixed
 - JavaScript evaluation now works on Java 17, 21, and future LTS versions
 - Improved security with sandboxed JavaScript execution

@@ -14,6 +14,8 @@ package org.conductoross.conductor.core.storage;
 
 import java.io.InputStream;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -78,6 +80,23 @@ public class FileStorageServiceImpl implements FileStorageService {
         long expiresAt = Instant.now().plus(properties.getSignedUrlExpiration()).toEpochMilli();
 
         return FileModelConverter.toFileUploadResponse(model, uploadUrl, expiresAt);
+    }
+
+    @Override
+    public List<FileHandle> listFiles(String workflowId) {
+        if (workflowId == null || workflowId.isBlank()) {
+            throw new IllegalArgumentException("workflowId is required");
+        }
+        List<FileHandle> files = new ArrayList<>();
+        for (String member : workflowFamilyResolver.getFamily(workflowId)) {
+            for (FileModel model : fileMetadataDAO.getFilesByWorkflowId(member)) {
+                if (model.getUploadStatus() == FileUploadStatus.UPLOADED) {
+                    files.add(FileModelConverter.toFileHandle(model));
+                }
+            }
+        }
+        files.sort(Comparator.comparingLong(FileHandle::getCreatedAt));
+        return files;
     }
 
     @Override
