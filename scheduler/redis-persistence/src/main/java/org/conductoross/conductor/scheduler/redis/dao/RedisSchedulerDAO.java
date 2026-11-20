@@ -316,7 +316,11 @@ public class RedisSchedulerDAO extends BaseDynoDAO implements SchedulerDAO {
                                     }
                                     if (scheduleName != null
                                             && !scheduleName.isEmpty()
-                                            && !s.getName().contains(scheduleName)) {
+                                            && !s.getName()
+                                                    .toLowerCase(Locale.ROOT)
+                                                    .contains(
+                                                            scheduleName.toLowerCase(
+                                                                    Locale.ROOT))) {
                                         return false;
                                     }
                                     if (paused != null && s.isPaused() != paused) {

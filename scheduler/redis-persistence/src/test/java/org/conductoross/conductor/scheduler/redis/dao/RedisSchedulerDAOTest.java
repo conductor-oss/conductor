@@ -468,6 +468,17 @@ public class RedisSchedulerDAOTest {
         assertEquals("paused-sched", result.getResults().get(0).getName());
     }
 
+    @Test
+    public void testSearchSchedules_byName_caseInsensitive() {
+        dao.updateSchedule(buildSchedule("DailyReport", "report-wf"));
+        dao.updateSchedule(buildSchedule("hourly_sync", "sync-wf"));
+
+        SearchResult<WorkflowScheduleModel> result =
+                dao.searchSchedules(null, "dailyreport", null, null, 0, 10, null);
+        assertEquals(1, result.getTotalHits());
+        assertEquals("DailyReport", result.getResults().get(0).getName());
+    }
+
     // =========================================================================
     // Volume
     // =========================================================================
