@@ -122,6 +122,31 @@ class GeminiChatModelReasoningTest {
     }
 
     @Test
+    void thoughtsTokenCount_isCountedAsCompletionTokens() {
+        // candidatesTokenCount excludes thinking tokens, but Gemini bills them as output:
+        // totalTokenCount = promptTokenCount + candidatesTokenCount + thoughtsTokenCount.
+        GeminiApi.GenerateContentResponse response = responseWith(List.of(textPart("Answer.")), 45);
+
+        ChatResponse chat = newChatModel().toSpringChatResponse(response, "gemini-2.5-pro");
+
+        assertEquals(Integer.valueOf(8), chat.getMetadata().getUsage().getPromptTokens());
+        assertEquals(Integer.valueOf(65), chat.getMetadata().getUsage().getCompletionTokens());
+        assertEquals(Integer.valueOf(73), chat.getMetadata().getUsage().getTotalTokens());
+        assertEquals(Integer.valueOf(45), chat.getMetadata().get("reasoning_tokens"));
+    }
+
+    @Test
+    void withoutThoughtsTokenCount_completionTokensAreTheCandidates() {
+        GeminiApi.GenerateContentResponse response =
+                responseWith(List.of(textPart("Answer.")), null);
+
+        ChatResponse chat = newChatModel().toSpringChatResponse(response, "gemini-2.5-flash");
+
+        assertEquals(Integer.valueOf(20), chat.getMetadata().getUsage().getCompletionTokens());
+        assertEquals(Integer.valueOf(28), chat.getMetadata().getUsage().getTotalTokens());
+    }
+
+    @Test
     void blankThoughtTextIsIgnored() {
         GeminiApi.GenerateContentResponse response =
                 responseWith(
