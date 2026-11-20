@@ -24,6 +24,9 @@ import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
 import org.conductoross.conductor.ai.model.LLMResponse;
 import org.conductoross.conductor.ai.model.ToolCall;
 import org.conductoross.conductor.ai.model.ToolSpec;
+import org.conductoross.conductor.common.JsonSchemaValidator;
+import org.conductoross.conductor.service.SchemaCacheProperties;
+import org.conductoross.conductor.service.SchemaService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -37,12 +40,14 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.image.ImageModel;
 
+import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.tasks.Task;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -362,6 +367,9 @@ public class LLMHelperChatCompleteTest {
         in.setLlmProvider("fake");
         in.setModel("fake-1");
         in.getMessages().add(new ChatMessage(ChatMessage.Role.user, "do nothing"));
+        ToolSpec spec = new ToolSpec();
+        spec.setName("noop");
+        in.setTools(List.of(spec));
 
         LLMResponse out =
                 helper.chatComplete(task("t8"), new FakeAIModel(model), in, null, x -> {});
@@ -388,12 +396,147 @@ public class LLMHelperChatCompleteTest {
         in.setLlmProvider("fake");
         in.setModel("fake-1");
         in.getMessages().add(new ChatMessage(ChatMessage.Role.user, "noop"));
+        ToolSpec spec = new ToolSpec();
+        spec.setName("noop");
+        in.setTools(List.of(spec));
 
         LLMResponse out =
                 helper.chatComplete(task("t9"), new FakeAIModel(model), in, null, x -> {});
         Map<String, Object> args = out.getToolCalls().getFirst().getInputParameters();
         assertEquals(1, args.size());
         assertEquals("noop", args.get("method"));
+    }
+
+    @Test
+    void chatComplete_unauthorizedToolCall_throwsIllegalArgumentException() {
+        AssistantMessage.ToolCall call =
+                new AssistantMessage.ToolCall("call_unauth", "function", "unauthorized_tool", "{}");
+        AssistantMessage assistant =
+                AssistantMessage.builder().content("").toolCalls(List.of(call)).build();
+        StagedChatModel model = new StagedChatModel();
+        model.stage(responseOf(assistant, "tool_use", metaWithUsage(1, 1, 2)));
+
+        ChatCompletion in = new ChatCompletion();
+        in.setLlmProvider("fake");
+        in.setModel("fake-1");
+        in.getMessages().add(new ChatMessage(ChatMessage.Role.user, "run tool"));
+        ToolSpec spec = new ToolSpec();
+        spec.setName("get_weather");
+        spec.setType("HTTP");
+        in.setTools(List.of(spec));
+
+        IllegalArgumentException ex =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () ->
+                                helper.chatComplete(
+                                        task("t_unauth"),
+                                        new FakeAIModel(model),
+                                        in,
+                                        null,
+                                        x -> {}));
+        assertTrue(
+                ex.getMessage()
+                        .contains("Tool 'unauthorized_tool' is not in the list of allowed tools"));
+    }
+
+    @Test
+    void chatComplete_toolCallWithInvalidSchemaArgs_throwsIllegalArgumentException() {
+        SchemaService schemaService =
+                new SchemaService(
+                        null,
+                        new SchemaCacheProperties(),
+                        new JsonSchemaValidator(new ObjectMapperProvider().getObjectMapper()));
+        LLMHelper helperWithSchema = new LLMHelper(schemaService, new ArrayList<>());
+
+        AssistantMessage.ToolCall call =
+                new AssistantMessage.ToolCall("call_weather", "function", "get_weather", "{}");
+        AssistantMessage assistant =
+                AssistantMessage.builder().content("").toolCalls(List.of(call)).build();
+        StagedChatModel model = new StagedChatModel();
+        model.stage(responseOf(assistant, "tool_use", metaWithUsage(1, 1, 2)));
+
+        ToolSpec spec = new ToolSpec();
+        spec.setName("get_weather");
+        spec.setType("HTTP");
+        spec.setInputSchema(
+                Map.of(
+                        "$schema",
+                        "https://json-schema.org/draft/2020-12/schema",
+                        "type",
+                        "object",
+                        "required",
+                        List.of("city"),
+                        "properties",
+                        Map.of("city", Map.of("type", "string"))));
+
+        ChatCompletion in = new ChatCompletion();
+        in.setLlmProvider("fake");
+        in.setModel("fake-1");
+        in.getMessages().add(new ChatMessage(ChatMessage.Role.user, "weather?"));
+        in.setTools(List.of(spec));
+
+        IllegalArgumentException ex =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () ->
+                                helperWithSchema.chatComplete(
+                                        task("t_schema"),
+                                        new FakeAIModel(model),
+                                        in,
+                                        null,
+                                        x -> {}));
+        assertTrue(
+                ex.getMessage()
+                        .contains("Tool 'get_weather' input parameters do not conform to schema"));
+    }
+
+    @Test
+    void chatComplete_toolCallWithValidSchemaArgs_succeeds() {
+        SchemaService schemaService =
+                new SchemaService(
+                        null,
+                        new SchemaCacheProperties(),
+                        new JsonSchemaValidator(new ObjectMapperProvider().getObjectMapper()));
+        LLMHelper helperWithSchema = new LLMHelper(schemaService, new ArrayList<>());
+
+        AssistantMessage.ToolCall call =
+                new AssistantMessage.ToolCall(
+                        "call_weather", "function", "get_weather", "{\"city\":\"Tokyo\"}");
+        AssistantMessage assistant =
+                AssistantMessage.builder().content("").toolCalls(List.of(call)).build();
+        StagedChatModel model = new StagedChatModel();
+        model.stage(responseOf(assistant, "tool_use", metaWithUsage(1, 1, 2)));
+
+        ToolSpec spec = new ToolSpec();
+        spec.setName("get_weather");
+        spec.setType("HTTP");
+        spec.setInputSchema(
+                Map.of(
+                        "$schema",
+                        "https://json-schema.org/draft/2020-12/schema",
+                        "type",
+                        "object",
+                        "required",
+                        List.of("city"),
+                        "properties",
+                        Map.of("city", Map.of("type", "string"))));
+
+        ChatCompletion in = new ChatCompletion();
+        in.setLlmProvider("fake");
+        in.setModel("fake-1");
+        in.getMessages().add(new ChatMessage(ChatMessage.Role.user, "weather?"));
+        in.setTools(List.of(spec));
+
+        LLMResponse out =
+                helperWithSchema.chatComplete(
+                        task("t_schema_valid"), new FakeAIModel(model), in, null, x -> {});
+        assertNotNull(out.getToolCalls());
+        assertEquals(1, out.getToolCalls().size());
+        ToolCall tc = out.getToolCalls().getFirst();
+        assertEquals("get_weather", tc.getName());
+        assertEquals("Tokyo", tc.getInputParameters().get("city"));
+        assertEquals("get_weather", tc.getInputParameters().get("method"));
     }
 
     // =================================================================

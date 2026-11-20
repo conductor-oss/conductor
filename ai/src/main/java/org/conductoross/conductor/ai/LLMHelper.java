@@ -321,6 +321,9 @@ public class LLMHelper {
 
     /** Validates data against schema; returns the error message or null on success. */
     private String validateJsonSchema(final SchemaDef schema, Map<String, Object> data) {
+        if (schemaService == null) {
+            return null;
+        }
         try {
             schemaService.validate(schema, data);
             return null;
@@ -384,14 +387,46 @@ public class LLMHelper {
                     } catch (JacksonException ignored) {
                         log.warn(ignored.getMessage(), ignored);
                     }
+                    // Enforce fail-closed tool allowlist and argument schema validation (Issue
+                    // #1718)
+                    Optional<ToolSpec> matched =
+                            input.getTools() != null
+                                    ? input.getTools().stream()
+                                            .filter(
+                                                    toolSpec ->
+                                                            Objects.equals(
+                                                                    name, toolSpec.getName()))
+                                            .findFirst()
+                                    : Optional.empty();
+
+                    if (matched.isEmpty()) {
+                        throw new IllegalArgumentException(
+                                String.format(
+                                        "Tool '%s' is not in the list of allowed tools", name));
+                    }
+
+                    ToolSpec toolSpec = matched.get();
+                    if (toolSpec.getInputSchema() != null) {
+                        SchemaDef schemaDef = new SchemaDef();
+                        schemaDef.setName(name);
+                        schemaDef.setVersion(1);
+                        schemaDef.setType(SchemaDef.Type.JSON);
+                        schemaDef.setData(toolSpec.getInputSchema());
+                        String schemaError = validateJsonSchema(schemaDef, args);
+                        if (schemaError != null) {
+                            throw new IllegalArgumentException(
+                                    String.format(
+                                            "Tool '%s' input parameters do not conform to schema: %s",
+                                            name, schemaError));
+                        }
+                    }
+
+                    // Inject internal framework metadata only after schema validation to preserve
+                    // schemas with additionalProperties: false
                     args.put("method", name);
 
-                    Optional<ToolSpec> matched =
-                            input.getTools().stream()
-                                    .filter(toolSpec -> toolSpec.getName().equals(name))
-                                    .findFirst();
-
-                    String type = matched.map(ToolSpec::getType).orElse(TASK_TYPE_SIMPLE);
+                    String type =
+                            toolSpec.getType() != null ? toolSpec.getType() : TASK_TYPE_SIMPLE;
                     tools.add(
                             ToolCall.builder()
                                     .taskReferenceName(id)
