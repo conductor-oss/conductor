@@ -25,6 +25,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import com.netflix.conductor.common.run.SearchResult;
+
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -56,10 +58,12 @@ public class FileResource {
 
     @GetMapping
     @Operation(summary = "List uploaded files visible to a workflow's family")
-    public List<FileHandle> listFiles(
+    public SearchResult<FileHandle> listFiles(
             @RequestParam(value = "workflowId", required = false) String workflowId) {
         // Optional here so the service's validation answers 400, not a generic 500.
-        return fileStorageService.listFiles(workflowId);
+        List<FileHandle> files = fileStorageService.listFiles(workflowId);
+        // A wrapper, not a bare array, so pagination can be added later without a breaking change.
+        return new SearchResult<>(files.size(), files);
     }
 
     @GetMapping("/{workflowId}/{fileId}/upload-url")

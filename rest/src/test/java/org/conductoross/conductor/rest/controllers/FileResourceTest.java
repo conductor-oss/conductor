@@ -79,9 +79,11 @@ public class FileResourceTest {
 
         mockMvc.perform(MockMvcRequestBuilders.get("/api/files").param("workflowId", WORKFLOW_ID))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].fileHandleId").value("conductor://file/" + FILE_ID))
-                .andExpect(jsonPath("$[0].fileName").value("report.md"))
-                .andExpect(jsonPath("$[0].workflowId").value("wf-child"));
+                .andExpect(jsonPath("$.totalHits").value(1))
+                .andExpect(
+                        jsonPath("$.results[0].fileHandleId").value("conductor://file/" + FILE_ID))
+                .andExpect(jsonPath("$.results[0].fileName").value("report.md"))
+                .andExpect(jsonPath("$.results[0].workflowId").value("wf-child"));
 
         verify(fileStorageService).listFiles(WORKFLOW_ID);
     }
