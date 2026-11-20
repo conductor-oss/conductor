@@ -13,8 +13,8 @@
 package com.netflix.conductor.tasks.http.providers;
 
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.web.client.RestTemplate;
 
@@ -24,36 +24,39 @@ import static org.junit.Assert.*;
 
 public class DefaultRestTemplateProviderTest {
 
+    private final DefaultRestTemplateProvider provider =
+            new DefaultRestTemplateProvider(Duration.ofMillis(150), Duration.ofMillis(100));
+
     @Test
-    public void differentObjectsForDifferentThreads() throws InterruptedException {
-        DefaultRestTemplateProvider defaultRestTemplateProvider =
-                new DefaultRestTemplateProvider(Duration.ofMillis(150), Duration.ofMillis(100));
-        final RestTemplate restTemplate =
-                defaultRestTemplateProvider.getRestTemplate(new HttpTask.Input());
-        final StringBuilder result = new StringBuilder();
-        Thread t1 =
-                new Thread(
-                        () -> {
-                            RestTemplate restTemplate1 =
-                                    defaultRestTemplateProvider.getRestTemplate(
-                                            new HttpTask.Input());
-                            if (restTemplate1 != restTemplate) {
-                                result.append("different");
-                            }
-                        });
-        t1.start();
-        t1.join();
-        assertEquals(result.toString(), "different");
+    public void sameObjectForSameTimeouts() {
+        RestTemplate client1 = provider.getRestTemplate(new HttpTask.Input());
+        RestTemplate client2 = provider.getRestTemplate(new HttpTask.Input());
+        assertNotNull(client1);
+        assertSame(client1, client2);
     }
 
     @Test
-    @Ignore("We can no longer do this and have customizable timeouts per HttpTask.")
-    public void sameObjectForSameThread() {
-        DefaultRestTemplateProvider defaultRestTemplateProvider =
-                new DefaultRestTemplateProvider(Duration.ofMillis(150), Duration.ofMillis(100));
-        RestTemplate client1 = defaultRestTemplateProvider.getRestTemplate(new HttpTask.Input());
-        RestTemplate client2 = defaultRestTemplateProvider.getRestTemplate(new HttpTask.Input());
-        assertSame(client1, client2);
-        assertNotNull(client1);
+    public void sameObjectAcrossThreads() throws InterruptedException {
+        RestTemplate restTemplate = provider.getRestTemplate(new HttpTask.Input());
+        AtomicReference<RestTemplate> fromOtherThread = new AtomicReference<>();
+        Thread t1 =
+                new Thread(
+                        () -> fromOtherThread.set(provider.getRestTemplate(new HttpTask.Input())));
+        t1.start();
+        t1.join();
+        assertSame(restTemplate, fromOtherThread.get());
+    }
+
+    @Test
+    public void differentObjectsForDifferentTimeouts() {
+        HttpTask.Input slow = new HttpTask.Input();
+        slow.setReadTimeOut(10_000);
+        HttpTask.Input slowConnect = new HttpTask.Input();
+        slowConnect.setConnectionTimeOut(5_000);
+
+        RestTemplate defaults = provider.getRestTemplate(new HttpTask.Input());
+        assertNotSame(defaults, provider.getRestTemplate(slow));
+        assertNotSame(defaults, provider.getRestTemplate(slowConnect));
+        assertSame(provider.getRestTemplate(slow), provider.getRestTemplate(slow));
     }
 }
