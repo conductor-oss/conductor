@@ -198,6 +198,104 @@ describe("eventFormMachine — actions list", () => {
   });
 });
 
+describe("eventFormMachine — every reorder and edit", () => {
+  const [A, B, C] = [
+    COMPLETE_TASK_ACTION,
+    FAIL_TASK_ACTION,
+    START_WORKFLOW_ACTION,
+  ];
+
+  it.each([
+    { from: 0, to: 0, expected: [A, B, C] },
+    { from: 0, to: 1, expected: [B, A, C] },
+    { from: 0, to: 2, expected: [B, C, A] },
+    { from: 1, to: 0, expected: [B, A, C] },
+    { from: 1, to: 1, expected: [A, B, C] },
+    { from: 1, to: 2, expected: [A, C, B] },
+    { from: 2, to: 0, expected: [C, A, B] },
+    { from: 2, to: 1, expected: [A, C, B] },
+    { from: 2, to: 2, expected: [A, B, C] },
+  ])("moves $from → $to", ({ from, to, expected }) => {
+    const service = startWith({ actions: [A, B, C] });
+
+    service.send({
+      type: EventFormMachineTypes.MOVE_ACTION,
+      from,
+      to,
+    } as never);
+
+    expect(service.getSnapshot().context.eventAsJson.actions).toEqual(expected);
+    service.stop();
+  });
+
+  it.each([0, 1, 2])("edits only the action at index %i", (index) => {
+    const service = startWith({ actions: [A, B, C] });
+    const edited = { ...TERMINATE_WORKFLOW_ACTION, marker: index };
+
+    service.send({
+      type: EventFormMachineTypes.EDIT_ACTION,
+      index,
+      payload: edited,
+    } as never);
+
+    const expected = [A, B, C];
+    expected[index] = edited as never;
+    expect(service.getSnapshot().context.eventAsJson.actions).toEqual(expected);
+    service.stop();
+  });
+
+  it.each([0, 1, 2])("removes only the action at index %i", (index) => {
+    const service = startWith({ actions: [A, B, C] });
+
+    service.send({ type: EventFormMachineTypes.DELETE_ACTION, index } as never);
+
+    expect(service.getSnapshot().context.eventAsJson.actions).toEqual(
+      [A, B, C].filter((_, i) => i !== index),
+    );
+    service.stop();
+  });
+
+  it("add → edit → move → remove keeps every other field of the handler", () => {
+    const service = startWith({
+      name: "h",
+      event: "conductor:x",
+      condition: "$.ok",
+      active: false,
+      actions: [A],
+    });
+
+    service.send({
+      type: EventFormMachineTypes.ADD_ACTION,
+      actionType: Action.START_AGENT,
+    } as never);
+    service.send({
+      type: EventFormMachineTypes.EDIT_ACTION,
+      index: 0,
+      payload: { ...START_AGENT_ACTION, marker: 1 },
+    } as never);
+    service.send({
+      type: EventFormMachineTypes.MOVE_ACTION,
+      from: 0,
+      to: 1,
+    } as never);
+    service.send({
+      type: EventFormMachineTypes.DELETE_ACTION,
+      index: 0,
+    } as never);
+
+    expect(service.getSnapshot().context.eventAsJson).toMatchObject({
+      name: "h",
+      event: "conductor:x",
+      condition: "$.ok",
+      active: false,
+      actions: [{ ...START_AGENT_ACTION, marker: 1 }],
+    });
+    // Editing the added action must not have written into the template.
+    expect(START_AGENT_ACTION).not.toHaveProperty("marker");
+    service.stop();
+  });
+});
+
 describe("eventFormMachine — reset", () => {
   it("restores eventAsJson from originalSource on reset confirm", () => {
     const service = startWith({ name: "original" });

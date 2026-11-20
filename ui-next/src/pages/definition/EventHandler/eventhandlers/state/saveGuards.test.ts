@@ -89,3 +89,72 @@ describe("isEditorSaveDisabled", () => {
     );
   });
 });
+
+// ── Full truth tables ─────────────────────────────────────────────────────────
+
+/** Field values and whether each counts as present. */
+const fieldValues: Array<[string | null | undefined, boolean]> = [
+  ["my_value", true],
+  ["  padded  ", true],
+  ["", false],
+  ["   ", false],
+  [null, false],
+  [undefined, false],
+];
+const bools = [false, true];
+
+describe("isFormSaveDisabled — every combination", () => {
+  const rows = fieldValues.flatMap(([name, nameOk]) =>
+    fieldValues.flatMap(([event, eventOk]) =>
+      bools.flatMap((noChanges) =>
+        bools.map((isTrialExpired) => ({
+          name,
+          event,
+          noChanges,
+          isTrialExpired,
+          enabled: nameOk && eventOk && !noChanges && !isTrialExpired,
+        })),
+      ),
+    ),
+  );
+
+  it.each(rows)(
+    "name=$name event=$event noChanges=$noChanges trial=$isTrialExpired → enabled=$enabled",
+    ({ enabled, ...input }) => {
+      expect(isFormSaveDisabled(input)).toBe(!enabled);
+    },
+  );
+});
+
+describe("isEditorSaveDisabled — every combination", () => {
+  const rows = bools.flatMap((hasEditorContent) =>
+    fieldValues.flatMap(([name, nameOk]) =>
+      fieldValues.flatMap(([event, eventOk]) =>
+        bools.flatMap((noChanges) =>
+          bools.flatMap((invalidJson) =>
+            bools.map((isTrialExpired) => ({
+              hasEditorContent,
+              name,
+              event,
+              noChanges,
+              invalidJson,
+              isTrialExpired,
+              enabled:
+                (!hasEditorContent || (nameOk && eventOk)) &&
+                !noChanges &&
+                !invalidJson &&
+                !isTrialExpired,
+            })),
+          ),
+        ),
+      ),
+    ),
+  );
+
+  it.each(rows)(
+    "content=$hasEditorContent name=$name event=$event noChanges=$noChanges invalid=$invalidJson trial=$isTrialExpired → enabled=$enabled",
+    ({ enabled, ...input }) => {
+      expect(isEditorSaveDisabled(input)).toBe(!enabled);
+    },
+  );
+});
