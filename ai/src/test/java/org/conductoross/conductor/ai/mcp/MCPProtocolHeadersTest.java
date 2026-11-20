@@ -149,6 +149,22 @@ class MCPProtocolHeadersTest {
         assertTrue(request.headers("Accept").size() == 1);
     }
 
+    @Test
+    void decodeHeaderValueReversesEncodeAndKeepsOtherValues() {
+        for (String value :
+                new String[] {"plain", "météo", " a", "a ", "\ta", "=?base64?x?=", "Hello, 世界"}) {
+            assertEquals(
+                    value,
+                    MCPProtocolHeaders.decodeHeaderValue(
+                            MCPProtocolHeaders.encodeHeaderValue(value)));
+        }
+        assertEquals("plain", MCPProtocolHeaders.decodeHeaderValue("plain"));
+        assertEquals(
+                "=?base64?not base64!?=",
+                MCPProtocolHeaders.decodeHeaderValue("=?base64?not base64!?="));
+        assertNull(MCPProtocolHeaders.decodeHeaderValue(null));
+    }
+
     private static Request build(MCPMethod method, String name) {
         Request.Builder builder = new Request.Builder().url("http://localhost/mcp");
         MCPProtocolHeaders.apply(builder, method, name);

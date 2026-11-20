@@ -34,6 +34,7 @@ import org.conductoross.conductor.ai.a2a.model.TaskStatus;
 import org.conductoross.conductor.ai.a2a.server.A2AServerException;
 import org.conductoross.conductor.ai.a2a.server.A2AServerProperties;
 import org.conductoross.conductor.ai.a2a.server.A2AStreamSink;
+import org.conductoross.conductor.ai.agentspan.AgentIntroduction;
 import org.conductoross.conductor.ai.agentspan.runtime.service.AgentService;
 import org.conductoross.conductor.common.metadata.agent.AgentStartRequest;
 import org.conductoross.conductor.common.metadata.agent.AgentStartResponse;
@@ -49,6 +50,7 @@ import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.service.TaskService;
 import com.netflix.conductor.service.WorkflowService;
 
@@ -109,16 +111,32 @@ public class A2ANativeAgentFacade {
 
     // ---- agent card --------------------------------------------------------------------------
 
+    /** The agent's own introduction, from that version's definition; null when there is none. */
+    private String introduction(String name, int version) {
+        try {
+            return AgentIntroduction.of(agentService.getAgentDefinition(name, version));
+        } catch (NotFoundException e) {
+            return null;
+        }
+    }
+
     public AgentCard agentCard(String agentName, String requestBaseUrl) {
         AgentSummary summary = requireExposed(agentName);
         return buildCard(summary, requestBaseUrl);
     }
 
     private AgentCard buildCard(AgentSummary summary, String requestBaseUrl) {
+        // The agent's own introduction, as the MCP server shows it, so both servers describe an
+        // agent the same way; without one, the agent's workflow definition description.
+        String introduction = introduction(summary.getName(), summary.getVersion());
         String description =
-                summary.getDescription() != null
-                        ? summary.getDescription()
-                        : "Conductor agent '" + summary.getName() + "' exposed as an A2A agent";
+                introduction != null
+                        ? introduction
+                        : summary.getDescription() != null
+                                ? summary.getDescription()
+                                : "Conductor agent '"
+                                        + summary.getName()
+                                        + "' exposed as an A2A agent";
 
         AgentCard card = new AgentCard();
         card.setName(summary.getName());
