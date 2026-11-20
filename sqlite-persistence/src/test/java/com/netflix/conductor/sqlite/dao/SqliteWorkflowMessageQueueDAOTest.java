@@ -33,7 +33,6 @@ import org.sqlite.SQLiteDataSource;
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.model.WorkflowMessage;
 import com.netflix.conductor.core.config.WorkflowMessageQueueProperties;
-import com.netflix.conductor.core.dao.JdbcWorkflowMessageQueueDAO;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -68,11 +67,11 @@ public class SqliteWorkflowMessageQueueDAOTest {
         return ds;
     }
 
-    private static JdbcWorkflowMessageQueueDAO dao(SQLiteDataSource ds, int max) {
+    private static SqliteWorkflowMessageQueueDAO dao(SQLiteDataSource ds, int max) {
         WorkflowMessageQueueProperties props = new WorkflowMessageQueueProperties();
         props.setMaxQueueSize(max);
-        return new JdbcWorkflowMessageQueueDAO(
-                ds, new ObjectMapperProvider().getObjectMapper(), props, false);
+        return new SqliteWorkflowMessageQueueDAO(
+                ds, new ObjectMapperProvider().getObjectMapper(), props);
     }
 
     private static WorkflowMessage message(String id, String wf) {
@@ -88,14 +87,14 @@ public class SqliteWorkflowMessageQueueDAOTest {
     public void messagesArePoppedOnceInOrderAndSurviveARestart() throws Exception {
         Path file = Files.createTempFile("wmq", ".db");
         SQLiteDataSource ds = dataSource(file);
-        JdbcWorkflowMessageQueueDAO before = dao(ds, 100);
+        SqliteWorkflowMessageQueueDAO before = dao(ds, 100);
         before.push("wf-1", message("m1", "wf-1"));
         before.push("wf-1", message("m2", "wf-1"));
         before.push("wf-2", message("m3", "wf-2"));
         assertEquals(2, before.size("wf-1"));
 
         // a new DAO on the same file: what the server sees after a restart
-        JdbcWorkflowMessageQueueDAO after = dao(dataSource(file), 100);
+        SqliteWorkflowMessageQueueDAO after = dao(dataSource(file), 100);
         List<WorkflowMessage> first = after.pop("wf-1", 1);
         assertEquals("m1", first.get(0).getId());
         assertEquals("cancel", first.get(0).getPayload().get("name"));
@@ -118,7 +117,7 @@ public class SqliteWorkflowMessageQueueDAOTest {
         dataSource(file);
         SQLiteDataSource wal = new SQLiteDataSource();
         wal.setUrl("jdbc:sqlite:" + file + "?busy_timeout=15000&journal_mode=WAL");
-        JdbcWorkflowMessageQueueDAO dao = dao(wal, 100_000);
+        SqliteWorkflowMessageQueueDAO dao = dao(wal, 100_000);
 
         int writers = 4, perWriter = 100, total = writers * perWriter;
         Set<String> seen = ConcurrentHashMap.newKeySet();
@@ -165,7 +164,8 @@ public class SqliteWorkflowMessageQueueDAOTest {
      */
     @Test
     public void claimsAreRepeatableAndDeletedByTheNextIterationOfThePull() throws Exception {
-        JdbcWorkflowMessageQueueDAO dao = dao(dataSource(Files.createTempFile("wmq", ".db")), 100);
+        SqliteWorkflowMessageQueueDAO dao =
+                dao(dataSource(Files.createTempFile("wmq", ".db")), 100);
         dao.push("wf", message("a", "wf"));
         dao.push("wf", message("b", "wf"));
         dao.push("wf", message("c", "wf"));
@@ -188,7 +188,8 @@ public class SqliteWorkflowMessageQueueDAOTest {
      */
     @Test
     public void aStaleRunOfAPullTakesNoNewMessages() throws Exception {
-        JdbcWorkflowMessageQueueDAO dao = dao(dataSource(Files.createTempFile("wmq", ".db")), 100);
+        SqliteWorkflowMessageQueueDAO dao =
+                dao(dataSource(Files.createTempFile("wmq", ".db")), 100);
         dao.push("wf", message("a", "wf"));
         assertEquals(List.of("a"), ids(dao.claim("wf", 5, "pull", 10)));
         assertTrue(dao.claim("wf", 5, "pull", 11).isEmpty()); // deletes a
@@ -209,7 +210,8 @@ public class SqliteWorkflowMessageQueueDAOTest {
      */
     @Test
     public void aPullAfterALoopOrInASecondLoopGetsMessages() throws Exception {
-        JdbcWorkflowMessageQueueDAO dao = dao(dataSource(Files.createTempFile("wmq", ".db")), 100);
+        SqliteWorkflowMessageQueueDAO dao =
+                dao(dataSource(Files.createTempFile("wmq", ".db")), 100);
         dao.push("wf", message("a", "wf"));
         assertEquals(List.of("a"), ids(dao.claim("wf", 5, "loop_pull", 3)));
         dao.push("wf", message("b", "wf"));
@@ -222,7 +224,8 @@ public class SqliteWorkflowMessageQueueDAOTest {
     /** Two pulls in parallel branches keep their claims: a re-run of either gets its own again. */
     @Test
     public void aClaimLeavesTheClaimsOfOtherPulls() throws Exception {
-        JdbcWorkflowMessageQueueDAO dao = dao(dataSource(Files.createTempFile("wmq", ".db")), 100);
+        SqliteWorkflowMessageQueueDAO dao =
+                dao(dataSource(Files.createTempFile("wmq", ".db")), 100);
         dao.push("wf", message("a", "wf"));
         dao.push("wf", message("b", "wf"));
         dao.push("wf", message("c", "wf"));
@@ -237,7 +240,7 @@ public class SqliteWorkflowMessageQueueDAOTest {
     /** Claimed messages are delivered: they leave room in the queue for new ones. */
     @Test
     public void claimedMessagesDoNotCountTowardTheMaximum() throws Exception {
-        JdbcWorkflowMessageQueueDAO dao = dao(dataSource(Files.createTempFile("wmq", ".db")), 2);
+        SqliteWorkflowMessageQueueDAO dao = dao(dataSource(Files.createTempFile("wmq", ".db")), 2);
         dao.push("wf", message("a", "wf"));
         dao.push("wf", message("b", "wf"));
         assertEquals(List.of("a", "b"), ids(dao.claim("wf", 5, "pull", 0)));
@@ -252,7 +255,7 @@ public class SqliteWorkflowMessageQueueDAOTest {
 
     @Test(expected = IllegalStateException.class)
     public void refusesMessagesBeyondTheMaximum() throws Exception {
-        JdbcWorkflowMessageQueueDAO dao = dao(dataSource(Files.createTempFile("wmq", ".db")), 1);
+        SqliteWorkflowMessageQueueDAO dao = dao(dataSource(Files.createTempFile("wmq", ".db")), 1);
         dao.push("wf", message("a", "wf"));
         dao.push("wf", message("b", "wf"));
     }

@@ -37,12 +37,12 @@ import org.springframework.core.retry.RetryPolicy;
 import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.core.config.WorkflowMessageQueueProperties;
-import com.netflix.conductor.core.dao.JdbcWorkflowMessageQueueDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.dao.WorkflowMessageQueueDAO;
 import com.netflix.conductor.mysql.dao.MySQLExecutionDAO;
 import com.netflix.conductor.mysql.dao.MySQLMetadataDAO;
 import com.netflix.conductor.mysql.dao.MySQLQueueDAO;
+import com.netflix.conductor.mysql.dao.MySQLWorkflowMessageQueueDAO;
 
 import tools.jackson.databind.ObjectMapper;
 
@@ -105,7 +105,7 @@ public class MySQLConfiguration {
             ObjectMapper objectMapper,
             DataSource dataSource,
             WorkflowMessageQueueProperties properties) {
-        return new JdbcWorkflowMessageQueueDAO(dataSource, objectMapper, properties, true);
+        return new MySQLWorkflowMessageQueueDAO(dataSource, objectMapper, properties);
     }
 
     @Bean
