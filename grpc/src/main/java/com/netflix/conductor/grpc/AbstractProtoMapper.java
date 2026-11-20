@@ -8,6 +8,7 @@ import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.ExecutionMetadata;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskContinuation;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
@@ -24,6 +25,7 @@ import com.netflix.conductor.common.metadata.workflow.UpgradeWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDefSummary;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.common.run.NativeState;
 import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
@@ -33,6 +35,7 @@ import com.netflix.conductor.proto.DynamicForkJoinTaskPb;
 import com.netflix.conductor.proto.EventExecutionPb;
 import com.netflix.conductor.proto.EventHandlerPb;
 import com.netflix.conductor.proto.ExecutionMetadataPb;
+import com.netflix.conductor.proto.NativeStatePb;
 import com.netflix.conductor.proto.PollDataPb;
 import com.netflix.conductor.proto.RateLimitConfigPb;
 import com.netflix.conductor.proto.RerunWorkflowRequestPb;
@@ -41,6 +44,7 @@ import com.netflix.conductor.proto.SkipTaskRequestPb;
 import com.netflix.conductor.proto.StartWorkflowRequestPb;
 import com.netflix.conductor.proto.StateChangeEventPb;
 import com.netflix.conductor.proto.SubWorkflowParamsPb;
+import com.netflix.conductor.proto.TaskContinuationPb;
 import com.netflix.conductor.proto.TaskDefPb;
 import com.netflix.conductor.proto.TaskExecLogPb;
 import com.netflix.conductor.proto.TaskPb;
@@ -522,6 +526,36 @@ public abstract class AbstractProtoMapper {
         return to;
     }
 
+    public NativeStatePb.NativeState toProto(NativeState from) {
+        NativeStatePb.NativeState.Builder to = NativeStatePb.NativeState.newBuilder();
+        if (from.getBootstrap() != null) {
+            to.setBootstrap( toProto( from.getBootstrap() ) );
+        }
+        if (from.getHandlers() != null) {
+            to.setHandlers( toProto( from.getHandlers() ) );
+        }
+        for (Map.Entry<String, Object> pair : from.getReplies().entrySet()) {
+            to.putReplies( pair.getKey(), toProto( pair.getValue() ) );
+        }
+        return to.build();
+    }
+
+    public NativeState fromProto(NativeStatePb.NativeState from) {
+        NativeState to = new NativeState();
+        if (from.hasBootstrap()) {
+            to.setBootstrap( fromProto( from.getBootstrap() ) );
+        }
+        if (from.hasHandlers()) {
+            to.setHandlers( fromProto( from.getHandlers() ) );
+        }
+        Map<String, Object> repliesMap = new HashMap<String, Object>();
+        for (Map.Entry<String, Value> pair : from.getRepliesMap().entrySet()) {
+            repliesMap.put( pair.getKey(), fromProto( pair.getValue() ) );
+        }
+        to.setReplies(repliesMap);
+        return to;
+    }
+
     public PollDataPb.PollData toProto(PollData from) {
         PollDataPb.PollData.Builder to = PollDataPb.PollData.newBuilder();
         if (from.getQueueName() != null) {
@@ -884,6 +918,9 @@ public abstract class AbstractProtoMapper {
             to.setParentTaskReferenceName( from.getParentTaskReferenceName() );
         }
         to.putAllRuntimeMetadata( from.getRuntimeMetadata() );
+        if (from.getContinuation() != null) {
+            to.setContinuation( toProto( from.getContinuation() ) );
+        }
         return to.build();
     }
 
@@ -950,6 +987,9 @@ public abstract class AbstractProtoMapper {
         to.setParentTaskId( from.getParentTaskId() );
         to.setParentTaskReferenceName( from.getParentTaskReferenceName() );
         to.setRuntimeMetadata( from.getRuntimeMetadataMap() );
+        if (from.hasContinuation()) {
+            to.setContinuation( fromProto( from.getContinuation() ) );
+        }
         return to;
     }
 
@@ -984,6 +1024,42 @@ public abstract class AbstractProtoMapper {
             case SKIPPED: to = Task.Status.SKIPPED; break;
             default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
         }
+        return to;
+    }
+
+    public TaskContinuationPb.TaskContinuation toProto(TaskContinuation from) {
+        TaskContinuationPb.TaskContinuation.Builder to = TaskContinuationPb.TaskContinuation.newBuilder();
+        to.setLeased( from.isLeased() );
+        to.setRetryCount( from.getRetryCount() );
+        to.setEndTime( from.getEndTime() );
+        to.setDone( from.isDone() );
+        for (Map.Entry<String, Object> pair : from.getRecorded().entrySet()) {
+            to.putRecorded( pair.getKey(), toProto( pair.getValue() ) );
+        }
+        for (Map.Entry<String, Object> pair : from.getResumedWith().entrySet()) {
+            to.putResumedWith( pair.getKey(), toProto( pair.getValue() ) );
+        }
+        to.setN( from.getN() );
+        return to.build();
+    }
+
+    public TaskContinuation fromProto(TaskContinuationPb.TaskContinuation from) {
+        TaskContinuation to = new TaskContinuation();
+        to.setLeased( from.getLeased() );
+        to.setRetryCount( from.getRetryCount() );
+        to.setEndTime( from.getEndTime() );
+        to.setDone( from.getDone() );
+        Map<String, Object> recordedMap = new HashMap<String, Object>();
+        for (Map.Entry<String, Value> pair : from.getRecordedMap().entrySet()) {
+            recordedMap.put( pair.getKey(), fromProto( pair.getValue() ) );
+        }
+        to.setRecorded(recordedMap);
+        Map<String, Object> resumedWithMap = new HashMap<String, Object>();
+        for (Map.Entry<String, Value> pair : from.getResumedWithMap().entrySet()) {
+            resumedWithMap.put( pair.getKey(), fromProto( pair.getValue() ) );
+        }
+        to.setResumedWith(resumedWithMap);
+        to.setN( from.getN() );
         return to;
     }
 
@@ -1409,6 +1485,9 @@ public abstract class AbstractProtoMapper {
         for (Workflow elem : from.getHistory()) {
             to.addHistory( toProto(elem) );
         }
+        if (from.getNativeState() != null) {
+            to.setNativeState( toProto( from.getNativeState() ) );
+        }
         return to.build();
     }
 
@@ -1450,6 +1529,9 @@ public abstract class AbstractProtoMapper {
         to.setLastRetriedTime( from.getLastRetriedTime() );
         to.setFailedTaskNames( from.getFailedTaskNamesList().stream().collect(Collectors.toCollection(HashSet::new)) );
         to.setHistory( from.getHistoryList().stream().map(this::fromProto).collect(Collectors.toCollection(ArrayList::new)) );
+        if (from.hasNativeState()) {
+            to.setNativeState( fromProto( from.getNativeState() ) );
+        }
         return to;
     }
 

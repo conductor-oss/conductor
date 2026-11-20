@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.annotations.VisibleForTesting;
+import com.netflix.conductor.common.metadata.tasks.TaskContinuation;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
@@ -68,6 +69,7 @@ public class DeciderService {
     private final long taskPendingTimeThresholdMins;
 
     private final Map<String, TaskMapper> taskMappers;
+    private final NativeContinuationService nativeContinuationService;
 
     public DeciderService(
             IDGenerator idGenerator,
@@ -75,11 +77,13 @@ public class DeciderService {
             MetadataDAO metadataDAO,
             ExternalPayloadStorageUtils externalPayloadStorageUtils,
             SystemTaskRegistry systemTaskRegistry,
+            NativeContinuationService nativeContinuationService,
             @Qualifier("taskMappersByTaskType") Map<String, TaskMapper> taskMappers,
             @Qualifier("annotatedTaskSystems") Map<String, TaskMapper> annotatedTaskSystems,
             @Value("${conductor.app.taskPendingTimeThreshold:60m}")
                     Duration taskPendingTimeThreshold) {
         this.idGenerator = idGenerator;
+        this.nativeContinuationService = nativeContinuationService;
         this.metadataDAO = metadataDAO;
         this.parametersUtils = parametersUtils;
         this.taskMappers = taskMappers;
@@ -99,6 +103,10 @@ public class DeciderService {
                                 taskType);
                     }
                 });
+    }
+
+    public NativeContinuationService getNativeContinuationService() {
+        return nativeContinuationService;
     }
 
     public DeciderOutcome decide(WorkflowModel workflow) throws TerminateWorkflowException {
@@ -231,6 +239,15 @@ public class DeciderService {
                 } else if (!(pendingTask.getWorkflowTask() != null
                         && pendingTask.getWorkflowTask().isPermissive()
                         && !pendingTask.getWorkflowTask().isOptional())) {
+                    if (NativeContinuationService.isNative(workflow)) {
+                        // Native workflows mark the tasks their code waits on optional, so a
+                        // failure continues to the code's next continuation. The code receives it
+                        // as an exception naming how the task failed, which the status no longer
+                        // says.
+                        pendingTask.addOutput(
+                                NativeContinuationService.OUTPUT_FAILED_STATUS,
+                                pendingTask.getStatus().name());
+                    }
                     pendingTask.setStatus(COMPLETED_WITH_ERRORS);
                 }
             }
@@ -357,6 +374,10 @@ public class DeciderService {
         if (workflow.getReRunFromWorkflowId() == null || tasks.isEmpty()) {
 
             if (workflowDef.getTasks().isEmpty()) {
+                if (NativeContinuationService.isNative(workflow)) {
+                    // the code's first continuation appends the first tasks
+                    return new LinkedList<>();
+                }
                 throw new TerminateWorkflowException(
                         "No tasks found to be executed", WorkflowModel.Status.COMPLETED);
             }
@@ -408,6 +429,11 @@ public class DeciderService {
      *     specified in the workflow definition
      */
     void updateWorkflowOutput(final WorkflowModel workflow, TaskModel task) {
+        if (NativeContinuationService.isNative(workflow)) {
+            // the output of a native workflow is what its code returned, set by the engine when
+            // the main lane's final continuation was applied; the last task's output is not it
+            return;
+        }
         List<TaskModel> allTasks = workflow.getTasks();
         if (allTasks.isEmpty()) {
             return;
@@ -459,6 +485,37 @@ public class DeciderService {
     }
 
     public boolean checkForWorkflowCompletion(final WorkflowModel workflow)
+            throws TerminateWorkflowException {
+        if (NativeContinuationService.isNative(workflow)) {
+            // A native execution ends when its code returned (the main lane's last continuation
+            // is done) and everything that continuation appended has run: tasks all being
+            // terminal says nothing about the code, and the code returning says nothing about
+            // trailing tasks (an event fired last, a switch whose case has no tasks).
+            NativeContinuationService.LastMain lastMain =
+                    nativeContinuationService.lastMain(workflow);
+            TaskContinuation last = lastMain == null ? null : lastMain.marker();
+            // the code threw (or its fragment was rejected): the run has a reason, and is ended
+            // by the completion that recorded it, not completed
+            if (last == null
+                    || !last.isApplied()
+                    || !last.isDone()
+                    || workflow.getReasonForIncompletion() != null) {
+                return false;
+            }
+            // code that returned without calling anything has no tasks to wait for
+            if (!workflow.getTasks().isEmpty() && !checkTasksForWorkflowCompletion(workflow)) {
+                return false;
+            }
+            // a lane nothing joined may still have code to run after its last task
+            if (nativeContinuationService.hasUnappliedLane(workflow)) {
+                return false;
+            }
+            return true; // its output is what the code returned, set when that applied
+        }
+        return checkTasksForWorkflowCompletion(workflow);
+    }
+
+    private boolean checkTasksForWorkflowCompletion(final WorkflowModel workflow)
             throws TerminateWorkflowException {
 
         Map<String, TaskModel.Status> taskStatusMap = new HashMap<>();
@@ -674,6 +731,10 @@ public class DeciderService {
 
         TaskModel rescheduled = task.copy();
         resetRetriedTaskRuntimeState(rescheduled);
+        if (task.getContinuation() != null) {
+            // the code waits on whichever attempt finishes
+            rescheduled.setContinuation(task.getContinuation().reset());
+        }
         rescheduled.setStartDelayInSeconds(startDelay);
         rescheduled.setCallbackAfterSeconds(startDelay);
         rescheduled.setCallbackAfterMs(totalDelayMs);

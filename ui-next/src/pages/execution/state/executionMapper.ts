@@ -23,6 +23,8 @@ import {
   StatusMap,
   TypeStatusMap,
 } from "./StatusMapTypes";
+import { heldReason } from "../held";
+import { codeLoopStatus, isCodeLoop } from "./codeLoops";
 import { detachedTasksByParent } from "./detachedTasks";
 import { TaskDefExecutionContext, WorkflowDefExecutionContext } from "./types";
 
@@ -134,13 +136,39 @@ const entireCollapsedStatus = (
   }
 };
 
+/** Where held code would continue: a pseudo step drawn right after the task it paused on. */
+const withHeldSteps = (
+  tasks: TaskDefExecutionContext[],
+): TaskDefExecutionContext[] =>
+  tasks.flatMap((task) =>
+    task.executionData?.held
+      ? [
+          task,
+          {
+            name: "Waiting for compatible code",
+            taskReferenceName: `${task.taskReferenceName}__held`,
+            type: TaskType.HELD_STEP,
+            executionData: {
+              status: TaskStatus.IN_PROGRESS,
+              executed: false,
+              attempts: 0,
+              held: task.executionData.held,
+              pausedOn: task.taskReferenceName,
+            },
+          } as TaskDefExecutionContext,
+        ]
+      : [task],
+  );
+
 export const taskStatusUpdater = (
   tasks: TaskDef[] = [],
   statusMap: StatusMap,
   expandDynamic: string[],
   sideTasks: Record<string, ExecutionTask[]> = {},
+  /** Why the run is held, if it is: at the one continuation it has leased. */
+  held?: string,
 ): TaskDefExecutionContext[] => {
-  return tasks.map((task) => {
+  const updated = tasks.map((task) => {
     const { type, taskReferenceName } = task;
     const executionTask = statusMap[taskReferenceName];
 
@@ -159,13 +187,14 @@ export const taskStatusUpdater = (
       outputData: executionTask?.outputData,
       parentLoop: executionTask?.parentLoop,
       sideTasks: sideTasks[taskReferenceName],
+      held: executionTask?.continuation?.leased ? held : undefined,
     };
 
     if (type === TaskType.FORK_JOIN) {
       const forkTasks: Array<TaskDefExecutionContext[]> = (
         task.forkTasks || []
       ).map((taa) =>
-        taskStatusUpdater(taa, statusMap, expandDynamic, sideTasks),
+        taskStatusUpdater(taa, statusMap, expandDynamic, sideTasks, held),
       );
       return {
         ...task,
@@ -175,7 +204,13 @@ export const taskStatusUpdater = (
     } else if (type === TaskType.DECISION || type === TaskType.SWITCH) {
       const decisionCases: Record<string, TaskDefExecutionContext[]> =
         _mapValues(task.decisionCases, (decisionTasks: TaskDef[]) =>
-          taskStatusUpdater(decisionTasks, statusMap, expandDynamic, sideTasks),
+          taskStatusUpdater(
+            decisionTasks,
+            statusMap,
+            expandDynamic,
+            sideTasks,
+            held,
+          ),
         );
       return {
         ...task,
@@ -185,19 +220,24 @@ export const taskStatusUpdater = (
           statusMap,
           expandDynamic,
           sideTasks,
+          held,
         ),
         executionData,
       } as TaskDefExecutionContext;
     } else if (type === TaskType.DO_WHILE) {
+      const loopOver = taskStatusUpdater(
+        task.loopOver!,
+        statusMap,
+        expandDynamic,
+        sideTasks,
+        held,
+      );
       return {
         ...task,
-        loopOver: taskStatusUpdater(
-          task.loopOver!,
-          statusMap,
-          expandDynamic,
-          sideTasks,
-        ),
-        executionData,
+        loopOver,
+        executionData: isCodeLoop(task)
+          ? { ...executionData, status: codeLoopStatus(loopOver) }
+          : executionData,
       } as TaskDefExecutionContext;
     } else if (
       type === TaskType.FORK_JOIN_DYNAMIC &&
@@ -293,6 +333,7 @@ export const taskStatusUpdater = (
       executionData,
     } as TaskDefExecutionContext;
   });
+  return withHeldSteps(updated);
 };
 
 const getTasksOfCurrentIteration = (
@@ -447,6 +488,9 @@ export const executionToWorkflowDef = (
         taskExecutionMap,
         expandDynamic,
         detachedTasksByParent(execution.tasks, execution.workflowDefinition),
+        heldReason(
+          execution as { status?: unknown; reasonForIncompletion?: string },
+        ),
       ),
     },
     taskExecutionMap,

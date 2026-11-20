@@ -129,6 +129,10 @@ public class Workflow extends Auditable {
     @ProtoField(id = 26)
     private List<Workflow> history = new LinkedList<>();
 
+    /** Engine state of a native (code-defined) workflow; null for other workflows. */
+    @ProtoField(id = 27)
+    private NativeState nativeState;
+
     private String idempotencyKey;
     private String rateLimitKey;
     private boolean rateLimited;
@@ -583,5 +587,13 @@ public class Workflow extends Auditable {
     @Override
     public int hashCode() {
         return Objects.hash(getWorkflowId());
+    }
+
+    public NativeState getNativeState() {
+        return nativeState;
+    }
+
+    public void setNativeState(NativeState nativeState) {
+        this.nativeState = nativeState;
     }
 }

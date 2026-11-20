@@ -5,6 +5,7 @@ import "model/workflowtask.proto";
 import "model/executionmetadata.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/any.proto";
+import "model/taskcontinuation.proto";
 
 option java_package = "com.netflix.conductor.proto";
 option java_outer_classname = "TaskPb";
@@ -67,4 +68,5 @@ message Task {
     string parent_task_id = 45;
     string parent_task_reference_name = 47;
     map<string, string> runtime_metadata = 46;
+    TaskContinuation continuation = 48;
 }

@@ -21,6 +21,8 @@ import java.util.TreeSet;
 import org.conductoross.conductor.core.listener.MetadataChangeListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.netflix.conductor.common.constraints.OwnerEmailMandatoryConstraint;
@@ -42,6 +44,8 @@ public class MetadataServiceImpl implements MetadataService {
     private final MetadataDAO metadataDAO;
     private final EventHandlerDAO eventHandlerDAO;
     private final MetadataChangeListener metadataChangeListener;
+    private final boolean nativeWorkflowsEnabled;
+    private boolean workflowMessageQueueEnabled;
 
     public MetadataServiceImpl(
             MetadataDAO metadataDAO,
@@ -51,6 +55,10 @@ public class MetadataServiceImpl implements MetadataService {
         this.metadataDAO = metadataDAO;
         this.eventHandlerDAO = eventHandlerDAO;
         this.metadataChangeListener = metadataChangeListener;
+        this.nativeWorkflowsEnabled =
+                properties == null
+                        || properties.getNativeWorkflow() == null
+                        || properties.getNativeWorkflow().isEnabled();
 
         ValidationContext.initialize(metadataDAO);
         OwnerEmailMandatoryConstraint.WorkflowTaskValidValidator.setOwnerEmailMandatory(
@@ -123,7 +131,44 @@ public class MetadataServiceImpl implements MetadataService {
     /**
      * @param workflowDef Workflow definition to be updated
      */
+    @Autowired(required = false)
+    void setWorkflowMessageQueueEnabled(
+            @Value("${conductor.workflow-message-queue.enabled:false}") boolean enabled) {
+        this.workflowMessageQueueEnabled = enabled;
+    }
+
+    /**
+     * Native (code-first) workflow definitions carry {@code metadata.native}. They are refused when
+     * {@code conductor.app.nativeWorkflow.enabled} is false. A native definition with a handler
+     * lane needs the workflow message queue, without which its signal, update and query handlers
+     * never run; that is logged at registration rather than refused, since the queue can be enabled
+     * before the first execution.
+     */
+    @SuppressWarnings("unchecked")
+    private void checkNativeWorkflow(WorkflowDef workflowDef) {
+        if (workflowDef.getMetadata() == null
+                || !(workflowDef.getMetadata().get("native") instanceof Map<?, ?> nativeMeta)) {
+            return;
+        }
+        if (!nativeWorkflowsEnabled) {
+            throw new IllegalArgumentException(
+                    "workflow "
+                            + workflowDef.getName()
+                            + " is a native (code-defined) workflow, but native workflows are"
+                            + " disabled (conductor.app.nativeWorkflow.enabled=false)");
+        }
+        if (Boolean.TRUE.equals(nativeMeta.get("handlers")) && !workflowMessageQueueEnabled) {
+            LOGGER.warn(
+                    "Native workflow {} has signal, update or query handlers, but the workflow"
+                            + " message queue is disabled; set"
+                            + " conductor.workflow-message-queue.enabled=true or its handlers"
+                            + " will never run",
+                    workflowDef.getName());
+        }
+    }
+
     public void updateWorkflowDef(WorkflowDef workflowDef) {
+        checkNativeWorkflow(workflowDef);
         workflowDef.setUpdateTime(System.currentTimeMillis());
         metadataDAO.updateWorkflowDef(workflowDef);
         metadataChangeListener.onWorkflowDefUpdated(workflowDef);
@@ -178,6 +223,7 @@ public class MetadataServiceImpl implements MetadataService {
     }
 
     public void registerWorkflowDef(WorkflowDef workflowDef) {
+        checkNativeWorkflow(workflowDef);
         workflowDef.setCreateTime(System.currentTimeMillis());
         metadataDAO.createWorkflowDef(workflowDef);
         metadataChangeListener.onWorkflowDefRegistered(workflowDef);

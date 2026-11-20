@@ -15,11 +15,16 @@ package com.netflix.conductor.grpc;
 import java.util.List;
 import java.util.Map;
 
+import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskContinuation;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.common.run.NativeState;
+import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.proto.WorkflowTaskPb;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -80,5 +85,71 @@ public class TestProtoMapper {
     WorkflowTask decoded = mapper.fromProto(WorkflowTaskPb.WorkflowTask.newBuilder().build());
 
     assertTrue(decoded.getMetadata().isEmpty());
+  }
+
+  private static TaskContinuation marker() {
+    TaskContinuation marker = TaskContinuation.handlerRun(3);
+    marker.setLeased(true);
+    marker.setRetryCount(7);
+    marker.setEndTime(300);
+    marker.setRecorded(Map.of("random_0", 0.5));
+    marker.setResumedWith(Map.of("count", 4.0));
+    marker.setDone(true);
+    return marker;
+  }
+
+  private static void assertSameMarker(TaskContinuation expected, TaskContinuation actual) {
+    assertEquals(expected.getN(), actual.getN());
+    assertEquals(expected.isLeased(), actual.isLeased());
+    assertEquals(expected.getRetryCount(), actual.getRetryCount());
+    assertEquals(expected.getEndTime(), actual.getEndTime());
+    assertEquals(expected.getRecorded(), actual.getRecorded());
+    assertEquals(expected.getResumedWith(), actual.getResumedWith());
+    assertEquals(expected.isDone(), actual.isDone());
+  }
+
+  @Test
+  public void aTaskKeepsItsContinuationOverGrpc() {
+    Task task = new Task();
+    task.setContinuation(marker());
+    assertSameMarker(marker(), mapper.fromProto(mapper.toProto(task)).getContinuation());
+  }
+
+  @Test
+  public void aMarkerThatHasNotRunYetGoesOverGrpc() {
+    // a waiting marker: no record yet, and its maps come back empty, not null
+    Task task = new Task();
+    task.setContinuation(new TaskContinuation());
+    TaskContinuation back = mapper.fromProto(mapper.toProto(task)).getContinuation();
+    assertFalse(back.isApplied());
+    assertFalse(back.isLeased());
+    assertTrue(back.getRecorded().isEmpty());
+    assertTrue(back.getResumedWith().isEmpty());
+  }
+
+  @Test
+  public void aTaskWithoutAContinuationStaysWithoutOne() {
+    assertNull(mapper.fromProto(mapper.toProto(new Task())).getContinuation());
+  }
+
+  @Test
+  public void aWorkflowKeepsItsNativeStateOverGrpc() {
+    NativeState state = new NativeState();
+    state.setBootstrap(marker());
+    state.setHandlers(marker());
+    state.setReplies(Map.of("u1", Map.of("value", 1.0)));
+    Workflow workflow = new Workflow();
+    workflow.setNativeState(state);
+
+    NativeState back = mapper.fromProto(mapper.toProto(workflow)).getNativeState();
+
+    assertSameMarker(marker(), back.getBootstrap());
+    assertSameMarker(marker(), back.getHandlers());
+    assertEquals(state.getReplies(), back.getReplies());
+  }
+
+  @Test
+  public void aWorkflowWithoutNativeStateStaysWithoutOne() {
+    assertNull(mapper.fromProto(mapper.toProto(new Workflow())).getNativeState());
   }
 }

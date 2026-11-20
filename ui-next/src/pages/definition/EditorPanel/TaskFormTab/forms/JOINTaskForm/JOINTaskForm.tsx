@@ -1,3 +1,4 @@
+import { definitionAsDrawn } from "pages/execution/state/codeLoops";
 import { Box, Grid, Stack, Typography } from "@mui/material";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import { useSelector } from "@xstate/react";
@@ -46,9 +47,14 @@ export const JOINTaskForm = ({ task, onChange }: TaskFormProps) => {
     workflowDefinitionActor!,
     (state) => state.context.selectedTaskCrumbs,
   );
-  const editorTasks = useSelector(
+  // the definition as drawn: a native one has loop nodes the selected crumbs go through
+  const workflowChanges = useSelector(
     workflowDefinitionActor!,
-    (state) => state.context.workflowChanges.tasks,
+    (state) => state.context.workflowChanges,
+  );
+  const editorTasks = useMemo(
+    () => definitionAsDrawn(workflowChanges ?? {})?.tasks ?? [],
+    [workflowChanges],
   );
 
   const tasksInCrumbBranch = useMemo(() => {

@@ -155,6 +155,58 @@ public class ConductorProperties {
      */
     private Map<String, TaskWorkerConfig> taskWorkerConfigs = new HashMap<>();
 
+    /** Limits and switches for native (code-first) workflows; see {@link NativeWorkflow}. */
+    private NativeWorkflow nativeWorkflow = new NativeWorkflow();
+
+    /**
+     * Native workflows grow an execution's definition one continuation completion at a time. These
+     * limits bound a single fragment and the definition it is appended to. Bound as {@code
+     * conductor.app.nativeWorkflow.*}.
+     */
+    public static class NativeWorkflow {
+
+        /** Refuse to register native (code-first) workflow definitions when false. */
+        private boolean enabled = true;
+
+        /** Maximum serialized size of one fragment. */
+        private DataSize maxFragmentBytes = DataSize.ofMegabytes(1);
+
+        /** Maximum number of tasks, nested ones included, in an execution's definition. */
+        private int maxDefinitionTasks = 5000;
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public DataSize getMaxFragmentBytes() {
+            return maxFragmentBytes;
+        }
+
+        public void setMaxFragmentBytes(DataSize maxFragmentBytes) {
+            this.maxFragmentBytes = maxFragmentBytes;
+        }
+
+        public int getMaxDefinitionTasks() {
+            return maxDefinitionTasks;
+        }
+
+        public void setMaxDefinitionTasks(int maxDefinitionTasks) {
+            this.maxDefinitionTasks = maxDefinitionTasks;
+        }
+    }
+
+    public NativeWorkflow getNativeWorkflow() {
+        return nativeWorkflow;
+    }
+
+    public void setNativeWorkflow(NativeWorkflow nativeWorkflow) {
+        this.nativeWorkflow = nativeWorkflow;
+    }
+
     public static class TaskWorkerConfig {
 
         /**

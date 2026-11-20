@@ -33,9 +33,12 @@ import org.testcontainers.utility.DockerImageName;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.execution.DeciderService;
+import com.netflix.conductor.core.execution.NativeContinuationService;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
+import com.netflix.conductor.core.metadata.MetadataMapperService;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
@@ -372,6 +375,11 @@ public class HttpTaskTest {
                         metadataDAO,
                         externalPayloadStorageUtils,
                         systemTaskRegistry,
+                        new NativeContinuationService(
+                                objectMapper,
+                                new ConductorProperties(),
+                                new MetadataMapperService(metadataDAO),
+                                Collections.emptyMap()),
                         Collections.emptyMap(),
                         Collections.emptyMap(),
                         Duration.ofMinutes(60))

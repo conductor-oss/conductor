@@ -9,6 +9,7 @@ import { CommonTaskDef, SwitchTaskDef, TaskStatus, TaskType } from "types";
 import DecisionOperator from "../DecisionOperator";
 import DoWhileTask from "../DoWhileTask";
 import DynamicTasksCards from "../DynamicTasksCards";
+import HeldStep from "../HeldStep";
 import SubWorkflowTask from "../SubWorkflowTask";
 import SwitchJoin from "../SwitchJoinPseudoTask";
 import TaskCard from "../TaskCard/TaskCard";
@@ -60,6 +61,7 @@ const SHAPES_FOR_TYPE = {
     <SubWorkflowTask {...props} />
   ),
   [TaskType.SWITCH_JOIN]: (props: ShapeProps) => <SwitchJoin {...props} />,
+  [TaskType.HELD_STEP]: (props: ShapeProps) => <HeldStep {...props} />,
 } satisfies Record<ShapeComponentForTypeParams, ShapePropsToShape>;
 
 export const Shape = forwardRef<HTMLDivElement, ShapeProps>((props, ref) => {

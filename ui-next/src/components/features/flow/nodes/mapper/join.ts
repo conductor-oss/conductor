@@ -7,6 +7,7 @@ import {
 import { NodeData, EdgeData } from "reaflow";
 import { northPort, southPort, DiagramPort } from "./ports";
 import _isEmpty from "lodash/isEmpty";
+import _findLast from "lodash/findLast";
 import _last from "lodash/last";
 import {
   drillForEndTasks,
@@ -21,10 +22,19 @@ import {
   SwitchTaskDef,
   Crumb,
   CommonTaskDef,
+  ForkableTask,
   TaskType,
 } from "types";
 
 import { NodesAndEdges, NodeTaskData } from "./types";
+
+type NativeJoinMetadata = {
+  detached?: boolean;
+  waitFor?: string[];
+  waitForFork?: string;
+  lane?: string;
+  preview?: boolean;
+};
 
 type JoinOnDirectPathsEdgesDiagramPorts = {
   joinOn: EdgeData[];
@@ -154,6 +164,56 @@ export const joinTasksToNodesEdges = (
   currentNodes: NodeData<NodeTaskData>[],
 ): NodesAndEdges => {
   const joinNode = createJoinNode(joinTask, crumbs, previousTask);
+  const joinMetadata = (
+    joinTask as JoinTaskDef & { metadata?: NativeJoinMetadata }
+  ).metadata;
+
+  // A later native JOIN waits for lanes by id: its lines start at the last node of each lane.
+  const waitedFork =
+    joinMetadata?.waitForFork === undefined
+      ? undefined
+      : currentNodes.find((node) => node.id === joinMetadata.waitForFork);
+  if ((joinMetadata?.waitFor || waitedFork) && !isForkableTask(previousTask)) {
+    const northPorts: DiagramPort[] = [];
+    const edges: EdgeData[] = [];
+    const tails: (NodeData<NodeTaskData> | undefined)[] = waitedFork
+      ? ((waitedFork.data?.task as ForkableTask).forkTasks ?? []).map(
+          (branch) =>
+            currentNodes.find(
+              (node) => node.id === _last(branch)?.taskReferenceName,
+            ),
+        )
+      : joinMetadata!.waitFor!.map((lane) =>
+          _findLast(currentNodes, (node) => {
+            const metadata = (
+              node.data?.task as { metadata?: NativeJoinMetadata }
+            )?.metadata;
+            return metadata?.lane === lane && !metadata?.preview;
+          }),
+        );
+    tails.forEach((tail, index) => {
+      if (tail?.data?.task) {
+        northPorts.push(
+          northPort({ id: `${joinNode.id}-wait-${index}` }, index, true),
+        );
+        edges.push({
+          id: `edge_wait_${tail.id}-${joinNode.id}`,
+          from: tail.id,
+          fromPort: `${tail.id}-south-port`,
+          toPort: `${joinNode.id}-wait-${index}-north-port`,
+          to: joinNode.id,
+          ...maybeEdgeData(joinTask, tail.data.task, false, true),
+        });
+      }
+    });
+    return {
+      nodes: currentNodes.concat({
+        ...joinNode,
+        ports: joinNode.ports.concat(northPorts),
+      }),
+      edges,
+    };
+  }
 
   let result: JoinOnDirectPathsEdgesDiagramPorts = {
     joinOn: [],

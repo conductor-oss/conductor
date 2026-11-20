@@ -22,6 +22,7 @@ export const taskToSize = (task) => {
         width: theme.nodeTypes.TERMINAL.width,
         height: theme.nodeTypes.TERMINAL.height,
       };
+    case TaskType.HELD_STEP:
     case TaskType.SWITCH_JOIN:
       return {
         width: theme.nodeTypes.SWITCH_JOIN.width,

@@ -38,19 +38,23 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
+import com.netflix.conductor.common.metadata.tasks.TaskContinuation;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskDef.TimeoutPolicy;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.common.run.NativeState;
 import com.netflix.conductor.common.utils.TaskUtils;
+import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.DeciderService.DeciderOutcome;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.tasks.SubWorkflow;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
+import com.netflix.conductor.core.metadata.MetadataMapperService;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
@@ -162,6 +166,11 @@ public class TestDeciderService {
                         metadataDAO,
                         externalPayloadStorageUtils,
                         systemTaskRegistry,
+                        new NativeContinuationService(
+                                objectMapper,
+                                new ConductorProperties(),
+                                new MetadataMapperService(metadataDAO),
+                                taskMappers),
                         taskMappers,
                         new HashMap<>(),
                         Duration.ofMinutes(60));
@@ -2051,5 +2060,40 @@ public class TestDeciderService {
         workflowDef.getTasks().add(tasks.get(5));
 
         return workflowDef;
+    }
+
+    @Test
+    public void aNativeWorkflowWhoseCodeReturnedWithoutCallingAnythingIsComplete() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("native");
+        def.getMetadata().put("native", Map.of("sdk", "test"));
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(def);
+        TaskContinuation bootstrap = new TaskContinuation();
+        NativeState state = new NativeState();
+        state.setBootstrap(bootstrap);
+        workflow.setNativeState(state);
+
+        // the code has not returned yet
+        assertFalse(deciderService.checkForWorkflowCompletion(workflow));
+
+        bootstrap.setEndTime(1);
+        bootstrap.setDone(true);
+        workflow.setOutput(Map.of("result", "value")); // set when the code's return applied
+        assertTrue(deciderService.checkForWorkflowCompletion(workflow));
+        assertEquals(Map.of("result", "value"), workflow.getOutput());
+
+        // a lane nothing joined finished its task but its code has not resumed
+        TaskModel laneTask = new TaskModel();
+        laneTask.setReferenceTaskName("lane_task");
+        laneTask.setStatus(TaskModel.Status.COMPLETED);
+        laneTask.setExecuted(true);
+        TaskContinuation laneMarker = new TaskContinuation();
+        laneTask.setContinuation(laneMarker);
+        workflow.getTasks().add(laneTask);
+        assertFalse(deciderService.checkForWorkflowCompletion(workflow));
+
+        laneMarker.setEndTime(1);
+        assertTrue(deciderService.checkForWorkflowCompletion(workflow));
     }
 }

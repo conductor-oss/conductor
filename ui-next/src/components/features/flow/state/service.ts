@@ -1,5 +1,6 @@
 import { applyNodeSelectionHelpr } from "./helpers";
 import { processWorkflow } from "../nodes";
+import { definitionAsDrawn } from "pages/execution/state/codeLoops";
 import _property from "lodash/property";
 import _filter from "lodash/filter";
 import _includes from "lodash/includes";
@@ -61,9 +62,12 @@ export const updateWorkflowDefinitionService = async (
   const expandSubWorkflow = showPorts;
 
   try {
+    // a native definition is generated from code: drawn read only (no ports to edit with),
+    // with its Java loops as loops (the execution page has grouped its own)
+    const fromCode = showPorts && workflow?.metadata?.native != null;
     const { nodes, edges } = await processWorkflow(
-      workflow,
-      showPorts,
+      fromCode ? definitionAsDrawn(workflow) : workflow,
+      showPorts && !fromCode,
       expandSubWorkflow, // expand subworkflow
       async (workflowName: string, version?: number) =>
         fetchForWorkflowDefinition({
