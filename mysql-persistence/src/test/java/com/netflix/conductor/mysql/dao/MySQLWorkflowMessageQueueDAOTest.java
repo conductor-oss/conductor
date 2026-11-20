@@ -39,7 +39,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.common.model.WorkflowMessage;
 import com.netflix.conductor.core.config.WorkflowMessageQueueProperties;
-import com.netflix.conductor.core.dao.JdbcWorkflowMessageQueueDAO;
 import com.netflix.conductor.mysql.config.MySQLConfiguration;
 
 import tools.jackson.databind.ObjectMapper;
@@ -66,14 +65,14 @@ public class MySQLWorkflowMessageQueueDAOTest {
 
     @Autowired private Flyway flyway;
 
-    private JdbcWorkflowMessageQueueDAO dao;
+    private MySQLWorkflowMessageQueueDAO dao;
 
     @Before
     public void before() {
         flyway.migrate();
         WorkflowMessageQueueProperties props = new WorkflowMessageQueueProperties();
         props.setMaxQueueSize(10);
-        dao = new JdbcWorkflowMessageQueueDAO(dataSource, objectMapper, props, true);
+        dao = new MySQLWorkflowMessageQueueDAO(dataSource, objectMapper, props);
     }
 
     private static WorkflowMessage message(String id, String wf) {

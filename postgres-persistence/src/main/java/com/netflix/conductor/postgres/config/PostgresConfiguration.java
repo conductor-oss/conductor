@@ -35,7 +35,6 @@ import org.springframework.core.retry.RetryPolicy;
 import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.core.config.WorkflowMessageQueueProperties;
-import com.netflix.conductor.core.dao.JdbcWorkflowMessageQueueDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.dao.WorkflowMessageQueueDAO;
 import com.netflix.conductor.postgres.dao.*;
@@ -156,7 +155,7 @@ public class PostgresConfiguration {
     @ConditionalOnProperty(name = "conductor.workflow-message-queue.enabled", havingValue = "true")
     public WorkflowMessageQueueDAO postgresWorkflowMessageQueueDAO(
             ObjectMapper objectMapper, WorkflowMessageQueueProperties properties) {
-        return new JdbcWorkflowMessageQueueDAO(dataSource, objectMapper, properties, true);
+        return new PostgresWorkflowMessageQueueDAO(dataSource, objectMapper, properties);
     }
 
     @Bean

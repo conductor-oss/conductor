@@ -40,7 +40,6 @@ import org.springframework.core.retry.RetryPolicy;
 import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.core.config.WorkflowMessageQueueProperties;
-import com.netflix.conductor.core.dao.JdbcWorkflowMessageQueueDAO;
 import com.netflix.conductor.core.sync.Lock;
 import com.netflix.conductor.core.sync.local.LocalOnlyLock;
 import com.netflix.conductor.dao.WorkflowMessageQueueDAO;
@@ -217,7 +216,7 @@ public class SqliteConfiguration {
     @ConditionalOnProperty(name = "conductor.workflow-message-queue.enabled", havingValue = "true")
     public WorkflowMessageQueueDAO sqliteWorkflowMessageQueueDAO(
             ObjectMapper objectMapper, WorkflowMessageQueueProperties properties) {
-        return new JdbcWorkflowMessageQueueDAO(dataSource, objectMapper, properties, false);
+        return new SqliteWorkflowMessageQueueDAO(dataSource, objectMapper, properties);
     }
 
     @Bean
