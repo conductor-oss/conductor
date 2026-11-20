@@ -385,6 +385,9 @@ conductor.app.sweeper.sweepBatchSize=2
 
 # Queue pop timeout in ms (default: 100)
 conductor.app.sweeper.queuePopTimeout=100
+
+# Max time in ms to drain in-flight sweeps on shutdown before interrupting them (default: 30000)
+conductor.app.sweeper.shutdownTimeout=30000
 ```
 
 !!! tip "Sweeper sizing"
