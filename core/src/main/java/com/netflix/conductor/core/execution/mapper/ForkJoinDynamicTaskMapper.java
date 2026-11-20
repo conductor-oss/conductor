@@ -204,7 +204,12 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
                     if (forkedTaskInput == null) {
                         forkedTaskInput = new HashMap<>();
                     }
-                    dynForkTask.getInputParameters().putAll(forkedTaskInput);
+                    // forkedTaskInput is part of the fork's input, which was already evaluated
+                    // against this workflow above. The forked task's input parameters are
+                    // evaluated again when it is scheduled and on every retry, so escape the
+                    // merged values to pass them through unchanged (e.g. an inline workflowDef
+                    // for START_WORKFLOW keeps its ${...} expressions for the child workflow).
+                    dynForkTask.getInputParameters().putAll(escapeExpressions(forkedTaskInput));
                 } catch (Exception e) {
                     String reason =
                             String.format(
@@ -601,5 +606,38 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
                         .collect(Collectors.toCollection(LinkedList::new));
 
         return new ImmutablePair<>(dynamicForkJoinWorkflowTasks, dynamicForkJoinTasksInput);
+    }
+
+    /**
+     * Returns a copy of the given input in which every "${" in a string value, at any depth, is
+     * escaped as "$${". {@link ParametersUtils} turns an escaped expression back into the literal
+     * text instead of evaluating it, so already resolved values survive another evaluation as-is.
+     *
+     * <p>{@link ParametersUtils} evaluates the JSON form of a task's input: it clones the input
+     * through JSON first, so a collection becomes a list and an array or any other object becomes
+     * the list or map Jackson writes for it. The copy has that same form, so the strings inside
+     * those values are escaped too.
+     */
+    private Map<String, Object> escapeExpressions(Map<String, Object> input) {
+        Map<String, Object> escaped = new LinkedHashMap<>();
+        input.forEach((key, value) -> escaped.put(key, escapeExpressions(value)));
+        return escaped;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Object escapeExpressions(Object value) {
+        if (value == null || value instanceof Number || value instanceof Boolean) {
+            return value;
+        }
+        if (value instanceof String string) {
+            return string.replace("${", "$${");
+        }
+        if (value instanceof Map) {
+            return escapeExpressions((Map<String, Object>) value);
+        }
+        if (value instanceof Collection<?> values) {
+            return values.stream().map(this::escapeExpressions).collect(Collectors.toList());
+        }
+        return escapeExpressions(objectMapper.convertValue(value, Object.class));
     }
 }
