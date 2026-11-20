@@ -16,11 +16,17 @@ import java.time.Duration;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
 import lombok.extern.slf4j.Slf4j;
 
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_DO_WHILE;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_FORK_JOIN;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_FORK_JOIN_DYNAMIC;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_HUMAN;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_WAIT;
 
 @Slf4j
@@ -35,6 +41,12 @@ public class ExecutorUtils {
     /**
      * Computes how long to postpone the next sweep/re-check of a workflow so that the scheduler
      * does not poll more frequently than necessary.
+     *
+     * <p>Special case first: if the only pending work is HUMAN task(s) (looking past a wrapping
+     * {@code DO_WHILE}, and provided the definition has no FORK), the workflow is deferred by
+     * {@link #humanOnlyPostpone} to the human's timeout deadline, or {@code maxPostponeDuration}
+     * when the human has no timeout — it is waiting on a person, not the sweeper. Otherwise the
+     * per-task algorithm below runs.
      *
      * <p>Algorithm:
      *
@@ -92,6 +104,17 @@ public class ExecutorUtils {
         long currentTimeMillis = System.currentTimeMillis();
         long workflowOffsetTimeoutSeconds = workflowOffsetTimeout.getSeconds();
         long maxPostponeSeconds = maxPostponeDuration.getSeconds();
+
+        // A workflow whose only pending work is HUMAN task(s) is waiting on a person, not the
+        // sweeper: re-deciding every offset just churns the decider queue. Defer it to maxPostpone
+        // instead. Unlike PR #1171, we keep the workflow IN the decider queue (deferred, not
+        // removed) so the periodic re-sweep still recovers it if the completion event is ever
+        // missed. Completion wakes it promptly regardless: updateTask() calls decide()
+        // synchronously.
+        Long humanOnlyPostpone = humanOnlyPostpone(workflowModel, maxPostponeSeconds);
+        if (humanOnlyPostpone != null) {
+            return Duration.ofSeconds(humanOnlyPostpone);
+        }
 
         Long postponeDurationSeconds = null;
         for (TaskModel taskModel : workflowModel.getTasks()) {
@@ -178,15 +201,95 @@ public class ExecutorUtils {
     }
 
     /**
-     * Returns true when the workflow has at least one IN_PROGRESS HUMAN task. Such a workflow is
-     * blocked on external human input and may remain in this state indefinitely, so it should be
-     * removed from the decider queue rather than re-swept on every offset.
+     * When the only pending work is HUMAN task(s) waiting on a person (ignoring a wrapping {@code
+     * DO_WHILE} loop), returns the seconds to defer the next sweep ({@code maxPostponeSeconds}).
+     * Returns {@code null} the moment any other task is still pending, or when the definition
+     * contains a FORK — in which case the caller keeps the normal offset cadence.
+     *
+     * <p>The FORK exclusion is deliberate and gated on the static definition, not the live task
+     * list: a fork branch parked on a HUMAN can momentarily be the only pending leaf, and some
+     * persistence layers can transiently omit the still-pending JOIN from the live task list
+     * mid-decide. Deferring then would strip the branch-coordination re-sweep and strand the
+     * workflow. The definition is race-free, so it is the safe thing to gate on.
      */
-    public static boolean hasInProgressHumanTask(WorkflowModel workflow) {
-        return workflow.getTasks().stream()
-                .anyMatch(
-                        task ->
-                                TaskType.TASK_TYPE_HUMAN.equals(task.getTaskType())
-                                        && task.getStatus() == TaskModel.Status.IN_PROGRESS);
+    static Long humanOnlyPostpone(WorkflowModel workflowModel, long maxPostponeSeconds) {
+        if (maxPostponeSeconds <= 0) {
+            return null; // no ceiling configured — cannot defer safely
+        }
+        long now = System.currentTimeMillis();
+        boolean anyHuman = false;
+        long postponeSeconds = maxPostponeSeconds;
+        for (TaskModel taskModel : workflowModel.getTasks()) {
+            TaskModel.Status status = taskModel.getStatus();
+            if (status != TaskModel.Status.IN_PROGRESS && status != TaskModel.Status.SCHEDULED) {
+                continue; // terminal — not pending
+            }
+            String taskType = taskModel.getTaskType();
+            if (TASK_TYPE_HUMAN.equals(taskType)) {
+                anyHuman = true;
+                // Wake by the human's own timeout deadline so DeciderService.checkTaskTimeout can
+                // enforce it on schedule; only a human with no timeout configured is deferred the
+                // full maxPostpone (indefinite).
+                long timeoutSeconds = humanTimeoutSeconds(taskModel, now);
+                long candidateSeconds =
+                        (timeoutSeconds > 0)
+                                ? Math.min(timeoutSeconds, maxPostponeSeconds)
+                                : maxPostponeSeconds;
+                postponeSeconds = Math.min(postponeSeconds, candidateSeconds);
+            } else if (TASK_TYPE_DO_WHILE.equals(taskType)) {
+                // only wraps the running HUMAN leaf inside its loop
+            } else {
+                return null; // any other pending leaf (incl. FORK/JOIN, null type) — normal cadence
+            }
+        }
+        if (!anyHuman || hasForkStructure(workflowModel)) {
+            return null;
+        }
+        return postponeSeconds;
+    }
+
+    /**
+     * Seconds until a HUMAN task's soonest configured timeout deadline (the OSS analog of an SLA),
+     * derived from its {@link TaskDef} {@code timeoutSeconds}/{@code responseTimeoutSeconds} and
+     * its start time. Returns {@code 0} when the task has no timeout configured (indefinite) or has
+     * not started yet — matching {@code DeciderService.checkTaskTimeout}, which does not time out a
+     * task with {@code timeoutSeconds <= 0} or {@code startTime <= 0}.
+     */
+    private static long humanTimeoutSeconds(TaskModel taskModel, long now) {
+        TaskDef taskDef = taskModel.getTaskDefinition().orElse(null);
+        if (taskDef == null || taskModel.getStartTime() <= 0) {
+            return 0;
+        }
+        long deadlineSeconds = 0;
+        if (taskDef.getTimeoutSeconds() > 0) {
+            deadlineSeconds = taskDef.getTimeoutSeconds();
+        }
+        if (taskDef.getResponseTimeoutSeconds() > 0) {
+            deadlineSeconds =
+                    (deadlineSeconds == 0)
+                            ? taskDef.getResponseTimeoutSeconds()
+                            : Math.min(deadlineSeconds, taskDef.getResponseTimeoutSeconds());
+        }
+        if (deadlineSeconds == 0) {
+            return 0; // no timeout configured — indefinite
+        }
+        long elapsedSeconds = Math.max(0, (now - taskModel.getStartTime()) / 1000);
+        // +1 gives a one-second buffer past the deadline before re-evaluating; floor at 1 so an
+        // already-overdue task wakes on the next sweep rather than immediately churning.
+        return Math.max(1, deadlineSeconds - elapsedSeconds + 1);
+    }
+
+    private static boolean hasForkStructure(WorkflowModel workflowModel) {
+        WorkflowDef workflowDef = workflowModel.getWorkflowDefinition();
+        if (workflowDef == null) {
+            return false;
+        }
+        for (WorkflowTask workflowTask : workflowDef.collectTasks()) {
+            String type = workflowTask.getType();
+            if (TASK_TYPE_FORK_JOIN.equals(type) || TASK_TYPE_FORK_JOIN_DYNAMIC.equals(type)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
