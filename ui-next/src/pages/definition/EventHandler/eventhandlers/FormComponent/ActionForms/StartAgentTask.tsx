@@ -1,24 +1,23 @@
 import { Grid } from "@mui/material";
 import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
-import XCloseIcon from "components/icons/XCloseIcon";
-import IconButton from "components/ui/buttons/MuiIconButton";
 import { ConductorAutoComplete } from "components/ui/inputs";
 import ConductorInput from "components/ui/inputs/ConductorInput";
-import MuiTypography from "components/ui/MuiTypography";
 import _isEmpty from "lodash/isEmpty";
 import _isUndefined from "lodash/isUndefined";
 import { AgentSummary } from "pages/agent/types";
 import { FocusEvent, useMemo } from "react";
 import { useFetch } from "utils/query";
 import { Props } from "./common";
+import { usePayloadMapProps } from "../payloadFields";
+import PayloadFieldInput from "../PayloadFieldInput";
 
 export const StartAgentActionForm = ({
-  onRemove,
   index,
   payload,
   handleChangeAction,
 }: Props) => {
   const { start_agent } = payload;
+  const payloadMapProps = usePayloadMapProps();
   const { data: agentDefinitions } = useFetch<AgentSummary[]>("/agent/list");
 
   const namesAndVersions = useMemo(() => {
@@ -53,17 +52,7 @@ export const StartAgentActionForm = ({
   const mediaText = (start_agent?.media || []).join("\n");
 
   return (
-    <Grid
-      container
-      spacing={4}
-      my={2}
-      sx={{ width: "100%", position: "relative" }}
-    >
-      <Grid size={12}>
-        <MuiTypography fontWeight={800} fontSize={16}>
-          Start Agent
-        </MuiTypography>
-      </Grid>
+    <Grid container spacing={4} my={2} sx={{ width: "100%" }}>
       <Grid
         size={{
           xs: 12,
@@ -96,7 +85,7 @@ export const StartAgentActionForm = ({
             });
           }}
           conductorInputProps={{
-            placeholder: `\${event.payload.agent_name}`,
+            placeholder: "e.g. support_triage",
           }}
         />
       </Grid>
@@ -137,12 +126,12 @@ export const StartAgentActionForm = ({
         />
       </Grid>
       <Grid size={12}>
-        <ConductorInput
+        <PayloadFieldInput
           fullWidth
           multiline
           minRows={3}
           label="Prompt"
-          placeholder={`\${event.payload.prompt}`}
+          placeholder={`Summarize order \${orderId}`}
           value={start_agent?.prompt}
           onTextInputChange={(value) =>
             handleChangeAction(index, {
@@ -161,10 +150,10 @@ export const StartAgentActionForm = ({
           md: 6,
         }}
       >
-        <ConductorInput
+        <PayloadFieldInput
           fullWidth
           label="Session ID"
-          placeholder={`\${event.payload.session_id}`}
+          placeholder={`\${sessionId}`}
           value={start_agent?.sessionId}
           onTextInputChange={(value) =>
             handleChangeAction(index, {
@@ -183,10 +172,10 @@ export const StartAgentActionForm = ({
           md: 6,
         }}
       >
-        <ConductorInput
+        <PayloadFieldInput
           fullWidth
           label="Idempotency key"
-          placeholder={`\${event.payload.event_id}`}
+          placeholder={`\${eventId}`}
           value={start_agent?.idempotencyKey}
           onTextInputChange={(value) =>
             handleChangeAction(index, {
@@ -205,7 +194,7 @@ export const StartAgentActionForm = ({
           multiline
           minRows={2}
           label="Media (one URL per line)"
-          placeholder={`\${event.payload.media_url}`}
+          placeholder={`\${mediaUrl}`}
           value={mediaText}
           onTextInputChange={(value) =>
             handleChangeAction(index, {
@@ -238,13 +227,10 @@ export const StartAgentActionForm = ({
           valueColumnLabel="Value"
           addItemLabel="Add parameter"
           showFieldTypes
-          enableAutocomplete={false}
+          {...payloadMapProps}
           autoFocusField={false}
         />
       </Grid>
-      <IconButton onClick={onRemove} sx={{ position: "absolute", right: 0 }}>
-        <XCloseIcon size={26} />
-      </IconButton>
     </Grid>
   );
 };

@@ -5,13 +5,13 @@ import fastDeepEqual from "fast-deep-equal";
 import { omit } from "lodash";
 import { colors } from "theme/tokens/variables";
 import Button, { MuiButtonProps } from "components/ui/buttons/MuiButton";
-import _isEmpty from "lodash/isEmpty";
 import { tryToJson } from "utils/utils";
 import ResetIcon from "components/icons/ResetIcon";
 import SaveIcon from "components/icons/SaveIcon";
 import TrashIcon from "components/icons/TrashIcon";
 import XCloseIcon from "components/icons/XCloseIcon";
 import { useAuth } from "components/features/auth";
+import { isEditorSaveDisabled, isFormSaveDisabled } from "./state/saveGuards";
 
 const withFormState =
   (
@@ -29,11 +29,13 @@ const withFormState =
       [eventAsJson, originalSource],
     );
     const { name, event } = eventAsJson;
-    const emptyValue = [event?.trim(), name?.trim()].some((value) =>
-      _isEmpty(value?.trim()),
-    );
     const isReset = buttonProps?.role === "reset";
-    const disableSave = emptyValue || noChanges || isTrialExpired;
+    const disableSave = isFormSaveDisabled({
+      name,
+      event,
+      noChanges,
+      isTrialExpired,
+    });
     return (
       <ButtonComponent
         {...buttonProps}
@@ -58,14 +60,13 @@ const withEditorState =
       ],
     );
 
-    const isEmptyValue = useMemo(() => {
-      if (!editorChanges) return false;
-      const parsedEditorChanges = tryToJson(editorChanges) as {
-        name: string;
-        event: string;
-      };
-      const { name, event } = parsedEditorChanges || {};
-      return [event?.trim(), name?.trim()].some((value) => _isEmpty(value));
+    const { name, event } = useMemo(() => {
+      if (!editorChanges) return { name: undefined, event: undefined };
+      const parsed = tryToJson(editorChanges) as {
+        name?: string;
+        event?: string;
+      } | null;
+      return { name: parsed?.name, event: parsed?.event };
     }, [editorChanges]);
 
     const noChanges = useMemo(
@@ -73,8 +74,14 @@ const withEditorState =
       [editorChanges, originalSource],
     );
     const isReset = buttonProps?.role === "reset";
-    const disableSave =
-      noChanges || invalidJson || isEmptyValue || isTrialExpired;
+    const disableSave = isEditorSaveDisabled({
+      name,
+      event,
+      noChanges,
+      invalidJson,
+      isTrialExpired,
+      hasEditorContent: Boolean(editorChanges),
+    });
     return (
       <ButtonComponent
         {...buttonProps}

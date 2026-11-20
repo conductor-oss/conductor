@@ -1,37 +1,21 @@
 import { Grid } from "@mui/material";
-import IconButton from "components/ui/buttons/MuiIconButton";
-import MuiTypography from "components/ui/MuiTypography";
 import { ConductorUpdateTaskFormEvent } from "components/inputs/ConductorUpdateTaskFromEvent";
 import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
-import XCloseIcon from "components/icons/XCloseIcon";
 import { Props } from "./common";
+import { usePayloadMapProps } from "../payloadFields";
+import PayloadFieldInput, { WorkflowIdInput } from "../PayloadFieldInput";
 
-export const CompleteTask = ({
-  onRemove,
-  index,
-  payload,
-  handleChangeAction,
-}: Props) => {
+export const CompleteTask = ({ index, payload, handleChangeAction }: Props) => {
   const { complete_task } = payload;
+  const payloadMapProps = usePayloadMapProps();
 
   return (
-    <Grid
-      container
-      spacing={4}
-      my={2}
-      sx={{
-        width: "100%",
-        position: "relative",
-      }}
-    >
-      <Grid size={12} sx={{ mt: 4 }}>
-        <MuiTypography fontWeight={800} fontSize={16}>
-          Complete Task
-        </MuiTypography>
-      </Grid>
+    <Grid container spacing={4} sx={{ width: "100%" }}>
       <Grid size={12}>
         <ConductorUpdateTaskFormEvent
           value={complete_task}
+          inputComponent={PayloadFieldInput}
+          workflowIdInputComponent={WorkflowIdInput}
           onChange={(upCt) => {
             handleChangeAction(index, {
               ...payload,
@@ -57,13 +41,10 @@ export const CompleteTask = ({
           valueColumnLabel="Value"
           addItemLabel="Add parameter"
           showFieldTypes
-          enableAutocomplete={false}
+          {...payloadMapProps}
           autoFocusField={false}
         />
       </Grid>
-      <IconButton onClick={onRemove} sx={{ position: "absolute", right: 0 }}>
-        <XCloseIcon size={26} />
-      </IconButton>
     </Grid>
   );
 };

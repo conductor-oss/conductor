@@ -4,8 +4,7 @@ import { EventFormMachineTypes } from "./types";
 export const useEventHandlerFormActor = (actor: any) => {
   const { eventAsJson } = useSelector(actor, (state: any) => state.context);
 
-  const { name, event, condition, actions, action, active, description } =
-    eventAsJson;
+  const { name, event, condition, actions, active, description } = eventAsJson;
 
   const { send } = actor;
 
@@ -39,12 +38,19 @@ export const useEventHandlerFormActor = (actor: any) => {
     });
   };
 
+  const moveAction = (from: number, to: number) => {
+    send({
+      type: EventFormMachineTypes.MOVE_ACTION,
+      from,
+      to,
+    });
+  };
+
   // Logic in the Event task form is similar. Consider refactoring.
   const handleEventChange = (event: string) => handleChange("event", event);
 
   return [
     {
-      action,
       name,
       condition,
       actions,
@@ -57,6 +63,7 @@ export const useEventHandlerFormActor = (actor: any) => {
       handleChange,
       handleAction,
       removeAction,
+      moveAction,
       handleEventChange,
     },
   ] as const;

@@ -14,7 +14,9 @@ export type EventJson = Partial<
 interface FormWithRadioGroupProps {
   value: EventJson;
   onChange: (value: EventJson) => void;
+  /** Used for the Task ID field, and Workflow ID unless overridden. */
   inputComponent?: ComponentType<ConductorInputProps>;
+  workflowIdInputComponent?: ComponentType<ConductorInputProps>;
 }
 
 const omitTaskId = (value: EventJson) => _omit(value, "taskId");
@@ -28,13 +30,21 @@ export const ConductorUpdateTaskFormEvent = ({
   value,
   onChange,
   inputComponent: InputComponent = ConductorInput,
+  workflowIdInputComponent: WorkflowIdInputComponent = InputComponent,
 }: FormWithRadioGroupProps) => {
   const isTaskIdSelected = useMemo(() => _isTaskIdSelected(value), [value]);
 
   return (
     <>
       <RadioGroup
-        sx={{ color: "#767676", ">label >span": { fontWeight: 600, mb: 2 } }}
+        sx={{
+          color: "#767676",
+          // The theme's radio padding would push the row down from whatever is
+          // above it, so drop it and space the row from the inputs here.
+          mb: 4,
+          // "& .MuiRadio-root": { py: 0 },
+          // "& .MuiFormControlLabel-label": { fontWeight: 600 },
+        }}
         name="refresh-radio-group-options"
         row
         value={isTaskIdSelected ? "task-id" : "workflow-id-task-ref"}
@@ -69,6 +79,7 @@ export const ConductorUpdateTaskFormEvent = ({
           <InputComponent
             fullWidth
             label="Task ID"
+            placeholder={`\${taskId}`}
             value={value?.taskId}
             onTextInputChange={(val: string) =>
               onChange(omitWorkflowID({ ...value, taskId: val }))
@@ -84,9 +95,10 @@ export const ConductorUpdateTaskFormEvent = ({
               sm: 12,
             }}
           >
-            <InputComponent
+            <WorkflowIdInputComponent
               fullWidth
               label="Workflow ID"
+              placeholder={`\${workflowInstanceId}`}
               value={value?.workflowId}
               onTextInputChange={(val: string) =>
                 onChange(omitTaskId({ ...value, workflowId: val }))
@@ -100,9 +112,13 @@ export const ConductorUpdateTaskFormEvent = ({
               sm: 12,
             }}
           >
-            <InputComponent
+            {/* Always plain: a task reference name is a literal from the
+                workflow definition, so payload suggestions would only be
+                noise here. */}
+            <ConductorInput
               fullWidth
               label="Task reference name"
+              placeholder="wait_task_ref"
               value={value?.taskRefName}
               onTextInputChange={(val: string) =>
                 onChange(omitTaskId({ ...value, taskRefName: val }))
