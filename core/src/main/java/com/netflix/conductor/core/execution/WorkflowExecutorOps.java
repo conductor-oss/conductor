@@ -2284,8 +2284,32 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         if (failureWorkflow != null) {
             if (failureWorkflow.startsWith("$")) {
                 String[] paramPathComponents = failureWorkflow.split("\\.");
-                String name = paramPathComponents[2]; // name of the input parameter
-                failureWorkflow = (String) workflow.getInput().get(name);
+                // The parameter path must carry at least the "$", the source and the parameter
+                // name (e.g. "$.workflow.paramName"). A malformed path cannot be resolved to a
+                // failure workflow, so it is dropped instead of failing the termination (#789).
+                if (paramPathComponents.length < 3) {
+                    LOGGER.warn(
+                            "Invalid failureWorkflow format: {}. Expected format: $.workflow.paramName",
+                            failureWorkflow);
+                    failureWorkflow = null;
+                } else {
+                    String name = paramPathComponents[2]; // name of the input parameter
+                    // The workflow input may be absent and the parameter may carry any type, so
+                    // the value is only usable as a failure workflow name when it is a String.
+                    // Anything else is dropped instead of failing the termination (#789).
+                    Map<String, Object> workflowInput = workflow.getInput();
+                    Object resolved = workflowInput != null ? workflowInput.get(name) : null;
+                    if (resolved instanceof String) {
+                        failureWorkflow = (String) resolved;
+                    } else {
+                        LOGGER.warn(
+                                "failureWorkflow parameter '{}' of workflow {} did not resolve to a"
+                                        + " workflow name, no failure workflow is started",
+                                name,
+                                workflow.getWorkflowId());
+                        failureWorkflow = null;
+                    }
+                }
             }
         }
         if (terminateWorkflowException.getTask() != null) {
