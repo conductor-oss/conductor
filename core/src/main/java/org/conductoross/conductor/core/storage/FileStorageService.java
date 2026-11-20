@@ -41,6 +41,14 @@ public interface FileStorageService {
      */
     FileUploadResponse createFile(@NotNull @Valid FileUploadRequest request);
 
+    /**
+     * Lists the uploaded files a workflow can read: those owned by any member of its workflow
+     * family (self, ancestors, descendants), oldest first. Files still uploading are omitted. Uses
+     * the same family rule as {@link #getDownloadUrl}, so every listed file can be downloaded by
+     * the caller.
+     */
+    List<FileHandle> listFiles(@NotBlank String workflowId);
+
     /** Issues a fresh presigned upload URL when the exact owning workflow requests it. */
     FileUploadUrlResponse getUploadUrl(@NotBlank String workflowId, @NotBlank String fileId);
 

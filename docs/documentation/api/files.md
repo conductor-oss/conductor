@@ -170,6 +170,35 @@ The response is `200 OK`:
 
 `fileSize`, `createdAt`, and `updatedAt` are numeric values; timestamps are epoch milliseconds.
 
+## List files
+
+```http
+GET /api/files?workflowId={workflowId}
+```
+
+Returns the uploaded files the workflow can read: files owned by the workflow and by every member
+of its workflow family (ancestors and descendants). Files still uploading are omitted. The response
+is `200 OK`. `results` holds metadata objects in the shape shown in
+[Read metadata](#read-metadata), oldest first:
+
+```json
+{
+  "totalHits": 1,
+  "results": [
+    {
+      "fileHandleId": "conductor://file/<file-id>",
+      "fileName": "report.pdf",
+      "workflowId": "<owning workflow id>",
+      "uploadStatus": "UPLOADED",
+      "createdAt": 0
+    }
+  ]
+}
+```
+
+The family rule matches downloads, so the caller can download every listed file. Sibling
+workflows are not in each other's family.
+
 ## Download
 
 ### 1. Get a download URL
