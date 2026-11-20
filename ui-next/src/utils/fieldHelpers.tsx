@@ -2,6 +2,12 @@ import { FormControlLabel, Grid, Link, Switch } from "@mui/material";
 import { useSelector } from "@xstate/react";
 import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
 import PromptVariables from "components/PromptVariables";
+import {
+  isPromptVersioningEnabled,
+  PROMPT_FIELD_COLUMNS,
+  withoutPromptVersion,
+} from "pages/definition/EditorPanel/TaskFormTab/forms/promptVersioning";
+import { PromptVersionSelect } from "pages/definition/EditorPanel/TaskFormTab/forms/PromptVersionSelect";
 import MuiTypography from "components/ui/MuiTypography";
 import { path as _path, clone, setWith } from "lodash/fp";
 import { ConductorValueInput } from "pages/definition/EditorPanel/TaskFormTab/forms/ConductorValueInput";
@@ -134,25 +140,46 @@ const createPromptTemplateField = ({
               create a new one.
             </Link>
           </MuiTypography>
-          <ConductorAutocompleteVariables
-            openOnFocus
-            multiline
-            onChange={(value) => {
-              actor.send({
-                type: selectEventType,
-                task: setValue(value),
-              });
-            }}
-            value={displayValue}
-            otherOptions={options}
-            label="Prompt Template"
-            onFocus={() =>
-              actor.send({
-                type: LLMFormFieldsMachineEventTypes.FOCUS_PROMPT_NAMES,
-                task,
-              })
-            }
-          />
+          <Grid container spacing={3}>
+            {/* The picker takes the whole row when there is no version field beside it. */}
+            <Grid
+              size={{
+                xs: 12,
+                md: isPromptVersioningEnabled() ? PROMPT_FIELD_COLUMNS : 12,
+              }}
+            >
+              <ConductorAutocompleteVariables
+                openOnFocus
+                multiline
+                onChange={(value) => {
+                  // The pin was chosen for the previous prompt, so it does not survive
+                  // a change of reference — including clearing the field.
+                  const next = setValue(value);
+                  actor.send({
+                    type: selectEventType,
+                    task:
+                      value === displayValue
+                        ? next
+                        : withoutPromptVersion(next),
+                  });
+                }}
+                value={displayValue}
+                otherOptions={options}
+                label="Prompt Template"
+                onFocus={() =>
+                  actor.send({
+                    type: LLMFormFieldsMachineEventTypes.FOCUS_PROMPT_NAMES,
+                    task,
+                  })
+                }
+              />
+            </Grid>
+            <PromptVersionSelect
+              task={task}
+              onChange={onChange}
+              promptName={displayValue as string}
+            />
+          </Grid>
         </Grid>
         <MuiTypography sx={{ opacity: 0.5 }}>
           {`Variables to be used in the prompt (e.g. "What's the weather in {$userLocation}?").`}
@@ -162,6 +189,7 @@ const createPromptTemplateField = ({
           onChange={onChange}
           updateField={updateField}
           task={task}
+          someKey={`v${task.inputParameters?.promptVersion ?? "latest"}`}
         />
       </Grid>
     );
