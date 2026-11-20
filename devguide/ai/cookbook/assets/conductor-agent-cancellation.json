@@ -1,0 +1,48 @@
+{
+  "name": "conductor_agent_cancellation",
+  "version": 1,
+  "schemaVersion": 2,
+  "description": "Derived from ai/examples/34-conductor-agent-cancel.json. A FORK_JOIN races a long-running deployed agent task against a control branch that terminates the workflow.",
+  "tasks": [
+    {
+      "name": "fork_cancel",
+      "taskReferenceName": "fork_cancel_ref",
+      "type": "FORK_JOIN",
+      "forkTasks": [
+        [
+          {
+            "name": "run_long_agent",
+            "taskReferenceName": "run_long_agent_ref",
+            "type": "AGENT",
+            "inputParameters": {
+              "agentType": "conductor",
+              "name": "guarded-incident-planner",
+              "prompt": "${workflow.input.prompt}",
+              "maxDurationSeconds": 86400
+            }
+          }
+        ],
+        [
+          {
+            "name": "cancel_run",
+            "taskReferenceName": "cancel_run_ref",
+            "type": "TERMINATE",
+            "inputParameters": {
+              "terminationStatus": "TERMINATED",
+              "terminationReason": "Cancelling the in-flight conductor agent run"
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "join_cancel",
+      "taskReferenceName": "join_cancel_ref",
+      "type": "JOIN",
+      "joinOn": [
+        "run_long_agent_ref",
+        "cancel_run_ref"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+# Conductor documentation index for LLMs
+
+> Canonical technical documentation for Conductor, the open-source durable execution platform for workflows, adaptive agents, and AI systems.
+
+- [Conductor for AI assistants](devguide/ai/conductor-for-ai-assistants.html): canonical vocabulary, authoring rules, and task-selection guidance.
+- [Get started](quickstart/index.html): create and run a first durable workflow.
+- [Durable workflows](devguide/workflows/index.html): workflow design, reliability, workers, and recipes.
+- [Cookbook](devguide/cookbook/index.html): copy-paste recipes for orchestration, parallelism, waits, retries, events, AI, schedules, and dynamic workflows.
+- [Agents & AI](devguide/ai/index.html): native AI tasks, framework-authored agents, MCP, vector workflows, and adaptive graphs.
+- [Durable Adaptive Graphs](devguide/ai/dynamic-workflows.html): governed runtime planning, bounded loops, fan-out, approval, cancellation, and recovery.
+- [Agent Guardrails](devguide/ai/agent-guardrails.html): input/output policy, capability approval, and human review.
+- [Agent Evals](devguide/ai/agent-evals.html): correctness cases, semantic assertions, record/replay, and CI validation.
+- [Production Agent Architecture](devguide/ai/production-agent-architecture.html): an end-to-end production design.
+- [Workflow definition reference](documentation/configuration/workflowdef/index.html): supported fields and system-task links.
+- [API reference](documentation/api/index.html): workflow, task, and metadata endpoints.
+
+For consolidated source material, use [llms-full.txt](llms-full.txt). Treat workflow definitions, Java source, and SDK source as the authority when a document and implementation differ.

@@ -1,0 +1,24 @@
+{% extends "main.html" %}
+
+{% block tabs %}{% endblock %}
+{% block content %}
+<div style="text-align: center; padding: 4rem 2rem 6rem;">
+  <h1 style="font-family: var(--font-display); font-size: 3.5rem; font-weight: 400; margin-bottom: 0.5rem;">
+    404
+  </h1>
+  <p style="font-size: 1.25rem; color: var(--c-muted); margin-bottom: 2rem;">
+    This page doesn't exist — but your workflows still do.
+  </p>
+  <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+    <a href="{{ config.site_url }}" class="md-button md-button--primary" style="background: var(--c-teal); color: var(--c-ink); border: none; font-weight: 600;">
+      Home
+    </a>
+    <a href="{{ config.site_url }}quickstart/" class="md-button" style="border: 1px solid var(--c-teal); color: var(--c-teal);">
+      Quickstart
+    </a>
+    <a href="{{ config.site_url }}devguide/ai/" class="md-button" style="border: 1px solid var(--c-teal); color: var(--c-teal);">
+      AI Cookbook
+    </a>
+  </div>
+</div>
+{% endblock %}
