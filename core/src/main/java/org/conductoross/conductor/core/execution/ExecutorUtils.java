@@ -16,6 +16,7 @@ import java.time.Duration;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
+import com.netflix.conductor.core.execution.DeciderService;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -133,10 +134,16 @@ public class ExecutorUtils {
                 if (taskDef != null
                         && taskDef.getPollTimeoutSeconds() != null
                         && taskDef.getPollTimeoutSeconds() != 0) {
-                    long scheduledElapsedSeconds =
-                            Math.max(0, (currentTimeMillis - taskModel.getScheduledTime()) / 1000);
+                    long pollElapsedSeconds =
+                            Math.max(
+                                    0,
+                                    (currentTimeMillis - DeciderService.pollWindowStart(taskModel))
+                                            / 1000);
                     long remainingPollSeconds =
-                            taskDef.getPollTimeoutSeconds() - scheduledElapsedSeconds + 1;
+                            taskDef.getPollTimeoutSeconds()
+                                    + taskModel.getCallbackAfterSeconds()
+                                    - pollElapsedSeconds
+                                    + 1;
                     candidateSeconds = Math.max(0, remainingPollSeconds);
                 } else {
                     long workflowTimeoutSeconds =
