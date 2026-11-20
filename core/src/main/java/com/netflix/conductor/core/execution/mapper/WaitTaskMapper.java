@@ -80,11 +80,11 @@ public class WaitTaskMapper implements TaskMapper {
             waitTask.setIsolationGroupId(
                     taskMapperContext.getTaskDefinition().getIsolationGroupId());
         }
-        setCallbackAfter(waitTask);
+        setCallbackAfter(waitTask, workflowModel);
         return List.of(waitTask);
     }
 
-    void setCallbackAfter(TaskModel task) {
+    void setCallbackAfter(TaskModel task, WorkflowModel workflowModel) {
         String duration =
                 Optional.ofNullable(task.getInputData().get(DURATION_INPUT)).orElse("").toString();
         String until =
@@ -124,8 +124,33 @@ public class WaitTaskMapper implements TaskMapper {
                 task.setStatus(FAILED_WITH_TERMINAL_ERROR);
             }
         } else {
-            // If there is no time duration specified then the WAIT task should wait forever
-            task.setCallbackAfterSeconds(Integer.MAX_VALUE);
+            // Signal-wait: park the task until an external signal arrives. Cap by the
+            // workflow-level timeout (if any) so checkWorkflowTimeout can still fire (#1779).
+            long callback = Integer.MAX_VALUE;
+            long remaining = workflowRemainingTimeoutSeconds(workflowModel);
+            if (remaining >= 0 && remaining < callback) {
+                callback = remaining;
+            }
+            task.setCallbackAfterSeconds(callback);
         }
+    }
+
+    private long workflowRemainingTimeoutSeconds(WorkflowModel workflowModel) {
+        if (workflowModel == null || workflowModel.getWorkflowDefinition() == null) {
+            return -1;
+        }
+        long timeoutSeconds = workflowModel.getWorkflowDefinition().getTimeoutSeconds();
+        if (timeoutSeconds <= 0) {
+            return -1;
+        }
+        long start =
+                workflowModel.getLastRetriedTime() > 0
+                        ? workflowModel.getLastRetriedTime()
+                        : workflowModel.getCreateTime() != null
+                                ? workflowModel.getCreateTime()
+                                : System.currentTimeMillis();
+        long elapsedSeconds = (System.currentTimeMillis() - start) / 1000L;
+        long remaining = timeoutSeconds - elapsedSeconds;
+        return Math.max(remaining, 1);
     }
 }

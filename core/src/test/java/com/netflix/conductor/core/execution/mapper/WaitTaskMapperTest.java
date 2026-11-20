@@ -102,6 +102,39 @@ public class WaitTaskMapperTest {
         assertEquals(1, mappedTasks.size());
         assertEquals(mappedTasks.get(0).getStatus(), TaskModel.Status.IN_PROGRESS);
         assertTrue(mappedTasks.get(0).getOutputData().isEmpty());
+        assertEquals(Integer.MAX_VALUE, mappedTasks.get(0).getCallbackAfterSeconds());
+    }
+
+    @Test
+    public void testSignalWaitCappedByWorkflowTimeout() {
+
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setName("Wait_task");
+        workflowTask.setType(TaskType.WAIT.name());
+        String taskId = new IDGenerator().generate();
+
+        ParametersUtils parametersUtils = mock(ParametersUtils.class);
+        WorkflowModel workflow = new WorkflowModel();
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setTimeoutSeconds(120);
+        workflow.setWorkflowDefinition(workflowDef);
+        workflow.setCreateTime(System.currentTimeMillis());
+
+        TaskMapperContext taskMapperContext =
+                TaskMapperContext.newBuilder()
+                        .withWorkflowModel(workflow)
+                        .withTaskDefinition(new TaskDef())
+                        .withWorkflowTask(workflowTask)
+                        .withTaskInput(new HashMap<>())
+                        .withRetryCount(0)
+                        .withTaskId(taskId)
+                        .build();
+
+        WaitTaskMapper waitTaskMapper = new WaitTaskMapper(parametersUtils);
+        List<TaskModel> mappedTasks = waitTaskMapper.getMappedTasks(taskMapperContext);
+        assertEquals(1, mappedTasks.size());
+        long callback = mappedTasks.get(0).getCallbackAfterSeconds();
+        assertTrue(callback > 0 && callback <= 120);
     }
 
     @Test
