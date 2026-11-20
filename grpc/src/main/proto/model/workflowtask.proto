@@ -15,6 +15,11 @@ message WorkflowTask {
         SYNC = 0;
         ASYNC = 1;
     }
+    enum BoundaryTimerStatus {
+        COMPLETED = 0;
+        FAILED = 1;
+        COMPLETED_WITH_ERRORS = 2;
+    }
     message WorkflowTaskList {
         repeated WorkflowTask tasks = 1;
     }
@@ -51,5 +56,8 @@ message WorkflowTask {
     CacheConfig cache_config = 31;
     bool permissive = 32;
     WorkflowTask.JoinMode join_mode = 34;
+    string boundary_timer_duration = 36;
+    WorkflowTask.BoundaryTimerStatus boundary_timer_completion_status = 37;
+    map<string, google.protobuf.Value> boundary_timer_output = 38;
     map<string, google.protobuf.Value> metadata = 35;
 }
