@@ -72,7 +72,7 @@ class SwarmHandoffCompilerContractTest {
             for (Object rawTool : tools) {
                 if (rawTool instanceof Map<?, ?> tool
                         && String.valueOf(tool.get("name")).contains("_transfer_to_")) {
-                    assertThat(tool.get("type")).isEqualTo("SIMPLE");
+                    assertThat(tool.get("type")).isEqualTo("INLINE");
                     assertThat(tool.get("inputSchema"))
                             .as("generated transfer message schema")
                             .isInstanceOf(Map.class);
