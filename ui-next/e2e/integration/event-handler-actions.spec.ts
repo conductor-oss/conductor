@@ -144,7 +144,7 @@ test.describe("event handler action types", () => {
     await card
       .getByLabel("Append List Variables (instead of replacing)")
       .check();
-    await addKeyValue(card, "Output", "lastEvent", "${event.payload.id}");
+    await addKeyValue(card, "Variables", "lastEvent", "${event.payload.id}");
     await saveHandler(page, name);
 
     const [action] = (await fetchSaved(name)).actions;

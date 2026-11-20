@@ -549,7 +549,7 @@ test.describe("actions OSS does not run", () => {
     await card
       .getByLabel("Workflow ID", { exact: true })
       .fill("${targetWorkflowId}");
-    await addKeyValue(card, "Output", "orderId", "${orderId}");
+    await addKeyValue(card, "Variables", "orderId", "${orderId}");
     await actionCard(page, 1)
       .getByLabel("Workflow ID", { exact: true })
       .fill("${otherWorkflowId}");

@@ -102,6 +102,11 @@ export type ConductorAutocompleteVariablesProps = {
    * actions, which resolve against the event payload.
    */
   includeWorkflowOptions?: boolean;
+  /**
+   * Grow into a textarea while focused. Off keeps the field's height fixed,
+   * so blurring it doesn't shift whatever the user is clicking on next.
+   */
+  expandOnFocus?: boolean;
 } & TypeCohersion;
 
 const assertOnChangeNumber = (
@@ -155,6 +160,7 @@ const ConductorAutocompleteVariablesNoContext = ({
   renderOption,
   getOptionLabel: customGetOptionLabel,
   includeWorkflowOptions = true,
+  expandOnFocus = true,
 }: ConductorAutocompleteVariablesProps) => {
   const inputRef = useRef<HTMLTextAreaElement | HTMLInputElement>(null);
   const [expandField, setExpandField] = useState(false);
@@ -291,7 +297,12 @@ const ConductorAutocompleteVariablesNoContext = ({
         onFocus?.();
         // Numeric fields never hold multi-line content — expanding them into a
         // textarea on focus only produces unwanted empty vertical space.
-        if (!multiline && coerceTo !== "integer" && coerceTo !== "double") {
+        if (
+          expandOnFocus &&
+          !multiline &&
+          coerceTo !== "integer" &&
+          coerceTo !== "double"
+        ) {
           setExpandField(true);
         }
       }}

@@ -35,6 +35,7 @@ export const PayloadFieldInput = ({
     helperText,
     error,
     fullWidth = true,
+    multiline,
     onTextInputChange,
   } = props;
 
@@ -51,6 +52,11 @@ export const PayloadFieldInput = ({
       // An empty field shows every suggestion on focus; once it has text the
       // list filters to matches, so a filled field stays quiet.
       openOnFocus
+      // Single-line fields keep their height: growing on focus and shrinking
+      // on blur moved the next control (e.g. the Append checkbox) out from
+      // under the click that blurred the field. Multi-line ones (Prompt)
+      // still grow so there is room to write.
+      expandOnFocus={Boolean(multiline)}
       includeWorkflowOptions={false}
       onChange={(next) => onTextInputChange?.(String(next ?? ""))}
     />

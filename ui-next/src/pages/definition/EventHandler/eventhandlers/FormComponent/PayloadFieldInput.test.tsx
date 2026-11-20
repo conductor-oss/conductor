@@ -18,8 +18,9 @@ const renderWith = (fields: string[], ui: ReactNode) =>
 // The label is also rendered as text, so find the field by role and name.
 const optionsOnFocus = (label: string) => {
   const input = screen.getByRole("combobox", { name: label });
-  fireEvent.focus(input);
+  // Browser order for a click into the field: mousedown, then focus.
   fireEvent.mouseDown(input);
+  fireEvent.focus(input);
   return screen.queryAllByRole("option").map((o) => o.textContent);
 };
 
@@ -38,6 +39,19 @@ describe("PayloadFieldInput", () => {
     );
 
     expect(optionsOnFocus("Reason")).toEqual(["${orderId}", "${status}"]);
+  });
+
+  // Growing on focus and shrinking on blur moved the next control out from
+  // under the click that blurred the field (e2e: Append checkbox missed).
+  it("keeps a single-line field the same height when focused", () => {
+    renderWith(["${orderId}"], <PayloadFieldInput label="Reason" value="" />);
+    const input = screen.getByRole("combobox", { name: "Reason" });
+
+    fireEvent.focus(input);
+
+    expect(screen.getByRole("combobox", { name: "Reason" }).tagName).toBe(
+      "INPUT",
+    );
   });
 
   it("emits the picked reference", () => {
