@@ -19,6 +19,7 @@ import java.util.Map;
 import org.conductoross.conductor.ai.vectordb.mongodb.MongoDBConfig;
 import org.conductoross.conductor.ai.vectordb.pinecone.PineconeConfig;
 import org.conductoross.conductor.ai.vectordb.postgres.PostgresConfig;
+import org.conductoross.conductor.ai.vectordb.qdrant.QdrantConfig;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -42,6 +43,11 @@ import lombok.extern.slf4j.Slf4j;
  *     type: "pinecone"
  *     pinecone:
  *       apiKey: "your-api-key"
+ *   - name: "qdrant-search"
+ *     type: "qdrant"
+ *     qdrant:
+ *       host: "localhost"
+ *       port: 6334
  * </pre>
  */
 @Component
@@ -117,6 +123,9 @@ public class VectorDBInstanceConfig implements VectorDBConfig<VectorDB> {
             case "pinecone":
             case "pineconedb":
                 return createPineconeVectorDB(instance);
+            case "qdrant":
+            case "qdrantdb":
+                return createQdrantVectorDB(instance);
             default:
                 log.error("Unknown vector DB type: {} for instance: {}", type, instance.getName());
                 return null;
@@ -150,6 +159,15 @@ public class VectorDBInstanceConfig implements VectorDBConfig<VectorDB> {
         return config.get(instance.getName());
     }
 
+    private VectorDB createQdrantVectorDB(VectorDBInstance instance) {
+        QdrantConfig config = instance.getQdrant();
+        if (config == null) {
+            log.error("Qdrant configuration missing for instance: {}", instance.getName());
+            return null;
+        }
+        return config.get(instance.getName());
+    }
+
     /** Represents a single vector DB instance configuration. */
     public static class VectorDBInstance {
         private String name;
@@ -157,6 +175,7 @@ public class VectorDBInstanceConfig implements VectorDBConfig<VectorDB> {
         private PostgresConfig postgres;
         private MongoDBConfig mongodb;
         private PineconeConfig pinecone;
+        private QdrantConfig qdrant;
 
         public String getName() {
             return name;
@@ -196,6 +215,14 @@ public class VectorDBInstanceConfig implements VectorDBConfig<VectorDB> {
 
         public void setPinecone(PineconeConfig pinecone) {
             this.pinecone = pinecone;
+        }
+
+        public QdrantConfig getQdrant() {
+            return qdrant;
+        }
+
+        public void setQdrant(QdrantConfig qdrant) {
+            this.qdrant = qdrant;
         }
     }
 }

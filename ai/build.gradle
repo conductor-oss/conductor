@@ -49,6 +49,7 @@ dependencies {
     api "org.mongodb:mongodb-driver-core:${mongodb}"
     api "org.mongodb:bson:${mongodb}"
     api "io.pinecone:pinecone-client:${pinecone}"
+    api "io.qdrant:client:${qdrant}"
     api "com.pgvector:pgvector:${pgVector}"
     // Needed for the Postgres vector DB provider's HikariCP-pooled DataSource.
     api "org.springframework.boot:spring-boot-starter-jdbc"
@@ -62,6 +63,7 @@ dependencies {
     testImplementation "com.squareup.okhttp3:mockwebserver:4.12.0"
     testImplementation "org.testcontainers:mongodb:${revTestContainer}"
     testImplementation "org.testcontainers:postgresql:${revTestContainer}"
+    testImplementation "org.testcontainers:qdrant:${revTestContainer}"
     testImplementation "org.postgresql:postgresql:${revPostgres}"
     testImplementation "org.apache.commons:commons-compress:${revCommonsCompress}"
     testImplementation "com.h2database:h2:2.4.240"
