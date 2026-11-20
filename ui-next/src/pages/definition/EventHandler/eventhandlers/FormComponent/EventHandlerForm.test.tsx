@@ -7,6 +7,7 @@
  */
 import "@testing-library/jest-dom";
 import {
+  cleanup,
   fireEvent,
   render,
   screen,
@@ -14,7 +15,7 @@ import {
   within,
 } from "@testing-library/react";
 import { interpret } from "xstate";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { Provider as ThemeProvider } from "theme/material/provider";
 import EventHandlerForm from "./EventHandlerForm";
 import { eventFormMachine } from "./state/machine";
@@ -92,9 +93,19 @@ vi.mock("components/ui/inputs/ConductorCodeBlockInput", () => ({
 
 // Action sub-forms are covered elsewhere; stub them so this file stays on
 // EventHandlerForm wiring (fields + Add action + Active).
-vi.mock("./ActionForms/CompleteTask", () => ({
-  CompleteTask: () => <div>Complete Task body</div>,
-}));
+// Also echoes the payload fields it receives, so the sample payload tests can
+// see what reaches an action form.
+vi.mock("./ActionForms/CompleteTask", async () => {
+  const { usePayloadFields } = await import("./payloadFields");
+  return {
+    CompleteTask: () => (
+      <div>
+        Complete Task body
+        <span data-testid="payload-fields">{usePayloadFields().join(",")}</span>
+      </div>
+    ),
+  };
+});
 vi.mock("./ActionForms/FailTask", () => ({
   FailTask: () => <div>Fail Task</div>,
 }));
@@ -515,5 +526,72 @@ describe("EventHandlerForm — card state follows its action", () => {
 
     expect(isCollapsed(index)).toBe(true);
     expect(card(index)).toHaveTextContent("no agent set");
+  });
+});
+
+describe("EventHandlerForm — sample payload", () => {
+  const SAMPLE = "Sample payload (optional)";
+
+  afterEach(() => localStorage.clear());
+
+  const completeTaskHandler = (event: string) => ({
+    event,
+    actions: [templateFor(Action.COMPLETE_TASK)],
+  });
+
+  it("offers the sample's fields to the action forms", () => {
+    renderForm(completeTaskHandler("conductor:eh_test:emit"));
+
+    fireEvent.change(screen.getByLabelText(SAMPLE), {
+      target: { value: '{"workflowInstanceId":"wf","order":{"id":"A1"}}' },
+    });
+
+    expect(screen.getByTestId("payload-fields")).toHaveTextContent(
+      "${workflowInstanceId},${order},${order.id}",
+    );
+    expect(screen.getByText(/3 fields found/)).toBeInTheDocument();
+  });
+
+  it("offers no payload fields until a sample is pasted", () => {
+    renderForm(completeTaskHandler("conductor:eh_test:emit"));
+
+    expect(screen.getByTestId("payload-fields")).toHaveTextContent("");
+  });
+
+  it("explains invalid JSON and offers no fields", () => {
+    renderForm(completeTaskHandler("conductor:eh_test:emit"));
+
+    fireEvent.change(screen.getByLabelText(SAMPLE), {
+      target: { value: '{"orderId": ' },
+    });
+
+    expect(screen.getByText("Not valid JSON yet.")).toBeInTheDocument();
+    expect(screen.getByTestId("payload-fields")).toHaveTextContent("");
+  });
+
+  it("is not written into the handler definition", () => {
+    const { definition } = renderForm(
+      completeTaskHandler("conductor:eh_test:emit"),
+    );
+    const before = JSON.stringify(definition());
+
+    fireEvent.change(screen.getByLabelText(SAMPLE), {
+      target: { value: '{"orderId":"A1"}' },
+    });
+
+    expect(JSON.stringify(definition())).toBe(before);
+  });
+
+  it("is remembered per event in this browser", () => {
+    const first = renderForm(completeTaskHandler("conductor:eh_test:emit"));
+    fireEvent.change(screen.getByLabelText(SAMPLE), {
+      target: { value: '{"orderId":"A1"}' },
+    });
+    first.service.stop();
+    cleanup();
+
+    renderForm(completeTaskHandler("conductor:eh_test:emit"));
+
+    expect(screen.getByLabelText(SAMPLE)).toHaveValue('{"orderId":"A1"}');
   });
 });

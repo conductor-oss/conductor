@@ -1,12 +1,13 @@
 import { Grid } from "@mui/material";
 import { ConductorAutoComplete } from "components/ui/inputs";
-import ConductorInput from "components/ui/inputs/ConductorInput";
 import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
 import _isEmpty from "lodash/isEmpty";
 import _isUndefined from "lodash/isUndefined";
 import { FocusEvent, useMemo } from "react";
 import { useWorkflowNamesAndVersions } from "utils/query";
 import { Props } from "./common";
+import { usePayloadMapProps } from "../payloadFields";
+import PayloadFieldInput from "../PayloadFieldInput";
 import IdempotencyForm from "pages/runWorkflow/IdempotencyForm";
 import { IdempotencyStrategyEnum } from "pages/runWorkflow/types";
 import { IdempotencyValuesProp } from "pages/definition/RunWorkflow/state";
@@ -30,6 +31,7 @@ export const StartWorkflowActionForm = ({
   handleChangeAction,
 }: Props) => {
   const { start_workflow } = payload;
+  const payloadMapProps = usePayloadMapProps();
   const fetchedNamesAndVersions = useWorkflowNamesAndVersions();
   const options = useMemo(
     () =>
@@ -123,7 +125,7 @@ export const StartWorkflowActionForm = ({
             setWorkflowName(event.target.value)
           }
           conductorInputProps={{
-            placeholder: `\${event.payload.workflow_name}`,
+            placeholder: "e.g. order_fulfillment",
           }}
         />
       </Grid>
@@ -156,10 +158,10 @@ export const StartWorkflowActionForm = ({
           md: 6,
         }}
       >
-        <ConductorInput
+        <PayloadFieldInput
           fullWidth
           label="Workflow correlation id"
-          placeholder={`\${event.payload.correlation_id}`}
+          placeholder={`\${correlationId}`}
           value={start_workflow?.correlationId}
           onTextInputChange={(value) =>
             handleChangeAction(index, {
@@ -200,7 +202,7 @@ export const StartWorkflowActionForm = ({
           valueColumnLabel="Value"
           addItemLabel="Add parameter"
           showFieldTypes
-          enableAutocomplete={false}
+          {...payloadMapProps}
           autoFocusField={false}
         />
       </Grid>

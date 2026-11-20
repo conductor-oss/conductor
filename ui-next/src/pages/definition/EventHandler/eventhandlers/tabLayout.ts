@@ -20,10 +20,11 @@ export const TAB_COLUMN_WIDTH_LG = 1440;
 export const TAB_COLUMN_WIDTH_XL = 1600;
 
 // NB: this theme's spacing unit is 4px, not MUI's default 8px.
+// No horizontal padding: the page's Paper already provides the side gutters.
 export const tabSurfaceStyle = {
   display: "flex",
   justifyContent: "center",
-  p: 4,
+  py: 4,
 };
 
 export const tabColumnStyle = {

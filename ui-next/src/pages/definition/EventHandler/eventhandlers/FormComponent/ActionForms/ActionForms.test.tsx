@@ -48,6 +48,26 @@ vi.mock("components/ui/inputs/ConductorInput", () => ({
   },
 }));
 
+// data-kind records which suggestions a field was wired for; the real
+// dropdown is covered in PayloadFieldInput.test.tsx.
+vi.mock("../PayloadFieldInput", () => {
+  const make =
+    (kind: string) =>
+    ({ label, value, onTextInputChange }: any) => (
+      <input
+        aria-label={label}
+        data-kind={kind}
+        value={value ?? ""}
+        onChange={(event: any) => onTextInputChange?.(event.target.value)}
+      />
+    );
+  return {
+    default: make("payload"),
+    PayloadFieldInput: make("payload"),
+    WorkflowIdInput: make("workflow-id"),
+  };
+});
+
 vi.mock("components/ui/inputs", () => ({
   ConductorAutoComplete: ({ label, value, options, onChange, onBlur }: any) => (
     <input
@@ -405,7 +425,7 @@ describe("update_workflow_variables", () => {
       const steps = {
         workflowId: () => type("Workflow ID", "wf"),
         appendArray: () => fireEvent.click(screen.getByLabelText(APPEND)),
-        variables: () => setMap("Output", { a: "${event.payload.a}" }),
+        variables: () => setMap("Variables", { a: "${event.payload.a}" }),
       };
       (Object.keys(steps) as Array<keyof typeof steps>)
         .filter((step) => step !== last)
@@ -426,7 +446,7 @@ describe("update_workflow_variables", () => {
       update_workflow_variables: { workflowId: "wf", variables: { a: 1 } },
     });
 
-    setMap("Output", {});
+    setMap("Variables", {});
 
     expect(latest().update_workflow_variables.variables).toEqual({});
   });
@@ -733,5 +753,45 @@ describe("start_agent", () => {
       ),
     ).toEqual(["a", "b"]);
     fetched.agents = [];
+  });
+});
+
+describe("which fields suggest payload references", () => {
+  const kind = (label: string) =>
+    screen.getByLabelText(label).getAttribute("data-kind");
+
+  it.each([
+    ["Complete Task", CompleteTask, COMPLETE_TASK_ACTION],
+    ["Fail Task", FailTask, FAIL_TASK_ACTION],
+  ])("%s: Workflow ID suggests the workflow id field", (_, Form, action) => {
+    renderAction(Form, clone(action));
+
+    expect(kind("Workflow ID")).toBe("workflow-id");
+    // A literal from the workflow definition, never a payload reference.
+    expect(kind("Task reference name")).toBeNull();
+  });
+
+  it("Task ID gets sample fields only, not the workflow id field", () => {
+    renderAction(CompleteTask, {
+      ...clone(COMPLETE_TASK_ACTION),
+      complete_task: { taskId: "" },
+    });
+
+    expect(kind("Task ID")).toBe("payload");
+  });
+
+  it.each([
+    ["Terminate Workflow", TerminateWorkflowForm, TERMINATE_WORKFLOW_ACTION],
+    ["Update Variables", UpdateWorkflowForm, UPDATE_VARIABLES_ACTION],
+  ])("%s: Workflow ID suggests the workflow id field", (_, Form, action) => {
+    renderAction(Form, clone(action));
+
+    expect(kind("Workflow ID")).toBe("workflow-id");
+  });
+
+  it("Termination reason gets sample fields only", () => {
+    renderAction(TerminateWorkflowForm, clone(TERMINATE_WORKFLOW_ACTION));
+
+    expect(kind("Termination reason")).toBe("payload");
   });
 });

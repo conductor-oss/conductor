@@ -24,7 +24,7 @@ import { ConductorAutoComplete } from "components/ui/inputs";
 import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
 import ConductorInput from "components/ui/inputs/ConductorInput";
 import HelperText from "components/ui/inputs/HelperText";
-import { ComponentType, useRef, useState } from "react";
+import { ComponentType, useMemo, useRef, useState } from "react";
 import { EventHandlerAction } from "types/Events";
 import { useEventNameSuggestions } from "utils/hooks/useEventNameSuggestions";
 import { ActorRef } from "xstate";
@@ -40,6 +40,11 @@ import { Props } from "./ActionForms/common";
 import AddActionMenu from "./AddActionMenu";
 import FormSection from "./FormSection";
 import { templateFor } from "./actionMeta";
+import {
+  PayloadFieldsContext,
+  parseSamplePayload,
+  useSamplePayload,
+} from "./payloadFields";
 import { useEventHandlerFormActor } from "./state/hook";
 import { Action, FormHandlerEvents } from "./state/types";
 
@@ -83,6 +88,12 @@ const emptyStateStyle = {
 };
 
 const filter = createFilterOptions<string>();
+
+const SAMPLE_PAYLOAD_PLACEHOLDER = `{
+  "workflowInstanceId": "<execution-id>",
+  "orderId": "A1",
+  "status": "paid"
+}`;
 
 // The server splits the event at its first colon (EventQueues.getQueue).
 const EVENT_PATTERN = /^[\w-]+:.+$/;
@@ -156,6 +167,12 @@ const EventHandlerForm = ({
 
   const suggestions = useEventNameSuggestions();
 
+  const [samplePayload, setSamplePayload] = useSamplePayload(event);
+  const { fields: payloadFields, error: samplePayloadError } = useMemo(
+    () => parseSamplePayload(samplePayload),
+    [samplePayload],
+  );
+
   // Required-field errors wait until the field has been edited, so a new
   // handler doesn't open covered in red.
   const [touched, setTouched] = useState({ name: false, event: false });
@@ -197,170 +214,193 @@ const EventHandlerForm = ({
   };
 
   return (
-    <Box sx={pageStyle} id="event-handler-form-wrapper">
-      <Box sx={columnStyle}>
-        <Box sx={stackStyle}>
-          <FormSection
-            title="Details"
-            id="event-handler-section-details"
-            action={
-              <FormControlLabel
-                sx={{ mr: 0 }}
-                control={
-                  <Switch
-                    size="small"
-                    color="primary"
-                    checked={active}
-                    name="activateEvent"
-                    onChange={(val) =>
-                      handleChange("active", val.target.checked)
-                    }
-                  />
-                }
-                label="Active"
+    <PayloadFieldsContext.Provider value={payloadFields}>
+      <Box sx={pageStyle} id="event-handler-form-wrapper">
+        <Box sx={columnStyle}>
+          <Box sx={stackStyle}>
+            <FormSection
+              title="Details"
+              id="event-handler-section-details"
+              action={
+                <FormControlLabel
+                  sx={{ mr: 0 }}
+                  control={
+                    <Switch
+                      size="small"
+                      color="primary"
+                      checked={active}
+                      name="activateEvent"
+                      onChange={(val) =>
+                        handleChange("active", val.target.checked)
+                      }
+                    />
+                  }
+                  label="Active"
+                />
+              }
+            >
+              <ConductorInput
+                label="Name"
+                fullWidth
+                required
+                placeholder="e.g. payments-settled-complete-task"
+                id="event-name-input"
+                name="name"
+                value={name}
+                error={Boolean(nameErrorText)}
+                helperText={nameErrorText}
+                onTextInputChange={(val) => {
+                  setTouched((t) => ({ ...t, name: true }));
+                  handleChange("name", val);
+                }}
               />
-            }
+              <ConductorInput
+                id="event-description-field"
+                label="Description"
+                name="description"
+                multiline
+                minRows={2}
+                fullWidth
+                onTextInputChange={(value) =>
+                  handleChange("description", value)
+                }
+                value={description}
+                placeholder="Enter description"
+              />
+            </FormSection>
+
+            <FormSection title="Event" id="event-handler-section-event">
+              <ConductorAutoComplete
+                label="Event"
+                fullWidth
+                required
+                placeholder="conductor:my_workflow:my_task_ref"
+                id="event-string-input"
+                options={suggestions}
+                value={event}
+                error={Boolean(eventErrorText)}
+                helperText={eventErrorText}
+                onChange={(_, val) => handleEventChange(val ?? "")}
+                onInputChange={(_, val, reason) => {
+                  // MUI also fires this with reason "reset" when it syncs the
+                  // stored value in; only a real edit should surface errors.
+                  if (reason === "input") {
+                    setTouched((t) => ({ ...t, event: true }));
+                  }
+                  handleEventChange(val);
+                }}
+                freeSolo
+                selectOnFocus
+                filterOptions={(options, params) => {
+                  const filtered = filter(options, params);
+
+                  const { inputValue } = params;
+                  // Suggest the creation of a new value
+                  const isExisting = options.some(
+                    (option) => inputValue === option,
+                  );
+
+                  if (inputValue !== "" && !isExisting) {
+                    filtered.push(`${inputValue}`);
+                  }
+
+                  return filtered;
+                }}
+              />
+              <HelperText sx={{ pt: 0 }}>
+                Queue to listen on, e.g.{" "}
+                <code>conductor:my_workflow:my_task_ref</code>.
+              </HelperText>
+              <ConductorCodeBlockInput
+                label="Sample payload (optional)"
+                language="json"
+                minHeight={96}
+                value={samplePayload}
+                error={Boolean(samplePayloadError)}
+                onChange={(val) => setSamplePayload(val ?? "")}
+                options={{ placeholder: SAMPLE_PAYLOAD_PLACEHOLDER }}
+              />
+              <HelperText
+                sx={{ pt: 0 }}
+                color={samplePayloadError ? "error" : undefined}
+                id="event-handler-sample-payload-help"
+              >
+                {samplePayloadError ??
+                  (payloadFields.length > 0
+                    ? `${payloadFields.length} fields found. Type $ in an action field to insert one, e.g. ${payloadFields[0]}.`
+                    : "Paste an example event message to get its fields as suggestions in the actions. Kept in this browser only; not saved with the handler.")}
+              </HelperText>
+            </FormSection>
+
+            <FormSection title="Condition" id="event-handler-section-condition">
+              <ConductorCodeBlockInput
+                label="Condition (Trigger if evaluated to true)"
+                language="javascript"
+                value={condition}
+                onChange={(val) => handleChange("condition", val)}
+              />
+              <HelperText sx={{ pt: 0 }}>
+                Runs on every matching event when empty. Actions fire only if
+                this evaluates to true.
+              </HelperText>
+            </FormSection>
+          </Box>
+
+          <FormSection
+            title="Actions"
+            id="event-handler-section-actions"
+            count={actions?.length ?? 0}
+            action={<AddActionMenu onAdd={addAction} />}
           >
-            <ConductorInput
-              label="Name"
-              fullWidth
-              required
-              placeholder="e.g. payments-settled-complete-task"
-              id="event-name-input"
-              name="name"
-              value={name}
-              error={Boolean(nameErrorText)}
-              helperText={nameErrorText}
-              onTextInputChange={(val) => {
-                setTouched((t) => ({ ...t, name: true }));
-                handleChange("name", val);
-              }}
-            />
-            <ConductorInput
-              id="event-description-field"
-              label="Description"
-              name="description"
-              multiline
-              minRows={2}
-              fullWidth
-              onTextInputChange={(value) => handleChange("description", value)}
-              value={description}
-              placeholder="Enter description"
-            />
-          </FormSection>
+            {!actions?.length && (
+              <MuiTypography variant="body2" sx={emptyStateStyle}>
+                No actions yet. Use <strong>Add action</strong> to choose what
+                happens when the event fires.
+              </MuiTypography>
+            )}
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={actionIds.ids}
+                strategy={verticalListSortingStrategy}
+              >
+                {actions?.map((action: EventHandlerAction, index: number) => {
+                  const Component = actionForms[action.action as Action];
+                  if (!Component) return null;
+                  const id = actionIds.ids[index];
 
-          <FormSection title="Event" id="event-handler-section-event">
-            <ConductorAutoComplete
-              label="Event"
-              fullWidth
-              required
-              placeholder="conductor:my_workflow:my_task_ref"
-              id="event-string-input"
-              options={suggestions}
-              value={event}
-              error={Boolean(eventErrorText)}
-              helperText={eventErrorText}
-              onChange={(_, val) => handleEventChange(val ?? "")}
-              onInputChange={(_, val, reason) => {
-                // MUI also fires this with reason "reset" when it syncs the
-                // stored value in; only a real edit should surface errors.
-                if (reason === "input") {
-                  setTouched((t) => ({ ...t, event: true }));
-                }
-                handleEventChange(val);
-              }}
-              freeSolo
-              selectOnFocus
-              filterOptions={(options, params) => {
-                const filtered = filter(options, params);
-
-                const { inputValue } = params;
-                // Suggest the creation of a new value
-                const isExisting = options.some(
-                  (option) => inputValue === option,
-                );
-
-                if (inputValue !== "" && !isExisting) {
-                  filtered.push(`${inputValue}`);
-                }
-
-                return filtered;
-              }}
-            />
-            <HelperText sx={{ pt: 0 }}>
-              Queue to listen on, e.g.{" "}
-              <code>conductor:my_workflow:my_task_ref</code>.
-            </HelperText>
-          </FormSection>
-
-          <FormSection title="Condition" id="event-handler-section-condition">
-            <ConductorCodeBlockInput
-              label="Condition (Trigger if evaluated to true)"
-              language="javascript"
-              value={condition}
-              onChange={(val) => handleChange("condition", val)}
-            />
-            <HelperText sx={{ pt: 0 }}>
-              Runs on every matching event when empty. Actions fire only if this
-              evaluates to true.
-            </HelperText>
+                  return (
+                    <ActionCard
+                      key={id}
+                      id={id}
+                      index={index}
+                      payload={action}
+                      highlightToken={
+                        index === 0 && addToken > 0 ? addToken : null
+                      }
+                      onRemove={() => deleteAction(index)}
+                      onChangeType={(next) =>
+                        handleChangeAction(index, templateFor(next))
+                      }
+                    >
+                      <Component
+                        onRemove={() => deleteAction(index)}
+                        handleChangeAction={handleChangeAction}
+                        payload={action}
+                        index={index}
+                      />
+                    </ActionCard>
+                  );
+                })}
+              </SortableContext>
+            </DndContext>
           </FormSection>
         </Box>
-
-        <FormSection
-          title="Actions"
-          id="event-handler-section-actions"
-          count={actions?.length ?? 0}
-          action={<AddActionMenu onAdd={addAction} />}
-        >
-          {!actions?.length && (
-            <MuiTypography variant="body2" sx={emptyStateStyle}>
-              No actions yet. Use <strong>Add action</strong> to choose what
-              happens when the event fires.
-            </MuiTypography>
-          )}
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={actionIds.ids}
-              strategy={verticalListSortingStrategy}
-            >
-              {actions?.map((action: EventHandlerAction, index: number) => {
-                const Component = actionForms[action.action as Action];
-                if (!Component) return null;
-                const id = actionIds.ids[index];
-
-                return (
-                  <ActionCard
-                    key={id}
-                    id={id}
-                    index={index}
-                    payload={action}
-                    highlightToken={
-                      index === 0 && addToken > 0 ? addToken : null
-                    }
-                    onRemove={() => deleteAction(index)}
-                    onChangeType={(next) =>
-                      handleChangeAction(index, templateFor(next))
-                    }
-                  >
-                    <Component
-                      onRemove={() => deleteAction(index)}
-                      handleChangeAction={handleChangeAction}
-                      payload={action}
-                      index={index}
-                    />
-                  </ActionCard>
-                );
-              })}
-            </SortableContext>
-          </DndContext>
-        </FormSection>
       </Box>
-    </Box>
+    </PayloadFieldsContext.Provider>
   );
 };
 

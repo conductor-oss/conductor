@@ -1,6 +1,6 @@
 import { Grid } from "@mui/material";
-import ConductorInput from "components/ui/inputs/ConductorInput";
 import { Props } from "./common";
+import PayloadFieldInput, { WorkflowIdInput } from "../PayloadFieldInput";
 
 export const TerminateWorkflowForm = ({
   index,
@@ -28,10 +28,10 @@ export const TerminateWorkflowForm = ({
           md: 6,
         }}
       >
-        <ConductorInput
+        <WorkflowIdInput
           fullWidth
           label="Workflow ID"
-          placeholder={`\${event.payload.workflow_id}`}
+          placeholder={`\${workflowInstanceId}`}
           value={terminate_workflow?.workflowId}
           onTextInputChange={(value) => handleChange("workflowId", value)}
         />
@@ -43,7 +43,7 @@ export const TerminateWorkflowForm = ({
           md: 6,
         }}
       >
-        <ConductorInput
+        <PayloadFieldInput
           fullWidth
           label="Termination reason"
           placeholder="e.g. Order cancelled"

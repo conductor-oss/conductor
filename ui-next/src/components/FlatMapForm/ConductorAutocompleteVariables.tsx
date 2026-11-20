@@ -96,6 +96,12 @@ export type ConductorAutocompleteVariablesProps = {
     state: AutocompleteRenderOptionState,
   ) => ReactNode;
   getOptionLabel?: (option: string | number) => string;
+  /**
+   * Suggest `${workflow.*}` references alongside `otherOptions`. Off for
+   * values that are not resolved against a workflow, e.g. event handler
+   * actions, which resolve against the event payload.
+   */
+  includeWorkflowOptions?: boolean;
 } & TypeCohersion;
 
 const assertOnChangeNumber = (
@@ -148,6 +154,7 @@ const ConductorAutocompleteVariablesNoContext = ({
   clearEmptyNumberAsNull = false,
   renderOption,
   getOptionLabel: customGetOptionLabel,
+  includeWorkflowOptions = true,
 }: ConductorAutocompleteVariablesProps) => {
   const inputRef = useRef<HTMLTextAreaElement | HTMLInputElement>(null);
   const [expandField, setExpandField] = useState(false);
@@ -161,6 +168,8 @@ const ConductorAutocompleteVariablesNoContext = ({
   }, [expandField]);
 
   const options = useMemo(() => {
+    if (!includeWorkflowOptions) return otherOptions as string[];
+
     const taskOptions = _initial<TaskDef>(taskBranches!).reduce(
       (result, task: TaskDef) => {
         if (task) {
@@ -235,6 +244,7 @@ const ConductorAutocompleteVariablesNoContext = ({
     otherOptions,
     envs,
     variables,
+    includeWorkflowOptions,
   ]);
 
   const isErrorValue = useMemo<boolean>(

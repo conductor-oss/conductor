@@ -14,7 +14,9 @@ export type EventJson = Partial<
 interface FormWithRadioGroupProps {
   value: EventJson;
   onChange: (value: EventJson) => void;
+  /** Used for the Task ID field, and Workflow ID unless overridden. */
   inputComponent?: ComponentType<ConductorInputProps>;
+  workflowIdInputComponent?: ComponentType<ConductorInputProps>;
 }
 
 const omitTaskId = (value: EventJson) => _omit(value, "taskId");
@@ -28,6 +30,7 @@ export const ConductorUpdateTaskFormEvent = ({
   value,
   onChange,
   inputComponent: InputComponent = ConductorInput,
+  workflowIdInputComponent: WorkflowIdInputComponent = InputComponent,
 }: FormWithRadioGroupProps) => {
   const isTaskIdSelected = useMemo(() => _isTaskIdSelected(value), [value]);
 
@@ -92,7 +95,7 @@ export const ConductorUpdateTaskFormEvent = ({
               sm: 12,
             }}
           >
-            <InputComponent
+            <WorkflowIdInputComponent
               fullWidth
               label="Workflow ID"
               placeholder={`\${workflowInstanceId}`}
@@ -109,7 +112,10 @@ export const ConductorUpdateTaskFormEvent = ({
               sm: 12,
             }}
           >
-            <InputComponent
+            {/* Always plain: a task reference name is a literal from the
+                workflow definition, so payload suggestions would only be
+                noise here. */}
+            <ConductorInput
               fullWidth
               label="Task reference name"
               placeholder="wait_task_ref"

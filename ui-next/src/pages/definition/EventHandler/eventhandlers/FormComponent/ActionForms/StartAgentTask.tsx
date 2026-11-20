@@ -8,6 +8,8 @@ import { AgentSummary } from "pages/agent/types";
 import { FocusEvent, useMemo } from "react";
 import { useFetch } from "utils/query";
 import { Props } from "./common";
+import { usePayloadMapProps } from "../payloadFields";
+import PayloadFieldInput from "../PayloadFieldInput";
 
 export const StartAgentActionForm = ({
   index,
@@ -15,6 +17,7 @@ export const StartAgentActionForm = ({
   handleChangeAction,
 }: Props) => {
   const { start_agent } = payload;
+  const payloadMapProps = usePayloadMapProps();
   const { data: agentDefinitions } = useFetch<AgentSummary[]>("/agent/list");
 
   const namesAndVersions = useMemo(() => {
@@ -82,7 +85,7 @@ export const StartAgentActionForm = ({
             });
           }}
           conductorInputProps={{
-            placeholder: `\${event.payload.agent_name}`,
+            placeholder: "e.g. support_triage",
           }}
         />
       </Grid>
@@ -123,12 +126,12 @@ export const StartAgentActionForm = ({
         />
       </Grid>
       <Grid size={12}>
-        <ConductorInput
+        <PayloadFieldInput
           fullWidth
           multiline
           minRows={3}
           label="Prompt"
-          placeholder={`\${event.payload.prompt}`}
+          placeholder={`Summarize order \${orderId}`}
           value={start_agent?.prompt}
           onTextInputChange={(value) =>
             handleChangeAction(index, {
@@ -147,10 +150,10 @@ export const StartAgentActionForm = ({
           md: 6,
         }}
       >
-        <ConductorInput
+        <PayloadFieldInput
           fullWidth
           label="Session ID"
-          placeholder={`\${event.payload.session_id}`}
+          placeholder={`\${sessionId}`}
           value={start_agent?.sessionId}
           onTextInputChange={(value) =>
             handleChangeAction(index, {
@@ -169,10 +172,10 @@ export const StartAgentActionForm = ({
           md: 6,
         }}
       >
-        <ConductorInput
+        <PayloadFieldInput
           fullWidth
           label="Idempotency key"
-          placeholder={`\${event.payload.event_id}`}
+          placeholder={`\${eventId}`}
           value={start_agent?.idempotencyKey}
           onTextInputChange={(value) =>
             handleChangeAction(index, {
@@ -191,7 +194,7 @@ export const StartAgentActionForm = ({
           multiline
           minRows={2}
           label="Media (one URL per line)"
-          placeholder={`\${event.payload.media_url}`}
+          placeholder={`\${mediaUrl}`}
           value={mediaText}
           onTextInputChange={(value) =>
             handleChangeAction(index, {
@@ -224,7 +227,7 @@ export const StartAgentActionForm = ({
           valueColumnLabel="Value"
           addItemLabel="Add parameter"
           showFieldTypes
-          enableAutocomplete={false}
+          {...payloadMapProps}
           autoFocusField={false}
         />
       </Grid>
