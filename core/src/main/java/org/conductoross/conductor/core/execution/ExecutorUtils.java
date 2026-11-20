@@ -77,6 +77,8 @@ public class ExecutorUtils {
      *       is re-checked as soon as the soonest task needs attention.
      *   <li>If no eligible tasks produced a candidate (e.g. all tasks are terminal), fall back to
      *       {@code workflowOffsetTimeout}.
+     *   <li>If the workflow has a {@code timeoutSeconds} deadline that has not passed yet, the
+     *       result never exceeds the time left until it, so the timeout fires on time.
      * </ol>
      *
      * @param workflowModel the workflow whose tasks are inspected
@@ -169,6 +171,25 @@ public class ExecutorUtils {
                 (postponeDurationSeconds != null)
                         ? postponeDurationSeconds
                         : workflowOffsetTimeoutSeconds;
+        // The workflow timeout is only checked by decide(), so never sleep past it: a long WAIT
+        // or response timeout would otherwise delay TIMED_OUT until that task's own deadline.
+        // A deadline already passed was handled by this decide (TIME_OUT_WF ended the workflow,
+        // ALERT_ONLY keeps it running), so it no longer bounds the next one.
+        long workflowTimeoutSeconds =
+                workflowModel.getWorkflowDefinition() != null
+                        ? workflowModel.getWorkflowDefinition().getTimeoutSeconds()
+                        : 0;
+        Long createTime = workflowModel.getCreateTime();
+        long start =
+                workflowModel.getLastRetriedTime() > 0
+                        ? workflowModel.getLastRetriedTime()
+                        : (createTime != null ? createTime : 0);
+        if (workflowTimeoutSeconds > 0 && start > 0) {
+            long untilDeadlineMillis = start + 1000L * workflowTimeoutSeconds - currentTimeMillis;
+            if (untilDeadlineMillis > 0) {
+                unackSeconds = Math.min(unackSeconds, (untilDeadlineMillis + 999) / 1000);
+            }
+        }
         log.trace(
                 "postponeDurationSeconds calculated is {} and workflowOffsetTimeoutSeconds is {} for workflow {}",
                 unackSeconds,

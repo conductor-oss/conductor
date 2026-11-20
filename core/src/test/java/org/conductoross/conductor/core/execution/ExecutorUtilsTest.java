@@ -240,6 +240,51 @@ public class ExecutorUtilsTest {
                 result.getSeconds() <= 121);
     }
 
+    @Test
+    public void computePostponeWakesAtWorkflowTimeoutBeforeALongerWait() {
+        long now = System.currentTimeMillis();
+        TaskModel wait = newTask(TaskType.TASK_TYPE_WAIT, TaskModel.Status.IN_PROGRESS);
+        wait.setWaitTimeout(now + 300_000); // 5m timed WAIT
+        WorkflowModel workflow = newWorkflow(Arrays.asList(wait), 20);
+        workflow.setCreateTime(now - 5_000); // 15s left on the workflow timeout
+
+        Duration result =
+                ExecutorUtils.computePostpone(
+                        workflow, Duration.ofSeconds(30), Duration.ofSeconds(3600));
+
+        assertEquals(15, result.getSeconds());
+    }
+
+    @Test
+    public void computePostponeMeasuresWorkflowTimeoutFromLastRetry() {
+        long now = System.currentTimeMillis();
+        TaskModel wait = newTask(TaskType.TASK_TYPE_WAIT, TaskModel.Status.IN_PROGRESS);
+        WorkflowModel workflow = newWorkflow(Arrays.asList(wait), 20);
+        workflow.setCreateTime(now - 600_000);
+        workflow.setLastRetriedTime(now - 10_000); // 10s left since the retry
+
+        Duration result =
+                ExecutorUtils.computePostpone(
+                        workflow, Duration.ofSeconds(30), Duration.ofSeconds(3600));
+
+        assertEquals(10, result.getSeconds());
+    }
+
+    @Test
+    public void computePostponeIgnoresAWorkflowTimeoutAlreadyPassed() {
+        // ALERT_ONLY keeps the workflow running past its timeout; it must not be re-swept at 0s.
+        long now = System.currentTimeMillis();
+        TaskModel wait = newTask(TaskType.TASK_TYPE_WAIT, TaskModel.Status.IN_PROGRESS);
+        WorkflowModel workflow = newWorkflow(Arrays.asList(wait), 20);
+        workflow.setCreateTime(now - 60_000);
+
+        Duration result =
+                ExecutorUtils.computePostpone(
+                        workflow, Duration.ofSeconds(30), Duration.ofSeconds(3600));
+
+        assertEquals(30, result.getSeconds());
+    }
+
     private static SystemTaskRegistry registryWith(String type, boolean async, Long offsetSeconds) {
         WorkflowSystemTask stub =
                 new WorkflowSystemTask(type) {
