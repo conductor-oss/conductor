@@ -13,11 +13,19 @@
 package com.netflix.conductor.mysql.dao;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
@@ -47,6 +55,7 @@ import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -558,5 +567,97 @@ public class MySQLQueueDAOTest {
         Long size = queueDAO.queuesDetail().get(queueName);
         assertNotNull(size);
         assertEquals(size.longValue(), count - unackedCount);
+    }
+
+    /**
+     * One failed processAllUnacks run must not stop later runs. The database is made to fail for
+     * real by hiding queue_message, and the same work is scheduled twice the way the DAO schedules
+     * it: once raw, once through runScheduledProcessAllUnacks. The raw schedule is cancelled by its
+     * first failure; the guarded one keeps running and un-pops the message once the table is back.
+     * Runs of the guarded schedule are counted, so the DAO's own 60 s schedule cannot make the test
+     * pass on its own.
+     */
+    @Test
+    public void scheduledProcessAllUnacksSurvivesAFailedRun() throws Exception {
+        String queueName = "unack_survives_failed_run";
+        queueDAO.push(queueName, "m1", 0);
+        assertEquals(1, queueDAO.pollMessages(queueName, 1, 1_000).size());
+        // processAllUnacks only un-pops messages whose deliver_on is more than 60 s in the past.
+        executeSql(
+                "UPDATE queue_message SET deliver_on = NOW() - INTERVAL 2 MINUTE"
+                        + " WHERE queue_name = ?",
+                queueName);
+        assertEquals(1L, poppedCount(queueName));
+
+        AtomicInteger guardedRuns = new AtomicInteger();
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
+        try {
+            ScheduledFuture<?> unguarded;
+            ScheduledFuture<?> guarded;
+            executeSql("RENAME TABLE queue_message TO queue_message_hidden");
+            try {
+                unguarded =
+                        scheduler.scheduleAtFixedRate(
+                                queueDAO::processAllUnacks, 0, 200, TimeUnit.MILLISECONDS);
+                guarded =
+                        scheduler.scheduleAtFixedRate(
+                                () -> {
+                                    queueDAO.runScheduledProcessAllUnacks();
+                                    guardedRuns.incrementAndGet();
+                                },
+                                0,
+                                200,
+                                TimeUnit.MILLISECONDS);
+                // The guarded task must get through more than one failed run.
+                await().atMost(10, TimeUnit.SECONDS)
+                        .until(() -> unguarded.isDone() && guardedRuns.get() >= 2);
+            } finally {
+                executeSql("RENAME TABLE queue_message_hidden TO queue_message");
+            }
+
+            // Without the guard, the first failure ends the schedule for good.
+            assertThrows(ExecutionException.class, unguarded::get);
+
+            // With it, a later run un-pops the message once the database is back.
+            int runsWhileHidden = guardedRuns.get();
+            await().atMost(10, TimeUnit.SECONDS)
+                    .until(
+                            () ->
+                                    guardedRuns.get() > runsWhileHidden
+                                            && poppedCount(queueName) == 0L);
+            assertFalse(guarded.isDone());
+        } finally {
+            scheduler.shutdownNow();
+        }
+    }
+
+    private void executeSql(String sql, String... params) {
+        try (Connection conn = dataSource.getConnection()) {
+            conn.setAutoCommit(false);
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                for (int i = 0; i < params.length; i++) {
+                    ps.setString(i + 1, params[i]);
+                }
+                ps.executeUpdate();
+            }
+            conn.commit();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private long poppedCount(String queueName) {
+        try (Connection conn = dataSource.getConnection();
+                PreparedStatement ps =
+                        conn.prepareStatement(
+                                "SELECT count(*) FROM queue_message WHERE queue_name = ? AND popped = true")) {
+            ps.setString(1, queueName);
+            try (ResultSet rs = ps.executeQuery()) {
+                rs.next();
+                return rs.getLong(1);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
