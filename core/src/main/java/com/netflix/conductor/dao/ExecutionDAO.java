@@ -53,6 +53,22 @@ public interface ExecutionDAO {
     void updateTask(TaskModel task);
 
     /**
+     * Updates the task only if its stored status is still {@code expected}, so that a change
+     * another writer made meanwhile, such as a cancellation, is not overwritten. Stores should
+     * check and write atomically; this default does not.
+     *
+     * @return whether the task was updated
+     */
+    default boolean updateTaskIfStatus(TaskModel task, TaskModel.Status expected) {
+        TaskModel stored = getTask(task.getTaskId());
+        if (stored == null || stored.getStatus() != expected) {
+            return false;
+        }
+        updateTask(task);
+        return true;
+    }
+
+    /**
      * Checks if the number of tasks in progress for the given taskDef will exceed the limit if the
      * task is scheduled to be in progress (given to the worker or for system tasks start() method
      * called)
