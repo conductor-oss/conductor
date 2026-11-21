@@ -473,6 +473,10 @@ public class Monitors {
         counter("acquire_lock_unsuccessful");
     }
 
+    public static void recordStaleDecideWriteSkipped(String workflowName) {
+        counter("stale_decide_write_skipped", "workflowName", workflowName);
+    }
+
     public static void recordAcquireLockFailure(String exceptionClassName) {
         counter("acquire_lock_failure", "exceptionType", exceptionClassName);
     }
