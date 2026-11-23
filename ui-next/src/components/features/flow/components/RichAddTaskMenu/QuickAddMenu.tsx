@@ -11,8 +11,11 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { DotsThree, MagnifyingGlass, Plugs, X } from "@phosphor-icons/react";
+import { DotsThree, MagnifyingGlass, X } from "@phosphor-icons/react";
 import { useSelector } from "@xstate/react";
+import { IntegrationIcon } from "components/IntegrationIcon";
+import { FEATURES } from "utils/flags";
+import { useFetch } from "utils/query";
 import { WorkflowEditContext } from "pages/definition/state";
 import { buildDataForOperation } from "pages/definition/state/taskModifier/taskModifier";
 import { usePerformOperationOnDefinition } from "pages/definition/state/usePerformOperationOnDefintion";
@@ -25,8 +28,14 @@ import {
   useMemo,
 } from "react";
 import { NodeData } from "reaflow";
-import { CommonTaskDef, SubWorkflowTaskDef, TaskType } from "types";
+import {
+  CommonTaskDef,
+  IntegrationDef,
+  SubWorkflowTaskDef,
+  TaskType,
+} from "types";
 import useArrowNavigation from "useArrowNavigation";
+import snakeCase from "lodash/snakeCase";
 import { getSequentiallySuffix } from "utils/strings";
 import { getInitials } from "utils/utils";
 import { ActorRef } from "xstate";
@@ -68,9 +77,6 @@ const OSS_QUICK_ADD_TYPES: TaskType[] = [
   TaskType.INLINE,
 ];
 
-/** Placeholder in core quick-add type list → opens Add Task side panel (Integrations tab). */
-const QUICK_ADD_INTEGRATIONS_PANEL = "QUICK_ADD_INTEGRATIONS_PANEL" as const;
-
 // AI/LLM task types for the Agentic Orchestration section (two rows of six).
 const AI_QUICK_ADD_TYPES: TaskType[] = [
   TaskType.LLM_CHAT_COMPLETE,
@@ -97,12 +103,15 @@ interface QuickAddMenuProps {
 }
 
 type TaskMenuItem = BaseTaskMenuItem & {
-  status?: string;
   onClick?: () => void;
   icon?: ReactElement<any>;
-  /** Stable React key when `type` duplicates another quick-add row (e.g. Integrations opener). */
-  quickAddRowId?: string;
+  providerType?: string;
 };
+
+const optionKey = (item: TaskMenuItem) =>
+  item.providerType
+    ? `provider-${item.providerType}`
+    : uniqueTaskIdGenerator(item);
 
 function QuickAddGridItem({ item }: { item: TaskMenuItem }) {
   return (
@@ -258,7 +267,7 @@ const QuickAddMenu = ({
       if (Array.isArray(newTask)) {
         newTask = newTask.map((task) => {
           const sequentialName = getSequentiallySuffix({
-            name: task.taskReferenceName,
+            name: snakeCase(task.taskReferenceName),
             refNames: taskRefNames,
           });
 
@@ -273,7 +282,7 @@ const QuickAddMenu = ({
       }
 
       const sequentialName = getSequentiallySuffix({
-        name: newTask.taskReferenceName,
+        name: snakeCase(newTask.taskReferenceName),
         refNames: taskRefNames,
       });
 
@@ -302,12 +311,6 @@ const QuickAddMenu = ({
     },
     [onPerformOperation, operationContext],
   );
-
-  const openIntegrationsAddTaskPanel = useCallback(() => {
-    richAddTaskMenuActor.send({
-      type: RichAddTaskMenuEventTypes.SWITCH_TO_INTEGRATIONS,
-    });
-  }, [richAddTaskMenuActor]);
 
   const taskOptions: TaskMenuItem[] = useMemo(
     () =>
@@ -402,78 +405,53 @@ const QuickAddMenu = ({
     [subWorkflowMenuItems, handleAddTaskBelow, getSequentialTask],
   );
 
-  const options = useMemo(() => {
-    const showIntegrationsPanelShortcut =
-      pluginRegistry.getNewIntegrationModal() != null;
-    const integrationsPanelItem = showIntegrationsPanelShortcut
-      ? [
-          {
-            name: "Connected Apps",
-            description:
-              "Browse integration-backed tasks in the Add Task panel.",
-            category: RichAddMenuTabs.INTEGRATIONS_TAB,
-            type: QUICK_ADD_INTEGRATIONS_PANEL as unknown as TaskType,
-            quickAddRowId: "quick-add-integrations-panel",
-            onClick: openIntegrationsAddTaskPanel,
-            icon: <Plugs size={24} />,
-          },
-        ]
-      : [];
-    return [
-      ...integrationsPanelItem,
-      ...taskOptions,
-      ...workerOptions,
-      ...workflowDefinitionsOptions,
-    ] as TaskMenuItem[];
-  }, [
-    taskOptions,
-    workerOptions,
-    workflowDefinitionsOptions,
-    openIntegrationsAddTaskPanel,
-  ]);
+  const hasConnectedApps = pluginRegistry.getNewIntegrationModal() != null;
+  const { data: definitions } = useFetch<IntegrationDef[]>(
+    "/integrations/def",
+    {
+      enterpriseApiFeature: FEATURES.INTEGRATIONS,
+      when: hasConnectedApps,
+      keepPreviousData: false,
+    },
+  );
+  const providerOptions: TaskMenuItem[] = useMemo(
+    () =>
+      (hasConnectedApps ? (definitions ?? []) : [])
+        .filter((provider) => provider.category === "MCP" && provider.enabled)
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((provider) => ({
+          name: provider.name,
+          description: provider.description,
+          type: TaskType.INTEGRATION,
+          category: RichAddMenuTabs.INTEGRATIONS_TAB,
+          providerType: provider.type,
+          icon: (
+            <IntegrationIcon
+              integrationName={provider.iconName || provider.type}
+            />
+          ),
+          onClick: () =>
+            richAddTaskMenuActor.send({
+              type: RichAddTaskMenuEventTypes.SWITCH_TO_INTEGRATIONS,
+              provider: { name: provider.name, integrationType: provider.type },
+            }),
+        })),
+    [definitions, hasConnectedApps, richAddTaskMenuActor],
+  );
 
   const { coreQuickAddTasks, agenticQuickAddTasks } = useMemo(() => {
-    const showIntegrationsPanelShortcut =
-      pluginRegistry.getNewIntegrationModal() != null;
-
     const pluginQuickAddTypes = pluginRegistry
       .getTaskMenuItems()
-      .filter((item) => item.quickAdd)
-      .map((item) => item.type as TaskType)
       .filter(
-        (type) =>
-          !(showIntegrationsPanelShortcut && type === TaskType.INTEGRATION),
-      );
-
-    const aiTaskTypesSet = new Set(AI_QUICK_ADD_TYPES as string[]);
-    const coreTaskTypes = [
-      ...OSS_QUICK_ADD_TYPES,
-      ...(showIntegrationsPanelShortcut ? [QUICK_ADD_INTEGRATIONS_PANEL] : []),
-      ...pluginQuickAddTypes,
-    ].filter((type) =>
-      type === QUICK_ADD_INTEGRATIONS_PANEL
-        ? true
-        : !aiTaskTypesSet.has(type as TaskType),
-    );
-
-    const coreTasks = coreTaskTypes
-      .map((taskType) => {
-        if (taskType === QUICK_ADD_INTEGRATIONS_PANEL) {
-          const item: TaskMenuItem = {
-            name: "Connected Apps",
-            description:
-              "Browse integration-backed tasks in the Add Task panel.",
-            category: RichAddMenuTabs.INTEGRATIONS_TAB,
-            type: TaskType.SIMPLE,
-            quickAddRowId: "quick-add-integrations-panel",
-            onClick: openIntegrationsAddTaskPanel,
-            icon: <Plugs size={24} />,
-          };
-          return item;
-        }
-        return taskOptions.find((task) => task.type === taskType);
-      })
-      .filter((task): task is NonNullable<typeof task> => task !== undefined);
+        (item) =>
+          item.quickAdd &&
+          !(hasConnectedApps && item.type === TaskType.INTEGRATION),
+      )
+      .map((item) => item.type as TaskType);
+    const coreTasks = [...OSS_QUICK_ADD_TYPES, ...pluginQuickAddTypes]
+      .filter((type) => !AI_QUICK_ADD_TYPES.includes(type))
+      .map((type) => taskOptions.find((task) => task.type === type))
+      .filter((task): task is TaskMenuItem => task !== undefined);
 
     const aiTasks = AI_QUICK_ADD_TYPES.map((taskType) =>
       taskOptions.find((task) => task.type === taskType),
@@ -483,14 +461,38 @@ const QuickAddMenu = ({
       coreQuickAddTasks: coreTasks.slice(0, 18),
       agenticQuickAddTasks: aiTasks,
     };
-  }, [taskOptions, openIntegrationsAddTaskPanel]);
+  }, [taskOptions, hasConnectedApps]);
 
   const filteredOptions = useMemo(() => {
-    if (options) {
-      const filterer = itemFilterMatcher(searchQuery, RichAddMenuTabs.ALL_TAB);
-      return options.filter(filterer);
-    } else return [];
-  }, [searchQuery, options]);
+    const matches = itemFilterMatcher(searchQuery, RichAddMenuTabs.ALL_TAB);
+    return [
+      ...taskOptions,
+      ...workerOptions,
+      ...workflowDefinitionsOptions,
+    ].filter(
+      (item) =>
+        !(hasConnectedApps && item.type === TaskType.INTEGRATION) &&
+        matches(item),
+    );
+  }, [
+    searchQuery,
+    taskOptions,
+    workerOptions,
+    workflowDefinitionsOptions,
+    hasConnectedApps,
+  ]);
+
+  const searchResults = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    const providers = query
+      ? providerOptions.filter(
+          (item) =>
+            item.name.toLowerCase().includes(query) ||
+            item.providerType?.toLowerCase().includes(query),
+        )
+      : [];
+    return [...providers, ...filteredOptions.slice(0, 3)];
+  }, [filteredOptions, providerOptions, searchQuery]);
 
   const isFetching = useSelector(
     richAddTaskMenuActor,
@@ -502,24 +504,14 @@ const QuickAddMenu = ({
   const [{ menuType }, { handleChangeMenuType }] =
     useRichAddTaskMenu(richAddTaskMenuActor);
 
-  const handleTaskClick = (task: TaskMenuItem) => {
-    if (task.category === RichAddMenuTabs.INTEGRATIONS_TAB) {
-      richAddTaskMenuActor.send({
-        type: RichAddTaskMenuEventTypes.SWITCH_TO_INTEGRATIONS,
-      });
-    } else if (task.onClick) {
-      task.onClick();
-    }
-  };
-
-  const { inputProps, optionPropsForItem } = useArrowNavigation({
+  const { inputProps, optionPropsForItem } = useArrowNavigation<TaskMenuItem>({
     onSelect: (elem) => {
       if (elem?.onClick) {
         elem?.onClick();
       }
     },
-    options: filteredOptions.slice(0, 3) || [],
-    optionsIdGen: uniqueTaskIdGenerator,
+    options: searchResults,
+    optionsIdGen: optionKey,
     scrollToCenter: true,
     hoveredItem,
     setHoveredItem,
@@ -629,7 +621,14 @@ const QuickAddMenu = ({
 
           {/* Quick Add Section */}
           {!searchQuery ? (
-            <Box sx={{ p: 2.5, background: "#FFFFFF" }}>
+            <Box
+              sx={{
+                p: 2.5,
+                background: "#FFFFFF",
+                maxHeight: "65vh",
+                overflowY: "auto",
+              }}
+            >
               <Box
                 sx={{
                   display: "flex",
@@ -671,57 +670,68 @@ const QuickAddMenu = ({
               <Grid container spacing={1.5} sx={{ width: "100%" }}>
                 {coreQuickAddTasks.map((item) => (
                   <QuickAddGridItem
-                    key={item.quickAddRowId ?? String(item.type)}
+                    key={item.providerType ?? String(item.type)}
                     item={item}
                   />
                 ))}
               </Grid>
 
-              {agenticQuickAddTasks.length > 0 ? (
-                <Box sx={{ mt: 2.5 }}>
-                  <Box
-                    sx={{
-                      position: "relative",
-                      width: "100%",
-                      textAlign: "center",
-                      borderBottom: "2px dotted",
-                      borderColor: "rgba(226, 232, 240, 0.8)",
-                      height: 10,
-                      mb: 2,
-                    }}
-                  >
-                    <Typography
-                      sx={{
-                        position: "absolute",
-                        top: "50%",
-                        left: "50%",
-                        transform: "translate(-50%, -50%)",
-                        background: "#FFFFFF",
-                        fontSize: "0.6875rem",
-                        fontWeight: 600,
-                        letterSpacing: "0.05em",
-                        color: "#64748B",
-                        textTransform: "uppercase",
-                        whiteSpace: "nowrap",
-                        px: 1,
-                      }}
-                    >
-                      Agentic Orchestration
-                    </Typography>
-                  </Box>
-                  <Grid container spacing={1.5} sx={{ width: "100%" }}>
-                    {agenticQuickAddTasks.map((item) => (
-                      <QuickAddGridItem key={item.type} item={item} />
-                    ))}
-                  </Grid>
-                </Box>
-              ) : null}
+              {[
+                { title: "Agentic Orchestration", items: agenticQuickAddTasks },
+                { title: "Connected Apps", items: providerOptions },
+              ].map(
+                ({ title, items }) =>
+                  items.length > 0 && (
+                    <Box key={title} sx={{ mt: 2.5 }}>
+                      <Box
+                        sx={{
+                          position: "relative",
+                          width: "100%",
+                          textAlign: "center",
+                          borderBottom: "2px dotted",
+                          borderColor: "rgba(226, 232, 240, 0.8)",
+                          height: 10,
+                          mb: 2,
+                        }}
+                      >
+                        <Typography
+                          sx={{
+                            position: "absolute",
+                            top: "50%",
+                            left: "50%",
+                            transform: "translate(-50%, -50%)",
+                            background: "#FFFFFF",
+                            fontSize: "0.6875rem",
+                            fontWeight: 600,
+                            letterSpacing: "0.05em",
+                            color: "#64748B",
+                            textTransform: "uppercase",
+                            whiteSpace: "nowrap",
+                            px: 1,
+                          }}
+                        >
+                          {title}
+                        </Typography>
+                      </Box>
+                      <Grid container spacing={1.5} sx={{ width: "100%" }}>
+                        {items.map((item) => (
+                          <QuickAddGridItem
+                            key={item.providerType ?? item.type}
+                            item={item}
+                          />
+                        ))}
+                      </Grid>
+                    </Box>
+                  ),
+              )}
             </Box>
           ) : (
             // Search Results Section
             <Box
               sx={{
                 p: 2.5,
+                maxHeight: "65vh",
+                overflowY: "auto",
                 borderTop: "1px solid rgba(0, 0, 0, 0.06)",
                 background: "#FFFFFF",
               }}
@@ -781,7 +791,7 @@ const QuickAddMenu = ({
                 )}
               </Box>
               <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                {isFetching && filteredOptions.length === 0 ? (
+                {isFetching && searchResults.length === 0 ? (
                   <Box
                     sx={{
                       display: "flex",
@@ -792,7 +802,7 @@ const QuickAddMenu = ({
                   >
                     <CircularProgress size={24} sx={{ color: "#3B82F6" }} />
                   </Box>
-                ) : filteredOptions.length === 0 ? (
+                ) : searchResults.length === 0 ? (
                   <Box
                     sx={{
                       display: "flex",
@@ -810,24 +820,24 @@ const QuickAddMenu = ({
                   </Box>
                 ) : (
                   <>
-                    {filteredOptions.slice(0, 3).map((item, index) => (
+                    {searchResults.map((item, index) => (
                       <Box
                         key={`option-${index}-${item.name}-${item.category}${
                           item.version ? item.version : ""
                         }`}
                         {...optionPropsForItem(item)}
-                        onClick={() => handleTaskClick(item)}
+                        onClick={item.onClick}
                         sx={{
                           p: 2,
                           borderRadius: 2,
                           cursor: "pointer",
                           backgroundColor:
-                            uniqueTaskIdGenerator(item) === hoveredItem
+                            optionKey(item) === hoveredItem
                               ? alpha("#F1F5F9", 0.6)
                               : "#FFFFFF",
                           border: "2px solid",
                           borderColor:
-                            uniqueTaskIdGenerator(item) === hoveredItem
+                            optionKey(item) === hoveredItem
                               ? alpha("#3B82F6", 0.2)
                               : "transparent",
                           transition: "all 0.2s ease",
@@ -858,7 +868,7 @@ const QuickAddMenu = ({
                               justifyContent: "center",
                               borderRadius: 1.5,
                               backgroundColor:
-                                uniqueTaskIdGenerator(item) === hoveredItem
+                                optionKey(item) === hoveredItem
                                   ? alpha("#3B82F6", 0.08)
                                   : alpha("#F1F5F9", 0.6),
                               color: "#64748B",
@@ -869,7 +879,7 @@ const QuickAddMenu = ({
                             {item?.icon ? (
                               cloneElement(item.icon, {
                                 color:
-                                  uniqueTaskIdGenerator(item) === hoveredItem
+                                  optionKey(item) === hoveredItem
                                     ? "#3B82F6"
                                     : "#64748B",
                               })
@@ -879,7 +889,7 @@ const QuickAddMenu = ({
                                   fontSize: "0.875rem",
                                   fontWeight: 500,
                                   color:
-                                    uniqueTaskIdGenerator(item) === hoveredItem
+                                    optionKey(item) === hoveredItem
                                       ? "#3B82F6"
                                       : "#64748B",
                                 }}
@@ -903,7 +913,7 @@ const QuickAddMenu = ({
                               sx={{
                                 fontSize: "0.75rem",
                                 color:
-                                  uniqueTaskIdGenerator(item) === hoveredItem
+                                  optionKey(item) === hoveredItem
                                     ? "#1E293B"
                                     : "#64748B",
                                 lineHeight: 1.4,
@@ -916,7 +926,7 @@ const QuickAddMenu = ({
                         </Box>
                       </Box>
                     ))}
-                    {isFetching && filteredOptions.length < 3 && (
+                    {isFetching && searchResults.length < 3 && (
                       <Box
                         sx={{
                           display: "flex",

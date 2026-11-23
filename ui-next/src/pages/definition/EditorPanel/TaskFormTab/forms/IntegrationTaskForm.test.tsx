@@ -71,7 +71,17 @@ const FORM_SCHEMA = {
 vi.mock("utils/query", () => ({ useFetch: vi.fn() }));
 vi.mock("utils/hooks/useIntegrationProviders", () => ({
   useIntegrationProviders: () => ({
-    integrations: [{ name: "test-integration", status: "active" }],
+    integrations: [
+      { name: "test-integration", type: "aws-lambda", status: "active" },
+      { name: "other-lambda", type: "aws-lambda", status: "active" },
+      {
+        name: "disabled-lambda",
+        type: "aws-lambda",
+        status: "active",
+        enabled: false,
+      },
+      { name: "firebase", type: "firebase", status: "active" },
+    ],
   }),
   useIntegrationApis: () => ({ tools: [{ api: "Create Function" }] }),
 }));
@@ -111,6 +121,19 @@ describe("IntegrationTaskForm", () => {
       data: { inputSchema: { data: FORM_SCHEMA } },
       isLoading: false,
     } as ReturnType<typeof useFetch>);
+  it("offers only active connections for the task's provider when changing connections", async () => {
+    serve();
+    render(<Harness initial={{ integrationType: "aws-lambda" }} />);
+    fireEvent.mouseDown(
+      screen.getByRole("combobox", { name: /^integration/i }),
+    );
+    expect(
+      screen.getAllByRole("option").map((option) => option.textContent),
+    ).toEqual(["test-integration", "other-lambda"]);
+    fireEvent.click(screen.getByRole("option", { name: "other-lambda" }));
+    await waitFor(() => expect(input().integrationName).toBe("other-lambda"));
+    expect(input().integrationType).toBe("aws-lambda");
+  });
   it("uses standard enum and visibility rules, clears inactive data and preserves unrelated inputs", async () => {
     serve();
     render(<Harness />);

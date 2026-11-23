@@ -1,3 +1,4 @@
+import { availableIntegrationApis } from "utils/integrationApis";
 import { queryClient } from "queryClient";
 import { fetchWithContext, fetchContextNonHook } from "plugins/fetch";
 import { logger } from "utils/logger";
@@ -55,7 +56,7 @@ export const fetchForMCPIntegrations = async ({
     };
   }
   const integrationsUrl = `/integrations/def`;
-  const providersUrl = `/integrations/provider?category=MCP&activeOnly=false`;
+  const providersUrl = `/integrations/provider?category=MCP&activeOnly=true`;
 
   try {
     const [integrationsResult, providersResult] = await Promise.allSettled([
@@ -99,7 +100,10 @@ export const fetchForIntegrationTools = async ({
       [fetchContext.stack, toolsUrl],
       () => fetchWithContext(toolsUrl, fetchContext, { headers }),
     );
-    return response;
+    return availableIntegrationApis(
+      response ?? [],
+      selectedIntegration?.configuration,
+    );
   } catch (error) {
     logger.error("Fetching tools", error);
     return Promise.reject({ message: "Error fetching tools" });

@@ -381,7 +381,13 @@ export const IntegrationTaskForm = ({ task, onChange }: TaskFormProps) => {
                       fullWidth
                       label="Integration"
                       options={(integrations || [])
-                        .filter((i) => i.status === "active")
+                        .filter(
+                          (i) =>
+                            i.status === "active" &&
+                            i.enabled !== false &&
+                            (!task.inputParameters?.integrationType ||
+                              i.type === task.inputParameters.integrationType),
+                        )
                         .map((i) => i.name)}
                       onChange={(__, val) => {
                         // Get the selected integration's type

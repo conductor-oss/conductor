@@ -50,7 +50,7 @@ export const newWorkflowTemplate = (ownerEmail) => {
 
   return {
     ...NEW_WORKFLOW_TEMPLATE,
-    name: `NewWorkflow_${suffix}`,
+    name: `new_workflow_${suffix}`,
     ownerEmail,
   };
 };

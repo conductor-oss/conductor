@@ -1,3 +1,4 @@
+import snakeCase from "lodash/snakeCase";
 import { assign, sendParent } from "xstate";
 import { cancel } from "xstate/lib/actions";
 import {
@@ -58,7 +59,7 @@ export const generateTaskReferenceAndName = assign<
   const suffix = Math.random().toString(36).substring(2, 5);
   const taskName = name ? name : `${taskType.toLowerCase()}`;
   const refName = name
-    ? referenceNameGenerator(name, taskReferenceName, suffix)
+    ? referenceNameGenerator(snakeCase(name), taskReferenceName, suffix)
     : `${taskType.toLowerCase()}_ref`;
   return {
     name: taskName,

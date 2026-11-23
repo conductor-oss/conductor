@@ -129,7 +129,8 @@ export const IntegrationDrillDownContent: React.FC<
               onClick={() => {
                 const template = integrationDefs.find(
                   (integration: IntegrationDef) =>
-                    integration?.name === selectedRootIntegration?.name,
+                    integration.type ===
+                    selectedRootIntegration.integrationType,
                 );
                 if (template) {
                   onAddNewIntegration(template);
@@ -229,7 +230,7 @@ export const IntegrationDrillDownContent: React.FC<
                       >
                         <IntegrationIcon
                           integrationName={
-                            integration?.iconName ??
+                            integration?.iconName ||
                             integration?.integrationType
                           }
                         />

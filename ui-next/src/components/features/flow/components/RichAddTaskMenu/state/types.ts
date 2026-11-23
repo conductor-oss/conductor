@@ -25,6 +25,7 @@ export type BaseTaskMenuItem = {
 export type IntegrationMenuItem = BaseTaskMenuItem & {
   integrationType: string;
   iconName: string;
+  configuration?: Record<string, unknown>;
   status?: string;
 };
 
@@ -51,7 +52,10 @@ export enum RichAddMenuTabs {
 export type IntegrationDrillDownMenuProp = {
   isOpen: boolean;
   selectedIntegration: IntegrationMenuItem | null;
-  selectedRootIntegration: IntegrationMenuItem | null;
+  selectedRootIntegration: Pick<
+    IntegrationMenuItem,
+    "integrationType" | "name"
+  > | null;
   level: "integrations" | "tools";
   selectedIntegrationTools?: Record<string, any>[];
 };
@@ -157,6 +161,9 @@ export type UpdateIntegrationDrillDownEvent = {
 
 export type SwitchToIntegrationsEvent = {
   type: RichAddTaskMenuEventTypes.SWITCH_TO_INTEGRATIONS;
+  provider: NonNullable<
+    IntegrationDrillDownMenuProp["selectedRootIntegration"]
+  >;
 };
 
 export type RichAddTaskMenuEvents =
