@@ -83,6 +83,21 @@ public class TaskContinuation {
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     private int n;
 
+    /**
+     * On the marker a poll hands out, never stored: the execution's stamp (see {@code
+     * NativeState}), which tells a worker that kept the code parked whether it may continue from
+     * there. Read over HTTP only.
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String stamp;
+
+    /**
+     * On the marker a poll hands out, never stored: the workflow's variables as the continuation
+     * starts, so a worker that continues parked code fetches nothing else. Read over HTTP only.
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Map<String, Object> variables;
+
     public TaskContinuation() {}
 
     /** A new marker of a handler run. */
@@ -163,6 +178,40 @@ public class TaskContinuation {
 
     public void setN(int n) {
         this.n = n;
+    }
+
+    public String getStamp() {
+        return stamp;
+    }
+
+    public void setStamp(String stamp) {
+        this.stamp = stamp;
+    }
+
+    public Map<String, Object> getVariables() {
+        return variables;
+    }
+
+    public void setVariables(Map<String, Object> variables) {
+        this.variables = variables;
+    }
+
+    /**
+     * This marker as a poll hands it out: a copy that also carries the execution's stamp and
+     * variables. The stored marker is left as it is.
+     */
+    public TaskContinuation handedOut(String stamp, Map<String, Object> variables) {
+        TaskContinuation copy = new TaskContinuation();
+        copy.leased = leased;
+        copy.retryCount = retryCount;
+        copy.endTime = endTime;
+        copy.done = done;
+        copy.recorded = recorded;
+        copy.resumedWith = resumedWith;
+        copy.n = n;
+        copy.stamp = stamp;
+        copy.variables = variables;
+        return copy;
     }
 
     @Override

@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskContinuation;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -43,6 +45,7 @@ import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.execution.evaluators.NativeCodeEvaluator;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.metadata.MetadataMapperService;
+import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.dao.WorkflowMessageQueueDAO;
 import com.netflix.conductor.metrics.Monitors;
@@ -113,6 +116,13 @@ public class NativeContinuationService {
     private static final String OUTPUT_ERROR = "error";
     private static final String OUTPUT_RELEASES = "releases";
     private static final String OUTPUT_REPLIES = "replies";
+    private static final String OUTPUT_PIN = "pin";
+    private static final String PIN_DOMAIN = "domain";
+    private static final String PIN_STAMP = "stamp";
+
+    /** What a worker may name as its domain: it becomes part of a queue name. */
+    private static final Pattern PIN_DOMAIN_FORMAT = Pattern.compile("[A-Za-z0-9_.-]{1,100}");
+
     private static final String INPUT_MESSAGES = "messages";
     private static final String METADATA_LANE = "lane";
     private static final String METADATA_CONTINUATION = "continuation";
@@ -293,8 +303,23 @@ public class NativeContinuationService {
         public final List<Offer> offers = new ArrayList<>();
     }
 
-    /** A continuation's message, pushed to its queue once the offer is saved. */
-    public record Offer(String messageId, String queue, int delaySeconds) {}
+    /**
+     * A continuation's message, pushed to its queue once the offer is saved. An offer made to the
+     * queue of the worker that holds the execution in memory also has a fallback: the same message
+     * on the shared queue, visible only after the pin timeout, so that any worker continues the
+     * execution if that worker does not take it in time.
+     */
+    public record Offer(
+            String messageId,
+            String queue,
+            int delaySeconds,
+            String fallbackQueue,
+            int fallbackDelaySeconds) {
+
+        public Offer(String messageId, String queue, int delaySeconds) {
+            this(messageId, queue, delaySeconds, null, 0);
+        }
+    }
 
     /**
      * Offers, on every decide: the execution's slot goes to the handler lane when messages are
@@ -316,7 +341,10 @@ public class NativeContinuationService {
         // the slot is the leased continuation: while there is one, nothing else is offered
         String holder = holder(workflow, latest);
         if (holder != null) {
-            // pushed again if lost; a worker that dies leaves it to the queue's redelivery
+            // pushed again if lost; a worker that dies leaves it to the queue's redelivery. Always
+            // to the shared queue, where every offer has a message until it applies (its own, or
+            // the fallback of one made to a pinned queue): a push to the pinned queue here could
+            // add a second message for an offer a worker is already running
             wakeups.offers.add(new Offer(holder, queueName(workflow), 0));
             return wakeups;
         }
@@ -406,7 +434,24 @@ public class NativeContinuationService {
     public Offer offer(
             WorkflowModel workflow, TaskContinuation marker, String messageId, int delaySeconds) {
         marker.setLeased(true); // the execution's slot until it applies
-        return new Offer(messageId, queueName(workflow), delaySeconds);
+        return offerTo(workflow, messageId, delaySeconds);
+    }
+
+    /**
+     * Where a continuation's message goes. An execution pinned to a worker that polled its queue
+     * lately is offered there, where the code is parked in memory and continues without a replay;
+     * the same message becomes visible on the shared queue once the pin timeout has passed, so a
+     * worker that died or stalled delays the execution by that long at most. Any other execution
+     * goes to the shared queue of its code type.
+     */
+    private Offer offerTo(WorkflowModel workflow, String messageId, int delaySeconds) {
+        String shared = queueName(workflow);
+        String pinned = pinnedQueue(workflow);
+        if (pinned == null || !pinnedWorkerPolls(workflow)) {
+            return new Offer(messageId, shared, delaySeconds);
+        }
+        int pinTimeout = (int) properties.getNativeWorkflow().getPinTimeout().toSeconds();
+        return new Offer(messageId, pinned, delaySeconds, shared, delaySeconds + pinTimeout);
     }
 
     /** Pushes the messages of saved offers, idempotently. */
@@ -417,6 +462,13 @@ public class NativeContinuationService {
         for (Offer offer : offers) {
             queueDAO.pushIfNotExists(
                     offer.queue(), offer.messageId(), workflow.getPriority(), offer.delaySeconds());
+            if (offer.fallbackQueue() != null) {
+                queueDAO.pushIfNotExists(
+                        offer.fallbackQueue(),
+                        offer.messageId(),
+                        workflow.getPriority(),
+                        offer.fallbackDelaySeconds());
+            }
         }
     }
 
@@ -427,11 +479,80 @@ public class NativeContinuationService {
     }
 
     /**
-     * The continuation queue of an execution: the shared queue of its code type. Task domains do
-     * not apply to workflow code: any host of the code type may process any continuation.
+     * The continuation queue of an execution: the shared queue of its code type. The task domains a
+     * run was started with do not apply to workflow code: any host of the code type may process any
+     * continuation. The one domain a continuation is ever offered in is the pin's (see {@link
+     * #pinnedQueue}), which a worker names for itself.
      */
     public String queueName(WorkflowModel workflow) {
         return codeType(workflow);
+    }
+
+    /**
+     * The queue of the worker that holds the execution in memory: the code type in that worker's
+     * domain. Null when no worker does.
+     */
+    public String pinnedQueue(WorkflowModel workflow) {
+        NativeState state = workflow.getNativeState();
+        return state == null || state.getPinnedTo() == null
+                ? null
+                : QueueUtils.getQueueName(codeType(workflow), state.getPinnedTo(), null, null);
+    }
+
+    /**
+     * Whether the worker an execution is pinned to polled its queue lately, as a task domain counts
+     * as active: within {@code conductor.app.activeWorkerLastPollTimeout}.
+     */
+    private boolean pinnedWorkerPolls(WorkflowModel workflow) {
+        if (executionDAOFacade == null) {
+            return false;
+        }
+        PollData last =
+                executionDAOFacade.getTaskPollDataByDomain(
+                        codeType(workflow), workflow.getNativeState().getPinnedTo());
+        return last != null
+                && last.getLastPollTime()
+                        > System.currentTimeMillis()
+                                - properties.getActiveWorkerLastPollTimeout().toMillis();
+    }
+
+    /**
+     * After a continuation of the code applied: the worker that completed it says whether it keeps
+     * the code parked ({@code pin}: its domain and a stamp of its choosing), and the execution is
+     * pinned to it; otherwise the execution is pinned to no one. Either way a worker that parked
+     * the code earlier finds another stamp, and replays.
+     */
+    private String pin(WorkflowModel workflow, Map<String, Object> out, String workerId) {
+        NativeState state = workflow.getNativeState();
+        Map<String, Object> pin = mapOrNull(out.get(OUTPUT_PIN));
+        Object domain = pin == null ? null : pin.get(PIN_DOMAIN);
+        Object stamp = pin == null ? null : pin.get(PIN_STAMP);
+        if (domain == null
+                || stamp == null
+                || !PIN_DOMAIN_FORMAT.matcher(domain.toString()).matches()) {
+            unpin(workflow);
+            return null;
+        }
+        state.setPinnedTo(domain.toString());
+        state.setStamp(stamp.toString());
+        if (executionDAOFacade != null) {
+            // the worker has just answered, which counts as polling its queue: the decide that
+            // follows this completion offers the next continuation there
+            executionDAOFacade.updateTaskLastPoll(codeType(workflow), domain.toString(), workerId);
+        }
+        return domain.toString();
+    }
+
+    /**
+     * What the code has done is no longer what a worker may have parked (a rerun, a retry of the
+     * code, a rejected fragment): no stamp matches, so the next continuation is replayed.
+     */
+    private static void unpin(WorkflowModel workflow) {
+        NativeState state = workflow.getNativeState();
+        if (state != null) {
+            state.setPinnedTo(null);
+            state.setStamp(null);
+        }
     }
 
     /** The definition's {@code native} metadata, which the SDK registers with the workflow. */
@@ -480,7 +601,11 @@ public class NativeContinuationService {
                 task != null
                         ? task.getContinuation()
                         : syntheticMarker(workflow, laneOfSynthetic(messageId));
-        if (marker == null || !marker.isLeased() || !queueName.equals(queueName(workflow))) {
+        String shared = queueName(workflow);
+        String pinned = pinnedQueue(workflow);
+        if (marker == null
+                || !marker.isLeased()
+                || !(queueName.equals(shared) || queueName.equals(pinned))) {
             // not what was offered: a stale wake-up
             queueDAO.remove(queueName, messageId);
             return null;
@@ -494,8 +619,29 @@ public class NativeContinuationService {
                                 idOf(workflow, laneOfSynthetic(messageId)),
                                 messageId,
                                 workerId);
-        queueDAO.setUnackTimeout(queueName, messageId, continuationTimeoutMillis(workflow));
-        return handed.toTask();
+        long timeout = continuationTimeoutMillis(workflow);
+        queueDAO.setUnackTimeout(queueName, messageId, timeout);
+        if (pinned != null && queueName.equals(pinned)) {
+            // The worker that holds the execution took it. Continuing code that is in memory
+            // takes it milliseconds, so it gets the pin timeout again to answer, not the whole
+            // continuation timeout: a worker killed with its poll still open on the server takes
+            // the message without ever seeing it, and any worker must be able to step in as soon
+            // as for one that never polled. A worker that is alive and slower than that is run
+            // twice; the first completion applies, as for any redelivery.
+            queueDAO.setUnackTimeout(
+                    shared,
+                    messageId,
+                    Math.min(timeout, properties.getNativeWorkflow().getPinTimeout().toMillis()));
+        } else if (pinned != null) {
+            // its turn passed to any worker: it is not run from the pinned queue as well
+            queueDAO.remove(pinned, messageId);
+        }
+        Task leased = handed.toTask();
+        // what a worker that kept the code parked needs to continue it without a fetch: whether
+        // its copy is current (the stamp), and the variables this continuation starts from
+        leased.setContinuation(
+                marker.handedOut(state.getStamp(), new HashMap<>(workflow.getVariables())));
+        return leased;
     }
 
     /**
@@ -549,6 +695,13 @@ public class NativeContinuationService {
     public static final class Completion {
         public final List<TaskModel> touchedTasks = new ArrayList<>();
         public String ackQueue;
+
+        /** The queue of the worker the execution was pinned to when offered, or null. */
+        public String ackPinnedQueue;
+
+        /** The domain of the completing worker, when it now holds the execution in memory. */
+        public String pinnedTo;
+
         public String ackId;
         public boolean deferred;
         public int retryDelaySeconds;
@@ -593,6 +746,7 @@ public class NativeContinuationService {
         }
         Completion completion = new Completion();
         completion.ackQueue = queueName(workflow);
+        completion.ackPinnedQueue = pinnedQueue(workflow); // as offered: applying may change it
         completion.ackId = messageId;
         completion.handed = awaited;
         String workflowName = workflow.getWorkflowName();
@@ -694,8 +848,11 @@ public class NativeContinuationService {
                 workflow.setOutput(mapOrEmpty(out.get(OUTPUT_RESULT)));
             }
             if (id.isHandlers()) {
-                // the handler lane runs once per batch of messages; it is never done
+                // the handler lane runs once per batch of messages; it is never done. It changes
+                // variables, not what the code has done: parked code stays as current as it was
                 state.setHandlers(TaskContinuation.handlerRun(id.n() + 1));
+            } else {
+                completion.pinnedTo = pin(workflow, out, result.getWorkerId());
             }
             if (awaited != null) {
                 // re-evaluated by the decider, which finds the appended entries after it
@@ -725,6 +882,7 @@ public class NativeContinuationService {
                     workflow.getWorkflowId(),
                     e.getMessage());
             Monitors.recordNativeFragmentRejected(workflowName, e.reason);
+            unpin(workflow); // the worker believes its fragment was appended
             marker.setEndTime(endTimeNow(workflow));
             marker.setLeased(false);
             marker.setDone(true);
@@ -952,6 +1110,7 @@ public class NativeContinuationService {
     public List<TaskModel> adjustRerun(
             WorkflowModel workflow, TaskModel rerunFrom, RerunPlan plan, List<TaskModel> touched) {
         WorkflowDef def = workflow.getWorkflowDefinition();
+        unpin(workflow); // continuations run again: parked code is ahead of the execution
         removeAll(def, plan.dropEntries());
         if (rerunFrom.getContinuation() != null) {
             rerunFrom.setContinuation(rerunFrom.getContinuation().reset());
@@ -1037,6 +1196,7 @@ public class NativeContinuationService {
         if (last == null) {
             return null;
         }
+        unpin(workflow); // the continuation runs again: parked code has already run it
         TaskContinuation marker = last.marker();
         marker.setEndTime(0);
         marker.setLeased(false);

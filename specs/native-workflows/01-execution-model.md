@@ -131,15 +131,47 @@ Guarantees:
 
 ## 3. Any worker can run any continuation
 
-By default continuations are fully distributed. The continuation queue of an execution is the
-shared queue of its code type, and any worker polling it can lease any continuation; nothing ties
-an execution to the machine that last ran it. `nativeState` records no owner and a completion names
-none.
+Continuations are fully distributed. The continuation queue of an execution is the shared queue
+of its code type, and any worker polling it can lease any continuation: the recording on the
+server is all a worker needs, so nothing an execution needs lives on the machine that last ran it.
 
-Task domains do not apply to workflow code. `NativeContinuationService.queueName` is always the
-shared queue of the code type, also for a run started with a `taskToDomain` entry for the code type
-or for `*`: such a map routes the run's tasks, never its continuations. A new
-`@Workflow(version)` gets its own code type, and so its own queue.
+The task domains a run is started with do not apply to workflow code.
+`NativeContinuationService.queueName` is always the shared queue of the code type, also for a run
+started with a `taskToDomain` entry for the code type or for `*`: such a map routes the run's
+tasks, never its continuations. A new `@Workflow(version)` gets its own code type, and so its own
+queue.
+
+**Pinning.** A worker may keep an execution's code in memory between continuations, parked where
+it paused, so that the next continuation wakes it instead of replaying the method. That only helps
+if the next continuation reaches that worker, so the execution is pinned to it, as a preference and
+never as ownership:
+
+- The worker names a task domain of its own and polls the code type in it. A completion that
+  leaves the code parked carries `pin`: that domain, and a stamp the worker chose. When the
+  completion applies, `nativeState.pinnedTo` and `nativeState.stamp` are set from it
+  (`NativeContinuationService.pin`); a completion without `pin` clears both.
+- An offer for a pinned execution goes to the pinned queue, `<domain>:<codeType>`, when that domain
+  polled within `conductor.app.activeWorkerLastPollTimeout` (10 seconds), as an active task domain
+  is told; applying a completion with `pin` counts as a poll. The same message is pushed to the
+  shared queue with a delay of `conductor.app.nativeWorkflow.pinTimeout` (5 seconds), so a worker
+  that died or stalled delays the execution by that long at most (`offerTo`, `push`). A domain
+  that has not polled lately is skipped: the offer goes to the shared queue alone.
+- A lease from the pinned queue gives the worker the pin timeout again to complete: the shared
+  message becomes visible that long after the lease (or after the continuation timeout, if that is
+  shorter). A worker killed while its poll is open on the server takes a message it never sees, so
+  the wait is bounded as for a worker that never polled; a worker that is alive but slower than
+  that is run twice, and the first completion applies. A lease from the shared queue removes the
+  message from the pinned queue (`lease`). A completion removes both.
+- The lease hands out the execution's `stamp` and its variables on the marker
+  (`TaskContinuation.handedOut`; never stored). A worker continues parked code only when the stamp
+  is the one it sent last, which says that its completion was the last to apply and that nothing
+  has changed what the code did since. Anything else replays: a rerun, a retry of the code and a
+  rejected fragment clear the stamp (`unpin`), a restart starts without one, and another worker's
+  completion replaces it. A handler run changes variables, not what the code did, and leaves the
+  pin and the stamp.
+
+Correctness never depends on the pin. Two workers handed the same offer is already the redelivery
+case below, and a worker whose parked copy is not current finds another stamp and replays.
 
 Failover:
 

@@ -1222,6 +1222,13 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         if (completion.ackQueue != null) {
             queueDAO.remove(completion.ackQueue, completion.ackId);
         }
+        if (completion.ackPinnedQueue != null) {
+            // offered to the worker that held the execution as well: neither message is left
+            queueDAO.remove(completion.ackPinnedQueue, completion.ackId);
+        }
+        // a worker that now holds the execution in memory is handed its next continuation from
+        // its own queue, where the decide that follows offers it
+        standIn.setDomain(completion.pinnedTo);
         if (offer != null) {
             nativeService.push(workflow, List.of(offer));
         } else if (completion.finished) {

@@ -11,7 +11,8 @@ names are those of `TaskContinuation`, `NativeState`, `NativeContinuationService
 | Thing | Name | Notes |
 |---|---|---|
 | Code type (the poll type) | `<workflow>.v<version>.code` | From the definition's name and version: one per workflow version. Workers poll it like a task type; `ExecutionService.poll` tells a continuation from a task by its data: a synthetic id, or a message naming a task with a marker of another type than the one polled. A task may not be named after its workflow's code type. |
-| Continuation queue | `<codeType>` | The shared queue of the code type. Task domains do not apply to workflow code (01 §3). |
+| Continuation queue | `<codeType>` | The shared queue of the code type. The task domains a run is started with do not apply to workflow code (01 §3). |
+| Pinned queue | `<domain>:<codeType>` | The code type in the task domain of the worker that holds the execution in memory (`nativeState.pinnedTo`); `NativeContinuationService.pinnedQueue`. A continuation of a pinned execution is offered there first (§6). |
 | Message ids on the queue | the awaited task's id; `<workflowId>\|main`; `<workflowId>\|handlers` | The two synthetic ids are the bootstrap and the handler lane, which have no task. `NativeContinuationService.syntheticId`. |
 | Lane ids | `main`, `fork_<k>.<i>`, `handlers` | `k` is the ordinal of the fork in its parent lane, `i` the branch index. |
 | Continuation number | `n`, from 1 per lane | The SDK's per-lane counter; the server checks it on completion. |
@@ -121,9 +122,10 @@ terminates the workflow regardless of `optional`. A `human(...).await(timeout)` 
   "idempotencyKey": "kitchensink-demo-1" }
 ```
 
-Workflow code has no domains: every continuation goes to the shared queue of the code type,
-`<name>.v<version>.code` (`NativeContinuationService.queueName`, `codeType`), and any worker
-polling it can run any of them, whatever the start's `taskToDomain` (01 §3). Task domains still
+A start gives workflow code no domain: a continuation goes to the shared queue of the code type,
+`<name>.v<version>.code` (`NativeContinuationService.queueName`, `codeType`), where any worker
+polling it can run it, whatever the start's `taskToDomain` (01 §3). The one domain a continuation
+is offered in first is that of the worker an execution is pinned to (§6). Task domains still
 apply to the tasks the code calls (`.taskToDomain(Map.of("legacy_enrich", "team-a"))` on the start
 builder); an entry for the code type or `*` routes those tasks, never a continuation. The start copies the registered definition onto the execution, empties its `tasks`
 (`initialize`) and creates `nativeState` with a bootstrap marker not yet applied; the decide that
@@ -160,6 +162,11 @@ follows offers it, pushing `<workflowId>|main` to the execution's continuation q
 - `replies` is written by handler completions: every handled message by the sender's id, an
   update's with its value or error, a signal's with only its time; kept 10 minutes, at most 500.
   A message already in it was handled, so a retried send applies once.
+- `pinnedTo` and `stamp` (absent in the example: no worker holds the execution) are written when
+  a continuation of the code applies, from its completion's `pin` (§7): the task domain of the
+  worker that keeps the code parked in memory, and the stamp that worker chose. A completion
+  without `pin` clears both; so do a rerun, a retry of the code and a rejected fragment; a restart
+  starts without them. A handler run leaves them.
 
 ## 5. The continuation marker on a task
 
@@ -212,8 +219,9 @@ continuation that applies clears it. One continuation runs at a time, so the rea
 ## 6. Poll
 
 `GET /api/tasks/poll/batch/{tasktype}?workerid=&domain=&count=&timeout=` (`TaskResource`), with
-`tasktype` the code type. The SDK polls it with a `TaskRunner`, as any worker polls its task type,
-on the shared queue: workflows have no domains.
+`tasktype` the code type. The SDK polls it with a `TaskRunner`, as any worker polls its task type:
+the shared queue with no `domain`, and, while it holds executions in memory, its own queue with
+the `domain` it names in its completions (§7 `pin`).
 
 Only a decide gives out a continuation. Under its lock, `repairAndWake` offers the execution's
 slot to the handler lane when messages are queued (messages are handled before the code
@@ -224,16 +232,35 @@ the workflow, and the task when there is one, then pushes the message. A deferre
 offered the same way, inside the decide that applies it, with its backoff as the push's delay;
 one waiting for handlers is not (§7).
 
+The message goes to the shared queue, unless the execution is pinned (`nativeState.pinnedTo`) and
+that domain polled the code type within `conductor.app.activeWorkerLastPollTimeout`: then it goes
+to the pinned queue, and also to the shared queue with a delay of
+`conductor.app.nativeWorkflow.pinTimeout` (default 5 seconds) on top of the offer's own
+(`NativeContinuationService.offerTo`, `push`).
+
 `ExecutionService.poll` pops message ids from the queue and, for a continuation queue, hands each
 to `NativeContinuationService.lease(queueName, messageId, workerId)`, which takes no lock and writes
 nothing:
 
-- The marker is leased (it is the slot holder) and the message came from the code type's queue:
+- The marker is leased (it is the slot holder) and the message came from the code type's shared
+  queue or from the execution's pinned queue:
   leave it unacknowledged with `setUnackTimeout(queue, id, continuationTimeoutSeconds)` and return the
   task. If the worker dies the queue redelivers the message, and the next worker runs the same
-  offer; the first completion applies, the other is refused (§7).
-- Anything else (marker not leased, or absent; the workflow terminal): a stale message, remove
-  it.
+  offer; the first completion applies, the other is refused (§7). From the pinned queue, the
+  message waiting on the shared queue is made visible after
+  `conductor.app.nativeWorkflow.pinTimeout` from now (the continuation timeout if that is
+  shorter), so the worker has that long to complete before any worker may run the offer too; from
+  the shared queue of a pinned execution, the message is removed from the pinned queue.
+- Anything else (marker not leased, or absent; the workflow terminal; another domain's queue): a
+  stale message, remove it.
+
+The marker handed out is a copy (`TaskContinuation.handedOut`) that also carries `variables`, the
+workflow's variables now (always present, `{}` when there are none), and `stamp`, the execution's
+(absent when it has none). Neither is stored on a marker. A worker that kept the execution's code
+parked in memory continues it from there when the stamp is the one it sent with its last
+completion, reading the awaited task and the variables from this response and fetching nothing;
+otherwise it fetches the execution and replays. `variables` on the marker is also how a worker
+tells that the server pins executions.
 
 The slot holder's message is pushed again on every decide (idempotent), which repairs a lost
 message.
@@ -330,6 +357,7 @@ The output, as `Replayer.process` and `Workers.complete` build it:
 | `done` | no (false) | `true` when the lane returned or threw. |
 | `result` | main lane, `done` without error | The workflow output: the server writes it to the run's output as the completion applies. |
 | `error` | main lane, `done` by throwing | `{ "message": "…", "ref": "<task>" }`; `ref` is present for an uncaught `TaskFailure`. The workflow fails with `message` and `failedTaskId` from `ref`. Another lane's error is raised by replay in the lane that joins it, so the SDK does not send it. |
+| `pin` | no | `{ "domain": "pin-host-3f9k2a", "stamp": "pin-host-3f9k2a.17" }`, from a worker that keeps the execution's code parked in memory: the task domain it polls the code type in (letters, digits, `_`, `.`, `-`; at most 100), and a stamp of its choosing. Applied with a continuation of the code: `nativeState.pinnedTo` and `stamp` are set from it, and the domain's poll time is updated so the decide that follows offers there. Absent, or with a domain that cannot be a queue name, both are cleared. Ignored on a handler run and on a completion that is deferred. |
 | `releases` | handler lane | `[ { "ref": "condition", "output": { "satisfied": true } } ]`: `WAIT` tasks the server completes with that output in the same write. |
 | `replies` | handler lane | every handled message by the sender's id: `{ "value": …, "at": <millis> }` or `{ "error": "…", "at": … }` for an update, `{ "at": … }` for a signal; replaces `nativeState.replies`. |
 
@@ -349,8 +377,10 @@ are.
 
 A task returned here comes from the same poll (`TaskResource.updateTaskV2` polls the task type
 after the update), so its marker is leased. The response is a `Task` of the code type (a stand-in,
-not the awaited task): `update-v2` then polls the shared queue of the code type (the stand-in has
-no domain), so the worker's next continuation comes back in the same request. A deferred
+not the awaited task): `update-v2` then polls the code type in the stand-in's domain, which is the
+`pin` domain of a completion that applied with one (the worker's own queue, where the decide that
+followed offered the execution's next continuation) and none otherwise (the shared queue), so the
+worker's next continuation comes back in the same request. A deferred
 completion is not an error; the marker is offered again at its new `retryCount`, with the reason on
 the workflow (except a main lane waiting for the handler lane).
 
@@ -499,7 +529,7 @@ The task row the server writes for the switch has `outputData.selectedCase: "1"`
 | Register skeleton and task definitions | `PUT /api/metadata/workflow`, `POST /api/metadata/taskdefs` | `MetadataResource` |
 | Register schedules | `POST /api/scheduler/schedules` | scheduler module |
 | Start | `POST /api/workflow` | `WorkflowResource` |
-| Poll continuations | `GET /api/tasks/poll/batch/{tasktype}` with `domain` | `TaskResource` |
+| Poll continuations | `GET /api/tasks/poll/batch/{tasktype}`, without `domain` and with the worker's pin domain | `TaskResource` |
 | Complete a continuation | `POST /api/tasks/update-v2` | `TaskResource` |
 | Complete a `WAIT` by reference (external callbacks, human tasks) | `POST /api/tasks/{workflowId}/{taskRefName}/{status}` | `TaskResource` |
 | Signal, update, query | `POST /api/workflow/{workflowId}/messages` | `WorkflowMessageQueueResource` |

@@ -26,6 +26,8 @@ import org.mockito.Mockito;
 import org.springframework.util.unit.DataSize;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
+import com.netflix.conductor.common.metadata.tasks.PollData;
+import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskContinuation;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
@@ -1274,5 +1276,339 @@ public class NativeContinuationServiceTest {
         // which continuation it is stays on the entry; the marker starts out not run
         assertEquals(entry, task.getWorkflowTask());
         assertNotRun(task.getContinuation());
+    }
+
+    // ------------------------------------------------------------------ pinning
+
+    private static final String PIN = "pin-host-a1b2c3";
+    private static final String PINNED_QUEUE = PIN + ":" + CODE_TYPE;
+
+    private QueueDAO queues;
+
+    /** A completion whose worker keeps the code parked, in its domain and with its stamp. */
+    private static Map<String, Object> parked(
+            Map<String, Object> out, String domain, String stamp) {
+        out.put("pin", Map.of("domain", domain, "stamp", stamp));
+        return out;
+    }
+
+    /** An execution pinned to {@link #PIN}, with the stamp {@code s-1}. */
+    private WorkflowModel pinnedWorkflow(boolean handlers) {
+        WorkflowModel workflow = freshWorkflow(handlers);
+        applied(workflow.getNativeState().getBootstrap());
+        workflow.getNativeState().setPinnedTo(PIN);
+        workflow.getNativeState().setStamp("s-1");
+        return workflow;
+    }
+
+    /** Stores in which the pinned worker polled its queue this long ago. */
+    private void useStoresWhereThePinPolled(WorkflowModel workflow, long millisAgo) {
+        dao = mock(ExecutionDAOFacade.class);
+        when(dao.getWorkflowModel(anyString(), ArgumentMatchers.anyBoolean())).thenReturn(workflow);
+        when(dao.getTaskPollDataByDomain(CODE_TYPE, PIN))
+                .thenReturn(
+                        new PollData(
+                                CODE_TYPE,
+                                PIN,
+                                "worker-a",
+                                System.currentTimeMillis() - millisAgo));
+        queues = mock(QueueDAO.class);
+        service.setQueueDAO(queues);
+        service.setExecutionDAOFacade(dao);
+    }
+
+    @Test
+    public void aCompletionWhoseWorkerParksTheCodePinsTheExecutionToIt() {
+        WorkflowModel workflow = freshWorkflow(false);
+        useStoresWhereThePinPolled(workflow, 60_000);
+        lease(workflow.getNativeState().getBootstrap(), 0);
+        Map<String, Object> out =
+                parked(
+                        output(1, 0, List.of(entry("first", "SIMPLE", "main", "main", 2))),
+                        PIN,
+                        "s-1");
+
+        NativeContinuationService.Completion completion =
+                completeHoldingSlot(workflow, null, result("wf-1|main", out));
+
+        assertEquals(PIN, workflow.getNativeState().getPinnedTo());
+        assertEquals("s-1", workflow.getNativeState().getStamp());
+        assertEquals(PIN, completion.pinnedTo);
+        assertNull(completion.ackPinnedQueue); // it was not pinned when it was offered
+        // the worker has just answered: its queue counts as polled, so the next offer goes there
+        Mockito.verify(dao).updateTaskLastPoll(CODE_TYPE, PIN, "worker-a");
+    }
+
+    @Test
+    public void aCompletionThatParksNothingUnpinsAndIsAcknowledgedOnBothQueues() {
+        WorkflowModel workflow = pinnedWorkflow(false);
+        TaskModel awaited = awaitedTask(workflow, "task_1", "main", 2, 0);
+
+        // another worker took it from the shared queue and keeps nothing
+        NativeContinuationService.Completion completion =
+                completeHoldingSlot(
+                        workflow, awaited, result("id-task_1", output(2, 0, List.of())));
+
+        assertNull(workflow.getNativeState().getPinnedTo());
+        assertNull(workflow.getNativeState().getStamp()); // parked code elsewhere no longer matches
+        assertNull(completion.pinnedTo);
+        assertEquals(CODE_TYPE, completion.ackQueue);
+        assertEquals(PINNED_QUEUE, completion.ackPinnedQueue);
+    }
+
+    @Test
+    public void aPinMustNameADomainThatCanBeAQueue() {
+        WorkflowModel workflow = freshWorkflow(false);
+        lease(workflow.getNativeState().getBootstrap(), 0);
+
+        completeHoldingSlot(
+                workflow, null, result("wf-1|main", parked(output(1, 0, List.of()), "a:b", "s-1")));
+
+        assertNull(workflow.getNativeState().getPinnedTo());
+        assertNull(workflow.getNativeState().getStamp());
+    }
+
+    @Test
+    public void aHandlerRunLeavesThePinAndItsStamp() {
+        WorkflowModel workflow = pinnedWorkflow(true);
+        lease(workflow.getNativeState().getHandlers(), 0);
+        Map<String, Object> out = output(1, 0, List.of());
+        out.put("variables", Map.of("stage", "paid"));
+
+        completeHoldingSlot(workflow, null, result("wf-1|handlers", out));
+
+        // handlers change variables, which a poll hands out, not what the code has done
+        assertEquals(PIN, workflow.getNativeState().getPinnedTo());
+        assertEquals("s-1", workflow.getNativeState().getStamp());
+    }
+
+    @Test
+    public void aDeferredCompletionLeavesTheStampOfTheLastOneThatApplied() {
+        WorkflowModel workflow = pinnedWorkflow(false);
+        TaskModel awaited = awaitedTask(workflow, "task_1", "main", 2, 0);
+        TaskResult failed = result("id-task_1", parked(output(2, 0, List.of()), PIN, "s-2"));
+        failed.setStatus(TaskResult.Status.FAILED);
+
+        assertTrue(completeHoldingSlot(workflow, awaited, failed).deferred);
+
+        // the worker ran ahead of the execution: its new stamp never matches, so it replays
+        assertEquals("s-1", workflow.getNativeState().getStamp());
+    }
+
+    @Test
+    public void aPinnedExecutionIsOfferedToItsWorkerWithAFallbackAfterThePinTimeout() {
+        WorkflowModel workflow = pinnedWorkflow(false);
+        useStoresWhereThePinPolled(workflow, 1_000);
+        TaskModel task = awaitedTask(workflow, "task_1", "main", 2, 0);
+        task.getContinuation().setLeased(false);
+        task.setEndTime(1);
+
+        NativeContinuationService.Wakeups wakeups = service.repairAndWake(workflow);
+
+        NativeContinuationService.Offer offer = wakeups.offers.get(0);
+        assertEquals("id-task_1", offer.messageId());
+        assertEquals(PINNED_QUEUE, offer.queue());
+        assertEquals(CODE_TYPE, offer.fallbackQueue());
+        assertEquals(5, offer.fallbackDelaySeconds());
+        service.push(workflow, wakeups.offers);
+        Mockito.verify(queues).pushIfNotExists(PINNED_QUEUE, "id-task_1", 0, 0L);
+        Mockito.verify(queues).pushIfNotExists(CODE_TYPE, "id-task_1", 0, 5L);
+
+        // The slot holder's message is pushed again on every decide, to the shared queue only:
+        // it is there already (the fallback), so nothing is added. A push to the pinned queue
+        // could add a second message for an offer its worker is running.
+        offer = service.repairAndWake(workflow).offers.get(0);
+        assertEquals("id-task_1", offer.messageId());
+        assertEquals(CODE_TYPE, offer.queue());
+        assertNull(offer.fallbackQueue());
+    }
+
+    @Test
+    public void anOfferMadeToTheSharedQueueIsNeverPushedToAPinnedQueueLater() {
+        WorkflowModel workflow = pinnedWorkflow(false);
+        // the pinned worker was not polling when the offer was made: it went to the shared queue
+        useStoresWhereThePinPolled(workflow, 11_000);
+        TaskModel task = awaitedTask(workflow, "task_1", "main", 2, 0);
+        task.getContinuation().setLeased(false);
+        task.setEndTime(1);
+        assertEquals(CODE_TYPE, service.repairAndWake(workflow).offers.get(0).queue());
+
+        // it polls again while another worker runs the offer: the repair must not hand it a copy
+        when(dao.getTaskPollDataByDomain(CODE_TYPE, PIN))
+                .thenReturn(new PollData(CODE_TYPE, PIN, "worker-a", System.currentTimeMillis()));
+        NativeContinuationService.Offer repair = service.repairAndWake(workflow).offers.get(0);
+
+        assertEquals(CODE_TYPE, repair.queue());
+        assertNull(repair.fallbackQueue());
+    }
+
+    @Test
+    public void thePinTimeoutIsConfigured() {
+        properties.getNativeWorkflow().setPinTimeout(java.time.Duration.ofSeconds(2));
+        WorkflowModel workflow = pinnedWorkflow(false);
+        useStoresWhereThePinPolled(workflow, 1_000);
+        TaskModel task = awaitedTask(workflow, "task_1", "main", 2, 0);
+        task.getContinuation().setLeased(false);
+        task.setEndTime(1);
+
+        assertEquals(2, service.repairAndWake(workflow).offers.get(0).fallbackDelaySeconds());
+    }
+
+    @Test
+    public void anExecutionPinnedToAWorkerThatStoppedPollingIsOfferedToAnyWorker() {
+        WorkflowModel workflow = pinnedWorkflow(false);
+        // not within conductor.app.activeWorkerLastPollTimeout (10 seconds)
+        useStoresWhereThePinPolled(workflow, 11_000);
+        TaskModel task = awaitedTask(workflow, "task_1", "main", 2, 0);
+        task.getContinuation().setLeased(false);
+        task.setEndTime(1);
+
+        NativeContinuationService.Offer offer = service.repairAndWake(workflow).offers.get(0);
+
+        assertEquals(CODE_TYPE, offer.queue());
+        assertNull(offer.fallbackQueue());
+    }
+
+    @Test
+    public void aLeaseFromThePinnedQueueGivesItsWorkerThePinTimeoutAgainToAnswer() {
+        WorkflowModel workflow = pinnedWorkflow(false);
+        useStoresWhereThePinPolled(workflow, 1_000);
+        TaskModel task = awaitedTask(workflow, "task_1", "main", 2, 0);
+
+        assertTrue(service.lease(PINNED_QUEUE, "id-task_1", task, "worker-a") != null);
+
+        // Its own message waits out the continuation timeout, as any lease does. The one on the
+        // shared queue becomes visible after the pin timeout: a worker killed with its poll open
+        // on the server takes the message and never answers, and any worker steps in as soon as
+        // for one that never polled.
+        Mockito.verify(queues).setUnackTimeout(PINNED_QUEUE, "id-task_1", 30_000L);
+        Mockito.verify(queues).setUnackTimeout(CODE_TYPE, "id-task_1", 5_000L);
+        Mockito.verify(queues, Mockito.never()).remove(anyString(), anyString());
+    }
+
+    @Test
+    public void theSharedMessageNeverWaitsLongerThanTheContinuationTimeout() {
+        properties.getNativeWorkflow().setPinTimeout(java.time.Duration.ofMinutes(5));
+        WorkflowModel workflow = pinnedWorkflow(false);
+        useStoresWhereThePinPolled(workflow, 1_000);
+        TaskModel task = awaitedTask(workflow, "task_1", "main", 2, 0);
+
+        service.lease(PINNED_QUEUE, "id-task_1", task, "worker-a");
+
+        Mockito.verify(queues).setUnackTimeout(CODE_TYPE, "id-task_1", 30_000L);
+    }
+
+    @Test
+    public void aLeaseFromTheSharedQueueTakesTheMessageOffThePinnedQueue() {
+        WorkflowModel workflow = pinnedWorkflow(false);
+        useStoresWhereThePinPolled(workflow, 1_000);
+        TaskModel task = awaitedTask(workflow, "task_1", "main", 2, 0);
+
+        // the pinned worker did not take it within the pin timeout
+        assertTrue(service.lease(CODE_TYPE, "id-task_1", task, "worker-b") != null);
+
+        Mockito.verify(queues).setUnackTimeout(CODE_TYPE, "id-task_1", 30_000L);
+        Mockito.verify(queues).remove(PINNED_QUEUE, "id-task_1");
+    }
+
+    @Test
+    public void aMessageOnAnotherWorkersQueueIsStale() {
+        WorkflowModel workflow = pinnedWorkflow(false);
+        useStoresWhereThePinPolled(workflow, 1_000);
+        TaskModel task = awaitedTask(workflow, "task_1", "main", 2, 0);
+        String other = "pin-host-zzzzzz:" + CODE_TYPE;
+
+        // offered there before the execution was pinned to another worker
+        assertNull(service.lease(other, "id-task_1", task, "worker-z"));
+
+        Mockito.verify(queues).remove(other, "id-task_1");
+    }
+
+    @Test
+    public void aLeaseHandsOutTheStampAndTheVariablesAndStoresNeither() {
+        WorkflowModel workflow = pinnedWorkflow(false);
+        useStoresWhereThePinPolled(workflow, 1_000);
+        workflow.getVariables().put("stage", "new");
+        TaskModel task = awaitedTask(workflow, "task_1", "main", 2, 3);
+
+        Task leased = service.lease(PINNED_QUEUE, "id-task_1", task, "worker-a");
+
+        assertEquals("s-1", leased.getContinuation().getStamp());
+        assertEquals(Map.of("stage", "new"), leased.getContinuation().getVariables());
+        assertTrue(leased.getContinuation().isLeased());
+        assertEquals(3, leased.getContinuation().getRetryCount());
+        // the task's own marker, which is what is stored, carries neither
+        assertNull(task.getContinuation().getStamp());
+        assertNull(task.getContinuation().getVariables());
+    }
+
+    @Test
+    public void anExecutionNoWorkerHoldsHandsOutItsVariablesAndNoStamp() {
+        WorkflowModel workflow = freshWorkflow(false);
+        useMockedStores(workflow);
+        lease(workflow.getNativeState().getBootstrap(), 0);
+
+        Task leased = service.lease(CODE_TYPE, "wf-1|main", null, "worker-a");
+
+        // the variables, even when there are none, say that this server pins executions
+        assertEquals(Map.of(), leased.getContinuation().getVariables());
+        assertNull(leased.getContinuation().getStamp());
+    }
+
+    @Test
+    public void aRerunUnpins() {
+        WorkflowModel workflow = pinnedWorkflow(false);
+        TaskModel t1 = ran(workflow, "task_1", "main", 2, 100, 110);
+        appendedBy(t1, "main#1");
+        TaskModel t2 = ran(workflow, "task_2", "main", 3, 0, 0);
+        appendedBy(t2, "main#2");
+
+        NativeContinuationService.RerunPlan plan = service.planRerun(workflow, t1);
+        workflow.getTasks().remove(t2);
+        service.adjustRerun(workflow, t1, plan, new ArrayList<>());
+
+        // the parked code already ran what the rerun runs again
+        assertNull(workflow.getNativeState().getPinnedTo());
+        assertNull(workflow.getNativeState().getStamp());
+    }
+
+    @Test
+    public void aRetryOfTheCodeUnpins() {
+        WorkflowModel workflow = pinnedWorkflow(false);
+        ran(workflow, "task_1", "main", 2, 100, 110);
+
+        assertTrue(service.rearmLastMain(workflow) != null);
+
+        assertNull(workflow.getNativeState().getPinnedTo());
+        assertNull(workflow.getNativeState().getStamp());
+    }
+
+    @Test
+    public void aRejectedFragmentUnpins() {
+        WorkflowModel workflow = pinnedWorkflow(false);
+        TaskModel awaited = awaitedTask(workflow, "task_1", "main", 2, 0);
+        Map<String, Object> lost = entry("later", "SIMPLE", "main", "main", 3);
+        ((Map<String, Object>) lost.get("metadata")).put("after", "nowhere");
+
+        NativeContinuationService.Completion rejected =
+                completeHoldingSlot(
+                        workflow,
+                        awaited,
+                        result("id-task_1", parked(output(2, 0, List.of(lost)), PIN, "s-2")));
+
+        assertTrue(rejected.finished);
+        // its worker believes the fragment was appended
+        assertNull(workflow.getNativeState().getPinnedTo());
+        assertNull(workflow.getNativeState().getStamp());
+    }
+
+    @Test
+    public void aRestartStartsUnpinned() {
+        WorkflowModel workflow = pinnedWorkflow(false);
+
+        service.initialize(workflow);
+
+        assertNull(workflow.getNativeState().getPinnedTo());
+        assertNull(workflow.getNativeState().getStamp());
     }
 }

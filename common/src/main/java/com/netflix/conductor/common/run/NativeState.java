@@ -19,6 +19,8 @@ import com.netflix.conductor.annotations.protogen.ProtoField;
 import com.netflix.conductor.annotations.protogen.ProtoMessage;
 import com.netflix.conductor.common.metadata.tasks.TaskContinuation;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 /**
  * Engine state of a native (code-defined) workflow that has no task to live on. Everything else
  * about the code's progress is on the tasks it paused on ({@link TaskContinuation}), so this stays
@@ -45,6 +47,23 @@ public class NativeState {
     @ProtoField(id = 3)
     private Map<String, Object> replies = new HashMap<>();
 
+    /**
+     * The task domain of the worker that keeps this execution's code in memory between
+     * continuations, parked where it paused, so it can continue without replaying. Named by that
+     * worker in the completion that applied last; null when no worker holds the execution. The next
+     * continuation is offered to this domain's queue first. Read over HTTP only.
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String pinnedTo;
+
+    /**
+     * Names the completion that applied last, as its worker chose: a parked execution may continue
+     * only if its worker's stamp is still this one. Null after anything else changed what the code
+     * has done (a rerun, a retry of the code, a rejected fragment). Read over HTTP only.
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String stamp;
+
     public TaskContinuation getBootstrap() {
         return bootstrap;
     }
@@ -67,5 +86,21 @@ public class NativeState {
 
     public void setReplies(Map<String, Object> replies) {
         this.replies = replies;
+    }
+
+    public String getPinnedTo() {
+        return pinnedTo;
+    }
+
+    public void setPinnedTo(String pinnedTo) {
+        this.pinnedTo = pinnedTo;
+    }
+
+    public String getStamp() {
+        return stamp;
+    }
+
+    public void setStamp(String stamp) {
+        this.stamp = stamp;
     }
 }

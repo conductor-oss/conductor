@@ -174,6 +174,15 @@ public class ConductorProperties {
         /** Maximum number of tasks, nested ones included, in an execution's definition. */
         private int maxDefinitionTasks = 5000;
 
+        /**
+         * How long the worker that holds an execution in memory has to take a continuation offered
+         * to it, and then again to complete it, before any worker of the code type may take it and
+         * replay. It bounds the delay a worker that died or stalled adds to an execution pinned to
+         * it; a continuation that takes its worker longer than this to complete is run by another
+         * worker as well, and the first completion applies.
+         */
+        private Duration pinTimeout = Duration.ofSeconds(5);
+
         public boolean isEnabled() {
             return enabled;
         }
@@ -196,6 +205,14 @@ public class ConductorProperties {
 
         public void setMaxDefinitionTasks(int maxDefinitionTasks) {
             this.maxDefinitionTasks = maxDefinitionTasks;
+        }
+
+        public Duration getPinTimeout() {
+            return pinTimeout;
+        }
+
+        public void setPinTimeout(Duration pinTimeout) {
+            this.pinTimeout = pinTimeout;
         }
     }
 

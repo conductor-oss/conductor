@@ -21,7 +21,8 @@ standing items the SDK reaches later. How the work was staged is in [05-plan.md]
 | `WorkflowDef` | none but the task-list validation (below); `NativeContinuationService.insertAfter`, `previousTask` and `removeAll` edit an execution's own definition at any depth (`forkTasks`, `decisionCases`, `defaultCase`, `loopOver`) | B2 |
 | `ExecutionService.poll` | a synthetic id, or a message naming a task with a marker of another type than the one polled, goes to `NativeContinuationService.lease` instead of the task path; `lease` hands out what a decide offered, with no lock and no write | B2 |
 | `WorkflowExecutor.decide(workflowId, change)` | applies a change to the workflow, read with its tasks, and decides it in one acquisition of the execution lock; the message endpoint pushes with it | S2 |
-| `NativeContinuationService.queueName` | always the shared queue of the code type: task domains do not apply to workflow code | B2 |
+| `NativeContinuationService.queueName` | always the shared queue of the code type: the task domains of a start do not apply to workflow code | B2 |
+| `NativeContinuationService.pin`, `unpin`, `pinnedQueue`, `offerTo` | an execution is pinned to the worker that keeps its code in memory: `nativeState.pinnedTo` and `stamp` from a completion's `pin`; offers go to `<domain>:<codeType>` first while that domain polls, with the shared queue as a fallback after `conductor.app.nativeWorkflow.pinTimeout`; `lease` hands out the stamp and the variables (01 §3, 02 §6, §7) | B2 |
 | `WorkflowExecutorOps.rerunWF` | for a native execution, `NativeContinuationService.planRerun` decides which tasks go instead of the later `seq` rule, then `NativeContinuationService.adjustRerun`, whose reopened JOINs are queued only after the rerun task is saved; with no task, `startNativeOver` (the reset restart uses); a rerun from a native `SWITCH`, `FORK` or `JOIN` task is refused with a 400 | B7 |
 | `WorkflowExecutorOps.reopenLoopHolding` | a rerun from a task inside a loop reopens the innermost `DO_WHILE` holding it at the task's iteration; standard workflows too (`DECIDER_BUGS.md` item 5) | B7 |
 | `NativeContinuationService.complete` | stamps each appended entry with `metadata.appendedBy` (`lane#n`), which a rerun uses to undo a continuation's entries | B7 |
@@ -109,7 +110,9 @@ and decides.
    or a repair coming, and a marker has at most one outstanding message however many decides run.
 3. `queueName(workflow)`: the code type, the shared queue every host of the code polls. Task
    domains do not apply: a `taskToDomain` entry for the code type or `*` routes the run's tasks,
-   not its continuations.
+   not its continuations. `offerTo(workflow, messageId, delay)` decides where an offer's message
+   goes: the shared queue, or, for an execution pinned to a domain that polled lately, the pinned
+   queue with the shared queue as a delayed fallback, which `push` sends too.
 4. `WorkflowSweeper`: the "RUNNING with no running task, reset the last task" repair is skipped
    when `nativeState` is set; the sweeper's `decide` runs `repairAndWake` instead.
 5. `WorkflowExecutorOps.decide`, where it postpones the workflow's decider-queue entry:
