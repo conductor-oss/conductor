@@ -30,6 +30,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
+import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.sdk.workflow.task.WorkerTask;
@@ -913,6 +914,61 @@ class MCPWorkersTest {
         enqueueTaskStatus("\"status\":\"working\",\"pollIntervalMs\":2000.0");
         poll(task);
         assertInProgress(task, 2);
+    }
+
+    // ---- metrics -----------------------------------------------------------------------------
+
+    private static double calls(String result) {
+        return Monitors.getCounter("mcp_client_calls", "result", result).count();
+    }
+
+    @Test
+    void synchronousCall_isCountedCompleted() {
+        double before = calls("completed");
+        enqueueJson(result("{\"content\":[{\"type\":\"text\",\"text\":\"hello\"}]}"));
+
+        runCallTool(defaultInput());
+
+        assertEquals(before + 1, calls("completed"));
+    }
+
+    @Test
+    void synchronousCallThatFails_isCountedFailed() {
+        double before = calls("failed");
+        server.enqueue(new MockResponse().setResponseCode(500).setBody("boom"));
+
+        runCallTool(defaultInput());
+
+        assertEquals(before + 1, calls("failed"));
+    }
+
+    @Test
+    void createdTask_isCountedOnceWhenItEnds_withPollFailuresAndRpcErrors() {
+        double completed = calls("completed");
+        double pollFailures = Monitors.getCounter("mcp_client_poll_failures").count();
+        double transientErrors =
+                Monitors.getCounter("mcp_rpc_errors", "method", "tasks/get", "terminal", "false")
+                        .count();
+        enqueueToolList();
+        enqueueJson(result("{\"resultType\":\"task\",\"taskId\":\"t-1\",\"status\":\"working\"}"));
+        TaskModel task = runCallTool(optedInInput());
+        assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
+        assertEquals(completed, calls("completed"));
+
+        server.enqueue(new MockResponse().setResponseCode(503).setBody("busy"));
+        poll(task);
+        assertEquals(TaskModel.Status.IN_PROGRESS, task.getStatus());
+        assertEquals(pollFailures + 1, Monitors.getCounter("mcp_client_poll_failures").count());
+        assertEquals(
+                transientErrors + 1,
+                Monitors.getCounter("mcp_rpc_errors", "method", "tasks/get", "terminal", "false")
+                        .count());
+
+        enqueueTaskStatus(
+                "\"status\":\"completed\",\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"done\"}]}");
+        poll(task);
+        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
+        assertEquals(completed + 1, calls("completed"));
     }
 
     /** A result that the synchronous mapping cannot read: text is an object, not a string. */

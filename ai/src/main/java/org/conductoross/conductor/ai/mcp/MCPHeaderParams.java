@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import tools.jackson.databind.JsonNode;
 
@@ -64,8 +65,22 @@ public final class MCPHeaderParams {
      */
     public static Map<String, String> headersFor(
             String toolName, JsonNode inputSchema, Map<String, Object> arguments) {
+        return headersFor(toolName, inputSchema, () -> arguments);
+    }
+
+    /**
+     * As {@link #headersFor(String, JsonNode, Map)}, reading the arguments only when the schema has
+     * an annotation: most tools have none, and building the arguments can copy a large payload.
+     */
+    public static Map<String, String> headersFor(
+            String toolName, JsonNode inputSchema, Supplier<Map<String, Object>> argumentsSource) {
+        List<Binding> bindings = bindings(toolName, inputSchema);
+        if (bindings.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, Object> arguments = argumentsSource.get();
         Map<String, String> headers = new LinkedHashMap<>();
-        for (Binding binding : bindings(toolName, inputSchema)) {
+        for (Binding binding : bindings) {
             Object value = valueAt(arguments, binding.path());
             if (value == null) {
                 continue;

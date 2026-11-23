@@ -29,6 +29,16 @@ import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 import static java.net.HttpURLConnection.HTTP_UNSUPPORTED_TYPE;
+import static org.conductoross.conductor.ai.mcp.MCPJsonRpc.HEADER_MISMATCH;
+import static org.conductoross.conductor.ai.mcp.MCPJsonRpc.INTERNAL_ERROR;
+import static org.conductoross.conductor.ai.mcp.MCPJsonRpc.INVALID_PARAMS;
+import static org.conductoross.conductor.ai.mcp.MCPJsonRpc.INVALID_REQUEST;
+import static org.conductoross.conductor.ai.mcp.MCPJsonRpc.METHOD_NOT_FOUND;
+import static org.conductoross.conductor.ai.mcp.MCPJsonRpc.MISSING_REQUIRED_CLIENT_CAPABILITY;
+import static org.conductoross.conductor.ai.mcp.MCPJsonRpc.PARSE_ERROR;
+import static org.conductoross.conductor.ai.mcp.MCPJsonRpc.RESOURCE_NOT_FOUND;
+import static org.conductoross.conductor.ai.mcp.MCPJsonRpc.UNSUPPORTED_PROTOCOL_VERSION;
+import static org.conductoross.conductor.ai.mcp.MCPJsonRpc.URL_ELICITATION_REQUIRED;
 
 /**
  * An HTTP or JSON-RPC error on a request in the MCP {@code 2026-07-28} form (calls that select
@@ -36,20 +46,6 @@ import static java.net.HttpURLConnection.HTTP_UNSUPPORTED_TYPE;
  * the caller can choose the task outcome.
  */
 public class MCPRequestException extends RuntimeException {
-
-    // JSON-RPC error codes, sorted by number.
-    // Defined by MCP:
-    private static final int RESOURCE_NOT_FOUND = -32002;
-    public static final int HEADER_MISMATCH = -32020;
-    public static final int MISSING_REQUIRED_CLIENT_CAPABILITY = -32021;
-    public static final int UNSUPPORTED_PROTOCOL_VERSION = -32022;
-    private static final int URL_ELICITATION_REQUIRED = -32042;
-    // Defined by JSON-RPC 2.0:
-    private static final int INVALID_REQUEST = -32600;
-    public static final int METHOD_NOT_FOUND = -32601;
-    public static final int INVALID_PARAMS = -32602;
-    public static final int INTERNAL_ERROR = -32603;
-    private static final int PARSE_ERROR = -32700;
 
     /** Too Many Requests (RFC 6585); {@link HttpURLConnection} has no constant for it. */
     private static final int HTTP_TOO_MANY_REQUESTS = 429;
@@ -96,7 +92,7 @@ public class MCPRequestException extends RuntimeException {
         JsonNode error = null;
         try {
             if (body != null && !body.isBlank()) {
-                error = objectMapper.readTree(body).get("error");
+                error = objectMapper.readTree(body).get(MCPFields.JsonRpc.ERROR);
             }
         } catch (Exception ignored) {
             // Not JSON: keep the HTTP status and the body only.

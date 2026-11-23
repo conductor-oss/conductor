@@ -41,6 +41,36 @@ class MCPHeaderParamsTest {
     }
 
     @Test
+    void argumentsAreReadOnlyWhenTheSchemaHasAnAnnotation() {
+        java.util.concurrent.atomic.AtomicInteger reads =
+                new java.util.concurrent.atomic.AtomicInteger();
+        JsonNode plain = schema("{\"q\":{\"type\":\"string\"}}");
+        assertEquals(
+                Map.of(),
+                MCPHeaderParams.headersFor(
+                        "t",
+                        plain,
+                        () -> {
+                            reads.incrementAndGet();
+                            return Map.of("q", "x");
+                        }));
+        assertEquals(0, reads.get());
+
+        JsonNode annotated =
+                schema("{\"region\":{\"type\":\"string\",\"x-mcp-header\":\"Region\"}}");
+        assertEquals(
+                Map.of("Mcp-Param-Region", "us-west1"),
+                MCPHeaderParams.headersFor(
+                        "t",
+                        annotated,
+                        () -> {
+                            reads.incrementAndGet();
+                            return Map.of("region", "us-west1");
+                        }));
+        assertEquals(1, reads.get());
+    }
+
+    @Test
     void annotatedParameterIsAbsentOrNull() {
         JsonNode schema = schema("{\"region\":{\"type\":\"string\",\"x-mcp-header\":\"Region\"}}");
         Map<String, Object> nullValue = new HashMap<>();
