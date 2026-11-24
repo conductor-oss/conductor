@@ -575,6 +575,21 @@ class MCPServerMethodsTest {
     }
 
     @Test
+    void resultThatCannotBeBuilt_onTheSyncPath_isAnErrorResult_notAServerError() {
+        completedOutput = Map.of("value", new Unreadable());
+        statuses.add(Workflow.WorkflowStatus.COMPLETED);
+        for (boolean tasks : new boolean[] {true, false}) {
+            JsonNode result =
+                    methods(tool("order_lookup"))
+                            .toolsCall(call("order_lookup", "{}", tasks))
+                            .block();
+            assertThat(result.get("isError").asBoolean()).isTrue();
+            assertThat(text(result))
+                    .isEqualTo("The call result could not be read. Execution id: exec-1");
+        }
+    }
+
+    @Test
     void storeErrorInTaskMethods_isAServerError_notAnUnknownTask() {
         statuses.add(Workflow.WorkflowStatus.RUNNING);
         MCPServerMethods methods = methods(tool(executionName));

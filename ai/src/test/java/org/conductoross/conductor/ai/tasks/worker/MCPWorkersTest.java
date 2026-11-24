@@ -1280,6 +1280,18 @@ class MCPWorkersTest {
     }
 
     @Test
+    void maximumDurationOverThirtyDaysIsRejected() {
+        MCPClientProperties thirtyDays = new MCPClientProperties();
+        thirtyDays.setMaxDuration(Duration.ofDays(30));
+        MCPClientProperties longer = new MCPClientProperties();
+        longer.setMaxDuration(Duration.ofDays(30).plusSeconds(1));
+        MCPService service = new MCPService(new OkHttpClient());
+
+        new MCPWorkers(service, thirtyDays);
+        assertThrows(IllegalArgumentException.class, () -> new MCPWorkers(service, longer));
+    }
+
+    @Test
     void unknownTaskAfterTheServerTtlFailsWithoutARetry() {
         TaskModel task = startCreatedTask(5000L, 60_000L);
         task.setStartTime(System.currentTimeMillis() - 61_000L);
@@ -1292,6 +1304,21 @@ class MCPWorkersTest {
                 task.getReasonForIncompletion().contains("no longer known to the server after"),
                 task.getReasonForIncompletion());
         assertTrue(task.getReasonForIncompletion().contains("ttlMs of 60000 ms"));
+        assertEquals(3, server.getRequestCount(), "the server does not know the task: no cancel");
+    }
+
+    @Test
+    void resourceNotFoundAfterTheServerTtlFailsWithoutARetry() {
+        TaskModel task = startCreatedTask(5000L, 60_000L);
+        task.setStartTime(System.currentTimeMillis() - 61_000L);
+        server.enqueue(rpcErrorResponse(400, "{\"code\":-32002,\"message\":\"Task not found\"}"));
+
+        poll(task);
+
+        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
+        assertTrue(
+                task.getReasonForIncompletion().contains("no longer known to the server after"),
+                task.getReasonForIncompletion());
         assertEquals(3, server.getRequestCount(), "the server does not know the task: no cancel");
     }
 

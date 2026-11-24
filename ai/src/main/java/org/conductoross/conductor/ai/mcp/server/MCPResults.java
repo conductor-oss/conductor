@@ -97,6 +97,18 @@ public class MCPResults {
                 : textResult("The call could not be started: " + reason, true);
     }
 
+    /**
+     * The {@code CallToolResult} of an ended execution whose result could not be built. The call
+     * ran, so the client gets the execution id, not a server error it would retry.
+     */
+    public MCPCallToolResult resultUnreadable(Workflow execution) {
+        return textResult(resultUnreadableText(execution), true);
+    }
+
+    private static String resultUnreadableText(Workflow execution) {
+        return "The call result could not be read. Execution id: " + execution.getWorkflowId();
+    }
+
     /** The flat {@code CreateTaskResult} for a running execution. */
     public MCPTask createTask(Workflow execution) {
         return task(execution, MCPTaskStatus.WORKING, null, null, null, MCPResultType.TASK.value());
@@ -129,7 +141,7 @@ public class MCPResults {
         return task(
                 execution,
                 MCPTaskStatus.FAILED,
-                "The call result could not be read. Execution id: " + execution.getWorkflowId(),
+                resultUnreadableText(execution),
                 null,
                 new MCPError(code, MCPJsonRpc.INTERNAL_ERROR_MESSAGE, null),
                 null);

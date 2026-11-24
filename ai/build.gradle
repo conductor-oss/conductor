@@ -30,6 +30,8 @@ dependencies {
 
     api("io.modelcontextprotocol.sdk:mcp-core:${revMCP}")
     api "com.squareup.okhttp3:okhttp:4.12.0"
+    // The MCP server answers with Mono; the version comes from the Spring Boot BOM.
+    api "io.projectreactor:reactor-core"
     api "org.apache.commons:commons-lang3"
 
     // Markdown parsing and PDF generation

@@ -271,7 +271,7 @@ public class MCPServerMethods {
     private Mono<Object> afterFirstWait(
             MCPServerProtocol.MCPCall call, Started started, Workflow execution) {
         if (isEnded(execution)) {
-            return Mono.just(results.callResult(execution));
+            return Mono.just(endedResult(execution));
         }
         if (call.declaresTasks()) {
             return Mono.just(results.createTask(execution));
@@ -290,8 +290,21 @@ public class MCPServerMethods {
                 .map(
                         latest ->
                                 isEnded(latest)
-                                        ? results.callResult(latest)
+                                        ? endedResult(latest)
                                         : results.stillRunning(latest));
+    }
+
+    /** The result of an ended execution; an error result when it cannot be built. */
+    private MCPCallToolResult endedResult(Workflow execution) {
+        try {
+            return results.callResult(execution);
+        } catch (RuntimeException e) {
+            log.warn(
+                    "MCP server: result of execution {} could not be built",
+                    execution.getWorkflowId(),
+                    e);
+            return results.resultUnreadable(execution);
+        }
     }
 
     /** A started call, or the immediate result when the call could not start. */
