@@ -93,7 +93,11 @@ FROM eclipse-temurin:25-jre-alpine AS runtime
 
 LABEL maintainer="Orkes OSS <oss@orkes.io>"
 
-RUN apk add --no-cache nginx ca-certificates \
+# nginx floor pinned above 1.30.6-r0: that build carried CVE-2026-113425 / -121810 / -123007 /
+# -123633 / -123634 (all mail-proxy or HTTP/2-proxy paths, none of which this image's config uses,
+# so real exposure is nil -- the floor just keeps a rebuild from silently regressing onto it).
+# The 25-jre-alpine base (Alpine 3.24) ships the fixed 1.30.7-r0, so a rebuild picks it up.
+RUN apk add --no-cache "nginx>1.30.6-r0" ca-certificates \
     && rm -f /etc/nginx/http.d/default.conf \
     && mkdir -p /run/nginx
 
