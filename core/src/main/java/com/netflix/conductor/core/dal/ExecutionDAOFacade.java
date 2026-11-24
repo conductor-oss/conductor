@@ -47,6 +47,7 @@ import com.netflix.conductor.dao.*;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.service.ExecutionLockService;
 
 import jakarta.annotation.PreDestroy;
 import tools.jackson.core.JacksonException;
@@ -77,6 +78,7 @@ public class ExecutionDAOFacade {
     private final ConductorProperties properties;
     private final ExternalPayloadStorageUtils externalPayloadStorageUtils;
     private WorkflowMessageQueueDAO workflowMessageQueueDAO;
+    private ExecutionLockService executionLockService;
 
     private final ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
 
@@ -353,6 +355,52 @@ public class ExecutionDAOFacade {
     @Autowired(required = false)
     public void setWorkflowMessageQueueDAO(WorkflowMessageQueueDAO workflowMessageQueueDAO) {
         this.workflowMessageQueueDAO = workflowMessageQueueDAO;
+    }
+
+    @Autowired(required = false)
+    public void setExecutionLockService(ExecutionLockService executionLockService) {
+        this.executionLockService = executionLockService;
+    }
+
+    /**
+     * Saves a task from a path that does not hold its workflow's lock and does not write a native
+     * continuation marker: a worker's result, an async system task's run, a child finishing its
+     * parent's task. A native workflow keeps the marker of the continuation that waits on a task in
+     * that task's row, and only code under the workflow lock changes it. Such a path may save a
+     * copy read before the marker changed (a resent result, two runs of one JOIN), which would put
+     * back a marker the continuation had already applied. So the row is saved under the lock with
+     * the marker as stored. A task with no marker is saved as is.
+     */
+    public void updateTaskKeepingContinuation(TaskModel taskModel) {
+        if (taskModel.getContinuation() == null) {
+            updateTask(taskModel);
+            return;
+        }
+        String workflowId = taskModel.getWorkflowInstanceId();
+        // waits as long as a holder may keep the lock: a decide under a slow database holds it
+        // for seconds, and saving without it is open to exactly that delay
+        boolean locked =
+                executionLockService != null
+                        && executionLockService.acquireLock(
+                                workflowId, properties.getLockLeaseTime().toMillis());
+        if (!locked && executionLockService != null) {
+            LOGGER.warn(
+                    "Workflow {} stayed locked past its lease; saving task {} with its stored"
+                            + " continuation marker",
+                    workflowId,
+                    taskModel.getTaskId());
+        }
+        try {
+            TaskModel stored = executionDAO.getTask(taskModel.getTaskId());
+            if (stored != null && stored.getContinuation() != null) {
+                taskModel.setContinuation(stored.getContinuation());
+            }
+            updateTask(taskModel);
+        } finally {
+            if (locked) {
+                executionLockService.releaseLock(workflowId);
+            }
+        }
     }
 
     /**

@@ -653,7 +653,7 @@ public class TestWorkflowExecutor {
 
         assertEquals(TaskModel.Status.COMPLETED, p.getStatus());
         assertEquals("https", p.getOutputData().get("protocol"));
-        verify(executionDAOFacade).updateTask(p);
+        verify(executionDAOFacade).updateTaskKeepingContinuation(p);
     }
 
     @Test
@@ -2845,7 +2845,8 @@ public class TestWorkflowExecutor {
 
         workflowExecutor.updateParentWorkflowTask(subWorkflow);
         ArgumentCaptor<TaskModel> argumentCaptor = ArgumentCaptor.forClass(TaskModel.class);
-        verify(executionDAOFacade, times(1)).updateTask(argumentCaptor.capture());
+        verify(executionDAOFacade, times(1))
+                .updateTaskKeepingContinuation(argumentCaptor.capture());
         assertEquals(TaskModel.Status.COMPLETED, argumentCaptor.getAllValues().get(0).getStatus());
         assertEquals(workflowId, argumentCaptor.getAllValues().get(0).getSubWorkflowId());
     }
@@ -2883,7 +2884,7 @@ public class TestWorkflowExecutor {
 
         workflowExecutor.updateParentWorkflowTask(subWorkflow);
 
-        verify(executionDAOFacade, never()).updateTask(any(TaskModel.class));
+        verify(executionDAOFacade, never()).updateTaskKeepingContinuation(any(TaskModel.class));
     }
 
     @Test
@@ -3473,7 +3474,8 @@ public class TestWorkflowExecutor {
         workflowExecutor.updateTask(taskResult);
         verify(queueDAO, times(1)).postpone(anyString(), anyString(), anyInt(), anyLong());
         ArgumentCaptor<TaskModel> argumentCaptor = ArgumentCaptor.forClass(TaskModel.class);
-        verify(executionDAOFacade, times(1)).updateTask(argumentCaptor.capture());
+        verify(executionDAOFacade, times(1))
+                .updateTaskKeepingContinuation(argumentCaptor.capture());
         assertEquals(TaskModel.Status.SCHEDULED, argumentCaptor.getAllValues().get(0).getStatus());
         assertEquals(
                 taskResult.getCallbackAfterSeconds(),
@@ -3512,7 +3514,8 @@ public class TestWorkflowExecutor {
         workflowExecutor.updateTask(taskResult);
         verify(queueDAO, times(1)).postpone(anyString(), anyString(), anyInt(), anyLong());
         ArgumentCaptor<TaskModel> argumentCaptor = ArgumentCaptor.forClass(TaskModel.class);
-        verify(executionDAOFacade, times(1)).updateTask(argumentCaptor.capture());
+        verify(executionDAOFacade, times(1))
+                .updateTaskKeepingContinuation(argumentCaptor.capture());
         assertEquals(TaskModel.Status.SCHEDULED, argumentCaptor.getAllValues().get(0).getStatus());
         assertEquals(0, argumentCaptor.getAllValues().get(0).getCallbackAfterSeconds());
         assertEquals(taskResult.getWorkerId(), argumentCaptor.getAllValues().get(0).getWorkerId());

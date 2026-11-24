@@ -206,7 +206,7 @@ public class AsyncSystemTaskExecutor {
                             task.setStartTime(System.currentTimeMillis());
                             // Persist startTime before invoking so a redelivery can detect an
                             // overrun (status left unchanged for start()'s SCHEDULED branch).
-                            executionDAOFacade.updateTask(task);
+                            executionDAOFacade.updateTaskKeepingContinuation(task);
                             Monitors.recordQueueWaitTime(
                                     task.getTaskType(), task.getQueueWaitTime());
                             systemTask.start(workflow, task, workflowExecutor);
@@ -251,7 +251,7 @@ public class AsyncSystemTaskExecutor {
             Monitors.error(AsyncSystemTaskExecutor.class.getSimpleName(), "executeSystemTask");
             LOGGER.error("Error executing system task - {}, with id: {}", systemTask, taskId, e);
         } finally {
-            executionDAOFacade.updateTask(task);
+            executionDAOFacade.updateTaskKeepingContinuation(task);
             if (shouldRemoveTaskFromQueue) {
                 queueDAO.remove(queueName, task.getTaskId());
                 LOGGER.debug("{} removed from queue: {}", task, queueName);

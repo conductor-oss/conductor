@@ -1112,7 +1112,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         // Throw a TransientException if below operations fail to avoid workflow
         // inconsistencies.
         try {
-            executionDAOFacade.updateTask(task);
+            executionDAOFacade.updateTaskKeepingContinuation(task);
         } catch (Exception e) {
             String errorMsg =
                     String.format(
@@ -1244,9 +1244,10 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     /**
      * A native continuation's completion changes the workflow row (the fragment, variables,
      * markers), which only a decide writes: it is applied under the workflow's lock, then the
-     * decide it triggers runs in that same acquisition. A task update needs no lock: it is saved
-     * only if the task is still as it was read, so a late completion cannot overwrite an attempt
-     * decide timed out meanwhile (found by the durability bench under server and database pauses).
+     * decide it triggers runs in that same acquisition. A task update from a worker or a system
+     * task does not take the lock; it saves the task with the marker as stored (see {@link
+     * ExecutionDAOFacade#updateTaskKeepingContinuation}), so a stale copy cannot undo a marker this
+     * path applied.
      */
     private TaskModel completeContinuationLocked(TaskResult taskResult, TaskModel awaited) {
         String workflowId = taskResult.getWorkflowInstanceId();
@@ -2989,7 +2990,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             return;
         }
         executeSubworkflowTaskAndSyncData(subWorkflow, subWorkflowTask);
-        executionDAOFacade.updateTask(subWorkflowTask);
+        executionDAOFacade.updateTaskKeepingContinuation(subWorkflowTask);
         if (subWorkflowTask.getStatus().isTerminal()) {
             // This fork branch's sub-workflow just finished; a sibling JOIN waiting on it may now
             // be satisfiable. Nudge it off its exponential-backoff poll so the parent completes
