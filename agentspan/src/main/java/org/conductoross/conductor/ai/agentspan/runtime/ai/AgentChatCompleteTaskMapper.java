@@ -94,7 +94,7 @@ public class AgentChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletio
 
     record Exchange(List<ChatMessage> messages, ExchangeType type) {}
 
-    @Value("${agentspan.context-condensation.recent-exchanges:5}")
+    @Value("${conductor.ai.context-condensation.recent-exchanges:5}")
     private int recentExchangesToKeep;
 
     @Autowired(required = false)

@@ -15,11 +15,30 @@ package org.conductoross.conductor.ai.agentspan.runtime.util;
 import java.util.OptionalInt;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.env.MockEnvironment;
 
 import static org.assertj.core.api.Assertions.*;
 
-/** Tests for ModelContextWindows static defaults (no Spring context needed). */
+/** Tests for ModelContextWindows defaults and its property overrides. */
 class ModelContextWindowsTest {
+
+    @Test
+    void modelOverrideProperty_beatsTheStaticDefault() {
+        ModelContextWindows windows =
+                new ModelContextWindows(
+                        new MockEnvironment()
+                                .withProperty("conductor.ai.model-context-windows.gpt-4o", "1234"));
+        assertThat(windows.getContextWindow("gpt-4o")).hasValue(1234);
+    }
+
+    @Test
+    void defaultContextWindowProperty_coversUnknownModels() {
+        ModelContextWindows windows =
+                new ModelContextWindows(
+                        new MockEnvironment()
+                                .withProperty("conductor.ai.default-context-window", "4321"));
+        assertThat(windows.getContextWindow("some-unknown-model")).hasValue(4321);
+    }
 
     @Test
     void getContextWindow_exactMatch_gpt4o() {

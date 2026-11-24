@@ -19,7 +19,9 @@ import org.conductoross.conductor.ai.a2a.model.AgentCard;
 import org.conductoross.conductor.ai.a2a.server.A2AServerException;
 import org.conductoross.conductor.ai.a2a.server.A2AServerProperties;
 import org.conductoross.conductor.common.metadata.agent.AgentSummary;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.conductoross.conductor.config.A2AServerEnabledCondition;
+import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -37,13 +39,11 @@ import tools.jackson.databind.JsonNode;
  * A2A server endpoints for native Conductor agents. Exposes agentspan agents as A2A agents. Routes:
  * GET /api/a2a/agent (list), GET /api/a2a/agent/{name}/.well-known/agent-card.json (discovery),
  * POST /api/a2a/agent/{name} (JSON-RPC: message/send, tasks/get, tasks/cancel, message/stream).
- * Gated on conductor.a2a.server.enabled=true and agentspan.embedded=true. All dispatch logic,
- * thread-pool management, and JSON-RPC handling are delegated to A2ANativeAgentFacade.
+ * Gated on conductor.a2a.server.enabled=true and conductor.integrations.ai.enabled=true.
+ * A2ANativeAgentFacade does the dispatch, thread-pool management and JSON-RPC handling.
  */
 @RestController
-@ConditionalOnProperty(
-        name = {"conductor.a2a.server.enabled", "agentspan.embedded"},
-        havingValue = "true")
+@Conditional({A2AServerEnabledCondition.class, AIIntegrationEnabledCondition.class})
 public class A2AAgentServerResource {
 
     private final A2ANativeAgentFacade facade;

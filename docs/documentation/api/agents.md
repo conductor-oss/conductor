@@ -91,7 +91,7 @@ curl -X POST 'http://localhost:8080/api/agent/EXECUTION_ID/respond' \
 | `POST` | `/api/skills/{name}/versions/{version}/deploy` | Deploy a specific skill package as an agent. |
 | `DELETE` | `/api/skills/{name}/versions/{version}` | Delete a skill package version. |
 
-The skill endpoints are present only when skill packages are enabled on the server.
+The skill endpoints are present only when `conductor.ai.skills.enabled=true` is also set.
 
 ## Related guides
 

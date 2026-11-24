@@ -82,7 +82,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
             "conductor.app.sweeper.sweepBatchSize=1",
             "conductor.app.sweeper.queuePopTimeout=750",
             "conductor.integrations.ai.enabled=true",
-            "agentspan.embedded=true",
             "conductor.mcp.server.enabled=true",
             "conductor.mcp.server.exposedWorkflows=" + MCPServerAgentEndToEndTest.OPTED_IN_AGENT,
             // A call returns a task at once, so the test drives the agent between polls.

@@ -371,6 +371,8 @@ conductor.a2a.server.exposed-workflows=order_pizza,book_appointment
 | `POST /api/a2a/agent/{name}` | JSON-RPC: same methods, backed by the Conductor Agents runtime. |
 | `GET /api/a2a/agent` | Convenience listing of exposed native agents (non-spec). |
 
+The `/api/a2a/agent` routes need `conductor.integrations.ai.enabled=true` as well as `conductor.a2a.server.enabled=true`. With both on, every deployed agent is exposed. The MCP server uses the same rule for agent tools.
+
 Exposed agents advertise `capabilities.streaming=true`.
 
 A native agent's card `description` (and its skill's) is the agent's own `introduction`, as the MCP server shows it. Without one, it is the agent's workflow definition description, which the agent compiler writes (for example `Agent workflow for <name>`), or `Conductor agent '<name>' exposed as an A2A agent` when that is empty.
