@@ -10,7 +10,7 @@ For persistent backends, use [Docker Compose](deploy.md) or configure a database
 
 ## Prerequisites
 
-- Java (JDK) 21+
+- Java (JDK) 25+
 - (Optional) [Docker](https://www.docker.com/get-started/) for running tests
 
 

@@ -28,7 +28,7 @@ dependencies {
 
     testImplementation "org.awaitility:awaitility"
     testImplementation "org.testcontainers:testcontainers:${revTestContainer}"
-    testImplementation project(':conductor-core').sourceSets.test.output
-    testImplementation project(':conductor-common').sourceSets.test.output
-    testImplementation project(':conductor-common-persistence').sourceSets.test.output
+    testImplementation rootProject.project(':conductor-core').sourceSets.test.output
+    testImplementation rootProject.project(':conductor-common').sourceSets.test.output
+    testImplementation rootProject.project(':conductor-common-persistence').sourceSets.test.output
 }
