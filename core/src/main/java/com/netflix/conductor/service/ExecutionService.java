@@ -35,6 +35,7 @@ import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.NativeContinuationService;
+import com.netflix.conductor.core.execution.NativeWorkflows;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.listener.TaskStatusListener;
@@ -144,7 +145,7 @@ public class ExecutionService {
         for (String taskId : taskIds) {
             try {
                 TaskModel taskModel =
-                        NativeContinuationService.isSyntheticId(taskId)
+                        NativeWorkflows.isSyntheticId(taskId)
                                 ? null
                                 : executionDAOFacade.getTaskModel(taskId);
                 // Native workflows: a continuation message is either for the bootstrap or handler
@@ -152,7 +153,7 @@ public class ExecutionService {
                 // code type being polled. The continuation is leased and the task handed to the
                 // worker without touching the task's own status.
                 if (nativeContinuationService != null
-                        && (NativeContinuationService.isSyntheticId(taskId)
+                        && (NativeWorkflows.isSyntheticId(taskId)
                                 || (taskModel != null
                                         && taskModel.getContinuation() != null
                                         && !taskType.equals(taskModel.getTaskType())))) {

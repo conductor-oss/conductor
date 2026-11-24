@@ -70,6 +70,7 @@ public class NativeContinuationServiceTest {
     private ObjectMapper objectMapper;
     private ConductorProperties properties;
     private NativeContinuationService service;
+    private final NativeRerunPlanner planner = new NativeRerunPlanner();
 
     @Before
     public void setUp() {
@@ -85,7 +86,13 @@ public class NativeContinuationServiceTest {
         properties = new ConductorProperties();
         service =
                 new NativeContinuationService(
-                        objectMapper, properties, new MetadataMapperService(metadataDAO), mappers);
+                        objectMapper,
+                        properties,
+                        new NativeFragmentValidator(
+                                objectMapper,
+                                properties,
+                                new MetadataMapperService(metadataDAO),
+                                mappers));
     }
 
     // ------------------------------------------------------------------ fixtures
@@ -213,7 +220,7 @@ public class NativeContinuationServiceTest {
     public void initializeSetsUpTheBootstrapAndHandlerMarkers() {
         WorkflowModel workflow = freshWorkflow(true);
         NativeState state = workflow.getNativeState();
-        assertEquals(CODE_TYPE, NativeContinuationService.codeType(workflow));
+        assertEquals(CODE_TYPE, NativeWorkflows.codeType(workflow));
         assertNotRun(state.getBootstrap());
         assertNotRun(state.getHandlers());
         assertNull(freshWorkflow(false).getNativeState().getHandlers());
@@ -1087,16 +1094,16 @@ public class NativeContinuationServiceTest {
         b.setContinuation(null); // the lane ended with this task without pausing
 
         a.getContinuation().setLeased(false);
-        assertFalse(NativeContinuationService.lanesSettled(workflow, List.of("a1", "b1")));
+        assertFalse(NativeWorkflows.lanesSettled(workflow, List.of("a1", "b1")));
         a.getContinuation().setLeased(true);
-        assertFalse(NativeContinuationService.lanesSettled(workflow, List.of("a1", "b1")));
+        assertFalse(NativeWorkflows.lanesSettled(workflow, List.of("a1", "b1")));
         applied(a.getContinuation()); // appended more: not the tail
-        assertFalse(NativeContinuationService.lanesSettled(workflow, List.of("a1", "b1")));
+        assertFalse(NativeWorkflows.lanesSettled(workflow, List.of("a1", "b1")));
         a.getContinuation().setDone(true);
-        assertTrue(NativeContinuationService.lanesSettled(workflow, List.of("a1", "b1")));
+        assertTrue(NativeWorkflows.lanesSettled(workflow, List.of("a1", "b1")));
         a.setStatus(TaskModel.Status.IN_PROGRESS);
-        assertFalse(NativeContinuationService.lanesSettled(workflow, List.of("a1", "b1")));
-        assertFalse(NativeContinuationService.lanesSettled(workflow, List.of("missing")));
+        assertFalse(NativeWorkflows.lanesSettled(workflow, List.of("a1", "b1")));
+        assertFalse(NativeWorkflows.lanesSettled(workflow, List.of("missing")));
     }
 
     /**
@@ -1114,7 +1121,7 @@ public class NativeContinuationServiceTest {
     }
 
     private static void appendedBy(TaskModel task, String marker) {
-        task.getWorkflowTask().getMetadata().put(NativeContinuationService.APPENDED_BY, marker);
+        task.getWorkflowTask().getMetadata().put(NativeWorkflows.APPENDED_BY, marker);
     }
 
     @Test
@@ -1128,14 +1135,14 @@ public class NativeContinuationServiceTest {
         TaskModel t3 = ran(workflow, "task_3", "main", 4, 0, 0);
         appendedBy(t3, "main#3");
 
-        NativeContinuationService.RerunPlan plan = service.planRerun(workflow, t2);
+        NativeRerunPlanner.RerunPlan plan = planner.planRerun(workflow, t2);
 
         assertEquals(Set.of("id-task_3"), plan.dropTaskIds());
         assertEquals(Set.of("task_3"), plan.dropEntries());
         assertEquals(Set.of("main#3"), plan.resetMarkers());
         workflow.getTasks().remove(t3);
         List<TaskModel> touched = new ArrayList<>();
-        service.adjustRerun(workflow, t2, plan, touched);
+        planner.adjustRerun(workflow, t2, plan, touched);
         assertEquals(
                 List.of("task_1", "task_2"), refs(workflow.getWorkflowDefinition().getTasks()));
         assertNotRun(t2.getContinuation()); // runs again when task_2 completes again
@@ -1159,7 +1166,7 @@ public class NativeContinuationServiceTest {
         fork.setName("fork");
         fork.setTaskReferenceName("fork");
         fork.setType("FORK_JOIN");
-        fork.getMetadata().put(NativeContinuationService.APPENDED_BY, "main#1");
+        fork.getMetadata().put(NativeWorkflows.APPENDED_BY, "main#1");
         fork.setForkTasks(
                 new ArrayList<>(
                         List.of(
@@ -1168,7 +1175,7 @@ public class NativeContinuationServiceTest {
         WorkflowTask joinEntry = top.get(2);
         joinEntry.setType("JOIN");
         joinEntry.setJoinOn(List.of("x", "y"));
-        joinEntry.getMetadata().put(NativeContinuationService.APPENDED_BY, "main#1");
+        joinEntry.getMetadata().put(NativeWorkflows.APPENDED_BY, "main#1");
         WorkflowTask afterEntry = top.get(3);
         top.clear();
         top.addAll(List.of(fork, joinEntry, afterEntry));
@@ -1183,7 +1190,7 @@ public class NativeContinuationServiceTest {
         TaskModel y = tasks.get(1);
         TaskModel join = tasks.get(2);
 
-        NativeContinuationService.RerunPlan plan = service.planRerun(workflow, x);
+        NativeRerunPlanner.RerunPlan plan = planner.planRerun(workflow, x);
 
         // x ended at 100: y's continuation (160) and the join's (175) may have seen it
         assertEquals(Set.of("a#2", "b#2", "main#2"), plan.resetMarkers());
@@ -1191,7 +1198,7 @@ public class NativeContinuationServiceTest {
         assertEquals(Set.of("after"), plan.dropEntries());
         workflow.getTasks().remove(tasks.get(3));
         List<TaskModel> touched = new ArrayList<>();
-        service.adjustRerun(workflow, x, plan, touched);
+        planner.adjustRerun(workflow, x, plan, touched);
         assertEquals(
                 List.of("fork", "fork_join"), refs(workflow.getWorkflowDefinition().getTasks()));
         assertNotRun(x.getContinuation());
@@ -1202,7 +1209,7 @@ public class NativeContinuationServiceTest {
         // from y, which ended at 150: x's continuation ran before that and stays
         WorkflowModel second = freshWorkflow(false);
         List<TaskModel> again = forked(second);
-        plan = service.planRerun(second, again.get(1));
+        plan = planner.planRerun(second, again.get(1));
         assertEquals(Set.of("b#2", "main#2"), plan.resetMarkers());
     }
 
@@ -1232,8 +1239,8 @@ public class NativeContinuationServiceTest {
                                 "y",
                                 new ArrayList<>(List.of(drawn)))));
 
-        NativeContinuationService.RerunPlan plan = service.planRerun(workflow, after);
-        service.adjustRerun(workflow, after, plan, new ArrayList<>());
+        NativeRerunPlanner.RerunPlan plan = planner.planRerun(workflow, after);
+        planner.adjustRerun(workflow, after, plan, new ArrayList<>());
 
         assertTrue(plan.dropTaskIds().isEmpty());
         assertEquals(List.of("other_if_y"), refs(decision.getDecisionCases().get("y")));
@@ -1251,7 +1258,7 @@ public class NativeContinuationServiceTest {
         TaskModel f2 = ran(workflow, "f2", "main", 2, 120, 0);
         appendedBy(f2, "main#1");
 
-        NativeContinuationService.RerunPlan plan = service.planRerun(workflow, f1);
+        NativeRerunPlanner.RerunPlan plan = planner.planRerun(workflow, f1);
 
         assertEquals(Set.of("id-f2"), plan.dropTaskIds()); // scheduled again from its entry
         assertTrue(plan.dropEntries().isEmpty());
@@ -1563,9 +1570,9 @@ public class NativeContinuationServiceTest {
         TaskModel t2 = ran(workflow, "task_2", "main", 3, 0, 0);
         appendedBy(t2, "main#2");
 
-        NativeContinuationService.RerunPlan plan = service.planRerun(workflow, t1);
+        NativeRerunPlanner.RerunPlan plan = planner.planRerun(workflow, t1);
         workflow.getTasks().remove(t2);
-        service.adjustRerun(workflow, t1, plan, new ArrayList<>());
+        planner.adjustRerun(workflow, t1, plan, new ArrayList<>());
 
         // the parked code already ran what the rerun runs again
         assertNull(workflow.getNativeState().getPinnedTo());
@@ -1577,7 +1584,7 @@ public class NativeContinuationServiceTest {
         WorkflowModel workflow = pinnedWorkflow(false);
         ran(workflow, "task_1", "main", 2, 100, 110);
 
-        assertTrue(service.rearmLastMain(workflow) != null);
+        assertTrue(planner.rearmLastMain(workflow) != null);
 
         assertNull(workflow.getNativeState().getPinnedTo());
         assertNull(workflow.getNativeState().getStamp());

@@ -204,6 +204,9 @@ public class TestWorkflowExecutor {
         taskMappers.put(LAMBDA.name(), new LambdaTaskMapper(parametersUtils, metadataDAO));
         taskMappers.put(INLINE.name(), new InlineTaskMapper(parametersUtils, metadataDAO));
 
+        nativeService =
+                TestDeciderOutcomes.nativeContinuationService(
+                        objectMapper, new ConductorProperties(), metadataDAO, taskMappers);
         DeciderService deciderService =
                 new DeciderService(
                         idGenerator,
@@ -211,12 +214,6 @@ public class TestWorkflowExecutor {
                         metadataDAO,
                         externalPayloadStorageUtils,
                         systemTaskRegistry,
-                        nativeService =
-                                new NativeContinuationService(
-                                        objectMapper,
-                                        new ConductorProperties(),
-                                        new MetadataMapperService(metadataDAO),
-                                        taskMappers),
                         taskMappers,
                         new HashMap<>(),
                         Duration.ofMinutes(60));
@@ -244,7 +241,9 @@ public class TestWorkflowExecutor {
                         parametersUtils,
                         idGenerator,
                         Optional.empty(),
-                        mock(SchemaService.class));
+                        mock(SchemaService.class),
+                        nativeService,
+                        new NativeRerunPlanner());
     }
 
     @Test
@@ -2380,12 +2379,12 @@ public class TestWorkflowExecutor {
         ifEntry.setEvaluatorType("native-code");
         ifEntry.setExpression("c");
         ifEntry.setDecisionCases(new HashMap<>(Map.of("true", new ArrayList<>(List.of(b)))));
-        ifEntry.getMetadata().put(NativeContinuationService.APPENDED_BY, "main#2");
+        ifEntry.getMetadata().put(NativeWorkflows.APPENDED_BY, "main#2");
         WorkflowTask mark = new WorkflowTask();
         mark.setName("thrown");
         mark.setType(TaskType.TERMINATE.name());
         mark.setTaskReferenceName("thrown");
-        mark.getMetadata().put(NativeContinuationService.APPENDED_BY, "main#2");
+        mark.getMetadata().put(NativeWorkflows.APPENDED_BY, "main#2");
         def.getTasks().addAll(List.of(a, ifEntry, mark));
 
         WorkflowModel workflow = new WorkflowModel();

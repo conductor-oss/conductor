@@ -31,7 +31,8 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.config.ConductorProperties;
-import com.netflix.conductor.core.execution.NativeContinuationService;
+import com.netflix.conductor.core.execution.NativeDefinitionEdits;
+import com.netflix.conductor.core.execution.NativeWorkflows;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
@@ -72,7 +73,7 @@ public class Join extends WorkflowSystemTask {
         StringBuilder failureReason = new StringBuilder();
         StringBuilder optionalTaskFailures = new StringBuilder();
         boolean agentExecution = isAgentExecution(workflow);
-        if (NativeContinuationService.isNative(workflow)
+        if (NativeWorkflows.isNative(workflow)
                 && task.getWorkflowTask() != null
                 && Boolean.TRUE.equals(task.getWorkflowTask().getMetadata().get(DETACHED))) {
             // lanes nothing waits for yet: the code goes on while they run
@@ -82,7 +83,7 @@ public class Join extends WorkflowSystemTask {
         List<String> joinOn = (List<String>) task.getInputData().get("joinOn");
         if ((joinOn == null || joinOn.isEmpty())
                 && !task.isLoopOverTask()
-                && NativeContinuationService.isNative(workflow)) {
+                && NativeWorkflows.isNative(workflow)) {
             // Live targets: a JOIN after a FORK_JOIN that names no targets joins on whatever each
             // branch currently ends with. Native workflows grow fork branches at run time, so the
             // targets cannot be fixed when the JOIN is scheduled.
@@ -93,7 +94,7 @@ public class Join extends WorkflowSystemTask {
                 // Wait for the next evaluation rather than completing with no targets.
                 return false;
             }
-            if (!NativeContinuationService.lanesSettled(workflow, joinOn)) {
+            if (!NativeWorkflows.lanesSettled(workflow, joinOn)) {
                 return false;
             }
         }
@@ -270,7 +271,7 @@ public class Join extends WorkflowSystemTask {
             return targetsOfLanes(workflow, lanes);
         }
         WorkflowTask fork =
-                NativeContinuationService.previousTask(
+                NativeDefinitionEdits.previousTask(
                         workflow.getWorkflowDefinition(),
                         joinTask.getWorkflowTask().getTaskReferenceName());
         if (fork == null || !TaskType.FORK_JOIN.name().equals(fork.getType())) {

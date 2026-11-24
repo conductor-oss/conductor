@@ -184,11 +184,8 @@ public class TestDeciderOutcomes {
         taskMappers.put(HTTP.name(), new HTTPTaskMapper(parametersUtils, metadataDAO));
 
         this.nativeContinuationService =
-                new NativeContinuationService(
-                        objectMapper,
-                        new ConductorProperties(),
-                        new MetadataMapperService(metadataDAO),
-                        taskMappers);
+                nativeContinuationService(
+                        objectMapper, new ConductorProperties(), metadataDAO, taskMappers);
         this.deciderService =
                 new DeciderService(
                         new IDGenerator(),
@@ -196,10 +193,24 @@ public class TestDeciderOutcomes {
                         metadataDAO,
                         externalPayloadStorageUtils,
                         systemTaskRegistry,
-                        nativeContinuationService,
                         taskMappers,
                         new HashMap<>(),
                         Duration.ofMinutes(60));
+    }
+
+    static NativeContinuationService nativeContinuationService(
+            ObjectMapper objectMapper,
+            ConductorProperties properties,
+            MetadataDAO metadataDAO,
+            Map<String, TaskMapper> taskMappers) {
+        return new NativeContinuationService(
+                objectMapper,
+                properties,
+                new NativeFragmentValidator(
+                        objectMapper,
+                        properties,
+                        new MetadataMapperService(metadataDAO),
+                        taskMappers));
     }
 
     @Test
@@ -625,11 +636,7 @@ public class TestDeciderOutcomes {
         // the executor wakes it in the same decide
         assertEquals(
                 List.of(task.getTaskId()),
-                deciderService
-                        .getNativeContinuationService()
-                        .repairAndWake(workflow)
-                        .offers
-                        .stream()
+                nativeContinuationService.repairAndWake(workflow).offers.stream()
                         .map(NativeContinuationService.Offer::messageId)
                         .toList());
         assertTrue(task.getContinuation().isLeased());

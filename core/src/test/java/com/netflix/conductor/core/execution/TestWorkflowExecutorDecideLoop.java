@@ -103,7 +103,9 @@ public class TestWorkflowExecutorDecideLoop {
                         mock(ParametersUtils.class),
                         mock(IDGenerator.class),
                         Optional.empty(),
-                        mock(SchemaService.class));
+                        mock(SchemaService.class),
+                        mock(NativeContinuationService.class),
+                        new NativeRerunPlanner());
     }
 
     /**

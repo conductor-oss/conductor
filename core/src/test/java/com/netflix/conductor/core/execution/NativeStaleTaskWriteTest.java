@@ -385,7 +385,9 @@ public class NativeStaleTaskWriteTest {
                         mock(ParametersUtils.class),
                         mock(IDGenerator.class),
                         Optional.empty(),
-                        mock(SchemaService.class));
+                        mock(SchemaService.class),
+                        mock(NativeContinuationService.class),
+                        new NativeRerunPlanner());
         TaskResult result = new TaskResult();
         result.setWorkflowInstanceId(WF);
         result.setTaskId("id-a");
