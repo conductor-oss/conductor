@@ -28,7 +28,7 @@ import tools.jackson.databind.node.ObjectNode;
  */
 public final class MCPProtocolHeaders {
 
-    public static final String PROTOCOL_VERSION = "2026-07-28";
+    public static final String PROTOCOL_VERSION = MCPProtocolVersion.latest().value();
     public static final String TASKS_EXTENSION = "io.modelcontextprotocol/tasks";
 
     public static final String META_PROTOCOL_VERSION = "io.modelcontextprotocol/protocolVersion";
@@ -41,7 +41,8 @@ public final class MCPProtocolHeaders {
     public static final String HEADER_NAME = "Mcp-Name";
     public static final String ACCEPT = "application/json, text/event-stream";
 
-    static final String CLIENT_NAME = "conductor";
+    /** Conductor's name in {@code clientInfo} and {@code serverInfo}. */
+    public static final String IMPLEMENTATION_NAME = "conductor";
 
     private static final String SENTINEL_PREFIX = "=?base64?";
 
@@ -51,7 +52,11 @@ public final class MCPProtocolHeaders {
     private static final char LAST_VISIBLE_CHAR = 0x7E;
     private static final String SENTINEL_SUFFIX = "?=";
 
-    private static final String CLIENT_VERSION = resolveClientVersion();
+    /**
+     * Conductor's version in {@code clientInfo} and {@code serverInfo}: the {@code ai} jar's
+     * manifest version, or {@code unknown} when it has none (for example in tests).
+     */
+    public static final String IMPLEMENTATION_VERSION = resolveImplementationVersion();
 
     private MCPProtocolHeaders() {}
 
@@ -67,12 +72,12 @@ public final class MCPProtocolHeaders {
         meta.put(META_PROTOCOL_VERSION, PROTOCOL_VERSION);
 
         ObjectNode clientInfo = meta.putObject(META_CLIENT_INFO);
-        clientInfo.put("name", CLIENT_NAME);
-        clientInfo.put("version", CLIENT_VERSION);
+        clientInfo.put(MCPFields.Implementation.NAME, IMPLEMENTATION_NAME);
+        clientInfo.put(MCPFields.Implementation.VERSION, IMPLEMENTATION_VERSION);
 
         ObjectNode capabilities = meta.putObject(META_CLIENT_CAPABILITIES);
         if (declareTasks) {
-            capabilities.putObject("extensions").putObject(TASKS_EXTENSION);
+            capabilities.putObject(MCPFields.Session.EXTENSIONS).putObject(TASKS_EXTENSION);
         }
         return meta;
     }
@@ -109,8 +114,26 @@ public final class MCPProtocolHeaders {
                 + SENTINEL_SUFFIX;
     }
 
-    static String clientVersion() {
-        return CLIENT_VERSION;
+    /**
+     * Returns a header value as sent: the decoded text of a {@code =?base64?...?=} value, or the
+     * value unchanged when it is not one or its Base64 is invalid. The inverse of {@link
+     * #encodeHeaderValue}.
+     */
+    public static String decodeHeaderValue(String value) {
+        if (value == null
+                || !value.startsWith(SENTINEL_PREFIX)
+                || !value.endsWith(SENTINEL_SUFFIX)
+                || value.length() < SENTINEL_PREFIX.length() + SENTINEL_SUFFIX.length()) {
+            return value;
+        }
+        String encoded =
+                value.substring(
+                        SENTINEL_PREFIX.length(), value.length() - SENTINEL_SUFFIX.length());
+        try {
+            return new String(Base64.getDecoder().decode(encoded), StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            return value;
+        }
     }
 
     private static boolean needsEncoding(String value) {
@@ -136,7 +159,7 @@ public final class MCPProtocolHeaders {
         return c == ' ' || c == '\t';
     }
 
-    private static String resolveClientVersion() {
+    private static String resolveImplementationVersion() {
         String version = MCPProtocolHeaders.class.getPackage().getImplementationVersion();
         return version == null || version.isBlank() ? "unknown" : version;
     }

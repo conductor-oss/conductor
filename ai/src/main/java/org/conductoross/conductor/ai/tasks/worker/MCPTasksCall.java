@@ -16,6 +16,8 @@ import java.time.Duration;
 import java.util.Map;
 
 import org.conductoross.conductor.ai.mcp.MCPCallException;
+import org.conductoross.conductor.ai.mcp.MCPClientMetrics;
+import org.conductoross.conductor.ai.mcp.MCPFields;
 import org.conductoross.conductor.ai.mcp.MCPHeaderParams;
 import org.conductoross.conductor.ai.mcp.MCPOptions;
 import org.conductoross.conductor.ai.mcp.MCPProtocolHeaders;
@@ -35,6 +37,12 @@ import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+import static org.conductoross.conductor.ai.mcp.MCPJsonRpc.HEADER_MISMATCH;
+import static org.conductoross.conductor.ai.mcp.MCPJsonRpc.INVALID_PARAMS;
+import static org.conductoross.conductor.ai.mcp.MCPJsonRpc.MISSING_REQUIRED_CLIENT_CAPABILITY;
+import static org.conductoross.conductor.ai.mcp.MCPJsonRpc.RESOURCE_NOT_FOUND;
+import static org.conductoross.conductor.ai.mcp.MCPJsonRpc.UNSUPPORTED_PROTOCOL_VERSION;
+
 /**
  * Lifecycle of a {@code CALL_MCP_TOOL} call that selects {@code mcpOptions.protocolVersion} (the
  * MCP {@code 2026-07-28} form, which declares the MCP Tasks extension). MCP-specific; structured
@@ -52,6 +60,11 @@ import tools.jackson.databind.ObjectMapper;
  * is shorter: the server keeps the task only for its {@code ttlMs}, so the result cannot be counted
  * on after it. The deadline is measured from the task's start, which is before the server created
  * the task, so it never ends after the server's own {@code ttlMs}.
+ *
+ * <p>{@code tools/call} is not idempotent and has no idempotency key. If its response is lost after
+ * the server started the call (a transport error), the Conductor task fails with a retry, and the
+ * retry sends {@code tools/call} again: the remote call runs twice. The call without Tasks has the
+ * same limit.
  *
  * <p>Every outcome is applied through the {@link TaskContext} result, as {@code A2AWorkers.finish}
  * does: the callback is {@code 0} for every status other than {@code IN_PROGRESS}, and at least
@@ -74,10 +87,13 @@ final class MCPTasksCall {
     static final Duration MAX_BACKOFF = Duration.ofMinutes(5);
 
     /**
-     * Upper bound of the doublings in {@link #backoffMs}, so that the shift cannot overflow; the
-     * wait reaches {@link #MAX_BACKOFF} long before.
+     * Upper bound of the doublings in {@link #backoffMs}; the wait reaches {@link #MAX_BACKOFF}
+     * long before. The shift cannot overflow: its base is at most {@link #MAX_DURATION_LIMIT}.
      */
     private static final int MAX_BACKOFF_DOUBLINGS = 20;
+
+    /** Upper bound of {@code conductor.mcp.client.maxDuration}. */
+    static final Duration MAX_DURATION_LIMIT = Duration.ofDays(30);
 
     private static final long MILLIS_PER_SECOND = Duration.ofSeconds(1).toMillis();
 
@@ -92,9 +108,15 @@ final class MCPTasksCall {
     private final Duration maxDuration;
 
     MCPTasksCall(MCPService mcpService, Duration maxDuration) {
-        if (maxDuration == null || maxDuration.isNegative() || maxDuration.isZero()) {
+        if (maxDuration == null
+                || maxDuration.isNegative()
+                || maxDuration.isZero()
+                || maxDuration.compareTo(MAX_DURATION_LIMIT) > 0) {
             throw new IllegalArgumentException(
-                    "conductor.mcp.client.maxDuration must be positive, but is " + maxDuration);
+                    "conductor.mcp.client.maxDuration must be positive and at most "
+                            + MAX_DURATION_LIMIT
+                            + ", but is "
+                            + maxDuration);
         }
         this.mcpService = mcpService;
         this.maxDuration = maxDuration;
@@ -163,7 +185,8 @@ final class MCPTasksCall {
             if (e.hasDefinedMeaning()) {
                 // A JSON-RPC error with a defined meaning is the MCP server's own answer, so its
                 // code decides, whatever the HTTP status.
-                if (code == MCPRequestException.INVALID_PARAMS) {
+                // The spec answers an unknown task with -32602; some servers send -32002.
+                if (code == INVALID_PARAMS || code == RESOURCE_NOT_FOUND) {
                     if (deadlineExceeded(task, ttl)) {
                         // Past the deadline the server may have dropped the task, as its ttlMs
                         // allows. A retry would run into the same deadline, so do not retry.
@@ -257,7 +280,10 @@ final class MCPTasksCall {
             case FAILED:
                 return fail(taskId, 0, "MCP task '" + taskId + "' failed: " + describe(remote));
             case CANCELLED:
+                // As A2AWorkers does for a canceled agent task: no retry, which would start the
+                // call the server cancelled again.
                 return fail(
+                        TaskResult.Status.CANCELED,
                         taskId,
                         0,
                         "MCP server cancelled task '"
@@ -341,6 +367,7 @@ final class MCPTasksCall {
             Long pollIntervalMs,
             Long ttlMs,
             RuntimeException error) {
+        MCPClientMetrics.clientPollFailure();
         if (deadlineExceeded(task, ttlMs)) {
             return deadlineFailure(request, taskId, failures + 1, ttlMs);
         }
@@ -636,7 +663,9 @@ final class MCPTasksCall {
                                                         + request.getMcpServer()));
         try {
             return MCPHeaderParams.headersFor(
-                    toolName, tool.get("inputSchema"), arguments == null ? Map.of() : arguments);
+                    toolName,
+                    tool.get(MCPFields.Tool.INPUT_SCHEMA),
+                    arguments == null ? Map.of() : arguments);
         } catch (MCPCallException e) {
             // An invalid x-mcp-header annotation or argument: the same input fails the same way.
             throw new NonRetryableException(e.getMessage());
@@ -644,7 +673,7 @@ final class MCPTasksCall {
     }
 
     private static boolean isHeaderMismatch(MCPRequestException e) {
-        return e.getCode() != null && e.getCode() == MCPRequestException.HEADER_MISMATCH;
+        return e.getCode() != null && e.getCode() == HEADER_MISMATCH;
     }
 
     /**
@@ -656,8 +685,9 @@ final class MCPTasksCall {
             MCPToolCallRequest request, MCPRequestException e) {
         String server = request.getMcpServer();
         Integer code = e.getCode();
-        if (code != null && code == MCPRequestException.UNSUPPORTED_PROTOCOL_VERSION) {
-            JsonNode supported = e.getData() != null ? e.getData().get("supported") : null;
+        if (code != null && code == UNSUPPORTED_PROTOCOL_VERSION) {
+            JsonNode supported =
+                    e.getData() != null ? e.getData().get(MCPFields.Error.SUPPORTED) : null;
             return new NonRetryableException(
                     "MCP server "
                             + server
@@ -667,9 +697,11 @@ final class MCPTasksCall {
                             + (supported != null ? supported : "not given by the server")
                             + "). Remove mcpOptions.protocolVersion to use the legacy MCP request.");
         }
-        if (code != null && code == MCPRequestException.MISSING_REQUIRED_CLIENT_CAPABILITY) {
+        if (code != null && code == MISSING_REQUIRED_CLIENT_CAPABILITY) {
             JsonNode required =
-                    e.getData() != null ? e.getData().get("requiredCapabilities") : null;
+                    e.getData() != null
+                            ? e.getData().get(MCPFields.Error.REQUIRED_CAPABILITIES)
+                            : null;
             return new NonRetryableException(
                     "MCP server "
                             + server
