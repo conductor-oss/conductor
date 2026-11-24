@@ -70,9 +70,9 @@ conductor:
       restricted-host-access: false
 ```
 
-At startup, the server logs a warning that a future release will disable unrestricted Java host
+At startup, the server logs a warning that Conductor 3.35 will disable unrestricted Java host
 access by default. If your workflows need it, explicitly set
-`conductor.app.graaljs.restricted-host-access=false` before upgrading to retain it after that change.
+`conductor.app.graaljs.restricted-host-access=false` before upgrading to 3.35 to retain it after that change.
 
 Set the property to `true` to opt into restricted access now. Restricted mode permits task-data
 collection access (including read-only collection getters and iterators) and `console.log`,
