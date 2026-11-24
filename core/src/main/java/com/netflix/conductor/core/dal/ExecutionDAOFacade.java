@@ -368,8 +368,11 @@ public class ExecutionDAOFacade {
      * parent's task. A native workflow keeps the marker of the continuation that waits on a task in
      * that task's row, and only code under the workflow lock changes it. Such a path may save a
      * copy read before the marker changed (a resent result, two runs of one JOIN), which would put
-     * back a marker the continuation had already applied. So the row is saved under the lock with
-     * the marker as stored. A task with no marker is saved as is.
+     * back a marker the continuation had already applied, or reopen a task the code has already
+     * gone on past (a JOIN run that loaded the execution before its last lane settled saves it
+     * IN_PROGRESS). So the row is saved under the lock with the marker as stored, and not at all
+     * once the stored task is finished: the path that finished it saved it, and the decide that
+     * followed acted on that. A task with no marker is saved as is.
      */
     public void updateTaskKeepingContinuation(TaskModel taskModel) {
         if (taskModel.getContinuation() == null) {
@@ -392,6 +395,15 @@ public class ExecutionDAOFacade {
         }
         try {
             TaskModel stored = executionDAO.getTask(taskModel.getTaskId());
+            if (stored != null && stored.getStatus() != null && stored.getStatus().isTerminal()) {
+                LOGGER.debug(
+                        "Task {} of workflow {} is already {}; a stale copy ({}) is not saved",
+                        taskModel.getTaskId(),
+                        workflowId,
+                        stored.getStatus(),
+                        taskModel.getStatus());
+                return;
+            }
             if (stored != null && stored.getContinuation() != null) {
                 taskModel.setContinuation(stored.getContinuation());
             }

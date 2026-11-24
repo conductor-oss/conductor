@@ -286,6 +286,61 @@ public class NativeStaleTaskWriteTest {
     }
 
     /**
+     * A run that loaded the execution before the last lane settled finds the JOIN not done, and
+     * would save it IN_PROGRESS over the COMPLETED a later run saved, after the code had already
+     * gone on past the join.
+     */
+    @Test
+    public void aJoinRunThatReadBeforeTheLanesSettledDoesNotReopenTheJoin() throws Exception {
+        // lane fork_1.1's task finished, but its continuation has not run yet: not settled
+        TaskModel b = read("id-b");
+        b.setContinuation(new TaskContinuation());
+        save(b);
+        TaskModel joinBefore = read(JOIN_ID);
+
+        // run A loads the execution now and is slow to finish
+        SlowJoin slow = new SlowJoin();
+        Thread runA = new Thread(() -> executor.execute(slow, JOIN_ID));
+        runA.start();
+        assertTrue(slow.read.await(10, TimeUnit.SECONDS));
+
+        // fork_1.1#1 applies and ends its lane
+        assertTrue(locks.acquireLock(WF));
+        try {
+            TaskModel settled = read("id-b");
+            settled.getContinuation().setEndTime(10);
+            settled.getContinuation().setDone(true);
+            save(settled);
+        } finally {
+            locks.releaseLock(WF);
+        }
+
+        // run B completes the JOIN, and main#2 applies
+        executor.execute(new Join(new ConductorProperties()), JOIN_ID);
+        TaskModel completed = read(JOIN_ID);
+        assertEquals(TaskModel.Status.COMPLETED, completed.getStatus());
+        applyContinuation(JOIN_ID);
+
+        // run A finishes with what it loaded and saves
+        slow.go.countDown();
+        runA.join(10_000);
+
+        TaskModel join = read(JOIN_ID);
+        assertEquals(
+                "the JOIN went back to "
+                        + join.getStatus()
+                        + " after main#2, which follows it, had applied",
+                TaskModel.Status.COMPLETED,
+                join.getStatus());
+        assertEquals(
+                "the JOIN's end time was rewritten by the stale run",
+                completed.getEndTime(),
+                join.getEndTime());
+        assertTrue(join.getContinuation().isApplied());
+        assertTrue(joinBefore.getStatus() == TaskModel.Status.IN_PROGRESS);
+    }
+
+    /**
      * The same, through a worker's result: the SDK resends an update whose response did not come
      * back within its read timeout (10 s by default, under SQLite's 15 s busy timeout), so two
      * deliveries of one result can be on the server at once.
