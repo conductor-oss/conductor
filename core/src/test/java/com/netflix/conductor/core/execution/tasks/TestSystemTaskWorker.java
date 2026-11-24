@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.After;
@@ -635,6 +636,40 @@ public class TestSystemTaskWorker {
 
         assertTrue("Shared pool must be shut down", sharedPool.isShutdown());
         assertTrue("Dedicated pool must be shut down", dedicatedPool.isShutdown());
+    }
+
+    @Test
+    public void testStopWithCallbackDrainsOffCallerThread() throws Exception {
+        ExecutorService sharedPool =
+                systemTaskWorker.getExecutionConfig(TEST_TASK).getExecutorService();
+        CountDownLatch started = new CountDownLatch(1);
+        CountDownLatch releaseTask = new CountDownLatch(1);
+        AtomicBoolean interrupted = new AtomicBoolean(false);
+        sharedPool.execute(
+                () -> {
+                    started.countDown();
+                    try {
+                        releaseTask.await();
+                    } catch (InterruptedException e) {
+                        interrupted.set(true);
+                    }
+                });
+        assertTrue(started.await(5, TimeUnit.SECONDS));
+        CountDownLatch callbackRan = new CountDownLatch(1);
+
+        // Spring's lifecycle thread must not block on the in-flight task
+        systemTaskWorker.stop(callbackRan::countDown);
+
+        assertFalse(systemTaskWorker.isRunning());
+        assertTrue("Shared pool must be shut down", sharedPool.isShutdown());
+        assertFalse(
+                "Callback must wait for the drain", callbackRan.await(100, TimeUnit.MILLISECONDS));
+
+        releaseTask.countDown();
+
+        assertTrue(callbackRan.await(5, TimeUnit.SECONDS));
+        assertTrue(sharedPool.isTerminated());
+        assertFalse(interrupted.get());
     }
 
     @Test

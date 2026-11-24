@@ -376,21 +376,36 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
         }
     }
 
-    /**
-     * Drains in-flight sweeps before shutting down. Interrupting a sweep mid-decide aborts
-     * in-progress I/O (e.g. AWS SDK calls fail with AbortedException), so the executor is only
-     * forcibly stopped if the sweeps don't finish within {@link
-     * SweeperProperties#getShutdownTimeout()} ms.
-     */
     @Override
     public void doStop() {
+        Runnable drain = beginStop();
+        if (drain != null) {
+            drain.run();
+        }
+    }
+
+    /**
+     * Signals the sweep loops to stop and returns the drain of in-flight sweeps, so Spring can run
+     * it off its lifecycle thread and keep stopping the other components meanwhile. Interrupting a
+     * sweep mid-decide aborts in-progress I/O (e.g. AWS SDK calls fail with AbortedException), so
+     * the executor is only forcibly stopped if the sweeps don't finish within {@link
+     * SweeperProperties#getShutdownTimeout()} ms. Keep that timeout no higher than {@code
+     * spring.lifecycle.timeout-per-shutdown-phase}: past it Spring moves on to destroying beans
+     * while sweeps may still be running.
+     */
+    @Override
+    protected Runnable beginStop() {
         stop.set(true);
         // Graceful drain on shutdown (#1819).
         if (!(this.sweeperExecutor instanceof ExecutorService executorService)) {
-            return;
+            return null;
         }
-        long shutdownTimeout = sweeperProperties.getShutdownTimeout();
         executorService.shutdown();
+        return () -> awaitDrain(executorService);
+    }
+
+    private void awaitDrain(ExecutorService executorService) {
+        long shutdownTimeout = sweeperProperties.getShutdownTimeout();
         try {
             if (executorService.awaitTermination(shutdownTimeout, TimeUnit.MILLISECONDS)) {
                 log.info("Workflow sweeper drained and shut down gracefully");

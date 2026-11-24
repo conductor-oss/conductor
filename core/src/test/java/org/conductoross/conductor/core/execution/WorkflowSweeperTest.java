@@ -257,6 +257,49 @@ public class WorkflowSweeperTest {
     }
 
     @Test
+    public void stopWithCallbackDrainsOffCallerThread() throws Exception {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        WorkflowSweeper sweeper = newSweeper(executor);
+        CountDownLatch started = new CountDownLatch(1);
+        CountDownLatch releaseSweep = new CountDownLatch(1);
+        AtomicBoolean interrupted = new AtomicBoolean(false);
+        executor.execute(
+                () -> {
+                    started.countDown();
+                    try {
+                        releaseSweep.await();
+                    } catch (InterruptedException e) {
+                        interrupted.set(true);
+                    }
+                });
+        assertTrue(started.await(5, TimeUnit.SECONDS));
+        CountDownLatch callbackRan = new CountDownLatch(1);
+
+        // Spring's lifecycle thread must not block on the in-flight sweep
+        sweeper.stop(callbackRan::countDown);
+
+        assertFalse(sweeper.isRunning());
+        assertTrue(executor.isShutdown());
+        assertFalse(
+                "Callback must wait for the drain", callbackRan.await(100, TimeUnit.MILLISECONDS));
+
+        releaseSweep.countDown();
+
+        assertTrue(callbackRan.await(5, TimeUnit.SECONDS));
+        assertTrue(executor.isTerminated());
+        assertFalse(interrupted.get());
+    }
+
+    @Test
+    public void stopWithCallbackRunsCallbackImmediatelyWhenExecutorIsNotExecutorService() {
+        AtomicBoolean callbackRan = new AtomicBoolean(false);
+
+        workflowSweeper.stop(() -> callbackRan.set(true));
+
+        assertTrue(callbackRan.get());
+    }
+
+    @Test
     public void stopSkipsRemainingWorkflowsInPoppedBatch() throws Exception {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         when(properties.getSweeperThreadCount()).thenReturn(1);
