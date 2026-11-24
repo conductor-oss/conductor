@@ -7,6 +7,8 @@ import {
   Box,
   CircularProgress,
   Grid,
+  Theme,
+  ThemeOptions,
   ThemeProvider,
   Typography,
   createTheme,
@@ -19,9 +21,9 @@ import { colors } from "theme/tokens/variables";
 import { TaskType } from "types";
 import { updateField } from "utils/fieldHelpers";
 import {
-  useMCPIntegrations,
-  useMCPTools,
-} from "utils/hooks/useMCPIntegrations";
+  useIntegrationProviders,
+  useIntegrationApis,
+} from "utils/hooks/useIntegrationProviders";
 import { downgradeSchemaToDraft7 } from "utils/json";
 import { useFetch } from "utils/query";
 import { MaybeVariable } from "./MaybeVariable";
@@ -29,170 +31,193 @@ import { Optional } from "./OptionalFieldForm";
 import TaskFormSection from "./TaskFormSection";
 import { TaskFormProps } from "./types";
 import { useMemo } from "react";
+import { UISchemaElement } from "@jsonforms/core";
+import ZipFileControl from "./ZipFileControl";
+import { zipFileTester } from "./zipFile";
+import {
+  formAjv,
+  protectTaskInputs,
+  retainVisibleInputs,
+} from "./integrationTaskFormData";
 
-export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
-  const navigate = useNavigate();
-  const customTheme = createTheme({
-    components: {
-      MuiTextField: {
-        styleOverrides: {
-          root: {
-            backgroundColor: "#FFFFFF",
-            fontSize: "14px",
-            fontWeight: 200,
-            minHeight: "unset",
-            marginBottom: "16px",
+const renderers = [
+  ...materialRenderers,
+  { tester: zipFileTester, renderer: ZipFileControl },
+];
 
-            // Remove autofill background's input
-            "& input:-webkit-autofill": {
-              WebkitBoxShadow: "0 0 0 100px #ffffff inset",
-            },
+// Extends the app theme rather than replacing it, so controls rendered by
+// JSON Forms (buttons, palette, dark mode) match the rest of the editor.
+const formThemeOverrides: ThemeOptions = {
+  components: {
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          backgroundColor: "#FFFFFF",
+          fontSize: "14px",
+          fontWeight: 200,
+          minHeight: "unset",
+          marginBottom: "16px",
 
-            "& ::placeholder": {
-              color: "#AFAFAF",
-            },
+          // Remove autofill background's input
+          "& input:-webkit-autofill": {
+            WebkitBoxShadow: "0 0 0 100px #ffffff inset",
           },
-        },
-      },
-      MuiFormControl: {
-        styleOverrides: {
-          root: {
-            marginBottom: "16px",
-          },
-        },
-      },
-      MuiInputLabel: {
-        styleOverrides: {
-          root: {
-            fontSize: "14px",
-            fontWeight: 200,
-            pointerEvents: "auto",
-            transform: "translate(12px, -9px) scale(0.857)",
-            color: "#494949",
 
-            "&.Mui-focused": {
-              fontWeight: 500,
-              color: "#1976D2",
-            },
-
-            "&.Mui-error": {
-              color: "#D6423B",
-            },
-
-            "&.Mui-disabled": {
-              color: "#858585",
-            },
-          },
-        },
-      },
-      MuiOutlinedInput: {
-        styleOverrides: {
-          root: {
-            backgroundColor: "#FFFFFF",
-            fontSize: "14px",
-            fontWeight: 200,
-            color: "#060606",
-            minHeight: "unset",
-
-            ".MuiInputBase-input": {
-              padding: "14px 8px 8px 8px",
-              "&.Mui-disabled": {
-                WebkitTextFillColor: "#494949",
-              },
-            },
-
-            ".MuiOutlinedInput-notchedOutline": {
-              borderWidth: 1,
-              borderStyle: "solid",
-              borderRadius: "4px",
-              borderColor: "#AFAFAF",
-
-              // This will make the legend has same size with the label
-              "& legend": {
-                maxWidth: "100%",
-                fontSize: "0.857em",
-                fontWeight: 200,
-              },
-            },
-
-            "&:hover .MuiOutlinedInput-notchedOutline": {
-              borderColor: "#1876D1",
-              borderWidth: 1,
-            },
-
-            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-              borderWidth: 1,
-              borderColor: "#1876D1",
-
-              "& legend": {
-                fontWeight: 500,
-              },
-            },
-
-            "&.Mui-focused": {
-              backgroundColor: "#FFFFFF",
-            },
-
-            "&.Mui-error": {
-              color: "#D6423B",
-
-              ".MuiOutlinedInput-notchedOutline": {
-                borderColor: "#D6423B",
-              },
-            },
-
-            "&.Mui-disabled": {
-              WebkitTextFillColor: "#494949",
-              borderColor: "#AFAFAF",
-              backgroundColor: "#ECECEC",
-            },
-
-            ".MuiInputBase-inputMultiline": {
-              p: 0,
-            },
-
-            "&.MuiInputBase-multiline": {
-              p: "14px 8px 8px 8px",
-            },
-          },
-        },
-      },
-      MuiFormHelperText: {
-        styleOverrides: {
-          root: {
-            fontSize: "0.857em",
-            color: "#494949",
-            paddingLeft: "8px",
-            marginTop: "4px",
-            marginLeft: "0px",
-
-            "&.Mui-error": {
-              color: "#D6423B",
-            },
-
-            "&.Mui-disabled": {
-              color: "#060606",
-            },
-          },
-        },
-      },
-      MuiIconButton: {
-        styleOverrides: {
-          root: {
-            // Clear button visibility control
-            "&[aria-label='clear value']": {
-              visibility: "visible",
-            },
+          "& ::placeholder": {
+            color: "#AFAFAF",
           },
         },
       },
     },
-  });
+    MuiFormControl: {
+      styleOverrides: {
+        root: {
+          marginBottom: "16px",
+        },
+      },
+    },
+    MuiInputLabel: {
+      styleOverrides: {
+        root: {
+          fontSize: "14px",
+          fontWeight: 200,
+          pointerEvents: "auto",
+          transform: "translate(12px, -9px) scale(0.857)",
+          color: "#494949",
+
+          "&.Mui-focused": {
+            fontWeight: 500,
+            color: "#1976D2",
+          },
+
+          "&.Mui-error": {
+            color: "#D6423B",
+          },
+
+          "&.Mui-disabled": {
+            color: "#858585",
+          },
+        },
+      },
+    },
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: {
+          backgroundColor: "#FFFFFF",
+          fontSize: "14px",
+          fontWeight: 200,
+          color: "#060606",
+          minHeight: "unset",
+
+          ".MuiInputBase-input": {
+            padding: "14px 8px 8px 8px",
+            "&.Mui-disabled": {
+              WebkitTextFillColor: "#494949",
+            },
+          },
+
+          ".MuiOutlinedInput-notchedOutline": {
+            borderWidth: 1,
+            borderStyle: "solid",
+            borderRadius: "4px",
+            borderColor: "#AFAFAF",
+
+            // This will make the legend has same size with the label
+            "& legend": {
+              maxWidth: "100%",
+              fontSize: "0.857em",
+              fontWeight: 200,
+            },
+          },
+
+          "&:hover .MuiOutlinedInput-notchedOutline": {
+            borderColor: "#1876D1",
+            borderWidth: 1,
+          },
+
+          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+            borderWidth: 1,
+            borderColor: "#1876D1",
+
+            "& legend": {
+              fontWeight: 500,
+            },
+          },
+
+          "&.Mui-focused": {
+            backgroundColor: "#FFFFFF",
+          },
+
+          "&.Mui-error": {
+            color: "#D6423B",
+
+            ".MuiOutlinedInput-notchedOutline": {
+              borderColor: "#D6423B",
+            },
+          },
+
+          "&.Mui-disabled": {
+            WebkitTextFillColor: "#494949",
+            borderColor: "#AFAFAF",
+            backgroundColor: "#ECECEC",
+          },
+
+          ".MuiInputBase-inputMultiline": {
+            p: 0,
+          },
+
+          "&.MuiInputBase-multiline": {
+            p: "14px 8px 8px 8px",
+          },
+        },
+      },
+    },
+    MuiFormHelperText: {
+      styleOverrides: {
+        root: {
+          fontSize: "0.857em",
+          color: "#494949",
+          paddingLeft: "8px",
+          marginTop: "4px",
+          marginLeft: "0px",
+
+          "&.Mui-error": {
+            color: "#D6423B",
+          },
+
+          "&.Mui-disabled": {
+            color: "#060606",
+          },
+        },
+      },
+    },
+    MuiIconButton: {
+      styleOverrides: {
+        root: {
+          // Clear button visibility control
+          "&[aria-label='clear value']": {
+            visibility: "visible",
+          },
+        },
+      },
+    },
+  },
+};
+
+const extendAppTheme = (appTheme: Theme) =>
+  createTheme(appTheme, formThemeOverrides);
+
+export const IntegrationTaskForm = ({ task, onChange }: TaskFormProps) => {
+  const navigate = useNavigate();
 
   const { integrations, isLoading: isLoadingIntegrations } =
-    useMCPIntegrations();
-  const { tools, isLoading: isLoadingTools } = useMCPTools(
+    useIntegrationProviders();
+  const { tools, isLoading: isLoadingTools } = useIntegrationApis(
     task?.inputParameters?.integrationName,
+    integrations.find(
+      (integration) =>
+        integration.name === task?.inputParameters?.integrationName,
+    )?.configuration,
   );
 
   const hasValidIntegration = Boolean(
@@ -207,6 +232,7 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
     `/integrations/${task?.inputParameters?.integrationName}/def/api/${task?.inputParameters?.method}`,
     {
       enabled: hasValidIntegration && hasValidMethod,
+      keepPreviousData: false,
     },
   );
 
@@ -231,12 +257,17 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
     }
 
     try {
-      return downgradeSchemaToDraft7(schemaData);
+      const { "x-ui-schema": _, ...validationSchema } = schemaData;
+      return downgradeSchemaToDraft7(validationSchema);
     } catch (error) {
-      console.error("[MCPTaskForm] Error processing schema:", error);
+      console.error("[IntegrationTaskForm] Error processing schema:", error);
       return null;
     }
   }, [toolData?.inputSchema?.data]);
+
+  const uiSchema = toolData?.inputSchema?.data?.["x-ui-schema"] as
+    | UISchemaElement
+    | undefined;
 
   return (
     <Box width="100%">
@@ -420,14 +451,23 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
                         sm: 12,
                       }}
                     >
-                      <ThemeProvider theme={customTheme}>
+                      <ThemeProvider theme={extendAppTheme}>
                         <JsonForms
                           schema={processedSchema}
+                          uischema={uiSchema}
                           data={task?.inputParameters}
+                          ajv={formAjv}
+                          middleware={protectTaskInputs}
                           onChange={({ data }) =>
-                            onChange(updateField("inputParameters", data, task))
+                            onChange(
+                              updateField(
+                                "inputParameters",
+                                retainVisibleInputs(uiSchema, data),
+                                task,
+                              ),
+                            )
                           }
-                          renderers={materialRenderers}
+                          renderers={renderers}
                           cells={materialCells}
                         />
                       </ThemeProvider>

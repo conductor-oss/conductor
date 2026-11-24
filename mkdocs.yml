@@ -250,6 +250,11 @@ theme:
 
 extra:
   generator: false
+  # GA4 for the OSS docs. Same property as conductor-oss.org. Consent matches
+  # orkes.io: no banner and no Consent Mode defaults, so no extra.consent block.
+  analytics:
+    provider: google
+    property: G-PZHG7RTQP5
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/conductor-oss/conductor

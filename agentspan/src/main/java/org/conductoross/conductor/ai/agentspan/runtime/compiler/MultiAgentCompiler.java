@@ -163,7 +163,7 @@ public class MultiAgentCompiler {
                 + "  ],\n"
                 + "  \"validation\": [                              // optional\n"
                 + "    {\"tool\": \"<validator tool>\", \"args\": {...},\n"
-                + "     \"success_condition\": \"$.passed === true\"} // optional JS, $ = tool output\n"
+                + "     \"success_condition\": \"$.passed === true\"} // optional; $ = tool output\n"
                 + "  ],\n"
                 + "  \"on_success\": [{\"tool\": \"<tool>\", \"args\": {...}}],   // optional\n"
                 + "  \"on_failure\": [{\"tool\": \"<tool>\", \"args\": {...}}]    // optional\n"
@@ -176,6 +176,13 @@ public class MultiAgentCompiler {
                 + "when an LLM should produce them at run time (e.g., the body of a write_file).\n"
                 + "- ``parallel: true`` runs that step's operations concurrently (FORK_JOIN). "
                 + "Cross-step concurrency is via ``depends_on`` — a step starts when all listed deps complete.\n"
+                + "- ``validation`` runs after all steps; ``on_success`` runs if every validation "
+                + "passes, ``on_failure`` otherwise. With no ``validation``, ``on_success`` always "
+                + "runs. ``steps`` may be empty for a pure gate (validation + on_success).\n"
+                + "- ``success_condition`` is a restricted expression, not full JavaScript: ``$``, "
+                + "``$.a.b`` or ``$['k']`` field access; string, number, true, false, null literals; "
+                + "``=== !== == != < <= > >=``; ``&& || !``; parentheses. No function calls, no "
+                + "``??`` or ``?.``, no member access on a parenthesized expression.\n"
                 + "- The JSON must parse cleanly. Match brackets and escape strings.\n";
     }
 
@@ -2926,7 +2933,8 @@ public class MultiAgentCompiler {
                         "expression",
                         "(function(){ if (!$.json || $.json === '{}') return 'no_plan';"
                                 + " try { var p = JSON.parse($.json); if (!p || typeof p !== 'object') return 'no_plan';"
-                                + " if (!Array.isArray(p.steps) || p.steps.length === 0) return 'no_plan';"
+                                + " var ne = function(a){ return Array.isArray(a) && a.length > 0; };"
+                                + " if (!ne(p.steps) && !ne(p.validation) && !ne(p.on_success)) return 'no_plan';"
                                 + " return 'has_plan'; } catch(e) { return 'no_plan'; } })()"));
         tasks.add(hasJsonCheck);
 

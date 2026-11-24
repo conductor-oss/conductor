@@ -496,7 +496,7 @@ export interface ConductorPlugin {
   /**
    * The page component rendered at the root path "/" in playground mode.
    * Enterprise plugins (e.g. the hub/playground plugin) register this to
-   * show the template showcase. When not registered, the normal app is shown.
+   * show the playground. When not registered, the normal app is shown.
    */
   playgroundHomePage?: ComponentType;
 

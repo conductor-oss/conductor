@@ -85,13 +85,19 @@ RUN if [ "$SKIP_UI" = "true" ]; then \
 # only package we add is nginx. The healthcheck uses busybox wget (built in) instead of curl,
 # which also removes curl's libcurl/libssh2 chain from the image entirely.
 #
-# Pinned to the same 25.0.5+8 Temurin release as the Debian builder stage above (Alpine tag
-# format 25.0.5_8) so the shipped JRE is a known, reproducible, patched build.
-FROM eclipse-temurin:25.0.5_8-jre-alpine AS runtime
+# Floating 25-jre-alpine tag so each rebuild picks up the latest 25.x JVM patch and Alpine
+# package updates automatically -- the point of this image is to stay current on OS/JVM CVEs.
+# The builder stage pins its JDK for a reproducible bytecode target; the shipped runtime does not
+# need to match that patch level (it only runs the compiled jar), so the two can drift.
+FROM eclipse-temurin:25-jre-alpine AS runtime
 
 LABEL maintainer="Orkes OSS <oss@orkes.io>"
 
-RUN apk add --no-cache nginx ca-certificates \
+# nginx floor pinned above 1.30.6-r0: that build carried CVE-2026-113425 / -121810 / -123007 /
+# -123633 / -123634 (all mail-proxy or HTTP/2-proxy paths, none of which this image's config uses,
+# so real exposure is nil -- the floor just keeps a rebuild from silently regressing onto it).
+# The 25-jre-alpine base (Alpine 3.24) ships the fixed 1.30.7-r0, so a rebuild picks it up.
+RUN apk add --no-cache "nginx>1.30.6-r0" ca-certificates \
     && rm -f /etc/nginx/http.d/default.conf \
     && mkdir -p /run/nginx
 
