@@ -563,13 +563,17 @@ class MCPServerMethodsTest {
     }
 
     @Test
-    void resultThatCannotBeBuilt_isFailed_withAStatusMessage() {
+    void resultThatCannotBeBuilt_isACompletedTask_withTheSameErrorResultAsToolsCall() {
         completedOutput = Map.of("value", new Unreadable());
         JsonNode task = get(Workflow.WorkflowStatus.COMPLETED);
-        assertThat(task.get("status").asString()).isEqualTo("failed");
-        assertThat(task.get("error").get("code").asInt()).isEqualTo(-32603);
-        assertThat(task.get("statusMessage").asString())
-                .isEqualTo("The call result could not be read. Execution id: exec-1")
+        assertThat(task.get("status").asString()).isEqualTo("completed");
+        assertThat(task.has("error")).isFalse();
+        JsonNode result = task.get("result");
+        assertThat(result.get("isError").asBoolean()).isTrue();
+        assertThat(text(result))
+                .startsWith("The call result could not be read: ")
+                .contains("cannot read")
+                .endsWith(". Execution id: exec-1")
                 .doesNotContainIgnoringCase("workflow")
                 .doesNotContainIgnoringCase("agent");
     }
@@ -585,7 +589,9 @@ class MCPServerMethodsTest {
                             .block();
             assertThat(result.get("isError").asBoolean()).isTrue();
             assertThat(text(result))
-                    .isEqualTo("The call result could not be read. Execution id: exec-1");
+                    .startsWith("The call result could not be read: ")
+                    .contains("cannot read")
+                    .endsWith(". Execution id: exec-1");
         }
     }
 

@@ -136,7 +136,7 @@ Selecting the protocol version does not make every call poll, and you do not nee
 | Consecutive failed status checks (network error, timeout, JSON-RPC `-32603` internal error, or HTTP 408, 429 or 5xx, as described below) | 30. Then Conductor sends `tasks/cancel` and the task fails. After the first failed check, Conductor waits the interval above; after each further consecutive failure, the wait doubles, up to 5 minutes (or the server's interval, if longer). |
 | Time limit of one status check / one cancel request | 30 seconds / 5 seconds |
 
-A remote task that fails, that the server cancels, or that asks for input (`input_required`, which is not supported) fails the Conductor task. Its retry settings apply as for any failed `CALL_MCP_TOOL` task; a retry sends a new `tools/call`.
+A remote task that fails, or that asks for input (`input_required`, which is not supported), fails the Conductor task. Its retry settings apply as for any failed `CALL_MCP_TOOL` task; a retry sends a new `tools/call`. A remote task that the server cancels makes the Conductor task `CANCELED`, with the server's `statusMessage` as the reason, as for a canceled A2A agent task. A `CANCELED` task is not retried, and the workflow is terminated unless the task is optional.
 
 With `protocolVersion: "2026-07-28"`, Conductor sends the requests for that call in the `2026-07-28` form:
 
@@ -470,7 +470,7 @@ The status follows the execution:
 | Completed | `completed`, with the result (an output in external payload storage gives an error result instead; see [Limits](#limits)) |
 | Failed or timed out | `completed`, with an error result (`isError: true`) |
 | Terminated, by `tasks/cancel` or in any other way (an operator, a `TERMINATE` task) | `cancelled`, with the reason, when there is one, in `statusMessage` |
-| Any, when the server cannot build the result (an internal error) | `failed`, with a `statusMessage` that gives the execution ID and an `error` object (`-32603`) |
+| Ended, when the server cannot build the result | `completed`, with an error result that gives the reason and the execution ID: the same result `tools/call` gives |
 
 A failed workflow is `completed`, not `failed`, because the [Tasks specification for 2026-07-28](https://github.com/modelcontextprotocol/ext-tasks/blob/main/specification/2026-07-28/tasks.md) keeps `failed` for protocol errors: a tool result with `isError: true` MUST use `completed`. A client checks `result.isError` to see whether the workflow succeeded.
 
@@ -562,7 +562,7 @@ The MCP client (`CALL_MCP_TOOL`) and the built-in MCP server emit metrics throug
 
 | Metric | Tags | When |
 | --- | --- | --- |
-| `mcp_client_calls` | `result`: `completed`, `failed` or `failed_with_terminal_error` | A `CALL_MCP_TOOL` task ends. A call that polls an MCP task is counted once, when it ends. A tool result with `isError: true` is `completed`. |
+| `mcp_client_calls` | `result`: `completed`, `failed`, `failed_with_terminal_error` or `canceled` | A `CALL_MCP_TOOL` task ends. A call that polls an MCP task is counted once, when it ends. A tool result with `isError: true` is `completed`. |
 | `mcp_client_poll_failures` | none | A status check (`tasks/get`) fails with a network error, a timeout, JSON-RPC `-32603`, or HTTP 408, 429 or 5xx. |
 | `mcp_rpc_errors` | `method`, `terminal` | An MCP server answers a request of a call with `mcpOptions.protocolVersion` with an HTTP or JSON-RPC error. `terminal` is `false` for the errors a status check retries (`-32603`, and HTTP 408, 429 or 5xx without a JSON-RPC code of defined meaning). Every error answer counts, also one the call recovers from, such as a `-32020` header mismatch fixed by reading the tool definition again. |
 

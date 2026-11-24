@@ -50,7 +50,6 @@ import tools.jackson.databind.node.ObjectNode;
 
 import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
 import static org.conductoross.conductor.ai.mcp.MCPJsonRpc.HEADER_MISMATCH;
-import static org.conductoross.conductor.ai.mcp.MCPJsonRpc.INTERNAL_ERROR;
 import static org.conductoross.conductor.ai.mcp.MCPJsonRpc.MISSING_REQUIRED_CLIENT_CAPABILITY;
 
 /**
@@ -123,8 +122,8 @@ public class MCPServerMethods {
 
     /**
      * Reports the execution as a task. A failed execution is a tool error, so it is {@code
-     * completed} with {@code result.isError}; {@code failed} is kept for an internal error.
-     * Executions blocked on HUMAN or WAIT are {@code working}: v1 has no {@code input_required}.
+     * completed} with {@code result.isError}, and so is a result that cannot be built. Executions
+     * blocked on HUMAN or WAIT are {@code working}: v1 has no {@code input_required}.
      */
     Mono<JsonNode> tasksGet(MCPServerProtocol.MCPCall call) {
         return offRequestThread(() -> json(taskView(exposedExecution(call))));
@@ -221,15 +220,7 @@ public class MCPServerMethods {
         if (status == Workflow.WorkflowStatus.TERMINATED) {
             return results.cancelled(execution);
         }
-        try {
-            return results.completed(execution, results.callResult(execution));
-        } catch (RuntimeException e) {
-            log.warn(
-                    "MCP server: result of execution {} could not be built",
-                    execution.getWorkflowId(),
-                    e);
-            return results.failed(execution, INTERNAL_ERROR);
-        }
+        return results.completed(execution, endedResult(execution));
     }
 
     /** Runs blocking work (store reads, starting an execution) off the servlet request thread. */
@@ -294,7 +285,11 @@ public class MCPServerMethods {
                                         : results.stillRunning(latest));
     }
 
-    /** The result of an ended execution; an error result when it cannot be built. */
+    /**
+     * The result of an ended execution; an error result with the reason when it cannot be built.
+     * {@code tools/call} returns it, and {@code tasks/get} puts it in a completed task, so both
+     * paths give the same result.
+     */
     private MCPCallToolResult endedResult(Workflow execution) {
         try {
             return results.callResult(execution);
@@ -303,7 +298,7 @@ public class MCPServerMethods {
                     "MCP server: result of execution {} could not be built",
                     execution.getWorkflowId(),
                     e);
-            return results.resultUnreadable(execution);
+            return results.resultUnreadable(execution, e);
         }
     }
 

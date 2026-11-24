@@ -799,13 +799,17 @@ class MCPWorkersTest {
     }
 
     @Test
-    void taskCancelledByTheServerFails() {
+    void taskCancelledByTheServerIsCanceled_withoutARetry() {
         TaskModel task = startCreatedTask(5000L);
-        enqueueTaskStatus("\"status\":\"cancelled\"");
+        enqueueTaskStatus("\"status\":\"cancelled\",\"statusMessage\":\"stopped by an operator\"");
 
         poll(task);
 
-        assertPollFailed(task, "MCP server cancelled task 't-1'");
+        assertEquals(TaskModel.Status.CANCELED, task.getStatus());
+        assertEquals(
+                "MCP server cancelled task 't-1': stopped by an operator",
+                task.getReasonForIncompletion());
+        assertEquals(3, server.getRequestCount(), "the server ended the task: no cancel");
     }
 
     @Test

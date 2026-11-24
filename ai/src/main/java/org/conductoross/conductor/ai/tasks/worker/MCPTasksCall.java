@@ -280,7 +280,10 @@ final class MCPTasksCall {
             case FAILED:
                 return fail(taskId, 0, "MCP task '" + taskId + "' failed: " + describe(remote));
             case CANCELLED:
+                // As A2AWorkers does for a canceled agent task: no retry, which would start the
+                // call the server cancelled again.
                 return fail(
+                        TaskResult.Status.CANCELED,
                         taskId,
                         0,
                         "MCP server cancelled task '"

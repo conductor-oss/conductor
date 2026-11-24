@@ -16,12 +16,10 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
-import org.conductoross.conductor.ai.mcp.MCPJsonRpc;
 import org.conductoross.conductor.ai.mcp.MCPResultType;
 import org.conductoross.conductor.ai.mcp.MCPTaskStatus;
 import org.conductoross.conductor.ai.mcp.server.model.MCPCallToolResult;
 import org.conductoross.conductor.ai.mcp.server.model.MCPContent;
-import org.conductoross.conductor.ai.mcp.server.model.MCPError;
 import org.conductoross.conductor.ai.mcp.server.model.MCPTask;
 
 import com.netflix.conductor.common.run.Workflow;
@@ -98,25 +96,25 @@ public class MCPResults {
     }
 
     /**
-     * The {@code CallToolResult} of an ended execution whose result could not be built. The call
-     * ran, so the client gets the execution id, not a server error it would retry.
+     * The {@code CallToolResult} of an ended execution whose result could not be built, with the
+     * reason. The call ran, so the client gets the execution id, not a server error it would retry.
      */
-    public MCPCallToolResult resultUnreadable(Workflow execution) {
-        return textResult(resultUnreadableText(execution), true);
-    }
-
-    private static String resultUnreadableText(Workflow execution) {
-        return "The call result could not be read. Execution id: " + execution.getWorkflowId();
+    public MCPCallToolResult resultUnreadable(Workflow execution, RuntimeException e) {
+        String text = "The call result could not be read";
+        if (e.getMessage() != null && !e.getMessage().isBlank()) {
+            text += ": " + e.getMessage();
+        }
+        return textResult(text + ". Execution id: " + execution.getWorkflowId(), true);
     }
 
     /** The flat {@code CreateTaskResult} for a running execution. */
     public MCPTask createTask(Workflow execution) {
-        return task(execution, MCPTaskStatus.WORKING, null, null, null, MCPResultType.TASK.value());
+        return task(execution, MCPTaskStatus.WORKING, null, null, MCPResultType.TASK.value());
     }
 
     /** A running execution, as {@code tasks/get} reports it. */
     public MCPTask working(Workflow execution) {
-        return task(execution, MCPTaskStatus.WORKING, null, null, null, null);
+        return task(execution, MCPTaskStatus.WORKING, null, null, null);
     }
 
     /** A terminated execution, with its reason when there is one. */
@@ -127,24 +125,12 @@ public class MCPResults {
                 MCPTaskStatus.CANCELLED,
                 reason == null || reason.isBlank() ? null : reason,
                 null,
-                null,
                 null);
     }
 
     /** An ended execution with its {@code CallToolResult}. */
     public MCPTask completed(Workflow execution, MCPCallToolResult result) {
-        return task(execution, MCPTaskStatus.COMPLETED, null, result, null, null);
-    }
-
-    /** An ended execution whose result could not be built: an internal error. */
-    public MCPTask failed(Workflow execution, int code) {
-        return task(
-                execution,
-                MCPTaskStatus.FAILED,
-                resultUnreadableText(execution),
-                null,
-                new MCPError(code, MCPJsonRpc.INTERNAL_ERROR_MESSAGE, null),
-                null);
+        return task(execution, MCPTaskStatus.COMPLETED, null, result, null);
     }
 
     /**
@@ -157,7 +143,6 @@ public class MCPResults {
             MCPTaskStatus status,
             String statusMessage,
             MCPCallToolResult result,
-            MCPError error,
             String resultType) {
         Long created = execution.getCreateTime();
         Long updated = execution.getUpdateTime() != null ? execution.getUpdateTime() : created;
@@ -170,7 +155,7 @@ public class MCPResults {
                 status == MCPTaskStatus.WORKING ? properties.getPollIntervalMs() : null,
                 statusMessage,
                 result,
-                error,
+                null,
                 resultType);
     }
 
