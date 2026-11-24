@@ -3037,13 +3037,13 @@ public class TestWorkflowExecutor {
         // if workflow is not in PAUSED state
         workflow.setStatus(WorkflowModel.Status.COMPLETED);
         when(executionDAOFacade.getWorkflowModel(workflowId, false)).thenReturn(workflow);
-        try {
-            workflowExecutor.resumeWorkflow(workflowId);
-        } catch (Exception e) {
-            assertTrue(e instanceof IllegalStateException);
-            verify(executionDAOFacade, never()).updateWorkflow(any(WorkflowModel.class));
-            verify(queueDAO, never()).push(anyString(), anyString(), anyInt(), anyLong());
-        }
+        ConflictException e =
+                assertThrows(
+                        ConflictException.class, () -> workflowExecutor.resumeWorkflow(workflowId));
+        assertTrue(e.getMessage().contains("is not PAUSED so cannot resume"));
+        assertTrue(e.getMessage().contains("COMPLETED"));
+        verify(executionDAOFacade, never()).updateWorkflow(any(WorkflowModel.class));
+        verify(queueDAO, never()).push(anyString(), anyString(), anyInt(), anyLong());
 
         // if workflow is already RUNNING (e.g. a racing resume call already resumed it)
         workflow.setStatus(WorkflowModel.Status.RUNNING);
@@ -3061,6 +3061,69 @@ public class TestWorkflowExecutor {
         assertTrue(workflow.getLastRetriedTime() > 0);
         verify(executionDAOFacade, times(1)).updateWorkflow(any(WorkflowModel.class));
         verify(queueDAO, times(1)).push(anyString(), anyString(), anyInt(), anyLong());
+    }
+
+    private WorkflowModel workflowForSkipTask(String workflowId, WorkflowModel.Status status) {
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setName("simple_task");
+        workflowTask.setTaskReferenceName("t1");
+        workflowTask.setType(TaskType.SIMPLE.name());
+
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("skip_task_workflow");
+        workflowDef.getTasks().add(workflowTask);
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId(workflowId);
+        workflow.setWorkflowDefinition(workflowDef);
+        workflow.setStatus(status);
+        when(executionDAOFacade.getWorkflowModel(workflowId, true)).thenReturn(workflow);
+        return workflow;
+    }
+
+    @Test
+    public void testSkipTaskFromWorkflowNotRunningThrowsConflict() {
+        String workflowId = "testSkipTaskNotRunningId";
+        workflowForSkipTask(workflowId, WorkflowModel.Status.COMPLETED);
+
+        ConflictException e =
+                assertThrows(
+                        ConflictException.class,
+                        () -> workflowExecutor.skipTaskFromWorkflow(workflowId, "t1", null));
+        assertTrue(e.getMessage().contains("is not running"));
+        verify(executionDAOFacade, never()).createTasks(anyList());
+    }
+
+    @Test
+    public void testSkipTaskFromWorkflowUnknownTaskRefThrowsIllegalArgument() {
+        String workflowId = "testSkipTaskUnknownRefId";
+        workflowForSkipTask(workflowId, WorkflowModel.Status.RUNNING);
+
+        IllegalArgumentException e =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () ->
+                                workflowExecutor.skipTaskFromWorkflow(
+                                        workflowId, "does_not_exist", null));
+        assertTrue(e.getMessage().contains("does not exist in the WorkflowDefinition"));
+        verify(executionDAOFacade, never()).createTasks(anyList());
+    }
+
+    @Test
+    public void testSkipTaskFromWorkflowAlreadyProcessedThrowsConflict() {
+        String workflowId = "testSkipTaskAlreadyProcessedId";
+        WorkflowModel workflow = workflowForSkipTask(workflowId, WorkflowModel.Status.RUNNING);
+        TaskModel existing = new TaskModel();
+        existing.setReferenceTaskName("t1");
+        existing.setStatus(TaskModel.Status.IN_PROGRESS);
+        workflow.getTasks().add(existing);
+
+        ConflictException e =
+                assertThrows(
+                        ConflictException.class,
+                        () -> workflowExecutor.skipTaskFromWorkflow(workflowId, "t1", null));
+        assertTrue(e.getMessage().contains("has already been processed"));
+        verify(executionDAOFacade, never()).createTasks(anyList());
     }
 
     @Test

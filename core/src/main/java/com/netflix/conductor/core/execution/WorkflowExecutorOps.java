@@ -1887,7 +1887,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
 
     /**
      * @param workflowId the workflow to be resumed
-     * @throws IllegalStateException if the workflow is not in PAUSED state (unless it is already
+     * @throws ConflictException if the workflow is not in PAUSED state (unless it is already
      *     RUNNING, in which case resume is a no-op)
      */
     @Override
@@ -1899,7 +1899,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 return; // Already resumed!
             }
             if (!workflow.getStatus().equals(WorkflowModel.Status.PAUSED)) {
-                throw new IllegalStateException(
+                throw new ConflictException(
                         "The workflow "
                                 + workflowId
                                 + " is not PAUSED so cannot resume. "
@@ -1927,7 +1927,10 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
      * @param workflowId the id of the workflow
      * @param taskReferenceName the referenceName of the task to be skipped
      * @param skipTaskRequest the {@link SkipTaskRequest} object
-     * @throws IllegalStateException
+     * @throws ConflictException if the workflow is not RUNNING, or the task has already been
+     *     processed
+     * @throws IllegalArgumentException if the task reference name is not part of the workflow
+     *     definition
      */
     @Override
     public void skipTaskFromWorkflow(
@@ -1941,7 +1944,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     String.format(
                             "The workflow %s is not running so the task referenced by %s cannot be skipped",
                             workflowId, taskReferenceName);
-            throw new IllegalStateException(errorMsg);
+            throw new ConflictException(errorMsg);
         }
 
         // Check if the reference name is as per the workflowdef
@@ -1952,7 +1955,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     String.format(
                             "The task referenced by %s does not exist in the WorkflowDefinition %s",
                             taskReferenceName, workflow.getWorkflowName());
-            throw new IllegalStateException(errorMsg);
+            throw new IllegalArgumentException(errorMsg);
         }
 
         // If the task is already started the again it cannot be skipped
@@ -1964,7 +1967,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                                         String.format(
                                                 "The task referenced %s has already been processed, cannot be skipped",
                                                 taskReferenceName);
-                                throw new IllegalStateException(errorMsg);
+                                throw new ConflictException(errorMsg);
                             }
                         });
 
