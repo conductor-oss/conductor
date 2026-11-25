@@ -1,6 +1,7 @@
 # 06. Implementation status
 
-Everything in [03-server-changes.md](03-server-changes.md) is implemented on this branch, and the
+Everything in [03-server-changes.md](03-server-changes.md) is implemented on this branch except S1,
+the idempotency key on the public start, which is in the standard-workflow PR #1857; and the
 Java SDK side is implemented in `conductor-oss/java-sdk` on branch `design/native-workflows`. The
 protocol is version 2 (continuation markers on the tasks the code paused on; see
 [07-engine-state.md](07-engine-state.md)). This page records how to run it, what was validated,
@@ -41,7 +42,7 @@ rewritten for protocol 2 with it.
 | Kitchensink failure path: charge fails terminally, code catches `TaskFailure` | same | passed |
 | Update with reply, query, signal, condition wait released by a handler | same, all three executions | passed |
 | Human task answered, callback posted, HTTP failure caught, LLM call, event, fire-and-forget child, timers, server-side polling loop with backoff | same | passed |
-| Idempotent start (S1) | same: a second start with the key returns the same execution | passed |
+| Idempotent start (S1) | same: a second start with the key returns the same execution | passed (since changed: S1 is not on this branch, it is in PR #1857; the server reads `idempotencyKey` only on the agent start path, while `kitchensink.Main` still checks it) |
 | Task retries: the HTTP step makes four attempts before its failure reaches the code; a worker task failing once succeeds on retry | kitchensink and operator checks | passed |
 | Retry after an uncaught task failure reruns from that task, without re-running earlier tasks (B7) | `operator.OperatorChecks` | passed |
 | Rerun from a task keeps values recorded before it; restart records new ones (B7) | same | passed |
@@ -50,22 +51,24 @@ rewritten for protocol 2 with it.
 | Reruns inside the loops the server runs (`LoopedWorkflow`): from the second `forEach` item the second and third items run again and the first does not; from the first `repeatUntil` check the loop polls until the next done check; from the task after both loops only it runs again | `operator.OperatorChecks` | passed (2026-11-10) |
 | Reruns from every task of a three-iteration `DO_WHILE` in a standard workflow, with and without a task after the loop (13 reruns) | script against the server | passed (2026-11-10); not kept as a check |
 | Reruns from every task of a deeper fork (two-step branch; a branch with its own fork, join and a later task) complete with the first run's output and no divergence | throwaway probe against the server | passed (2026-11-10); not kept as a check |
-| Replay test: current code matches a recorded execution, and an inserted call is detected | `KitchenSinkTest.currentCodeStillMatchesARecordedProductionRun`, plus a manual mutation | passed; fails on the mutation. The recording `native-examples/src/test/resources/executions/kitchensink-odd.json` was re-recorded on protocol 2 (2026-11-08): markers on tasks, `nativeState`, no CODE or RECORD entries; and re-recorded again the same day once `oddEvenDecision` became a `switchOn`, and once more when untaken cases gained previews: the definition holds the `SWITCH` with `decisionCases` `"0": [task_4_if_0 (metadata.preview)]` and `"1": [fork, fork_join]`, `inputParameters.switchCaseValue: "1"`, an empty `defaultCase` (the `otherwise` body throws before any call), the task row's `outputData.selectedCase: "1"`, no task row for the preview, and `get_es_1` carrying `metadata.after: "oddEvenDecision"` |
+| Replay test: current code matches a recorded execution, and an inserted call is detected | `KitchenSinkTest.currentCodeStillMatchesARecordedProductionRun`, plus a manual mutation | passed; fails on the mutation. The recording `native-examples/src/test/resources/executions/kitchensink-odd.json` was re-recorded on protocol 2 (2026-11-08): markers on tasks, `nativeState`, no CODE or RECORD entries; and re-recorded again the same day once `oddEvenDecision` became a `switchOn`, and once more when untaken cases gained previews: the definition holds the `SWITCH` with `decisionCases` `"0": [task_4_if_0 (metadata.preview)]` and `"1": [fork, fork_join]`, `inputParameters.switchCaseValue: "1"`, an empty `defaultCase` (the `otherwise` body throws before any call), the task row's `outputData.selectedCase: "1"`, no task row for the preview, and `get_es_1` carrying `metadata.after: "oddEvenDecision"` (since changed: the odd path's switch is again a plain Java `switch`, recorded as `switch_oddEven`; case `"0"` holds the previews `task_4_if_0`, `fanout1_if_0` and `fanout1_if_0_join`, and `get_es_1` carries `metadata.after: "switch_oddEven"`) |
 | In-memory test environment | `KitchenSinkTest`, two scenarios | passed |
 | Execution shows exactly the code's tasks; continuation on the task panel, engine state on the summary (B5) | `ui-next` on a recorded execution | not yet checked on protocol 2 |
-| Server unit tests | `common`, `core`, `http-task`; `NativeContinuationServiceTest` (20 tests, including `aFragmentAnchoredAfterASwitchLeavesTheCaseItPausedIn`), `NativeJoinTest`, `TestDeciderOutcomes`, `NativeDefinitionEditsTest` | `NativeContinuationServiceTest`: 17 passed, 0 failures (protocol 2, build results of 2026-11-08) |
-| Server integration tests | full `test-harness` suite; `NativeWorkflowSpec` (3 scenarios: linear, fork branch independence, stale completion) | `NativeWorkflowSpec`: 3 passed, 0 failures (protocol 2, build results of 2026-11-08) |
-| SDK client tests | `conductor-client`, excluding the four classes that need a server on port 8080 | 984 passed (protocol 1); `SwitchOnTest`: 7 passed, 0 failures (test results of 2026-11-08, including `untakenCasesShowTheTasksTheyWouldHaveCalled`) |
+| Server unit tests | `common`, `core`, `http-task`; `NativeContinuationServiceTest` (20 tests, including `aFragmentAnchoredAfterASwitchLeavesTheCaseItPausedIn`), `NativeJoinTest`, `TestDeciderOutcomes`, `NativeDefinitionEditsTest` | `NativeContinuationServiceTest`: 17 passed, 0 failures (protocol 2, build results of 2026-11-08; since changed: the class now has 62 tests, and `NativeDriverTest`, `NativeDriverJoinTest` and `NativeStaleTaskWriteTest` were added, see 04) |
+| Server integration tests | full `test-harness` suite; `NativeWorkflowSpec` (3 scenarios: linear, fork branch independence, stale completion) | `NativeWorkflowSpec`: 3 passed, 0 failures (protocol 2, build results of 2026-11-08; since changed: the spec now has 6 scenarios, see 04) |
+| SDK client tests | `conductor-client`, excluding the four classes that need a server on port 8080 | 984 passed (protocol 1); `SwitchOnTest`: 7 passed, 0 failures (test results of 2026-11-08, including `untakenCasesShowTheTasksTheyWouldHaveCalled`; since changed: it now has 21 tests) |
 | Switch previews on a live server | kitchensink even path; `switches.Switches` nested run | reported from live runs, not re-run for this page `<!-- TODO: verify against live server -->`: the even run's untaken case `1` shows `fork_if_1` with `task_10_if_1` and `task_11_if_1` leading to `sub_flow_1_if_1` previews; the switches run shows `hold_if_default`, `ship_slow_if_slow`, `ship_fast_if_us` and `hold_if_default_2` |
-| Discovered definitions | `DiscoveryTest` (2 tests); hello and kitchensink registered against a live server | `DiscoveryTest`: 2 passed, 0 failures (test results of 2026-11-08). Live, as reported `<!-- TODO: verify against live server -->`: `hello` registered with `[greet, shout]` and an execution held exactly those 2 tasks; the kitchensink registered with 22 top-level entries (the SWITCH with both cases, the fork, the loops) and its executions grew their own 18-entry copies; the definition page renders the discovered graph |
-| Conformance suite | `conformance.Conformance` on SQLite: 151 scenarios, each with an expected result and graph, plus branch placement, no scheduled previews and replay of the finished execution | 151 passed in each run on the final code (2026-11-09), no false divergence. Java SDK only; Postgres and MySQL not run |
+| Discovered definitions | `DiscoveryTest` (2 tests); hello and kitchensink registered against a live server | `DiscoveryTest`: 2 passed, 0 failures (test results of 2026-11-08; since changed: it now has 4 tests). Live, as reported `<!-- TODO: verify against live server -->`: `hello` registered with `[greet, shout]` and an execution held exactly those 2 tasks; the kitchensink registered with 22 top-level entries (the SWITCH with both cases, the fork, the loops) and its executions grew their own 18-entry copies; the definition page renders the discovered graph |
+| Conformance suite | `conformance.Conformance` on SQLite: 151 scenarios, each with an expected result and graph, plus branch placement, no scheduled previews and replay of the finished execution | 151 passed in each run on the final code (2026-11-09), no false divergence. Java SDK only; Postgres and MySQL not run (since changed: the suite now has 160 scenarios) |
 | Chaos run: worker killed, 20 s with no worker, new worker takes over, server killed and restarted, worker restarted | `native-examples/chaos.sh` | all 49 checks passed; a continuation queued for the killed worker was picked up by the new one. On protocol 2 the run found bug 17 below (a continuation queued to the dead worker's own domain queue while the sweeper had postponed the workflow by an hour) `<!-- TODO: verify against live server -->` the run after that fix is not recorded here |
 | Durable message queue | `SqliteWorkflowMessageQueueDAOTest`, `PostgresWorkflowMessageQueueDAOTest`, `MySQLWorkflowMessageQueueDAOTest` | passed; the SQLite test includes concurrent push and pop on a WAL database |
 | Durability bench, Jepsen-style | `java-sdk/native-examples/bench.sh` (see `DURABILITY-BENCH.md` there): 30 to 40 executions on three worker processes while workers and the server are killed and paused and workers are partitioned from the server; history, worker ledgers and final state checked | the final two protocol 1 runs (40 executions each, 11 and 16 faults including 4 and 1 server kills) passed every check; earlier runs found bugs 5, 6 and 8 to 12 below; one failure seen once ("Error scheduling tasks") is unexplained, see `DURABILITY-BENCH.md`. On protocol 2 with `switchOn`, the cluster re-run with seed 23 (`p2-seed23b`) was reported valid: 16 faults, 50 of 50 executions `COMPLETED`. The earlier `p2-switch` run was INVALID (one execution FAILED) and was a real bug, not an artifact: a continuation that failed sent no `protocol`, so the server treated it as an update to an ordinary task; `update-v2` handed back a scheduled task of another execution, and the SDK replayed it with the wrong workflow's code. Fixed by sending `protocol` on failed continuations and processing only leased hand-backs. <!-- TODO: verify against live server --> |
 
 `<!-- TODO: verify against live server -->` Per-worker continuation routing has since been removed (continuations go to the shared
 queue by default). The chaos and bench rows above were recorded with it; results for the
-shared-queue design are not in yet.
+shared-queue design are not in yet. (Since changed: an execution whose code a worker keeps in
+memory is pinned to that worker's own domain, see the worker execution model row below; this is a
+preference with a shared-queue fallback, not the removed per-worker routing.)
 
 ### Final verification of the shared-queue design (2026-11-09)
 
@@ -120,7 +123,9 @@ Each entry names the problem and the mechanism that fixes it as it exists now.
    marker's lease is released with the reason (then the marker's `deferred`, now the workflow's
    `reasonForIncompletion`), and the continuation
    runs again on the current state. Messages still queued when an execution ends anyway (failed, terminated) are logged
-   and counted (`workflow_messages_discarded`) instead of dropped silently.
+   and counted (`workflow_messages_discarded`) instead of dropped silently. (Since changed: that
+   logging and count are in the standard-workflow PR #1857; on this branch the queue of an ended
+   execution is deleted without them.)
 7. **A lost poll response stalled a continuation for two minutes.** Also found by the bench: a
    continuation handed to a worker during a partition stayed leased until its timeout, which was
    120 s (an hour in dev mode). The lease (`continuationTimeoutSeconds`) is now 30 s by default,
@@ -137,6 +142,9 @@ Each entry names the problem and the mechanism that fixes it as it exists now.
    variables it started from (`resumedWith`, which handlers send too). The server applies only
    the variables the continuation changed, and when another completion changed one of them in
    the meantime it defers the completion and runs the continuation again on the current values.
+   (Since changed: one continuation of an execution runs at a time, so the conflict check was
+   removed; the server applies `variables` as sent and keeps `resumedWith` on the marker for
+   replay.)
 10. **A JOIN could fail an execution on a continuation that was about to run again.** A refused or
    deferred completion left the branch's last task in a state a live-target JOIN read as failure.
    `lanesSettled` now waits on any marker that is not applied with `done`, whatever happened to
@@ -146,7 +154,9 @@ Each entry names the problem and the mechanism that fixes it as it exists now.
    with nothing to schedule its next step. `completeContinuation` now saves the workflow row
    (definition, variables, `nativeState`) before the task that carries the marker. A crash at any
    point either leaves the marker leased, so the continuation runs again, or leaves the
-   definition saved.
+   definition saved. (Since changed: markers are kept in `nativeState.markers` on the workflow
+   row, so the definition and the marker are saved in one write; the awaited task is saved after
+   it.)
 12. **A replay could report a false divergence.** A worker replaying the execution between a
    completion being saved and the decide that created its tasks replayed the completion, expected
    its tasks, and failed the execution as diverged. The SDK now replays only applied markers
@@ -158,14 +168,16 @@ Each entry names the problem and the mechanism that fixes it as it exists now.
    workflow's decider-queue entry on the strength of its in-progress tasks, up to
    `maxPostponeDurationSeconds` (an hour), so no decide came. `WorkflowExecutorOps.decide` now caps
    that postpone at `workflowOffsetTimeout` (30 s) while a continuation is runnable or leased
-   (`NativeContinuationService.needsPromptRevisit`), and writes it even when it equals the
+   (`NativeWorkflows.needsPromptRevisit`), and writes it even when it equals the
    default, to replace a longer postpone set earlier. The cap still matters for re-pushing a
    wake-up whose message was lost; a lease whose holder died is redelivered by the queue.
+   (Since changed: the cap is in `NativeDriver.postponeDecide`, which only ever shortens the
+   decider-queue entry, `setUnackTimeoutIfShorter`.)
 18. **A pop on SQLite took the same message id in other queues.** The `popMessages` update selected
    its messages within the queue but marked them popped by `message_id` alone, so a message with
    the same id in another queue was marked popped too; a continuation's id can be in several queues
    of its code type when it is re-pushed to another domain. The update is now scoped to its queue
-   (`SqliteQueueDAOTest.poppingAMessageLeavesTheSameIdInAnotherQueueAlone`). Postgres and MySQL were
+   (`SqliteQueueDAOTest.popTakesAMessageFromTheQueuePolledOnly`). Postgres and MySQL were
    already scoped.
 
 ### Found by the conformance suite
@@ -209,7 +221,8 @@ database, and database faults (pause, kill, partition one server from it) and cl
    server killed while running the handler lane's message pull left the message invisible for an
    hour; every signal waited. Messages are now claimed, not popped (`claimed_by`, new migrations
    for SQLite, Postgres and MySQL): running the same step again returns the same messages, and the
-   next step deletes them. In protocol 2 the handler lane's poll claims under `handlers#<n>` and
+   next step deletes them. In protocol 2 the handler lane's poll claims under claimant `handlers`
+   with ordinal `n` and
    the lease is 30 s; `PULL_WORKFLOW_MESSAGES` keeps the claim mechanism for JSON workflows, with a
    short reservation (`isExecuteIdempotent`).
 15. **A database outage failed a handler loop.** Scheduling a loop's next iteration failed on a
@@ -262,11 +275,11 @@ operator checks that a worker task failing once is retried rather than raised.
 |---|---|---|
 | A pause of the code | an engine-only `CODE` task per pause, hidden in the UI, queued, leased, timed out and retried as a worker task | a `continuation` marker on the task the code paused on; one queue message per wake-up; the queue's unack timeout is the lease |
 | Recorded values (`once`, `now`, `random`) | a `RECORD` task each | `recorded` on the marker of the continuation that produced them |
-| The end of the workflow | a `TERMINATE` task in the main lane's last fragment | the engine completes or fails the workflow from the main lane's final completion (`done`, `result` or `error`) |
+| The end of the workflow | a `TERMINATE` task in the main lane's last fragment | the engine completes or fails the workflow from the main lane's final completion (`done`, `result` or `error`); an exception the code threw is marked by a `TERMINATE` entry named in `error.ref`, recorded as a FAILED task and never scheduled |
 | The first continuation | the skeleton's first `CODE` task | `nativeState.bootstrap`, message `<workflowId>\|main` |
-| Handlers | `FORK_JOIN` + `DO_WHILE` + `PULL_WORKFLOW_MESSAGES` + handler `CODE` + `JOIN` | `nativeState.handlers`; the message endpoint wakes it; the poll claims the messages under `handlers#<n>` |
+| Handlers | `FORK_JOIN` + `DO_WHILE` + `PULL_WORKFLOW_MESSAGES` + handler `CODE` + `JOIN` | `nativeState.handlers`; the message endpoint wakes it; the poll claims the messages under claimant `handlers`, ordinal `n` |
 | Replies and handled message ids | workflow variables `__replies`, `__seen` | `nativeState.replies` (every handled message) |
-| Continuation routing | `taskToDomain[<codeType>]`, the worker's id captured per execution | the shared queue of the code type; task domains do not apply, whatever the start's `taskToDomain` (01 §3) |
+| Continuation routing | `taskToDomain[<codeType>]`, the worker's id captured per execution | the shared queue of the code type; task domains do not apply, whatever the start's `taskToDomain` (01 §3); an execution a worker keeps in memory is offered to that worker's own domain first (pinning, 01 §3) |
 | Poll | batch poll of the `CODE` task type | the same batch poll of the code type; a decide offers the marker (leased) and `ExecutionService.poll` hands out the finished task itself (or a synthetic task for the bootstrap and handler lanes, with an entry whose `metadata` names the continuation) |
 | Complete | `POST /api/tasks` on the `CODE` task | `POST /api/tasks/update-v2` on the awaited task's id or the synthetic id; stale completions get 409 |
 | Fencing | owner refusal, stale-write guard, response and poll timeouts with retry | one leased marker per execution, `(n, retryCount)` check under the execution lock |
@@ -279,24 +292,26 @@ operator checks that a worker task failing once is retried rather than raised.
 
 | Topic | Earlier documents | Implemented |
 |---|---|---|
-| Worker execution model | live thread as the fast path, re-run only on worker loss | The worker always replays the code against the applied markers and the tasks, so it is stateless. Segments replay in the order the server applied them (`endTime`). `@Variable` fields are restored at each continuation to the values recorded when it was first processed (`resumedWith`). Any worker can run any continuation; the server's slot (the one leased marker) lets one continuation of an execution run at a time, across all hosts, and the SDK holds no per-execution lock. The live-thread fast path is left for the latency round. |
+| Worker execution model | live thread as the fast path, re-run only on worker loss | The recording is the execution, and any worker can run any continuation by replaying the code against the applied markers and the tasks. Segments replay in the order the server applied them (`endTime`). `@Variable` fields are restored at each continuation to the values recorded when it was first processed (`resumedWith`). The server's slot (the one leased marker) lets one continuation of an execution run at a time, across all hosts, and the SDK holds no per-execution lock. As a fast path, the SDK keeps an execution's lanes parked in memory between continuations (`ParkedExecutions`; dropped after `parkTimeout`, an hour by default, or when more than `maxParked`, 1000, are held per workflow; `parkTimeout=0` turns it off). A completion that leaves the code parked carries `pin {domain, stamp}`, its domain being the worker's own `pin-…` domain; the server offers the next continuation to `<domain>:<codeType>` first, with the same message on the shared queue after `conductor.app.nativeWorkflow.pinTimeout` (5 s). A worker continues parked code only when the stamp it is handed is the one it sent last; otherwise it replays (01 §3). |
 | Fan-out | FORK_JOIN_DYNAMIC, in stages | a FORK_JOIN generated at run time with one lane per item; items progress independently, with no stages |
 | Native JOIN mode | `joinMode: SYNC` | default asynchronous evaluation; SYNC re-evaluates continuously and would busy-poll long branches |
 | Condition waits | reference `cond`, `cond_2` | `condition`, `condition_2` |
 | `startWorkflow` | returns the new execution id | returns nothing, since the id is not deterministic on replay |
 | `repeatUntil` condition | a predicate | a method reference to a boolean property of the result, such as `JobStatus::done`, translated to the DO_WHILE condition |
-| Continuation routing | per worker, then per build (`nativeState.owner`, sent in every completion; workers polled their worker id too) | removed. The shared queue of the code type, which `Workers` polls with no domain; task domains do not apply to workflow code, whatever the start's `taskToDomain` (01 §3), and a worker's build is never captured |
+| Continuation routing | per worker, then per build (`nativeState.owner`, sent in every completion; workers polled their worker id too) | removed. The shared queue of the code type, which `Workers` polls with no domain; task domains do not apply to workflow code, whatever the start's `taskToDomain` (01 §3), and a worker's build is never captured. An execution kept in memory is pinned to its worker's own domain, which `Workers` also polls while it holds executions; this is a preference with a shared-queue fallback after the pin timeout, not ownership (01 §3) |
 | Human task timeout | a registered task definition | an inline `taskDefinition` on the HUMAN entry, with `timeoutPolicy: RETRY` and `retryCount: 0` |
-| Branching visible in the graph | `decision(name, value)`: nothing emitted, a label for the observed-graph diamond; a plain Java `switch` left no trace | a plain `if` or `switch` whose arms call the server is a `SWITCH` with every arm (read from the compiled code, the arm known from the line each call is made on); `switchOn(name, value).when(key, body)…otherwise(body).get()`/`.run()`: a real `SWITCH` entry with every declared case, the taken body run inline with its calls inside that case, every untaken case holding a preview of the calls its body would have made (`<base>_if_<key>`, `metadata.preview: true`, read from the compiled case body, so nothing runs), and `metadata.after` on the first entry after the body when the lane resumed inside the case. Plain `if`/`switch` stays plain code; `switchOn` is the opt-in for a branch the execution should show. `decision` no longer exists. The kitchensink's `oddEvenDecision` is a `switchOn`; `switches.Switches` shows a nested switch, an empty case, the default case and an unhandled value |
+| Branching visible in the graph | `decision(name, value)`: nothing emitted, a label for the observed-graph diamond; a plain Java `switch` left no trace | a plain `if` or `switch` whose arms call the server is a `SWITCH` with every arm (read from the compiled code, the arm known from the line each call is made on); `switchOn(name, value).when(key, body)…otherwise(body).get()`/`.run()`: a real `SWITCH` entry with every declared case, the taken body run inline with its calls inside that case, every untaken case holding a preview of the calls its body would have made (`<base>_if_<key>`, `metadata.preview: true`, read from the compiled case body, so nothing runs), and `metadata.after` on the first entry after the body when the lane resumed inside the case. `switchOn` is the explicit form of the same `SWITCH`, named by the code. `decision` no longer exists. The kitchensink's `switch_oddEven` is a plain Java `switch`; `switches.Switches` shows a nested switch, an empty case, the default case and an unhandled value |
 | Registration checks (S2) | log when the message queue is off | as designed, plus native definitions are refused when `conductor.app.nativeWorkflow.enabled=false` |
 | Embedded-server test tier | `DurableTestEnvironment.embedded()` | not implemented; the in-memory tier and the replay test are |
 | Attach-to-execution debugger, CLI commands | listed | not implemented |
-| Observed-graph definition view (merge the fragments of every execution by call site) | listed, deferred | replaced: the registered definition carries the graph `Replayer.discover` finds by reading the compiled method (`metadata.native.discovered`), so the definition view is filled before the first run; `Conductor.definitions(Class)` returns that JSON and `Conductor.register(Class...)` registers it without starting workers. `NativeContinuationService.initialize` clears the discovered tasks from each execution's copy, so executions still hold only what the code called |
+| Observed-graph definition view (merge the fragments of every execution by call site) | listed, deferred | replaced: the registered definition carries the graph `Replayer.discover` finds by reading the compiled method (an empty task list, with a warning in the worker log, when it cannot be read), so the definition view is filled before the first run; `Conductor.definitions(Class)` returns that JSON and `Conductor.register(Class...)` registers it without starting workers. `NativeContinuationService.initialize` clears the discovered tasks from each execution's copy, so executions still hold only what the code called |
 
 ## Known limitations
 
-- A native JOIN is checked once a second after its fast start, so it can finish up to about that
-  long after a long branch.
+- A native JOIN backs off between checks as a standard JOIN does. The decide that follows the end
+  of its last lane puts it on its queue with no delay (`NativeDriver.wakeJoins`), but a check
+  already running at that moment can set the backoff again, so the JOIN can finish up to one
+  backoff after its last lane.
 - Previews and the discovered definition cannot match a `join` to a particular `async` block: a
   `join` or `get` after other calls waits for the most recent fork not yet waited for.
 - A lane nothing joins keeps the execution `RUNNING` until it finishes, and its failure does not
@@ -321,8 +336,9 @@ operator checks that a worker task failing once is retried rather than raised.
 - Data placed in task input has `${` escaped as `$${`, because the server evaluates expressions.
 - `switchOn` compares the value's string form (`null` for a null value) with the case keys; a
   value no case handles fails the workflow unless `otherwise` is given, and a case key declared
-  twice is an error at the call. Replay is strict here too: a switch that takes a case other than
-  the recorded `switchCaseValue` is a divergence.
+  twice is an error at the call. On replay a switch takes the case the execution recorded,
+  whatever the code now computes, and logs a warning; only a recorded case the code no longer
+  declares is a divergence.
 - Previews and the discovered definition show every call the code can make, not the path a run
   would take: every arm of an `if` or `switch` whose arms call the server, as a `SWITCH`; the body
   of a loop once; a catch block after its try. An `if` or `switch` is drawn at run time only when
@@ -335,10 +351,12 @@ operator checks that a worker task failing once is retried rather than raised.
   is not followed, and a finally block's calls are deduplicated by line. Case bodies are
   serializable lambdas so that the runtime lambda names its compiled method. The discovered
   definition is only a view: `NativeContinuationService.initialize` clears it from each execution.
-- Every continuation replays the method from the top, so the cost of a continuation grows with the
-  length of the execution. The large-loops and latency rounds address this.
-- Continuations are not routed by domain: each goes to the shared queue of the code type
-  (`queueName`). A continuation held by a dead worker is redelivered when its lease
+- A continuation that is not continued from parked code replays the method from the top, so its
+  cost grows with the length of the execution: after a retry, rerun or restart, on another host,
+  or once the parked copy was dropped. The large-loops and latency rounds address this.
+- Continuations go to the shared queue of the code type (`queueName`), except that an execution
+  pinned to a worker that polled lately is offered to that worker's queue first
+  (`pinnedQueue`), with the shared message visible after the pin timeout. A continuation held by a dead worker is redelivered when its lease
   (`continuationTimeoutSeconds`) expires. A lost message is pushed again by the next decide
   (`repairAndWake` re-pushes the slot holder's message), which is at most `workflowOffsetTimeout`
   (30 s) away while a continuation is runnable or leased (`needsPromptRevisit`).

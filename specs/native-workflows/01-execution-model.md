@@ -30,10 +30,10 @@ and a worker runs the first continuation.
 
 The growth rule: when a continuation completes, the `fragment` in its output is inserted into the
 execution's definition immediately after the task the lane paused on, wherever that task sits:
-top level, inside a `FORK_JOIN` branch, inside a `SWITCH` case (`NativeContinuationService.insertAfter`, which
+top level, inside a `FORK_JOIN` branch, inside a `SWITCH` case (`NativeDefinitionEdits.insertAfter`, which
 descends into `forkTasks`, `decisionCases`, `defaultCase` and `loopOver`). One exception: an entry that
 carries `metadata.after` starts a run inserted after the entry it names instead
-(`NativeContinuationService.anchorOf`). The SDK sets it when the lane paused inside a
+(`NativeFragmentValidator.anchorOf`). The SDK sets it when the lane paused inside a
 `switchOn` case and the case body has since returned, so the code after the switch lands after the
 switch rather than inside the case it paused in. An anchor that names no entry in the definition
 is a rejected fragment, and the workflow fails. The bootstrap's fragment, which has no task before
@@ -43,8 +43,9 @@ appended entries after it; the first of them is scheduled in that decide. No tas
 for the pause itself.
 
 The definition is persisted with the workflow row by `updateWorkflow`. When a completion is
-applied, the workflow row (definition, variables, `nativeState`) is written before the task that
-carries the marker, so a fragment is never recorded as applied without being in the definition.
+applied, the workflow row (definition, variables, `nativeState` with every marker) is written in
+one write, then the awaited task, set to be evaluated again, so a fragment is never recorded as
+applied without being in the definition.
 
 ## 2. Lanes and continuation markers
 
@@ -65,7 +66,7 @@ completes with (reference names as the SDK derives them; the JSON kitchensink ca
 
 ```
 SWITCH switch_oddEven, switchCaseValue "1"
-  case "0": task_4_if_0  (metadata.preview true; no marker)
+  case "0": task_4_if_0, fanout1_if_0, fanout1_if_0_join  (metadata.preview true; no marker)
   case "1":
     FORK_JOIN fork
       branch 0: task_10  (continuation {lane fork_1.0, n 1})
@@ -78,8 +79,8 @@ The switch is the only top-level entry of that fragment; the fork and the join s
 the value took, because the case's calls were placed there. The SDK knows which arm of a plain
 `if` or `switch` a call is in from the line it is made on, read with the arms from the compiled
 code; `switchOn(name, value)` is the explicit form of the same SWITCH. The untaken case `"0"` is
-not empty: the SDK previews it (see below) and it shows the task its arm would have called,
-`task_4_if_0`, as a preview entry.
+not empty: the SDK previews it (see below) and it shows what its arm would have called,
+`task_4_if_0` and the fan-out `fanout1_if_0` with its join, as preview entries.
 
 **Preview entries.** When the SDK first emits a switch, every untaken case (and the default arm,
 when a declared case was taken) is read from its compiled code, without running it, to find the
@@ -185,7 +186,8 @@ Failover:
    that `retryCount`.
 
 Whichever worker leases a continuation replays the method from the top (an SDK mechanism) against
-the applied markers and the task list. For the replay to be exact the server keeps every applied
+the applied markers and the task list, unless it holds the execution parked and the stamp it is
+handed is the one it sent last (pinning, above). For the replay to be exact the server keeps every applied
 continuation's record on its marker (`endTime`, the order replay follows, `recorded`,
 `resumedWith`, `done`), every task's output, and the bootstrap's record on the workflow, with an
 `endTime` of its own, the earliest. Handler runs are not replayed;
@@ -213,15 +215,14 @@ redelivery after the continuation timeout, and the next worker runs the same off
 
 `@Variable` fields are workflow variables. A completion may carry `variables`, the lane's
 `@Variable` values after the continuation, and `resumedWith`, the values it started from. The
-server applies only the variables that differ from `resumedWith`, under the same size limit
-`SetVariable` enforces (`maxWorkflowVariablesPayloadSizeThreshold`, 256 KB). If another completion
-changed one of those variables since this continuation read them, the completion is deferred: the
-marker's lease is released with `retryCount + 1`, the workflow's `reasonForIncompletion` names the
-variable, it is offered again at once, and the continuation runs again on the current values. The applied `resumedWith` is kept on the marker, so
-a replay restores each continuation's variables to what it saw the first time.
+server applies `variables` as sent, under the same size limit `SetVariable` enforces
+(`maxWorkflowVariablesPayloadSizeThreshold`, 256 KB). There is no conflict check: one continuation
+of an execution runs at a time (section 3), so what it read is what is there when it applies. The
+applied `resumedWith` is kept on the marker, so a replay restores each continuation's variables to
+what it saw the first time.
 
 The handler lane runs on an instance restored from the current variables and completes with
-`variables` and `resumedWith` too, so a handler's write is fenced the same way.
+`variables` and `resumedWith` too.
 
 Variables hold only `@Variable` fields. Every handled message, with an update's reply, lives in
 `nativeState.replies`, not in the variables.
@@ -231,11 +232,11 @@ Variables hold only `@Variable` fields. Every handled message, with an update's 
 When the class has handlers, `nativeState.handlers` is the handler lane's marker; no task is
 scheduled for it. A signal, update or query is a message pushed to the execution's message queue
 (`POST /api/workflow/{workflowId}/messages`, `WorkflowMessageQueueResource`). The endpoint pushes
-the message inside a decide (`WorkflowExecutor.decide(workflowId, change)`), and that decide finds
+the message and runs a decide (`WorkflowExecutor.decide(workflowId)`), and that decide finds
 messages queued and offers the handler lane once no continuation holds the slot (`repairAndWake`).
 A worker's poll
 hands out the offered marker and claims up to 10 messages from the message
-queue under claimant `handlers#<n>` with ordinal `n`; the messages arrive in the handed task's
+queue under claimant `handlers` with ordinal `n`; the messages arrive in the handed task's
 `inputData.messages`. The worker runs the handlers between pauses of the other lanes and completes
 with the changed variables, `replies` and `releases`. The server then installs a fresh
 `handlers` marker with `n + 1`.
@@ -269,7 +270,7 @@ A `JOIN` that follows a `FORK_JOIN` and declares no `joinOn` joins on whatever e
 currently ends with, evaluated every time the join is checked (03, change B3). A branch is settled
 when its last task is terminal (for a branch ending in a `SWITCH`, the last task of the case it
 took, at any depth, since a `SWITCH` finishes as soon as it has chosen) and either carries no marker or carries an applied marker with
-`done` (`NativeContinuationService.lanesSettled`). A marker not yet applied
+`done` (`NativeWorkflows.lanesSettled`). A marker not yet applied
 means the lane has more to append; an applied marker that did not end the lane means the branch's
 real last entry is not this one yet in the copy of the definition being read. A JOIN whose fork is
 missing from the definition it reads waits for the next evaluation. Failure semantics of
@@ -289,10 +290,12 @@ the execution; a join on it raises the failure in the code that joins.
 - The main lane ends when its continuation completes with `done: true`. With `result`, the engine
   completes the workflow with that output (`completeWorkflow`). With `error`, it fails the
   workflow through `terminate(workflow, TerminateWorkflowException(error.message, FAILED,
-  causeTask))`, where `causeTask` is the task named by `error.ref` when the error was an uncaught
-  `TaskFailure`; `reasonForIncompletion`, `failedTaskId`, the failure workflow and the status
-  listeners behave as for any failed workflow. No `TERMINATE` task is involved, and a fragment that
-  contains one is refused.
+  causeTask))`, where `causeTask` is the task named by `error.ref`: for an uncaught `TaskFailure`
+  the task that failed, put back to the status it failed with; for an exception the code threw, a
+  `TERMINATE` entry the SDK appends where the code threw, which the server records as a FAILED task
+  and never schedules (`NativeContinuationService.causeTask`). `reasonForIncompletion`,
+  `failedTaskId`, the failure workflow and the status listeners behave as for any failed workflow.
+  That entry is the only `TERMINATE` a fragment may hold: any other is refused.
 - `checkForWorkflowCompletion` never completes a native workflow on its own: a definition with no
   tasks yet, or with every task terminal while a marker is runnable or leased, is not complete.
 - An `async` lane that throws completes its continuation with `done: true` and an `error` object;
@@ -348,7 +351,8 @@ the execution; a join on it raises the failure in the code that joins.
 - It does not run user code, interpret the fragment beyond validating it, or know what a lane is
   beyond the `lane` label in each entry's metadata and the markers.
 - It does not detect divergence on replay; that is the SDK's job, using the markers and the task
-  list. A `switchOn` that takes a different case than the recorded `switchCaseValue` is one such
+  list. A switch the recording decided takes the recorded case on replay whatever the code now
+  computes (the SDK logs a warning); only a recorded case the code no longer declares is a
   divergence.
 - It knows a `SWITCH` was decided in code only by its evaluator: the entry arrives with
   `evaluatorType: native-code` and `inputParameters.switchCaseValue` already fixed to the taken
