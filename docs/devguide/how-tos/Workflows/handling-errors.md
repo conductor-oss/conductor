@@ -97,10 +97,7 @@ A realistic saga implementation involves a main workflow that processes an order
         "customerId": "${workflow.input.customerId}",
         "amount": "${workflow.input.totalAmount}"
       },
-      "type": "SIMPLE",
-      "retryCount": 2,
-      "retryLogic": "EXPONENTIAL_BACKOFF",
-      "retryDelaySeconds": 5
+      "type": "SIMPLE"
     },
     {
       "name": "reserve_inventory",
@@ -110,10 +107,7 @@ A realistic saga implementation involves a main workflow that processes an order
         "items": "${workflow.input.items}",
         "paymentTransactionId": "${charge_payment_ref.output.transactionId}"
       },
-      "type": "SIMPLE",
-      "retryCount": 2,
-      "retryLogic": "FIXED",
-      "retryDelaySeconds": 3
+      "type": "SIMPLE"
     },
     {
       "name": "arrange_shipping",
@@ -124,10 +118,7 @@ A realistic saga implementation involves a main workflow that processes an order
         "items": "${workflow.input.items}",
         "inventoryReservationId": "${reserve_inventory_ref.output.reservationId}"
       },
-      "type": "SIMPLE",
-      "retryCount": 1,
-      "retryLogic": "FIXED",
-      "retryDelaySeconds": 10
+      "type": "SIMPLE"
     }
   ],
   "restartable": true,
@@ -136,6 +127,34 @@ A realistic saga implementation involves a main workflow that processes an order
   "timeoutPolicy": "TIME_OUT_WF",
   "timeoutSeconds": 600
 }
+```
+
+Register a task definition for each task, with the same name as the task. Retry settings are read from the task definition. If you set them on the workflow task instead, they are dropped when the workflow is saved.
+
+```json
+[
+  {
+    "name": "charge_payment",
+    "retryCount": 2,
+    "retryLogic": "EXPONENTIAL_BACKOFF",
+    "retryDelaySeconds": 5,
+    "ownerEmail": "order-team@example.com"
+  },
+  {
+    "name": "reserve_inventory",
+    "retryCount": 2,
+    "retryLogic": "FIXED",
+    "retryDelaySeconds": 3,
+    "ownerEmail": "order-team@example.com"
+  },
+  {
+    "name": "arrange_shipping",
+    "retryCount": 1,
+    "retryLogic": "FIXED",
+    "retryDelaySeconds": 10,
+    "ownerEmail": "order-team@example.com"
+  }
+]
 ```
 
 **Compensation workflow** — `order_compensation` reverses each completed step in reverse order: cancel the shipment, restore inventory, and refund the payment.
@@ -154,10 +173,7 @@ A realistic saga implementation involves a main workflow that processes an order
         "shipmentId": "${workflow.input.failedWorkflow.tasks[arrange_shipping_ref].output.shipmentId}"
       },
       "type": "SIMPLE",
-      "optional": true,
-      "retryCount": 3,
-      "retryLogic": "FIXED",
-      "retryDelaySeconds": 5
+      "optional": true
     },
     {
       "name": "restore_inventory",
@@ -167,10 +183,7 @@ A realistic saga implementation involves a main workflow that processes an order
         "reservationId": "${workflow.input.failedWorkflow.tasks[reserve_inventory_ref].output.reservationId}"
       },
       "type": "SIMPLE",
-      "optional": true,
-      "retryCount": 3,
-      "retryLogic": "FIXED",
-      "retryDelaySeconds": 5
+      "optional": true
     },
     {
       "name": "refund_payment",
@@ -180,10 +193,7 @@ A realistic saga implementation involves a main workflow that processes an order
         "transactionId": "${workflow.input.failedWorkflow.tasks[charge_payment_ref].output.transactionId}",
         "amount": "${workflow.input.failedWorkflow.input.totalAmount}"
       },
-      "type": "SIMPLE",
-      "retryCount": 5,
-      "retryLogic": "EXPONENTIAL_BACKOFF",
-      "retryDelaySeconds": 10
+      "type": "SIMPLE"
     }
   ],
   "restartable": true,
@@ -194,15 +204,48 @@ A realistic saga implementation involves a main workflow that processes an order
 }
 ```
 
+The task definitions for the compensation tasks:
+
+```json
+[
+  {
+    "name": "cancel_shipment",
+    "retryCount": 3,
+    "retryLogic": "FIXED",
+    "retryDelaySeconds": 5,
+    "ownerEmail": "order-team@example.com"
+  },
+  {
+    "name": "restore_inventory",
+    "retryCount": 3,
+    "retryLogic": "FIXED",
+    "retryDelaySeconds": 5,
+    "ownerEmail": "order-team@example.com"
+  },
+  {
+    "name": "refund_payment",
+    "retryCount": 5,
+    "retryLogic": "EXPONENTIAL_BACKOFF",
+    "retryDelaySeconds": 10,
+    "ownerEmail": "order-team@example.com"
+  }
+]
+```
+
 Notice that compensation tasks are marked `optional: true` for steps that may not have completed before the failure occurred. The refund task uses aggressive retries with exponential backoff because it is critical that the customer receives their money back.
 
 ## Retry strategies
 
-When a task fails, Conductor can automatically retry it according to the retry logic configured on the task definition. You control the retry behavior with three parameters:
+When a task fails, Conductor can automatically retry it according to the retry settings in the task definition. The task definition is either registered with the same name as the task, or embedded in the workflow task in `taskDefinition`. You control the retry behavior with these task definition parameters:
 
-* **`retryCount`** — Maximum number of retry attempts.
+* **`retryCount`** — Maximum number of retry attempts. If the workflow task also sets `retryCount`, that value is used instead.
 * **`retryLogic`** — The backoff strategy between retries.
 * **`retryDelaySeconds`** — The base delay between retries, in seconds.
+* **`backoffScaleFactor`** — Multiplier used by LINEAR_BACKOFF. Default 1. It has no effect on FIXED or EXPONENTIAL_BACKOFF.
+
+A SIMPLE task without a task definition uses the default settings: FIXED, 60 seconds between retries, and 3 retries unless the workflow task sets `retryCount`. A system task such as INLINE without a task definition is not retried, and `retryCount` on the workflow task is ignored.
+
+Some system tasks that run inside the Conductor server, such as JSON_JQ_TRANSFORM, are retried immediately: `retryDelaySeconds` and `retryLogic` do not delay the retry.
 
 ### FIXED
 
@@ -220,7 +263,7 @@ This retries up to 3 times, waiting exactly 5 seconds between each attempt.
 
 ### EXPONENTIAL_BACKOFF
 
-Each retry waits exponentially longer than the previous one. The delay is calculated as `retryDelaySeconds * 2^(attemptNumber)`. This reduces load on downstream services that may be experiencing pressure.
+Each retry waits exponentially longer than the previous one. The delay is calculated as `retryDelaySeconds * 2^n`, where `n` is the number of retries already made (0 for the first retry). This reduces load on downstream services that may be experiencing pressure.
 
 ```json
 {
@@ -234,7 +277,7 @@ This retries up to 4 times with delays of approximately 2, 4, 8, and 16 seconds.
 
 ### LINEAR_BACKOFF
 
-Each retry waits incrementally longer by a fixed amount. The delay is calculated as `retryDelaySeconds * attemptNumber`. This provides a gentler ramp-up than exponential backoff.
+Each retry waits incrementally longer by a fixed amount. The delay is calculated as `retryDelaySeconds * backoffScaleFactor * (n + 1)`, where `n` is the number of retries already made (0 for the first retry) and `backoffScaleFactor` defaults to 1. This provides a gentler ramp-up than exponential backoff.
 
 ```json
 {
@@ -267,10 +310,19 @@ Setting `optional` to `true` on a task tells Conductor to continue the workflow 
   "name": "send_analytics_event",
   "taskReferenceName": "send_analytics_ref",
   "type": "SIMPLE",
-  "optional": true,
+  "optional": true
+}
+```
+
+The task definition for `send_analytics_event`:
+
+```json
+{
+  "name": "send_analytics_event",
   "retryCount": 2,
   "retryLogic": "FIXED",
-  "retryDelaySeconds": 3
+  "retryDelaySeconds": 3,
+  "ownerEmail": "order-team@example.com"
 }
 ```
 
@@ -290,19 +342,29 @@ You can set timeouts on individual tasks to prevent them from blocking the workf
 {
   "name": "call_external_api",
   "taskReferenceName": "call_api_ref",
-  "type": "SIMPLE",
-  "timeoutSeconds": 120,
-  "responseTimeoutSeconds": 60,
-  "timeoutPolicy": "RETRY"
+  "type": "SIMPLE"
 }
 ```
 
-* **`timeoutSeconds`** — Maximum total time for the task, including all retries.
-* **`responseTimeoutSeconds`** — Maximum time to wait for a worker to pick up and respond to the task. If a worker does not update the task within this window, Conductor marks it as timed out.
+Set the timeouts in the task definition for `call_external_api`:
+
+```json
+{
+  "name": "call_external_api",
+  "timeoutSeconds": 120,
+  "responseTimeoutSeconds": 60,
+  "timeoutPolicy": "RETRY",
+  "ownerEmail": "order-team@example.com"
+}
+```
+
+* **`timeoutSeconds`** — Maximum time for one attempt of the task, counted from when the attempt starts. Each retry starts a new attempt with a new timeout.
+* **`responseTimeoutSeconds`** — Maximum time to wait for a worker to update the task after it has picked the task up. If the worker does not update the task within this window, Conductor marks it as timed out.
+* **`pollTimeoutSeconds`** — Maximum time the task can wait in the queue for a worker to poll it. If no worker polls the task within this time, the timeout policy is applied.
 
 ## Timeout policies
 
-Timeout policies determine what Conductor does when a task exceeds its `timeoutSeconds` or `responseTimeoutSeconds` limit.
+Timeout policies determine what Conductor does when a task exceeds its `timeoutSeconds`, `responseTimeoutSeconds`, or `pollTimeoutSeconds` limit.
 
 ### RETRY
 

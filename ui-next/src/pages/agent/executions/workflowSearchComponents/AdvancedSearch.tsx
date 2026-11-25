@@ -514,8 +514,8 @@ export default function AdvancedSearch({
                 onChange={(__, val: string[]) => setStatus(val)}
                 value={status}
                 renderTags={renderStatusTagChip}
-                renderOption={(props, option) => (
-                  <Box component="li" {...props}>
+                renderOption={({ key, ...props }, option) => (
+                  <Box component="li" key={key} {...props}>
                     <StatusBadge status={option} />
                   </Box>
                 )}

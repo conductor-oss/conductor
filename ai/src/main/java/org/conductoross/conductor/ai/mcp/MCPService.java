@@ -12,19 +12,30 @@
  */
 package org.conductoross.conductor.ai.mcp;
 
+import java.io.InterruptedIOException;
+import java.time.Duration;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.conductoross.conductor.ai.http.ExternalDataLimits;
+import org.conductoross.conductor.ai.http.RetryInterceptor;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
 import io.modelcontextprotocol.spec.McpSchema;
+import okhttp3.Call;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -48,8 +59,25 @@ public class MCPService {
     private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
     private final JsonTextParser jsonTextParser = new JsonTextParser(objectMapper);
     private final OkHttpClient httpClient;
+    private final OkHttpClient taskGetClient;
+    private final OkHttpClient taskCancelClient;
 
+    /** Upper bound on one {@code tasks/get} call, so a stalled server cannot hold a worker. */
+    static final Duration TASK_GET_TIMEOUT = Duration.ofSeconds(30);
+
+    /** Upper bound on one best-effort {@code tasks/cancel} call. */
+    static final Duration TASK_CANCEL_TIMEOUT = Duration.ofSeconds(5);
+
+    // Spring needs the marker: with a second constructor it cannot pick one on its own.
+    @Autowired
     public MCPService(OkHttpClient conductorAiHttpClient) {
+        this(conductorAiHttpClient, TASK_GET_TIMEOUT, TASK_CANCEL_TIMEOUT);
+    }
+
+    MCPService(
+            OkHttpClient conductorAiHttpClient,
+            Duration taskGetTimeout,
+            Duration taskCancelTimeout) {
         // Redirects are followed explicitly below so credentials can be withheld across origins.
         this.httpClient =
                 conductorAiHttpClient
@@ -57,6 +85,22 @@ public class MCPService {
                         .followRedirects(false)
                         .followSslRedirects(false)
                         .build();
+        // tasks/get and tasks/cancel are short status requests: unlike tool calls, they get a hard
+        // per-call bound instead of the shared client's long read timeout.
+        this.taskGetClient = withoutRetries(httpClient).callTimeout(taskGetTimeout).build();
+        this.taskCancelClient = withoutRetries(httpClient).callTimeout(taskCancelTimeout).build();
+    }
+
+    /**
+     * A builder from {@code client} without its {@link RetryInterceptor}. The polling logic in
+     * {@code MCPTasksCall} owns retries for {@code tasks/get} (with its failure limit) and {@code
+     * tasks/cancel} is best effort, so a second, hidden retry layer would only stretch their time
+     * limits. {@code tools/call} keeps the interceptor, as legacy calls do.
+     */
+    private static OkHttpClient.Builder withoutRetries(OkHttpClient client) {
+        OkHttpClient.Builder builder = client.newBuilder();
+        builder.interceptors().removeIf(RetryInterceptor.class::isInstance);
+        return builder;
     }
 
     /**
@@ -87,6 +131,498 @@ public class MCPService {
         return callToolHttp(serverUrl, toolName, arguments, headers);
     }
 
+    /** Upper bound on the {@code tools/list} pages read to find one tool. */
+    static final int MAX_TOOLS_LIST_PAGES = 100;
+
+    /**
+     * The JSON-RPC id of every request. Each request is a single HTTP exchange that carries its own
+     * response, so a fixed id is enough.
+     */
+    private static final int REQUEST_ID = 1;
+
+    private static final String JSON_CONTENT_TYPE = "application/json";
+
+    /** The content type of a response streamed as server-sent events. */
+    private static final String SSE_CONTENT_TYPE = "text/event-stream";
+
+    /**
+     * Finds a tool's definition with {@code tools/list} in the MCP {@code 2026-07-28} form,
+     * following {@code nextCursor} until the tool is found or the list ends. Used only for calls
+     * that select {@code mcpOptions.protocolVersion}; {@link #listTools} is unchanged.
+     *
+     * <p>The definition is returned as raw JSON, so that schema extensions such as {@code
+     * x-mcp-header} are kept.
+     *
+     * @return the tool definition, or empty if no page lists the tool
+     * @throws MCPRequestException on an HTTP or JSON-RPC error
+     */
+    public Optional<JsonNode> listToolsPaged(
+            String serverUrl, String toolName, Map<String, String> headers) {
+        Set<String> seenCursors = new HashSet<>();
+        String cursor = null;
+        int pages = 0;
+        do {
+            if (++pages > MAX_TOOLS_LIST_PAGES) {
+                throw new RuntimeException(
+                        "MCP server "
+                                + serverUrl
+                                + " returned more than "
+                                + MAX_TOOLS_LIST_PAGES
+                                + " tools/list pages without listing tool '"
+                                + toolName
+                                + "'");
+            }
+            ObjectNode params = objectMapper.createObjectNode();
+            if (cursor != null) {
+                params.put(MCPFields.Tool.CURSOR, cursor);
+            }
+            JsonNode result =
+                    sendProtocolRequest(
+                            serverUrl,
+                            MCPMethod.TOOLS_LIST,
+                            null,
+                            params,
+                            headers,
+                            Map.of(),
+                            httpClient);
+            ExternalDataLimits.validateStructure(objectMapper.convertValue(result, Object.class));
+
+            JsonNode tools = result.get(MCPFields.Tool.TOOLS);
+            if (tools == null || !tools.isArray()) {
+                throw new RuntimeException(
+                        "Invalid tools/list response from "
+                                + serverUrl
+                                + ": 'tools' field is missing or not an array");
+            }
+            for (JsonNode tool : tools) {
+                if (toolName.equals(tool.path(MCPFields.Tool.NAME).asString(null))) {
+                    return Optional.of(tool);
+                }
+            }
+
+            JsonNode next = result.get(MCPFields.Tool.NEXT_CURSOR);
+            cursor =
+                    next != null && next.isString() && !next.asString().isEmpty()
+                            ? next.asString()
+                            : null;
+            if (cursor != null && !seenCursors.add(cursor)) {
+                throw new RuntimeException(
+                        "MCP server " + serverUrl + " repeated tools/list cursor '" + cursor + "'");
+            }
+        } while (cursor != null);
+        return Optional.empty();
+    }
+
+    /**
+     * Sends a {@code tools/call} in the MCP {@code 2026-07-28} form, for a call that selects {@code
+     * mcpOptions.protocolVersion}, with the Tasks extension declared. {@link #callTool} is
+     * unchanged.
+     *
+     * @param paramHeaders the {@code Mcp-Param-*} headers for the tool's {@code x-mcp-header}
+     *     parameters
+     * @return an immediate result, or the remote task that the server created
+     * @throws MCPRequestException on a non-2xx status or a JSON-RPC {@code error}
+     * @throws TransportException when the request could not be sent or the response not read
+     */
+    public ToolCallOutcome callToolTasks(
+            String serverUrl,
+            String toolName,
+            Map<String, Object> arguments,
+            Map<String, String> headers,
+            Map<String, String> paramHeaders) {
+        ObjectNode params = objectMapper.createObjectNode();
+        params.put(MCPFields.Tool.NAME, toolName);
+        params.set(MCPFields.Tool.ARGUMENTS, objectMapper.valueToTree(arguments));
+        JsonNode result =
+                sendProtocolRequest(
+                        serverUrl,
+                        MCPMethod.TOOLS_CALL,
+                        toolName,
+                        params,
+                        headers,
+                        paramHeaders,
+                        httpClient);
+        if (MCPResultType.TASK.matches(resultType(result))) {
+            ExternalDataLimits.validateStructure(objectMapper.convertValue(result, Object.class));
+            return new ToolCallOutcome(
+                    null, parseTask(result, null, MCPMethod.TOOLS_CALL, serverUrl, false));
+        }
+        return new ToolCallOutcome(toResultMap(result), null);
+    }
+
+    /**
+     * Gets the status of a remote task with {@code tasks/get}. For a {@code completed} task, the
+     * embedded tool result is returned as raw JSON; the caller maps it with {@link #mapTaskResult},
+     * so that a result that cannot be mapped is not a failure of the request itself.
+     *
+     * @throws MCPRequestException on a non-2xx status or a JSON-RPC {@code error}
+     * @throws TransportException when the request could not be sent or the response not read
+     */
+    public MCPTask getTask(String serverUrl, String taskId, Map<String, String> headers) {
+        ObjectNode params = objectMapper.createObjectNode();
+        params.put(MCPFields.Task.TASK_ID, taskId);
+        JsonNode result =
+                sendProtocolRequest(
+                        serverUrl,
+                        MCPMethod.TASKS_GET,
+                        taskId,
+                        params,
+                        headers,
+                        Map.of(),
+                        taskGetClient);
+        validateTaskStructure(result);
+        return parseTask(result, taskId, MCPMethod.TASKS_GET, serverUrl, true);
+    }
+
+    /**
+     * Asks the server to cancel a remote task with {@code tasks/cancel}. The server acknowledges
+     * with an empty result; cancellation itself is cooperative.
+     *
+     * @throws MCPRequestException on a non-2xx status or a JSON-RPC {@code error}
+     * @throws TransportException when the request could not be sent or the response not read
+     */
+    public void cancelTask(String serverUrl, String taskId, Map<String, String> headers) {
+        ObjectNode params = objectMapper.createObjectNode();
+        params.put(MCPFields.Task.TASK_ID, taskId);
+        sendProtocolRequest(
+                serverUrl,
+                MCPMethod.TASKS_CANCEL,
+                taskId,
+                params,
+                headers,
+                Map.of(),
+                taskCancelClient);
+    }
+
+    /**
+     * The outcome of a {@code tools/call} in the {@code 2026-07-28} form: exactly one of {@code
+     * result} (an immediate {@code CallToolResult}, mapped as on the synchronous path) and {@code
+     * task} (a {@code CreateTaskResult}) is set.
+     */
+    public record ToolCallOutcome(Map<String, Object> result, MCPTask task) {
+        public boolean isTask() {
+            return task != null;
+        }
+    }
+
+    /**
+     * A remote task as reported by {@code CreateTaskResult} or {@code tasks/get}.
+     *
+     * @param pollIntervalMs the server's suggested poll interval, or {@code null} if it gave none
+     * @param ttlMs how long the server keeps the task, from its creation, or {@code null} if it
+     *     gave none
+     * @param result for a {@code completed} {@code tasks/get} response, the raw tool result;
+     *     otherwise {@code null}. It is mapped with {@link #mapTaskResult} by the caller, so that a
+     *     result that cannot be mapped is not a failure of the {@code tasks/get} request itself
+     * @param error for a {@code failed} task, the JSON-RPC {@code error} object; otherwise {@code
+     *     null}
+     */
+    public record MCPTask(
+            String taskId,
+            String status,
+            String statusMessage,
+            Long pollIntervalMs,
+            Long ttlMs,
+            JsonNode result,
+            JsonNode error) {}
+
+    /**
+     * A request in the MCP {@code 2026-07-28} form that failed with an I/O error while it was sent
+     * or its response was read (for example, a refused connection or a timeout). The cause is the
+     * original failure. Deterministic failures, such as the payload size limit or a refused
+     * redirect, are not transport failures and keep their own exception.
+     */
+    public static class TransportException extends RuntimeException {
+        TransportException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    /** The {@code resultType} of a result; an absent value means {@code complete}. */
+    private static String resultType(JsonNode result) {
+        JsonNode type = result.get(MCPResultType.FIELD);
+        return type == null || type.isNull() ? MCPResultType.COMPLETE.value() : type.asString();
+    }
+
+    /**
+     * Applies the {@code resultType} rules: an absent value or {@code complete} is a final result,
+     * {@code task} is accepted only where a {@code CreateTaskResult} may be returned, and any other
+     * value, including {@code input_required}, is invalid.
+     */
+    private static void checkResultType(JsonNode result, MCPMethod method, String serverUrl) {
+        JsonNode typeNode = result.get(MCPResultType.FIELD);
+        if (typeNode != null && !typeNode.isNull() && !typeNode.isString()) {
+            throw new MCPCallException(
+                    "MCP server "
+                            + serverUrl
+                            + " returned a non-text resultType to "
+                            + method
+                            + ": "
+                            + typeNode);
+        }
+        String type = resultType(result);
+        MCPResultType mcpResultType = MCPResultType.of(type);
+        if (mcpResultType == MCPResultType.COMPLETE
+                || (acceptsTaskResult(method) && mcpResultType == MCPResultType.TASK)) {
+            return;
+        }
+        if (mcpResultType == MCPResultType.INPUT_REQUIRED) {
+            throw new MCPCallException(
+                    "MCP server "
+                            + serverUrl
+                            + " returned resultType 'input_required' to "
+                            + method
+                            + ": server input requests are not supported");
+        }
+        throw new MCPCallException(
+                "MCP server "
+                        + serverUrl
+                        + " returned unsupported resultType '"
+                        + type
+                        + "' to "
+                        + method);
+    }
+
+    /**
+     * Maps the {@code result} of a completed task as the synchronous path maps a {@code
+     * CallToolResult}. The node is modified in place: a {@code parsed} field is added to each text
+     * content item that holds JSON.
+     *
+     * @throws RuntimeException if the result cannot be mapped, for example a non-string {@code
+     *     text} content item
+     */
+    public Map<String, Object> mapTaskResult(JsonNode result) {
+        return toResultMap(result);
+    }
+
+    /** Maps a {@code CallToolResult} as the synchronous path does: adds {@code parsed} fields. */
+    private Map<String, Object> toResultMap(JsonNode result) {
+        processResultJson(result);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> map = objectMapper.convertValue(result, Map.class);
+        ExternalDataLimits.validateStructure(map);
+        return map;
+    }
+
+    /**
+     * Checks the nesting depth of a {@code tasks/get} result. The embedded tool {@code result} is
+     * checked on its own, from its own root, so that it gets the same depth limit as a tool result
+     * returned at once.
+     */
+    private void validateTaskStructure(JsonNode result) {
+        JsonNode toolResult = result.get(MCPFields.Task.RESULT);
+        if (toolResult == null || !(result instanceof ObjectNode object)) {
+            ExternalDataLimits.validateStructure(objectMapper.convertValue(result, Object.class));
+            return;
+        }
+        ObjectNode fields = object.deepCopy();
+        fields.remove(MCPFields.Task.RESULT);
+        ExternalDataLimits.validateStructure(objectMapper.convertValue(fields, Object.class));
+        ExternalDataLimits.validateStructure(objectMapper.convertValue(toolResult, Object.class));
+    }
+
+    /**
+     * Reads a remote task from a {@code CreateTaskResult} or a {@code tasks/get} result.
+     *
+     * @param requestedTaskId the task ID that was asked for, used when the response has none; or
+     *     {@code null} for a {@code CreateTaskResult}, which must name its task
+     * @param readResult whether {@code result} may be read: {@code false} for a {@code
+     *     CreateTaskResult}, which the Tasks extension defines without {@code result} for every
+     *     status
+     * @throws MCPCallException if the response has no usable {@code taskId} or {@code status}
+     */
+    private MCPTask parseTask(
+            JsonNode node,
+            String requestedTaskId,
+            MCPMethod method,
+            String url,
+            boolean readResult) {
+        JsonNode idNode = node.get(MCPFields.Task.TASK_ID);
+        String taskId =
+                idNode != null && idNode.isString() && !idNode.asString().isBlank()
+                        ? idNode.asString()
+                        : requestedTaskId;
+        if (taskId == null) {
+            throw new MCPCallException(
+                    "Invalid " + method + " response from " + url + ": missing 'taskId'");
+        }
+        JsonNode statusNode = node.get(MCPFields.Task.STATUS);
+        if (statusNode == null || !statusNode.isString()) {
+            throw new MCPCallException(
+                    "Invalid " + method + " response from " + url + ": missing 'status'");
+        }
+        JsonNode messageNode = node.get(MCPFields.Task.STATUS_MESSAGE);
+        Long pollIntervalMs = wholeMillis(node.get(MCPFields.Task.POLL_INTERVAL_MS));
+        Long ttlMs = wholeMillis(node.get(MCPFields.Task.TTL_MS));
+        // The Tasks extension defines result only on a completed tasks/get response
+        // (CompletedTask in the DetailedTask union); CreateTaskResult has none, even when its
+        // seed status is completed. Anywhere else it is an extra field and is ignored, so a
+        // stray result can never fail a call.
+        JsonNode resultNode =
+                readResult && MCPTaskStatus.COMPLETED.matches(statusNode.asString())
+                        ? node.get(MCPFields.Task.RESULT)
+                        : null;
+        JsonNode result = resultNode != null && resultNode.isObject() ? resultNode : null;
+        JsonNode errorNode = node.get(MCPFields.Task.ERROR);
+        return new MCPTask(
+                taskId,
+                statusNode.asString(),
+                messageNode != null && messageNode.isString() ? messageNode.asString() : null,
+                pollIntervalMs,
+                ttlMs,
+                result,
+                errorNode != null && errorNode.isObject() ? errorNode : null);
+    }
+
+    /**
+     * Reads a duration in milliseconds that the server gives as a hint ({@code pollIntervalMs},
+     * {@code ttlMs}). A value that is not a whole number that fits a long (1e30, 1500.5, a larger
+     * integer) is ignored, as an absent one is. 5000.0 is used as 5000.
+     */
+    private static Long wholeMillis(JsonNode node) {
+        return node != null && node.isNumber() && node.canConvertToLong() ? node.asLong() : null;
+    }
+
+    /**
+     * Starts a JSON-RPC POST to an MCP server: the request envelope as the body, and {@code
+     * Content-Type: application/json}. Shared by both request forms; the caller adds the other
+     * headers.
+     *
+     * @param params the request {@code params}, or {@code null} to send none
+     */
+    private Request.Builder jsonRpcPost(String serverUrl, MCPMethod method, ObjectNode params) {
+        ObjectNode request = objectMapper.createObjectNode();
+        request.put(MCPFields.JsonRpc.JSONRPC, MCPJsonRpc.VERSION);
+        request.put(MCPFields.JsonRpc.METHOD, method.value());
+        request.put(MCPFields.JsonRpc.ID, REQUEST_ID);
+        if (params != null) {
+            request.set(MCPFields.JsonRpc.PARAMS, params);
+        }
+        return new Request.Builder()
+                .url(serverUrl)
+                .post(
+                        RequestBody.create(
+                                objectMapper.writeValueAsString(request),
+                                MediaType.get(JSON_CONTENT_TYPE)))
+                .header("Content-Type", JSON_CONTENT_TYPE);
+    }
+
+    /**
+     * Whether a request declares the Tasks extension in {@code _meta}: every request except the
+     * schema-lookup {@code tools/list}, which declares no capability. An exhaustive switch, so that
+     * a new method needs a decision here.
+     */
+    private static boolean declaresTasks(MCPMethod method) {
+        return switch (method) {
+            case TOOLS_LIST -> false;
+            case TOOLS_CALL, TASKS_GET, TASKS_CANCEL -> true;
+            case SERVER_DISCOVER, TASKS_UPDATE, INITIALIZE, PING, UNKNOWN ->
+                    throw notSentByTheClient(method);
+        };
+    }
+
+    /**
+     * Whether a response may be a {@code CreateTaskResult} ({@code resultType: "task"}): only for
+     * {@code tools/call}. An exhaustive switch, so that a new method needs a decision here.
+     */
+    private static boolean acceptsTaskResult(MCPMethod method) {
+        return switch (method) {
+            case TOOLS_CALL -> true;
+            case TOOLS_LIST, TASKS_GET, TASKS_CANCEL -> false;
+            case SERVER_DISCOVER, TASKS_UPDATE, INITIALIZE, PING, UNKNOWN ->
+                    throw notSentByTheClient(method);
+        };
+    }
+
+    private static IllegalArgumentException notSentByTheClient(MCPMethod method) {
+        return new IllegalArgumentException(
+                "The MCP client does not send " + method.name() + " (" + method + ")");
+    }
+
+    /**
+     * Sends one JSON-RPC request in the MCP {@code 2026-07-28} form and returns its {@code result}.
+     * User headers are added first, then the protocol headers and {@code paramHeaders}, which
+     * replace user headers with the same name.
+     *
+     * @param mcpName the {@code Mcp-Name} header value, or {@code null} to omit it
+     * @param paramHeaders the {@code Mcp-Param-*} headers built from the tool's schema; empty for
+     *     every method except {@code tools/call}
+     * @throws MCPRequestException on a non-2xx status or a JSON-RPC {@code error}
+     * @throws TransportException when the request could not be sent or the response not read
+     */
+    private JsonNode sendProtocolRequest(
+            String serverUrl,
+            MCPMethod method,
+            String mcpName,
+            ObjectNode params,
+            Map<String, String> userHeaders,
+            Map<String, String> paramHeaders,
+            OkHttpClient client) {
+        ResponsePayload response;
+        try {
+            params.set(
+                    MCPFields.Session.META,
+                    MCPProtocolHeaders.meta(objectMapper, declaresTasks(method)));
+            Request.Builder requestBuilder = jsonRpcPost(serverUrl, method, params);
+            addHeaders(requestBuilder, withoutReservedHeaders(userHeaders));
+            MCPProtocolHeaders.apply(requestBuilder, method, mcpName);
+            paramHeaders.forEach(requestBuilder::header);
+
+            response = execute(requestBuilder.build(), client);
+        } catch (RuntimeException e) {
+            // Deterministic failures (invalid request, payload limit, refused or broken redirect)
+            // keep their own type and message; they are not transport failures and must not be
+            // retried as if they were.
+            throw e;
+        } catch (Exception e) {
+            // I/O failures from OkHttp: refused connection, timeout, dropped connection.
+            throw new TransportException(
+                    "MCP " + method + " to " + serverUrl + " failed: " + e.getMessage(), e);
+        }
+
+        if (!MCPRequestException.isSuccessStatus(response.statusCode)) {
+            throw recorded(
+                    MCPRequestException.fromHttpError(
+                            method, response.statusCode, response.body, objectMapper));
+        }
+
+        JsonNode responseJson =
+                response.contentType != null && response.contentType.contains(SSE_CONTENT_TYPE)
+                        ? parseSseResponse(response.body)
+                        : objectMapper.readTree(response.body);
+        if (responseJson.hasNonNull(MCPFields.JsonRpc.ERROR)) {
+            throw recorded(
+                    MCPRequestException.fromRpcError(
+                            method,
+                            response.statusCode,
+                            responseJson.get(MCPFields.JsonRpc.ERROR)));
+        }
+        if (!responseJson.has(MCPFields.JsonRpc.RESULT)) {
+            throw new RuntimeException(
+                    "Invalid JSON-RPC response to MCP "
+                            + method
+                            + " from "
+                            + serverUrl
+                            + ": missing 'result' field");
+        }
+        JsonNode result = responseJson.get(MCPFields.JsonRpc.RESULT);
+        if (!result.isObject()) {
+            throw new RuntimeException(
+                    "Invalid JSON-RPC response to MCP "
+                            + method
+                            + " from "
+                            + serverUrl
+                            + ": 'result' is not an object");
+        }
+        checkResultType(result, method, serverUrl);
+        return result;
+    }
+
+    private static MCPRequestException recorded(MCPRequestException error) {
+        MCPClientMetrics.rpcError(error);
+        return error;
+    }
+
     /** Lists tools from an HTTP/HTTPS MCP server. */
     private List<McpSchema.Tool> listToolsHttp(String serverUrl, Map<String, String> headers) {
         // Use direct JSON-RPC since many MCP servers don't support full SDK
@@ -103,28 +639,16 @@ public class MCPService {
         try {
             log.debug("Making direct JSON-RPC call to list tools from: {}", serverUrl);
 
-            // Build JSON-RPC request
-            ObjectNode request = objectMapper.createObjectNode();
-            request.put("jsonrpc", "2.0");
-            request.put("method", "tools/list");
-            request.put("id", 1);
-
             Request.Builder requestBuilder =
-                    new Request.Builder()
-                            .url(serverUrl)
-                            .post(
-                                    RequestBody.create(
-                                            objectMapper.writeValueAsString(request),
-                                            MediaType.get("application/json")))
-                            .header("Content-Type", "application/json")
-                            .header("Accept", "application/json, text/event-stream");
+                    jsonRpcPost(serverUrl, MCPMethod.TOOLS_LIST, null)
+                            .header("Accept", MCPProtocolHeaders.ACCEPT);
 
             // Add custom headers
             addHeaders(requestBuilder, headers);
 
             ResponsePayload response = execute(requestBuilder.build());
             // Check response status
-            if (response.statusCode < 200 || response.statusCode >= 300) {
+            if (!MCPRequestException.isSuccessStatus(response.statusCode)) {
                 throw new RuntimeException(
                         String.format(
                                 "HTTP %d error from MCP server: %s",
@@ -137,7 +661,7 @@ public class MCPService {
 
             // Parse response based on content type
             JsonNode responseJson;
-            if (contentType != null && contentType.contains("text/event-stream")) {
+            if (contentType != null && contentType.contains(SSE_CONTENT_TYPE)) {
                 // Parse SSE format
                 responseJson = parseSseResponse(responseBody);
             } else {
@@ -145,17 +669,17 @@ public class MCPService {
                 responseJson = objectMapper.readTree(responseBody);
             }
 
-            if (responseJson.has("error")) {
+            if (responseJson.has(MCPFields.JsonRpc.ERROR)) {
                 throw new RuntimeException(
-                        "JSON-RPC error: " + responseJson.get("error").toString());
+                        "JSON-RPC error: " + responseJson.get(MCPFields.JsonRpc.ERROR).toString());
             }
 
-            if (!responseJson.has("result")) {
+            if (!responseJson.has(MCPFields.JsonRpc.RESULT)) {
                 throw new RuntimeException("Invalid JSON-RPC response: missing 'result' field");
             }
 
-            JsonNode result = responseJson.get("result");
-            JsonNode toolsNode = result.get("tools");
+            JsonNode result = responseJson.get(MCPFields.JsonRpc.RESULT);
+            JsonNode toolsNode = result.get(MCPFields.Tool.TOOLS);
 
             if (toolsNode == null || !toolsNode.isArray()) {
                 throw new RuntimeException(
@@ -212,33 +736,20 @@ public class MCPService {
         try {
             log.debug("Making direct JSON-RPC call to tool '{}' on: {}", toolName, serverUrl);
 
-            // Build JSON-RPC request
-            ObjectNode request = objectMapper.createObjectNode();
-            request.put("jsonrpc", "2.0");
-            request.put("method", "tools/call");
-            request.put("id", 1);
-
             ObjectNode params = objectMapper.createObjectNode();
-            params.put("name", toolName);
-            params.set("arguments", objectMapper.valueToTree(arguments));
-            request.set("params", params);
+            params.put(MCPFields.Tool.NAME, toolName);
+            params.set(MCPFields.Tool.ARGUMENTS, objectMapper.valueToTree(arguments));
 
             Request.Builder requestBuilder =
-                    new Request.Builder()
-                            .url(serverUrl)
-                            .post(
-                                    RequestBody.create(
-                                            objectMapper.writeValueAsString(request),
-                                            MediaType.get("application/json")))
-                            .header("Content-Type", "application/json")
-                            .header("Accept", "application/json, text/event-stream");
+                    jsonRpcPost(serverUrl, MCPMethod.TOOLS_CALL, params)
+                            .header("Accept", MCPProtocolHeaders.ACCEPT);
 
             // Add custom headers
             addHeaders(requestBuilder, headers);
 
             ResponsePayload response = execute(requestBuilder.build());
             // Check response status
-            if (response.statusCode < 200 || response.statusCode >= 300) {
+            if (!MCPRequestException.isSuccessStatus(response.statusCode)) {
                 throw new RuntimeException(
                         String.format(
                                 "HTTP %d error from MCP server: %s",
@@ -251,7 +762,7 @@ public class MCPService {
 
             // Parse response based on content type
             JsonNode responseJson;
-            if (contentType != null && contentType.contains("text/event-stream")) {
+            if (contentType != null && contentType.contains(SSE_CONTENT_TYPE)) {
                 // Parse SSE format
                 responseJson = parseSseResponse(responseBody);
             } else {
@@ -259,15 +770,15 @@ public class MCPService {
                 responseJson = objectMapper.readTree(responseBody);
             }
 
-            if (responseJson.has("error")) {
-                throw new RuntimeException(responseJson.get("error").toString());
+            if (responseJson.has(MCPFields.JsonRpc.ERROR)) {
+                throw new RuntimeException(responseJson.get(MCPFields.JsonRpc.ERROR).toString());
             }
 
-            if (!responseJson.has("result")) {
+            if (!responseJson.has(MCPFields.JsonRpc.RESULT)) {
                 throw new RuntimeException("Invalid JSON-RPC response: missing 'result' field");
             }
 
-            JsonNode resultNode = responseJson.get("result");
+            JsonNode resultNode = responseJson.get(MCPFields.JsonRpc.RESULT);
 
             // Process the result JSON to parse text content as JSON where applicable
             processResultJson(resultNode);
@@ -303,21 +814,21 @@ public class MCPService {
      * <p>Modifies the JSON response before deserialization to convert JSON strings to objects.
      */
     private void processResultJson(JsonNode resultNode) {
-        if (resultNode == null || !resultNode.has("content")) {
+        if (resultNode == null || !resultNode.has(MCPFields.ToolResult.CONTENT)) {
             return;
         }
 
-        JsonNode contentArray = resultNode.get("content");
+        JsonNode contentArray = resultNode.get(MCPFields.ToolResult.CONTENT);
         if (!contentArray.isArray()) {
             return;
         }
 
         for (JsonNode contentItem : contentArray) {
             if (contentItem.isObject()
-                    && "text".equals(contentItem.path("type").asText())
-                    && contentItem.has("text")) {
+                    && "text".equals(contentItem.path(MCPFields.ToolResult.TYPE).asString())
+                    && contentItem.has(MCPFields.ToolResult.TEXT)) {
 
-                String textValue = contentItem.get("text").asText();
+                String textValue = contentItem.get(MCPFields.ToolResult.TEXT).asString();
                 Object parsed = jsonTextParser.parseTextOrJsonAsObject(textValue);
                 // If it parsed as JSON object/array, add a 'parsed' field
                 try {
@@ -374,13 +885,40 @@ public class MCPService {
 
     /** Executes one MCP request and follows redirects while protecting sensitive headers. */
     private ResponsePayload execute(Request initialRequest) throws Exception {
+        return execute(initialRequest, httpClient);
+    }
+
+    /**
+     * Executes one MCP request with {@code client}, following redirects. When the client has a
+     * {@code callTimeout} (the bounded {@code tasks/get} and {@code tasks/cancel} clients), that
+     * limit applies to the whole request, across redirects, not to each redirect. The shared client
+     * has none, so the legacy path is unchanged.
+     */
+    private ResponsePayload execute(Request initialRequest, OkHttpClient client) throws Exception {
+        long budgetMillis = client.callTimeoutMillis();
+        long deadlineNanos =
+                budgetMillis > 0
+                        ? System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(budgetMillis)
+                        : 0;
         Request request = initialRequest;
         for (int redirects = 0; redirects <= 5; redirects++) {
-            try (Response response = httpClient.newCall(request).execute()) {
+            Call call = client.newCall(request);
+            if (budgetMillis > 0) {
+                long remainingMillis =
+                        TimeUnit.NANOSECONDS.toMillis(deadlineNanos - System.nanoTime());
+                if (remainingMillis <= 0) {
+                    throw new InterruptedIOException(
+                            "MCP request exceeded its time limit of "
+                                    + budgetMillis
+                                    + " ms across redirects");
+                }
+                call.timeout().timeout(remainingMillis, TimeUnit.MILLISECONDS);
+            }
+            try (Response response = call.execute()) {
                 if (!response.isRedirect()) {
                     return new ResponsePayload(
                             response.code(),
-                            response.header("Content-Type", "application/json"),
+                            response.header("Content-Type", JSON_CONTENT_TYPE),
                             readBoundedBody(response.body()));
                 }
                 String location = response.header("Location");
@@ -398,6 +936,29 @@ public class MCPService {
             }
         }
         throw new RuntimeException("MCP server exceeded the redirect limit");
+    }
+
+    /**
+     * Removes user headers that Conductor owns on a request in the {@code 2026-07-28} form: {@code
+     * Mcp-Name} and every {@code Mcp-Param-*} (ignoring case). Conductor sets them from the request
+     * itself, and a stale user value would be sent where the protocol requires the header to be
+     * absent. Other protocol headers are replaced, not removed, because Conductor always sets them.
+     */
+    private static Map<String, String> withoutReservedHeaders(Map<String, String> headers) {
+        if (headers == null || headers.isEmpty()) {
+            return headers;
+        }
+        Map<String, String> kept = new LinkedHashMap<>();
+        headers.forEach(
+                (name, value) -> {
+                    String lower = name == null ? "" : name.toLowerCase(Locale.ROOT);
+                    if (!lower.equals(MCPProtocolHeaders.HEADER_NAME.toLowerCase(Locale.ROOT))
+                            && !lower.startsWith(
+                                    MCPHeaderParams.HEADER_PREFIX.toLowerCase(Locale.ROOT))) {
+                        kept.put(name, value);
+                    }
+                });
+        return kept;
     }
 
     private void addHeaders(Request.Builder builder, Map<String, String> headers) {

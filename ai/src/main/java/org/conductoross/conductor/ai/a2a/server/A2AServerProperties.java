@@ -13,7 +13,9 @@
 package org.conductoross.conductor.ai.a2a.server;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
@@ -47,8 +49,11 @@ public class A2AServerProperties {
      */
     private String agentBasePath = "/api/a2a/agent";
 
-    /** Workflow names explicitly exposed as agents (in addition to metadata opt-in). */
-    private List<String> exposedWorkflows = new ArrayList<>();
+    /**
+     * Workflow names explicitly exposed as agents (in addition to metadata opt-in). A set: every
+     * listing checks each workflow against it.
+     */
+    private Set<String> exposedWorkflows = new LinkedHashSet<>();
 
     /**
      * When true, every workflow definition is automatically exposed as an A2A agent without
