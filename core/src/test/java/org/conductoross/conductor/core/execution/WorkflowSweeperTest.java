@@ -22,6 +22,7 @@ import org.junit.Test;
 
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.core.execution.WorkflowDriversFixture;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
@@ -83,7 +84,8 @@ public class WorkflowSweeperTest {
                         sweeperProperties,
                         systemTaskRegistry,
                         objectMapper,
-                        executionLockService);
+                        executionLockService,
+                        WorkflowDriversFixture.standardOnly());
     }
 
     @Test

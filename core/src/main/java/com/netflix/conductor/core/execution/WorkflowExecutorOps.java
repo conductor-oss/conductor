@@ -91,7 +91,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     private final QueueDAO queueDAO;
     private final DeciderService deciderService;
     private final NativeContinuationService nativeContinuationService;
-    private final NativeRerunPlanner nativeRerunPlanner;
+    private final WorkflowDrivers drivers;
     private final ConductorProperties properties;
     private final MetadataMapperService metadataMapperService;
     private final ExecutionDAOFacade executionDAOFacade;
@@ -126,10 +126,10 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             Optional<WorkflowMessageQueueDAO> workflowMessageQueueDAO,
             SchemaService schemaService,
             NativeContinuationService nativeContinuationService,
-            NativeRerunPlanner nativeRerunPlanner) {
+            WorkflowDrivers drivers) {
         this.deciderService = deciderService;
         this.nativeContinuationService = nativeContinuationService;
-        this.nativeRerunPlanner = nativeRerunPlanner;
+        this.drivers = drivers;
         this.metadataDAO = metadataDAO;
         this.queueDAO = queueDAO;
         this.properties = properties;
@@ -240,16 +240,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                                                                             workflowId)));
         }
 
-        if (NativeWorkflows.isNative(workflow)) {
-            // A native execution's own definition has grown; restart from the registered
-            // skeleton, with no variables and no owner, as a fresh run would.
-            workflowDef =
-                    startNativeOver(
-                            workflow,
-                            useLatestDefinitions ? workflowDef : registeredDefinition(workflow));
-        } else {
-            workflow.setNativeState(null); // the latest definition is not native
-        }
+        workflowDef =
+                drivers.of(workflow).resetForRestart(workflow, workflowDef, useLatestDefinitions);
         if (!workflowDef.isRestartable()
                 && workflow.getStatus()
                         .equals(
@@ -469,9 +461,16 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     }
 
     private void retry(WorkflowModel workflow) {
-        if (NativeWorkflows.isNative(workflow) && retryNative(workflow)) {
-            return;
+        WorkflowDriver.RetryOutcome outcome = drivers.of(workflow).retry(workflow);
+        switch (outcome.next()) {
+            case RETRY_FAILED_TASKS -> retryFailedTasks(workflow);
+            case RERUN_FROM_TASK ->
+                    rerunWF(workflow.getWorkflowId(), outcome.taskId(), null, null, null);
+            case DONE -> {}
         }
+    }
+
+    private void retryFailedTasks(WorkflowModel workflow) {
         // Get all FAILED or CANCELED tasks that are not COMPLETED (or reach other
         // terminal states)
         // on further executions.
@@ -656,7 +655,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         task.setOutputMessage(null);
     }
 
-    private void clearLegacySubWorkflowId(TaskModel task) {
+    static void clearLegacySubWorkflowId(TaskModel task) {
         task.setSubWorkflowId(null);
         task.getInputData().remove("subWorkflowId");
         task.getOutputData().remove("subWorkflowId");
@@ -1303,81 +1302,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         }
     }
 
-    /**
-     * Puts a native execution back at its beginning: the registered skeleton, no variables, no
-     * owner. The code then runs again as a fresh run would.
-     *
-     * @return the definition the execution now runs
-     */
-    /** The registered definition of the execution's version: a native execution's own grew. */
-    private WorkflowDef registeredDefinition(WorkflowModel workflow) {
-        return metadataDAO
-                .getWorkflowDef(workflow.getWorkflowName(), workflow.getWorkflowVersion())
-                .orElseThrow(
-                        () ->
-                                new NotFoundException(
-                                        "Unable to find definition for %s",
-                                        workflow.getWorkflowId()));
-    }
-
-    private WorkflowDef startNativeOver(WorkflowModel workflow, WorkflowDef registered) {
-        WorkflowDef def = metadataMapperService.populateTaskDefinitions(registered);
-        workflow.setWorkflowDefinition(def);
-        workflow.getVariables().clear();
-        nativeContinuationService.initialize(workflow);
-        return def;
-    }
-
-    /** Tasks of a native workflow that are the code's structure, never a point to rerun from. */
-    private static final Set<String> CODE_STRUCTURE =
-            Set.of(TaskType.TASK_TYPE_SWITCH, TaskType.TASK_TYPE_FORK, TaskType.TASK_TYPE_JOIN);
-
-    /**
-     * Retry of a failed native execution. When a task's uncaught failure ended the run, rerun from
-     * that task; failures the code caught are never re-executed. When the code itself failed (it
-     * threw, or diverged from its recording), the main lane's last continuation runs again.
-     *
-     * @return true when the native path handled the retry
-     */
-    private boolean retryNative(WorkflowModel workflow) {
-        // An exception the code threw is marked by a TERMINATE task where it threw. Retrying runs
-        // the code again (a fixed build may now pass that point), so the mark goes, with what the
-        // continuation that threw drew, as for a failure with no failed task.
-        workflow.getTasks().stream()
-                .filter(t -> t.getTaskId().equals(workflow.getFailedTaskId()))
-                .filter(t -> TaskType.TERMINATE.name().equals(t.getTaskType()))
-                .findFirst()
-                .ifPresent(
-                        thrown -> {
-                            workflow.getTasks().remove(thrown);
-                            nativeRerunPlanner.undoThrow(workflow, thrown);
-                            executionDAOFacade.removeTask(thrown.getTaskId());
-                            workflow.setFailedTaskId(null);
-                        });
-        if (workflow.getFailedTaskId() != null
-                && workflow.getTasks().stream()
-                        .anyMatch(t -> workflow.getFailedTaskId().equals(t.getTaskId()))) {
-            rerunWF(workflow.getWorkflowId(), workflow.getFailedTaskId(), null, null, null);
-            return true;
-        }
-        NativeWorkflows.LastMain last = nativeRerunPlanner.rearmLastMain(workflow);
-        if (last == null) {
-            return false;
-        }
-        workflow.setStatus(WorkflowModel.Status.RUNNING);
-        workflow.setReasonForIncompletion(null);
-        workflow.setFailedTaskId(null);
-        workflow.setEndTime(0);
-        workflow.setLastRetriedTime(System.currentTimeMillis());
-        executionDAOFacade.updateWorkflow(workflow);
-        if (last.holder() != null) {
-            executionDAOFacade.updateTasks(List.of(last.holder()));
-        }
-        // the decide offers it
-        queueDAO.push(DECIDER_QUEUE, workflow.getWorkflowId(), workflow.getPriority(), 0);
-        return true;
-    }
-
     private void extendLease(TaskResult taskResult) {
         TaskModel task =
                 Optional.ofNullable(executionDAOFacade.getTaskModel(taskResult.getTaskId()))
@@ -1605,21 +1529,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     executionDAOFacade.updateTasks(tasksToBeUpdated);
                 }
 
-                if (NativeWorkflows.isNative(workflow)) {
-                    // Native workflows: wake the code for every marker that is now runnable, and
-                    // repair markers a crash left behind. Saved before pushed, pushed idempotently.
-                    NativeContinuationService.Wakeups wakeups =
-                            nativeContinuationService.repairAndWake(workflow);
-                    if (!wakeups.touchedTasks.isEmpty()) {
-                        executionDAOFacade.updateTasks(wakeups.touchedTasks);
-                    }
-                    if (wakeups.workflowTouched) {
-                        executionDAOFacade.updateWorkflow(workflow);
-                    }
-                    if (!wakeups.offers.isEmpty()) {
-                        nativeContinuationService.push(workflow, wakeups.offers);
-                    }
-                }
+                drivers.of(workflow).continueCode(workflow);
 
                 if (stateChanged) {
                     if (decideWatch.getTime() < maxRuntime) {
@@ -1660,26 +1570,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                                         workflow,
                                         timeout,
                                         properties.getMaxPostponeDurationSeconds());
-                        // Work that a repair may have to rescue: revisit on the normal offset. Only
-                        // ever shortens what is set, because a busy workflow decides constantly
-                        // and pushing the revisit out each time would keep the sweeper away.
-                        if (NativeWorkflows.needsPromptRevisit(workflow)) {
-                            queueDAO.setUnackTimeoutIfShorter(
-                                    DECIDER_QUEUE,
-                                    workflow.getWorkflowId(),
-                                    Math.min(updatedOffset.getSeconds(), timeout.getSeconds())
-                                            * 1000);
-                        } else if (updatedOffset.getSeconds() != timeout.getSeconds()) {
-                            // we have a new value, setUnack uses time in millis
-                            LOGGER.debug(
-                                    "Pushing the workflow {} into decider queue by {} millis",
-                                    workflow.getWorkflowId(),
-                                    updatedOffset.getSeconds() * 1000);
-                            queueDAO.setUnackTimeout(
-                                    DECIDER_QUEUE,
-                                    workflow.getWorkflowId(),
-                                    updatedOffset.getSeconds() * 1000);
-                        }
+                        drivers.of(workflow).postponeDecide(workflow, updatedOffset, timeout);
                     }
                 }
             }
@@ -2579,12 +2470,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             if (workflowInput != null) {
                 workflow.setInput(workflowInput);
             }
-            if (NativeWorkflows.isNative(workflow)) {
-                // the recorded steps are the code's, not a definition to walk: the code runs again
-                startNativeOver(workflow, registeredDefinition(workflow));
-                workflow.setOutput(null);
-                workflow.setExternalOutputPayloadStoragePath(null);
-            }
+            drivers.of(workflow).resetForRerun(workflow);
 
             queueDAO.push(
                     DECIDER_QUEUE,
@@ -2622,17 +2508,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         }
 
         if (rerunFromTask != null) {
-            if (rerunFromTask.getTaskId().equals(taskId)
-                    && NativeWorkflows.isNative(workflow)
-                    && CODE_STRUCTURE.contains(rerunFromTask.getTaskType())) {
-                throw new IllegalArgumentException(
-                        "Task "
-                                + taskId
-                                + " is a "
-                                + rerunFromTask.getTaskType()
-                                + " of a native workflow, and where the flow goes there belongs"
-                                + " to the code. Rerun from a task before it, or from a task"
-                                + " inside it.");
+            if (rerunFromTask.getTaskId().equals(taskId)) {
+                drivers.of(workflow).checkCanRerunFrom(rerunFromTask);
             }
             // set workflow as RUNNING
             workflow.setStatus(WorkflowModel.Status.RUNNING);
@@ -2706,7 +2583,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             // fork branches — instead reset the task in-place, start a fresh child
             // synchronously so the task is IN_PROGRESS immediately, then let finalizeRerun
             // reset all terminal-unsuccessful siblings before the decider runs.
-            if (!NativeWorkflows.isNative(workflow)
+            if (drivers.of(workflow).rerunsSubWorkflowInPlace()
                     && rerunFromTask.getTaskId().equals(taskId)
                     && rerunFromTask
                             .getTaskType()
@@ -2735,33 +2612,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 finalizeRerun(workflow, rerunFromTask);
                 return true;
             }
-            // Remove all tasks after the "rerunFromTask"; for a native execution, what the code
-            // did after it
-            NativeRerunPlanner.RerunPlan plan =
-                    NativeWorkflows.isNative(workflow)
-                            ? nativeRerunPlanner.planRerun(workflow, rerunFromTask)
-                            : null;
-            List<TaskModel> filteredTasks = new ArrayList<>();
-            for (TaskModel task : workflow.getTasks()) {
-                if (plan != null
-                        ? plan.dropTaskIds().contains(task.getTaskId())
-                        : task.getSeq() > rerunFromTask.getSeq()) {
-                    executionDAOFacade.removeTask(task.getTaskId());
-                } else {
-                    filteredTasks.add(task);
-                }
-            }
-            workflow.setTasks(filteredTasks);
-            List<TaskModel> nativeJoins = List.of();
-            if (plan != null) {
-                List<TaskModel> touched = new ArrayList<>();
-                nativeJoins =
-                        nativeRerunPlanner.adjustRerun(workflow, rerunFromTask, plan, touched);
-                if (!touched.isEmpty()) {
-                    executionDAOFacade.updateTasks(touched);
-                }
-                executionDAOFacade.updateWorkflow(workflow);
-            }
+            // Remove what the execution did after the "rerunFromTask"
+            List<TaskModel> reopenedTasks = drivers.of(workflow).undoAfter(workflow, rerunFromTask);
             // reset fields before restarting the task
             rerunFromTask.setScheduledTime(System.currentTimeMillis());
             rerunFromTask.setStartTime(0);
@@ -2771,26 +2623,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             rerunFromTask.setRetried(false);
             rerunFromTask.setExecuted(false);
             rerunFromTask.setPollCount(0);
-            if (plan != null
-                    && rerunFromTask
-                            .getTaskType()
-                            .equalsIgnoreCase(TaskType.TASK_TYPE_SUB_WORKFLOW)) {
-                // a native rerun starts a new child now
-                if (taskInput != null) {
-                    rerunFromTask.setInputData(taskInput);
-                }
-                clearLegacySubWorkflowId(rerunFromTask);
-                rerunFromTask.setStatus(SCHEDULED);
-                rerunFromTask.setReasonForIncompletion(null);
-                systemTaskRegistry
-                        .get(TaskType.TASK_TYPE_SUB_WORKFLOW)
-                        .start(workflow, rerunFromTask, this);
-            } else if (rerunFromTask
-                    .getTaskType()
-                    .equalsIgnoreCase(TaskType.TASK_TYPE_SUB_WORKFLOW)) {
-                // if task is sub workflow set task as IN_PROGRESS and reset start time
-                rerunFromTask.setStatus(IN_PROGRESS);
-                rerunFromTask.setStartTime(System.currentTimeMillis());
+            if (rerunFromTask.getTaskType().equalsIgnoreCase(TaskType.TASK_TYPE_SUB_WORKFLOW)) {
+                drivers.of(workflow).rerunSubWorkflowTask(workflow, rerunFromTask, taskInput, this);
             } else {
                 if (taskInput != null) {
                     rerunFromTask.setInputData(taskInput);
@@ -2817,8 +2651,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             // Write the new state to DB before queueing so any async worker sees SCHEDULED,
             // not the stale CANCELED/FAILED state that was in the DB before this rerun.
             executionDAOFacade.updateTask(rerunFromTask);
-            // a native rerun's reopened JOINs are saved, then queued once the rerun task is saved
-            nativeJoins.forEach(
+            // the tasks the rerun opened again are saved, then queued once the rerun task is saved
+            reopenedTasks.forEach(
                     join -> {
                         executionDAOFacade.updateTask(join);
                         addTaskToQueue(join);
@@ -2875,12 +2709,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         workflow.getTasks()
                 .forEach(
                         task -> {
-                            if (!task.getStatus().isSuccessful()
-                                    && task.getStatus().isTerminal()
-                                    // native: failures the code consumed, and attempts a
-                                    // retry superseded, are history, not work to redo
-                                    && !(NativeWorkflows.isNative(workflow)
-                                            && (task.isExecuted() || task.isRetried()))
+                            if (drivers.of(workflow).runsAgainOnRerun(task)
                                     && !rerunFromTask
                                             .getReferenceTaskName()
                                             .equals(task.getReferenceTaskName())) {
@@ -3219,9 +3048,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         workflow.setEvent(input.getEvent());
         workflow.setTaskToDomain(input.getTaskToDomain());
         workflow.setVariables(workflowDefinition.getVariables());
-        if (NativeWorkflows.isNative(workflowDefinition)) {
-            nativeContinuationService.initialize(workflow);
-        }
+        drivers.of(workflowDefinition).initialize(workflow);
 
         Map<String, Object> workflowInput = input.getWorkflowInput();
         if (workflowInput != null && !workflowInput.isEmpty()) {

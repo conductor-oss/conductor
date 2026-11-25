@@ -47,6 +47,8 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.NativeState;
 import com.netflix.conductor.common.utils.TaskUtils;
+import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.DeciderService.DeciderOutcome;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
@@ -57,6 +59,7 @@ import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -164,6 +167,18 @@ public class TestDeciderService {
                         metadataDAO,
                         externalPayloadStorageUtils,
                         systemTaskRegistry,
+                        WorkflowDriversFixture.drivers(
+                                parametersUtils,
+                                externalPayloadStorageUtils,
+                                WorkflowDriversFixture.nativeContinuationService(
+                                        objectMapper,
+                                        new ConductorProperties(),
+                                        metadataDAO,
+                                        taskMappers),
+                                metadataDAO,
+                                mock(ExecutionDAOFacade.class),
+                                mock(QueueDAO.class),
+                                systemTaskRegistry),
                         taskMappers,
                         new HashMap<>(),
                         Duration.ofMinutes(60));

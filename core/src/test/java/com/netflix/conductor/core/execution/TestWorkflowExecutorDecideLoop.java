@@ -105,7 +105,7 @@ public class TestWorkflowExecutorDecideLoop {
                         Optional.empty(),
                         mock(SchemaService.class),
                         mock(NativeContinuationService.class),
-                        new NativeRerunPlanner());
+                        WorkflowDriversFixture.standardOnly(executionDAOFacade, queueDAO));
     }
 
     /**

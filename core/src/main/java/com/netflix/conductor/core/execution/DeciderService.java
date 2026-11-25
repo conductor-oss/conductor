@@ -26,13 +26,10 @@ import org.springframework.stereotype.Service;
 
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.annotations.VisibleForTesting;
-import com.netflix.conductor.common.metadata.tasks.TaskContinuation;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.utils.ExternalPayloadStorage.Operation;
-import com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType;
 import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
@@ -63,12 +60,12 @@ public class DeciderService {
 
     private final IDGenerator idGenerator;
     private final ParametersUtils parametersUtils;
-    private final ExternalPayloadStorageUtils externalPayloadStorageUtils;
     private final MetadataDAO metadataDAO;
     private final SystemTaskRegistry systemTaskRegistry;
     private final long taskPendingTimeThresholdMins;
 
     private final Map<String, TaskMapper> taskMappers;
+    private final WorkflowDrivers drivers;
 
     public DeciderService(
             IDGenerator idGenerator,
@@ -76,15 +73,16 @@ public class DeciderService {
             MetadataDAO metadataDAO,
             ExternalPayloadStorageUtils externalPayloadStorageUtils,
             SystemTaskRegistry systemTaskRegistry,
+            WorkflowDrivers drivers,
             @Qualifier("taskMappersByTaskType") Map<String, TaskMapper> taskMappers,
             @Qualifier("annotatedTaskSystems") Map<String, TaskMapper> annotatedTaskSystems,
             @Value("${conductor.app.taskPendingTimeThreshold:60m}")
                     Duration taskPendingTimeThreshold) {
         this.idGenerator = idGenerator;
+        this.drivers = drivers;
         this.metadataDAO = metadataDAO;
         this.parametersUtils = parametersUtils;
         this.taskMappers = taskMappers;
-        this.externalPayloadStorageUtils = externalPayloadStorageUtils;
         this.taskPendingTimeThresholdMins = taskPendingTimeThreshold.toMinutes();
         this.systemTaskRegistry = systemTaskRegistry;
         LOGGER.info("taskMappers: {}", taskMappers.keySet());
@@ -232,16 +230,7 @@ public class DeciderService {
                 } else if (!(pendingTask.getWorkflowTask() != null
                         && pendingTask.getWorkflowTask().isPermissive()
                         && !pendingTask.getWorkflowTask().isOptional())) {
-                    if (NativeWorkflows.isNative(workflow)) {
-                        // Native workflows mark the tasks their code waits on optional, so a
-                        // failure continues to the code's next continuation. The code receives it
-                        // as an exception naming how the task failed, which the status no longer
-                        // says.
-                        pendingTask.addOutput(
-                                NativeWorkflows.OUTPUT_FAILED_STATUS,
-                                pendingTask.getStatus().name());
-                    }
-                    pendingTask.setStatus(COMPLETED_WITH_ERRORS);
+                    drivers.of(workflow).completeWithErrors(pendingTask);
                 }
             }
 
@@ -367,12 +356,7 @@ public class DeciderService {
         if (workflow.getReRunFromWorkflowId() == null || tasks.isEmpty()) {
 
             if (workflowDef.getTasks().isEmpty()) {
-                if (NativeWorkflows.isNative(workflow)) {
-                    // the code's first continuation appends the first tasks
-                    return new LinkedList<>();
-                }
-                throw new TerminateWorkflowException(
-                        "No tasks found to be executed", WorkflowModel.Status.COMPLETED);
+                return drivers.of(workflow).startWithNoTasks();
             }
 
             WorkflowTask taskToSchedule =
@@ -422,89 +406,13 @@ public class DeciderService {
      *     specified in the workflow definition
      */
     void updateWorkflowOutput(final WorkflowModel workflow, TaskModel task) {
-        if (NativeWorkflows.isNative(workflow)) {
-            // the output of a native workflow is what its code returned, set by the engine when
-            // the main lane's final continuation was applied; the last task's output is not it
-            return;
-        }
-        List<TaskModel> allTasks = workflow.getTasks();
-        if (allTasks.isEmpty()) {
-            return;
-        }
-
-        Map<String, Object> output = new HashMap<>();
-        Optional<TaskModel> optionalTask =
-                allTasks.stream()
-                        .filter(
-                                t ->
-                                        TaskType.TERMINATE.name().equals(t.getTaskType())
-                                                && t.getStatus().isTerminal()
-                                                && t.getStatus().isSuccessful())
-                        .findFirst();
-        if (optionalTask.isPresent()) {
-            TaskModel terminateTask = optionalTask.get();
-            if (StringUtils.isNotBlank(terminateTask.getExternalOutputPayloadStoragePath())) {
-                output =
-                        externalPayloadStorageUtils.downloadPayload(
-                                terminateTask.getExternalOutputPayloadStoragePath());
-                Monitors.recordExternalPayloadStorageUsage(
-                        terminateTask.getTaskDefName(),
-                        Operation.READ.toString(),
-                        PayloadType.TASK_OUTPUT.toString());
-            } else if (!terminateTask.getOutputData().isEmpty()) {
-                output = terminateTask.getOutputData();
-            }
-        } else {
-            TaskModel last = Optional.ofNullable(task).orElse(allTasks.get(allTasks.size() - 1));
-            WorkflowDef workflowDef = workflow.getWorkflowDefinition();
-            if (workflowDef.getOutputParameters() != null
-                    && !workflowDef.getOutputParameters().isEmpty()) {
-                output =
-                        parametersUtils.getTaskInput(
-                                workflowDef.getOutputParameters(), workflow, null, null);
-            } else if (StringUtils.isNotBlank(last.getExternalOutputPayloadStoragePath())) {
-                output =
-                        externalPayloadStorageUtils.downloadPayload(
-                                last.getExternalOutputPayloadStoragePath());
-                Monitors.recordExternalPayloadStorageUsage(
-                        last.getTaskDefName(),
-                        Operation.READ.toString(),
-                        PayloadType.TASK_OUTPUT.toString());
-            } else {
-                output = last.getOutputData();
-            }
-        }
-        workflow.setOutput(output);
+        drivers.of(workflow).updateOutput(workflow, task);
     }
 
     public boolean checkForWorkflowCompletion(final WorkflowModel workflow)
             throws TerminateWorkflowException {
-        if (NativeWorkflows.isNative(workflow)) {
-            // A native execution ends when its code returned (the main lane's last continuation
-            // is done) and everything that continuation appended has run: tasks all being
-            // terminal says nothing about the code, and the code returning says nothing about
-            // trailing tasks (an event fired last, a switch whose case has no tasks).
-            NativeWorkflows.LastMain lastMain = NativeWorkflows.lastMain(workflow);
-            TaskContinuation last = lastMain == null ? null : lastMain.marker();
-            // the code threw (or its fragment was rejected): the run has a reason, and is ended
-            // by the completion that recorded it, not completed
-            if (last == null
-                    || !last.isApplied()
-                    || !last.isDone()
-                    || workflow.getReasonForIncompletion() != null) {
-                return false;
-            }
-            // code that returned without calling anything has no tasks to wait for
-            if (!workflow.getTasks().isEmpty() && !checkTasksForWorkflowCompletion(workflow)) {
-                return false;
-            }
-            // a lane nothing joined may still have code to run after its last task
-            if (NativeWorkflows.hasUnappliedLane(workflow)) {
-                return false;
-            }
-            return true; // its output is what the code returned, set when that applied
-        }
-        return checkTasksForWorkflowCompletion(workflow);
+        return drivers.of(workflow)
+                .isComplete(workflow, () -> checkTasksForWorkflowCompletion(workflow));
     }
 
     private boolean checkTasksForWorkflowCompletion(final WorkflowModel workflow)

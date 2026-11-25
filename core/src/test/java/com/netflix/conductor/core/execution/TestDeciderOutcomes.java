@@ -42,6 +42,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.DeciderService.DeciderOutcome;
 import com.netflix.conductor.core.execution.evaluators.Evaluator;
@@ -63,11 +64,11 @@ import com.netflix.conductor.core.execution.tasks.Join;
 import com.netflix.conductor.core.execution.tasks.Switch;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
-import com.netflix.conductor.core.metadata.MetadataMapperService;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -184,7 +185,7 @@ public class TestDeciderOutcomes {
         taskMappers.put(HTTP.name(), new HTTPTaskMapper(parametersUtils, metadataDAO));
 
         this.nativeContinuationService =
-                nativeContinuationService(
+                WorkflowDriversFixture.nativeContinuationService(
                         objectMapper, new ConductorProperties(), metadataDAO, taskMappers);
         this.deciderService =
                 new DeciderService(
@@ -193,24 +194,17 @@ public class TestDeciderOutcomes {
                         metadataDAO,
                         externalPayloadStorageUtils,
                         systemTaskRegistry,
+                        WorkflowDriversFixture.drivers(
+                                parametersUtils,
+                                externalPayloadStorageUtils,
+                                nativeContinuationService,
+                                metadataDAO,
+                                mock(ExecutionDAOFacade.class),
+                                mock(QueueDAO.class),
+                                systemTaskRegistry),
                         taskMappers,
                         new HashMap<>(),
                         Duration.ofMinutes(60));
-    }
-
-    static NativeContinuationService nativeContinuationService(
-            ObjectMapper objectMapper,
-            ConductorProperties properties,
-            MetadataDAO metadataDAO,
-            Map<String, TaskMapper> taskMappers) {
-        return new NativeContinuationService(
-                objectMapper,
-                properties,
-                new NativeFragmentValidator(
-                        objectMapper,
-                        properties,
-                        new MetadataMapperService(metadataDAO),
-                        taskMappers));
     }
 
     @Test

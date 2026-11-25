@@ -205,8 +205,17 @@ public class TestWorkflowExecutor {
         taskMappers.put(INLINE.name(), new InlineTaskMapper(parametersUtils, metadataDAO));
 
         nativeService =
-                TestDeciderOutcomes.nativeContinuationService(
+                WorkflowDriversFixture.nativeContinuationService(
                         objectMapper, new ConductorProperties(), metadataDAO, taskMappers);
+        WorkflowDrivers drivers =
+                WorkflowDriversFixture.drivers(
+                        parametersUtils,
+                        externalPayloadStorageUtils,
+                        nativeService,
+                        metadataDAO,
+                        executionDAOFacade,
+                        queueDAO,
+                        systemTaskRegistry);
         DeciderService deciderService =
                 new DeciderService(
                         idGenerator,
@@ -214,6 +223,7 @@ public class TestWorkflowExecutor {
                         metadataDAO,
                         externalPayloadStorageUtils,
                         systemTaskRegistry,
+                        drivers,
                         taskMappers,
                         new HashMap<>(),
                         Duration.ofMinutes(60));
@@ -243,7 +253,7 @@ public class TestWorkflowExecutor {
                         Optional.empty(),
                         mock(SchemaService.class),
                         nativeService,
-                        new NativeRerunPlanner());
+                        drivers);
     }
 
     @Test
