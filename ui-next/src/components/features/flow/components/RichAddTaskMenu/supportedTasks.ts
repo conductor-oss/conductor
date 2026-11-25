@@ -55,12 +55,6 @@ export const SYSTEM_TASKS: BaseTaskMenuItem[] = [
     category: "System",
   },
   {
-    name: "Business Rule Task",
-    description: "Evaluate business rules using Drools.",
-    type: TaskType.BUSINESS_RULE,
-    category: "System",
-  },
-  {
     name: "SQL Query",
     description: "Run SQL query against a database.",
     type: TaskType.JDBC,

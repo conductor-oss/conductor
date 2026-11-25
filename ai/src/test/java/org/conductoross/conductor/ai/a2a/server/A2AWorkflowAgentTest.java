@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.conductoross.conductor.ai.a2a.model.A2AMessage;
 import org.conductoross.conductor.ai.a2a.model.A2ATask;
@@ -100,7 +101,7 @@ class A2AWorkflowAgentTest {
 
     @Test
     void exposed_viaWhitelist() {
-        properties.setExposedWorkflows(List.of("order_pizza"));
+        properties.setExposedWorkflows(Set.of("order_pizza"));
         when(metadataService.getWorkflowDef("order_pizza", null)).thenReturn(def("order_pizza"));
         when(metadataService.getWorkflowDef("secret_wf", null)).thenReturn(def("secret_wf"));
 
@@ -129,7 +130,7 @@ class A2AWorkflowAgentTest {
 
     @Test
     void agentCard_builtFromWorkflowDef() {
-        properties.setExposedWorkflows(List.of("order_pizza"));
+        properties.setExposedWorkflows(Set.of("order_pizza"));
         when(metadataService.getWorkflowDef("order_pizza", null)).thenReturn(def("order_pizza"));
 
         AgentCard card = agent.agentCard("order_pizza", "http://host:8080");
@@ -145,7 +146,7 @@ class A2AWorkflowAgentTest {
 
     @Test
     void sendMessage_startsWorkflowWithIdempotencyKey() {
-        properties.setExposedWorkflows(List.of("order_pizza"));
+        properties.setExposedWorkflows(Set.of("order_pizza"));
         when(metadataService.getWorkflowDef("order_pizza", null)).thenReturn(def("order_pizza"));
         when(workflowService.startWorkflow(any(StartWorkflowRequest.class))).thenReturn("wf-1");
         when(workflowService.getExecutionStatus("wf-1", false))
@@ -172,7 +173,7 @@ class A2AWorkflowAgentTest {
     @Test
     @SuppressWarnings("unchecked")
     void sendMessage_withExistingTaskId_resumesPausedWorkflowInsteadOfStartingNew() {
-        properties.setExposedWorkflows(List.of("order_pizza"));
+        properties.setExposedWorkflows(Set.of("order_pizza"));
         when(metadataService.getWorkflowDef("order_pizza", null)).thenReturn(def("order_pizza"));
 
         // The paused execution: RUNNING, blocked on a HUMAN task awaiting input.
@@ -210,7 +211,7 @@ class A2AWorkflowAgentTest {
 
     @Test
     void sendMessage_withTaskId_terminalWorkflow_returnsStateWithoutResuming() {
-        properties.setExposedWorkflows(List.of("order_pizza"));
+        properties.setExposedWorkflows(Set.of("order_pizza"));
         when(metadataService.getWorkflowDef("order_pizza", null)).thenReturn(def("order_pizza"));
         when(workflowService.getExecutionStatus("wf-1", true))
                 .thenReturn(workflow("order_pizza", WorkflowStatus.COMPLETED));
@@ -231,7 +232,7 @@ class A2AWorkflowAgentTest {
     @Test
     @SuppressWarnings("unchecked")
     void streamMessage_emitsTaskThenArtifactThenFinalStatus() throws Exception {
-        properties.setExposedWorkflows(List.of("order_pizza"));
+        properties.setExposedWorkflows(Set.of("order_pizza"));
         properties.setStreamPollIntervalMillis(1); // keep the test fast
         when(metadataService.getWorkflowDef("order_pizza", null)).thenReturn(def("order_pizza"));
         when(workflowService.startWorkflow(any(StartWorkflowRequest.class))).thenReturn("wf-1");
@@ -276,7 +277,7 @@ class A2AWorkflowAgentTest {
 
     @Test
     void getTask_completed_mapsToCompletedWithArtifacts() {
-        properties.setExposedWorkflows(List.of("order_pizza"));
+        properties.setExposedWorkflows(Set.of("order_pizza"));
         when(metadataService.getWorkflowDef("order_pizza", null)).thenReturn(def("order_pizza"));
         Workflow wf = workflow("order_pizza", WorkflowStatus.COMPLETED);
         wf.setOutput(Map.of("orderId", "ORD-42"));
@@ -291,7 +292,7 @@ class A2AWorkflowAgentTest {
 
     @Test
     void getTask_blockedOnHuman_mapsToInputRequired() {
-        properties.setExposedWorkflows(List.of("order_pizza"));
+        properties.setExposedWorkflows(Set.of("order_pizza"));
         when(metadataService.getWorkflowDef("order_pizza", null)).thenReturn(def("order_pizza"));
         Workflow wf = workflow("order_pizza", WorkflowStatus.RUNNING);
         Task human = new Task();
@@ -308,7 +309,7 @@ class A2AWorkflowAgentTest {
 
     @Test
     void getTask_wrongAgent_throwsNotFound() {
-        properties.setExposedWorkflows(List.of("order_pizza"));
+        properties.setExposedWorkflows(Set.of("order_pizza"));
         when(metadataService.getWorkflowDef("order_pizza", null)).thenReturn(def("order_pizza"));
         // The execution belongs to a different workflow.
         when(workflowService.getExecutionStatus("wf-1", true))
@@ -319,7 +320,7 @@ class A2AWorkflowAgentTest {
 
     @Test
     void getTask_unverifiableOwnership_failsClosed() {
-        properties.setExposedWorkflows(List.of("order_pizza"));
+        properties.setExposedWorkflows(Set.of("order_pizza"));
         when(metadataService.getWorkflowDef("order_pizza", null)).thenReturn(def("order_pizza"));
         // Execution has no workflow definition (e.g. archived) — ownership can't be verified.
         Workflow wf = new Workflow();
@@ -334,7 +335,7 @@ class A2AWorkflowAgentTest {
 
     @Test
     void cancelTask_terminatesAndReturnsCanceled() {
-        properties.setExposedWorkflows(List.of("order_pizza"));
+        properties.setExposedWorkflows(Set.of("order_pizza"));
         when(metadataService.getWorkflowDef("order_pizza", null)).thenReturn(def("order_pizza"));
         when(workflowService.getExecutionStatus("wf-1", true))
                 .thenReturn(workflow("order_pizza", WorkflowStatus.RUNNING));

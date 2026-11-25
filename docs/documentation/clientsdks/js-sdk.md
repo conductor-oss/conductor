@@ -498,7 +498,7 @@ See [examples/agentic-workflows/](https://github.com/conductor-oss/javascript-sd
 
 - [Open an issue (SDK)](https://github.com/conductor-oss/javascript-sdk/issues) for SDK bugs, questions, and feature requests
 - [Open an issue (Conductor server)](https://github.com/conductor-oss/conductor/issues) for Conductor OSS server issues
-- [Join the Conductor Slack](https://join.slack.com/t/orkes-conductor/shared_invite/zt-2vdbx239s-Eacdyqya9giNLHfrCavfaA) for community discussion and help
+- [Join the Conductor Slack](https://join.slack.com/t/orkes-conductor/shared_invite/zt-4gilmdmpj-Fu_PxACC60BG4ctur8OeDg) for community discussion and help
 - [Orkes Community Forum](https://community.orkes.io/) for Q&A
 
 ## License
