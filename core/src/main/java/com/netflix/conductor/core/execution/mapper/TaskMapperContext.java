@@ -18,7 +18,6 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.execution.DeciderService;
-import com.netflix.conductor.core.execution.NativeWorkflows;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -117,9 +116,6 @@ public class TaskMapperContext {
         // the following properties are overridden by some TaskMapper implementations
         taskModel.setTaskType(workflowTask.getType());
         taskModel.setTaskDefName(workflowTask.getName());
-        // Native workflows: the entry the code paused on names the continuation that runs when
-        // this task finishes; the marker starts out waiting for the task.
-        taskModel.setContinuation(NativeWorkflows.markerOf(workflowTask));
         return taskModel;
     }
 

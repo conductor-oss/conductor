@@ -144,9 +144,6 @@ public class NativeDriver implements WorkflowDriver {
     public void continueCode(WorkflowModel workflow) {
         NativeContinuationService.Wakeups wakeups =
                 nativeContinuationService.repairAndWake(workflow);
-        if (!wakeups.touchedTasks.isEmpty()) {
-            executionDAOFacade.updateTasks(wakeups.touchedTasks);
-        }
         if (wakeups.workflowTouched) {
             executionDAOFacade.updateWorkflow(workflow);
         }
@@ -263,10 +260,7 @@ public class NativeDriver implements WorkflowDriver {
         workflow.setFailedTaskId(null);
         workflow.setEndTime(0);
         workflow.setLastRetriedTime(System.currentTimeMillis());
-        executionDAOFacade.updateWorkflow(workflow);
-        if (last.holder() != null) {
-            executionDAOFacade.updateTasks(List.of(last.holder()));
-        }
+        executionDAOFacade.updateWorkflow(workflow); // with the marker that runs again
         queueDAO.push(DECIDER_QUEUE, workflow.getWorkflowId(), workflow.getPriority(), 0);
     }
 

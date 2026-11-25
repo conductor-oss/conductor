@@ -631,10 +631,6 @@ public class DeciderService {
 
         TaskModel rescheduled = task.copy();
         resetRetriedTaskRuntimeState(rescheduled);
-        if (task.getContinuation() != null) {
-            // the code waits on whichever attempt finishes
-            rescheduled.setContinuation(task.getContinuation().reset());
-        }
         rescheduled.setStartDelayInSeconds(startDelay);
         rescheduled.setCallbackAfterSeconds(startDelay);
         rescheduled.setCallbackAfterMs(totalDelayMs);

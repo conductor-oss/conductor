@@ -93,7 +93,6 @@ SDK's `native-examples/DURABILITY-BENCH.md`. Server mutants:
 | Mutant | What it disables | Where |
 |---|---|---|
 | `no-completion-deferral` | the completion guard while handler messages are pending | `NativeContinuationService.pendingMessages` |
-| `no-variable-fencing` | applying only changed variables and the conflict check | `NativeContinuationService.applyVariables`, `variableConflict` |
 | `no-retry-count-fence` | the `retryCount` check on completion | `NativeContinuationService.complete` |
 | `join-ignores-lanes` | `lanesSettled` | `NativeContinuationService.lanesSettled` |
 | `workflow-saved-last` | the workflow-row-then-tasks write order | `WorkflowExecutorOps.completeContinuation` |

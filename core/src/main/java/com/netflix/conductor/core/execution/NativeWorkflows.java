@@ -66,6 +66,26 @@ public final class NativeWorkflows {
         return idOf(entry) != null ? new TaskContinuation() : null;
     }
 
+    /** Whether the code waits on this task: its entry names the continuation that runs after it. */
+    public static boolean isAwaited(TaskModel task) {
+        return task != null && idOf(task.getWorkflowTask()) != null;
+    }
+
+    /**
+     * The marker of the continuation that waits on a task, or null. Markers are kept on the
+     * workflow row ({@link NativeState#getMarkers()}), which only code under the workflow lock
+     * saves: a task row is also saved by a worker's result or a system task's run, without the lock
+     * and from a copy that may be older than the marker.
+     */
+    public static TaskContinuation markerOf(WorkflowModel workflow, TaskModel task) {
+        NativeState state = workflow.getNativeState();
+        return state == null || task == null ? null : state.getMarkers().get(task.getTaskId());
+    }
+
+    static void setMarker(WorkflowModel workflow, TaskModel task, TaskContinuation marker) {
+        workflow.getNativeState().getMarkers().put(task.getTaskId(), marker);
+    }
+
     /** Which continuation a marker is: the lane of the code, and its number in the lane. */
     record Id(String lane, int n) {
         boolean isMain() {
@@ -161,7 +181,7 @@ public final class NativeWorkflows {
             if (task == null || !task.getStatus().isTerminal()) {
                 return false;
             }
-            TaskContinuation marker = task.getContinuation();
+            TaskContinuation marker = markerOf(workflow, task);
             if (marker != null && !(marker.isApplied() && marker.isDone())) {
                 return false;
             }
@@ -176,14 +196,14 @@ public final class NativeWorkflows {
     public static LastMain lastMain(WorkflowModel workflow) {
         TaskModel best = null;
         for (TaskModel task : latestAttempts(workflow)) {
-            TaskContinuation marker = task.getContinuation();
+            TaskContinuation marker = markerOf(workflow, task);
             Id id = marker == null ? null : idOf(task);
             if (id != null && id.isMain() && (best == null || id.n() > idOf(best).n())) {
                 best = task;
             }
         }
         if (best != null) {
-            return new LastMain(best.getContinuation(), best);
+            return new LastMain(markerOf(workflow, best), best);
         }
         NativeState state = workflow.getNativeState();
         return state == null || state.getBootstrap() == null
@@ -194,7 +214,7 @@ public final class NativeWorkflows {
     /** Whether any task's lane has code still to run: a continuation not yet applied. */
     public static boolean hasUnappliedLane(WorkflowModel workflow) {
         for (TaskModel task : latestAttempts(workflow)) {
-            TaskContinuation marker = task.getContinuation();
+            TaskContinuation marker = markerOf(workflow, task);
             if (marker != null && !marker.isApplied()) {
                 return true;
             }
@@ -229,7 +249,7 @@ public final class NativeWorkflows {
             return true;
         }
         for (TaskModel task : workflow.getTasks()) {
-            TaskContinuation marker = task.getContinuation();
+            TaskContinuation marker = markerOf(workflow, task);
             if (task.getStatus() == TaskModel.Status.SCHEDULED
                     || (marker != null
                             && !marker.isApplied()

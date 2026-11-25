@@ -34,6 +34,8 @@ import static com.netflix.conductor.core.execution.NativeWorkflows.APPENDED_BY;
 import static com.netflix.conductor.core.execution.NativeWorkflows.idOf;
 import static com.netflix.conductor.core.execution.NativeWorkflows.lastMain;
 import static com.netflix.conductor.core.execution.NativeWorkflows.latestAttempts;
+import static com.netflix.conductor.core.execution.NativeWorkflows.markerOf;
+import static com.netflix.conductor.core.execution.NativeWorkflows.setMarker;
 
 /**
  * What a rerun, a retry or a restart of a native execution undoes, so that the code runs again from
@@ -65,7 +67,7 @@ public class NativeRerunPlanner {
         long cut = rerunFrom.getEndTime() > 0 ? rerunFrom.getEndTime() : Long.MAX_VALUE;
         Set<String> resetMarkers = new HashSet<>();
         for (TaskModel task : workflow.getTasks()) {
-            TaskContinuation marker = task.getContinuation();
+            TaskContinuation marker = markerOf(workflow, task);
             if (marker != null && marker.isApplied() && marker.getEndTime() >= cut) {
                 resetMarkers.add(idOf(task).key());
             }
@@ -115,19 +117,25 @@ public class NativeRerunPlanner {
         NativeContinuationService.unpin(
                 workflow); // continuations run again: parked code is ahead of the execution
         NativeDefinitionEdits.removeAll(def, plan.dropEntries());
-        if (rerunFrom.getContinuation() != null) {
-            rerunFrom.setContinuation(rerunFrom.getContinuation().reset());
+        NativeState state = workflow.getNativeState();
+        // the tasks the rerun removed take their markers with them
+        Set<String> taskIds = new HashSet<>();
+        workflow.getTasks().forEach(t -> taskIds.add(t.getTaskId()));
+        state.getMarkers().keySet().retainAll(taskIds);
+        TaskContinuation rerunMarker = markerOf(workflow, rerunFrom);
+        if (rerunMarker != null) {
+            setMarker(workflow, rerunFrom, rerunMarker.reset());
         }
         for (TaskModel task : latestAttempts(workflow)) {
-            TaskContinuation marker = task.getContinuation();
+            TaskContinuation marker = markerOf(workflow, task);
             if (marker != null
                     && task != rerunFrom
                     && plan.resetMarkers().contains(idOf(task).key())) {
-                task.setContinuation(marker.reset());
+                setMarker(workflow, task, marker.reset());
                 touched.add(task);
             }
         }
-        NativeState state = workflow.getNativeState();
+        reopenLoopsHolding(workflow, rerunFrom, touched);
         if (state != null && def.getTasks().isEmpty()) {
             // the same id, <workflowId>|main: the fresh marker counts the rerun as a retry
             state.setBootstrap(
@@ -158,6 +166,38 @@ public class NativeRerunPlanner {
         }
         workflow.setOutput(new HashMap<>());
         return joins;
+    }
+
+    /**
+     * A loop that holds the rerun task runs on from the rerun task's iteration: the rest of that
+     * iteration and the later ones went with the plan ({@link #planRerun}), and the loop, open
+     * again at that iteration, waits for it and schedules the next ones. A loop that finished would
+     * stay finished, its continuation would run, and the code would find the rerun task still
+     * scheduled.
+     */
+    private static void reopenLoopsHolding(
+            WorkflowModel workflow, TaskModel rerunFrom, List<TaskModel> touched) {
+        String ref = TaskUtils.removeIterationFromTaskRefName(rerunFrom.getReferenceTaskName());
+        int iteration = Math.max(1, rerunFrom.getIteration());
+        for (TaskModel loop : workflow.getTasks()) {
+            if (!TaskType.TASK_TYPE_DO_WHILE.equals(loop.getTaskType())
+                    || loop == rerunFrom
+                    || loop.getWorkflowTask() == null
+                    || !loop.getWorkflowTask().has(ref)) {
+                continue;
+            }
+            loop.setStatus(TaskModel.Status.IN_PROGRESS);
+            loop.setExecuted(false);
+            loop.setEndTime(0);
+            loop.setReasonForIncompletion(null);
+            loop.setIteration(iteration);
+            // the outputs of the iterations that run again
+            loop.getOutputData()
+                    .keySet()
+                    .removeIf(k -> k.matches("\\d+") && Integer.parseInt(k) >= iteration);
+            loop.addOutput("iteration", iteration);
+            touched.add(loop);
+        }
     }
 
     /**

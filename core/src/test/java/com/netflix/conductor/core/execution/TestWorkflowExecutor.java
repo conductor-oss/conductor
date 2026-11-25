@@ -456,7 +456,7 @@ public class TestWorkflowExecutor {
         task.setStatus(TaskModel.Status.COMPLETED);
         task.setExecuted(true);
         TaskContinuation marker = new TaskContinuation();
-        task.setContinuation(marker);
+        setMarker(workflow, task, marker);
         workflow.getTasks().add(task);
         when(executionLockService.acquireLock(anyString())).thenReturn(true);
         when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
@@ -500,7 +500,7 @@ public class TestWorkflowExecutor {
         TaskContinuation marker = new TaskContinuation();
         marker.setLeased(true);
         marker.setRetryCount(4);
-        awaited.setContinuation(marker);
+        setMarker(workflow, awaited, marker);
         workflow.getTasks().add(awaited);
 
         when(executionLockService.acquireLock(anyString())).thenReturn(true);
@@ -582,7 +582,7 @@ public class TestWorkflowExecutor {
         TaskContinuation marker = new TaskContinuation();
         marker.setLeased(leased);
         marker.setRetryCount(4);
-        t0.setContinuation(marker);
+        setMarker(workflow, t0, marker);
         workflow.getTasks().add(t0);
         when(executionLockService.acquireLock(anyString())).thenReturn(true);
         when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
@@ -600,6 +600,21 @@ public class TestWorkflowExecutor {
         result.getOutputData().put("n", 2);
         result.getOutputData().put("retryCount", 4L);
         return result;
+    }
+
+    @Test
+    public void aCompletionForATaskARerunRemovedIsRefused() {
+        TaskModel t0 = pausedOnT0(true, TaskModel.Status.COMPLETED);
+        WorkflowModel workflow = executionDAOFacade.getWorkflowModel("native-route-1", true);
+        workflow.getTasks().remove(t0); // the rerun dropped it; its row is still found by id
+
+        assertThrows(
+                ConflictException.class,
+                () -> workflowExecutor.updateTask(continuationResult(TaskResult.Status.COMPLETED)));
+        // nothing of it applied: its marker is as it was offered, and nothing was appended
+        assertTrue(marker(workflow, t0).isLeased());
+        assertFalse(marker(workflow, t0).isApplied());
+        assertEquals(1, workflow.getWorkflowDefinition().getTasks().size());
     }
 
     @Test
@@ -628,9 +643,11 @@ public class TestWorkflowExecutor {
         order.verify(executionDAOFacade).updateWorkflow(any());
         order.verify(executionDAOFacade).updateTasks(any());
         order.verify(queueDAO).remove("native-route.v1.code", "t0-id");
-        order.verify(queueDAO)
+        // offered after the ack is saved; the decide that follows pushes it again, idempotently
+        order.verify(queueDAO, atLeastOnce())
                 .pushIfNotExists(eq("native-route.v1.code"), eq("t0-id"), anyInt(), anyLong());
-        assertTrue(t0.getContinuation().isLeased());
+        assertTrue(
+                marker(executionDAOFacade.getWorkflowModel("native-route-1", true), t0).isLeased());
     }
 
     @Test
@@ -662,7 +679,7 @@ public class TestWorkflowExecutor {
 
         assertEquals(TaskModel.Status.COMPLETED, p.getStatus());
         assertEquals("https", p.getOutputData().get("protocol"));
-        verify(executionDAOFacade).updateTaskKeepingContinuation(p);
+        verify(executionDAOFacade).updateTask(p);
     }
 
     @Test
@@ -2344,8 +2361,8 @@ public class TestWorkflowExecutor {
                         .toList());
         assertEquals(List.of(a), workflow.getTasks());
         assertEquals(WorkflowModel.Status.RUNNING, workflow.getStatus());
-        assertFalse(a.getContinuation().isApplied()); // the code that threw runs again
-        assertFalse(a.getContinuation().isLeased());
+        assertFalse(marker(workflow, a).isApplied()); // the code that threw runs again
+        assertFalse(marker(workflow, a).isLeased());
         assertNull(workflow.getReasonForIncompletion());
         verify(executionDAOFacade).removeTask("thrown-id");
     }
@@ -2407,7 +2424,7 @@ public class TestWorkflowExecutor {
         TaskContinuation marker = new TaskContinuation();
         marker.setEndTime(1);
         marker.setDone(true);
-        aTask.setContinuation(marker);
+        setMarker(workflow, aTask, marker);
         workflow.setReasonForIncompletion("boom");
         TaskModel thrown = taskOf(mark, TaskType.TASK_TYPE_TERMINATE, 2);
         workflow.getTasks().addAll(new ArrayList<>(List.of(aTask, thrown)));
@@ -2854,8 +2871,7 @@ public class TestWorkflowExecutor {
 
         workflowExecutor.updateParentWorkflowTask(subWorkflow);
         ArgumentCaptor<TaskModel> argumentCaptor = ArgumentCaptor.forClass(TaskModel.class);
-        verify(executionDAOFacade, times(1))
-                .updateTaskKeepingContinuation(argumentCaptor.capture());
+        verify(executionDAOFacade, times(1)).updateTask(argumentCaptor.capture());
         assertEquals(TaskModel.Status.COMPLETED, argumentCaptor.getAllValues().get(0).getStatus());
         assertEquals(workflowId, argumentCaptor.getAllValues().get(0).getSubWorkflowId());
     }
@@ -2893,7 +2909,7 @@ public class TestWorkflowExecutor {
 
         workflowExecutor.updateParentWorkflowTask(subWorkflow);
 
-        verify(executionDAOFacade, never()).updateTaskKeepingContinuation(any(TaskModel.class));
+        verify(executionDAOFacade, never()).updateTask(any(TaskModel.class));
     }
 
     @Test
@@ -3546,8 +3562,7 @@ public class TestWorkflowExecutor {
         workflowExecutor.updateTask(taskResult);
         verify(queueDAO, times(1)).postpone(anyString(), anyString(), anyInt(), anyLong());
         ArgumentCaptor<TaskModel> argumentCaptor = ArgumentCaptor.forClass(TaskModel.class);
-        verify(executionDAOFacade, times(1))
-                .updateTaskKeepingContinuation(argumentCaptor.capture());
+        verify(executionDAOFacade, times(1)).updateTask(argumentCaptor.capture());
         assertEquals(TaskModel.Status.SCHEDULED, argumentCaptor.getAllValues().get(0).getStatus());
         assertEquals(
                 taskResult.getCallbackAfterSeconds(),
@@ -3586,8 +3601,7 @@ public class TestWorkflowExecutor {
         workflowExecutor.updateTask(taskResult);
         verify(queueDAO, times(1)).postpone(anyString(), anyString(), anyInt(), anyLong());
         ArgumentCaptor<TaskModel> argumentCaptor = ArgumentCaptor.forClass(TaskModel.class);
-        verify(executionDAOFacade, times(1))
-                .updateTaskKeepingContinuation(argumentCaptor.capture());
+        verify(executionDAOFacade, times(1)).updateTask(argumentCaptor.capture());
         assertEquals(TaskModel.Status.SCHEDULED, argumentCaptor.getAllValues().get(0).getStatus());
         assertEquals(0, argumentCaptor.getAllValues().get(0).getCallbackAfterSeconds());
         assertEquals(taskResult.getWorkerId(), argumentCaptor.getAllValues().get(0).getWorkerId());
@@ -3765,5 +3779,24 @@ public class TestWorkflowExecutor {
         verify(queueDAO, never()).push(eq(TASK_TYPE_SWITCH), anyString(), anyInt(), anyLong());
         verify(queueDAO, never()).push(eq(TASK_TYPE_SWITCH), anyString(), anyLong());
         assertEquals(TaskModel.Status.IN_PROGRESS, regular.getStatus());
+    }
+
+    private static com.netflix.conductor.common.metadata.tasks.TaskContinuation marker(
+            WorkflowModel workflow, TaskModel task) {
+        return NativeWorkflows.markerOf(workflow, task);
+    }
+
+    private static void setMarker(
+            WorkflowModel workflow,
+            TaskModel task,
+            com.netflix.conductor.common.metadata.tasks.TaskContinuation marker) {
+        if (workflow.getNativeState() == null) {
+            workflow.setNativeState(new com.netflix.conductor.common.run.NativeState());
+        }
+        if (marker == null) {
+            workflow.getNativeState().getMarkers().remove(task.getTaskId());
+        } else {
+            workflow.getNativeState().getMarkers().put(task.getTaskId(), marker);
+        }
     }
 }

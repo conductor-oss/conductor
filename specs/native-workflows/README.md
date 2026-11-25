@@ -29,7 +29,7 @@ task each lane last paused on, one continuation at a time.**
 | [DURABILITY.md](DURABILITY.md) | The durability guarantees: what survives which failure, how, how it was verified, what must be configured, and what is not guaranteed. |
 | [COMPARISON.md](COMPARISON.md) | How native workflows compare with other durable execution engines: execution model, where work happens, determinism, messaging, failures, operations. Internal draft for launch documentation. |
 | [06-implementation.md](06-implementation.md) | Implementation status: how to run the kitchensink, validation results, server bugs found, differences from the design. |
-| [07-engine-state.md](07-engine-state.md) | The protocol 2 plan, now implemented: a continuation is a marker on the task the code paused on, recorded values live in that marker, the first continuation and the handler lane are engine state on the workflow, so an execution holds exactly the tasks the code asked for. Notes where the implementation drifted from the plan. |
+| [07-engine-state.md](07-engine-state.md) | The protocol 2 plan, now implemented: a continuation is a marker for the task the code paused on, kept on the workflow row, recorded values live in that marker, the first continuation and the handler lane are engine state on the workflow, so an execution holds exactly the tasks the code asked for. Notes where the implementation drifted from the plan. |
 
 ## Scope
 

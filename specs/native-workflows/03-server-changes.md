@@ -11,11 +11,12 @@ standing items the SDK reaches later. How the work was staged is in [05-plan.md]
 | `DeciderService.startWorkflow` | a native definition with no tasks schedules nothing, instead of terminating with "No tasks found to be executed"; the bootstrap continuation appends the first entries | B2 |
 | `DeciderService.getNextTask`, `WorkflowDef.getNextTask`, `WorkflowTask.next` | none; verified to walk appended entries, including inside fork branches | B2 |
 | `DeciderService.checkForWorkflowCompletion` | returns false for a native workflow: the execution ends only through the continuation that carries the result | B2 |
-| `DeciderService.retry` | retries as for any task; lane tasks are `optional`, so exhausted retries do not terminate the workflow, the failed task becomes COMPLETED_WITH_ERRORS as for any optional task, and for native workflows its output records how it failed under `conductor.failedStatus`; a retried attempt copies the marker reset (`retryCount + 1`) | B2 |
+| `DeciderService.retry` | retries as for any task; lane tasks are `optional`, so exhausted retries do not terminate the workflow, the failed task becomes COMPLETED_WITH_ERRORS as for any optional task, and for native workflows its output records how it failed under `conductor.failedStatus`; a retried attempt is linked to the one before (`retriedTaskId`), whose marker the next decide gives it reset (`retryCount + 1`) | B2 |
 | `MetadataMapperService.populateTaskDefinitions` | an overload takes the timeout policy for a task with no registered definition; a native fragment passes `RETRY`, so a worker that dies holding a native task is retried. Standard workflows keep the global default, `TIME_OUT_WF` | B2 |
-| `TaskMapperContext.createTaskModel` | gives the `TaskModel` a new `TaskContinuation` when the entry carries `metadata.continuation` (`NativeContinuationService.markerOf`) | B1 |
+| `NativeContinuationService.repairAndWake` (every decide) | gives each scheduled task whose entry carries `metadata.continuation` its marker in `nativeState.markers`: new, or for a retried attempt the attempt before's, reset | B1 |
+| `WorkflowModel.toWorkflow` | the API shows each marker on its task (`Task.continuation`) and `nativeState` without them | B1 |
 | `WorkflowExecutorOps.startWorkflow`, `restart` | `NativeContinuationService.initialize(workflow)` sets up `nativeState` | B1, B7 |
-| `WorkflowExecutorOps.updateTask` | a continuation's completion (a synthetic id, or a task with a marker and `protocol` in the result's output) goes to `completeContinuation` under the execution lock, and the decide it triggers runs in that same acquisition; a stale one is refused with 409 and never applied to the task. A task update takes no lock and is saved only if the task's stored status is still the one read | B2 |
+| `WorkflowExecutorOps.updateTask` | a continuation's completion (a synthetic id, or a task with a marker and `protocol` in the result's output) goes to `completeContinuation` under the execution lock, and the decide it triggers runs in that same acquisition; a stale one is refused with 409 and never applied to the task, as is one for a task a rerun removed. A task update takes no lock and saves the task's whole row; markers are not on it | B2 |
 | `WorkflowExecutorOps.decide(WorkflowModel)` | after saving updated tasks, `repairAndWake` pushes the slot holder's message again or offers the execution's slot to the next runnable continuation (`offer`); touched tasks and the workflow row are saved, then the offers are pushed; the decider-queue postpone is capped at `workflowOffsetTimeout` and always written while a continuation is runnable or leased (`NativeContinuationService.needsPromptRevisit`) | B2 |
 | `SwitchTaskMapper`, `Switch`, `NativeCodeEvaluator` | a new evaluator, `native-code`, reads the case the code took (as `value-param` reads a parameter); every `SWITCH` a native workflow draws carries it, with `switchCaseValue` already fixed to the taken case, and fragment validation refuses any other evaluator on one. The mapper records `outputData.selectedCase` and `evaluationResult` as for any switch | B2 |
 | `WorkflowDef` | none but the task-list validation (below); `NativeContinuationService.insertAfter`, `previousTask` and `removeAll` edit an execution's own definition at any depth (`forkTasks`, `decisionCases`, `defaultCase`, `loopOver`) | B2 |
@@ -46,8 +47,10 @@ describes code waiting on it.
 
 ### Change
 
-1. `TaskContinuation` in `common/.../metadata/tasks/`, and a `continuation` field on `Task` and
-   `TaskModel` (`TaskModel.copy` carries it). Fields, proto ids 1 to 7 in this order: `leased`,
+1. `TaskContinuation` in `common/.../metadata/tasks/`, and a `continuation` field on `Task`, which
+   the API fills from the workflow's markers. `TaskModel` has none: a task's row is saved
+   without the workflow lock (a worker's result, an async system task's run), from a copy that may
+   be older than the marker. Fields, proto ids 1 to 7 in this order: `leased`,
    `retryCount`, `endTime`, `done`, `recorded`, `resumedWith`, and `n`, set only on the handler
    lane's marker (its run number) (02 §5). Empty values are not stored, so a marker that has not
    run is `{}`. Which continuation a task's marker is comes from the task's entry
@@ -59,14 +62,15 @@ describes code waiting on it.
    since their ids stay the same.
 2. `NativeState` in `common/.../run/`, and a `nativeState` field on `Workflow` and `WorkflowModel`.
    Fields: `bootstrap` and `handlers` (both `TaskContinuation`), and `replies` (every handled
-   message by the sender's id). Null for other workflows. The bootstrap is always `main` #1 and
+   message by the sender's id), and `markers`: every task marker, by task id. Null for other
+   workflows. The bootstrap is always `main` #1 and
    the handler marker's lane always `handlers`, so neither is on a marker; the handler marker's `n`
    counts its runs. Stored, the bootstrap is `{}` until it applies and the handler lane
    `{"n": 4}`. The code type and the continuation timeout are
    read from the execution's definition (`metadata.native`), never copied here.
-3. `TaskMapperContext.createTaskModel`: when the entry's `metadata.continuation` is a number and
-   it has a `metadata.lane`, set `taskModel.continuation` to a new marker
-   (`NativeContinuationService.markerOf`).
+3. Every decide (`repairAndWake`): a scheduled task whose entry's `metadata.continuation` is a
+   number and has a `metadata.lane` gets a new marker in `nativeState.markers`
+   (`NativeContinuationService.markerOf`); a retried attempt gets the attempt before's, reset.
 4. `NativeContinuationService.initialize(workflow)` (called by `startWorkflow` when
    `NativeContinuationService.isNative(workflowDefinition)`, and by `restart`): first, if the
    execution's copy of the definition has tasks (the graph the SDK discovered from the code at
@@ -215,10 +219,9 @@ for this worker's next continuation.
    continuation runs at a time, so the reason is the run's; the next one that applies clears it),
    and counts `native_completion_deferred`.
 3. **Protocol.** `protocol` must be the number 2 (`RejectedFragmentException`, reason `protocol`).
-4. **Variable conflict.** `variableConflict`: for each variable the completion changed (differs
-   from `resumedWith`), if the current value differs from `resumedWith`, defer with "variable 'x'
-   was changed by another completion", offered again with no delay. the `no-variable-fencing`
-   mutant disables it.
+4. **Variables.** The variables the completion wrote are applied as written. One continuation
+   runs at a time (the slot), and a second run of the same offer is refused by the lease check,
+   so nothing else changed them while it ran.
 5. **Completion guard.** `done` without `error` on the main lane: `pendingMessages` defers while
    the handler marker is leased, or `workflowMessageQueueDAO.size(workflowId) > 0`.
    The reason is prefixed `waiting for handlers: ` and `Completion.waitsForHandlers` is set, so the

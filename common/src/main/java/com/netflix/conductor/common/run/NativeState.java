@@ -22,9 +22,9 @@ import com.netflix.conductor.common.metadata.tasks.TaskContinuation;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
- * Engine state of a native (code-defined) workflow that has no task to live on. Everything else
- * about the code's progress is on the tasks it paused on ({@link TaskContinuation}), so this stays
- * small however long the execution runs. The code type and the continuation timeout are the
+ * Engine state of a native (code-defined) workflow: the lanes that have no task to live on, and the
+ * markers of the tasks the code paused on ({@link #getMarkers()}). It is on the workflow row, which
+ * only code under the workflow's lock saves. The code type and the continuation timeout are the
  * definition's {@code metadata.native}, which the execution carries.
  */
 @ProtoMessage
@@ -64,6 +64,16 @@ public class NativeState {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String stamp;
 
+    /**
+     * The marker of every task the code paused on, by the task's id: which continuation runs when
+     * the task finishes, and how far it got. Kept here, on the workflow row, which only code under
+     * the workflow's lock saves, and not on the task's row, which a worker's result or a system
+     * task's run also saves, without the lock, from a copy that may be older than the marker. The
+     * API shows each on its task ({@code Task.continuation}). Read over HTTP only.
+     */
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    private Map<String, TaskContinuation> markers = new HashMap<>();
+
     public TaskContinuation getBootstrap() {
         return bootstrap;
     }
@@ -102,5 +112,24 @@ public class NativeState {
 
     public void setStamp(String stamp) {
         this.stamp = stamp;
+    }
+
+    public Map<String, TaskContinuation> getMarkers() {
+        return markers;
+    }
+
+    public void setMarkers(Map<String, TaskContinuation> markers) {
+        this.markers = markers == null ? new HashMap<>() : markers;
+    }
+
+    /** This state without the markers: what the API shows, with each marker on its task. */
+    public NativeState withoutMarkers() {
+        NativeState copy = new NativeState();
+        copy.bootstrap = bootstrap;
+        copy.handlers = handlers;
+        copy.replies = replies;
+        copy.pinnedTo = pinnedTo;
+        copy.stamp = stamp;
+        return copy;
     }
 }
