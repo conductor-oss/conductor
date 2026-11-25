@@ -13,11 +13,18 @@
 package com.netflix.conductor.rest.controllers;
 
 import java.util.List;
+import java.util.Map;
 
 import org.conductoross.conductor.dao.SecretsDAO;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -38,5 +45,24 @@ public class SecretResource {
     @Operation(summary = "List secret names (values are never returned)")
     public List<String> listSecretNames() {
         return secretsDAO.listSecretNames();
+    }
+
+    @PutMapping("/{name}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Create or update a secret (value is encrypted at rest, never returned)")
+    public void putSecret(@PathVariable String name, @RequestBody Map<String, String> body) {
+        String value = body.get("value");
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Request body must contain a non-empty 'value' field");
+        }
+        secretsDAO.putSecret(name, value);
+    }
+
+    @DeleteMapping("/{name}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Delete a secret")
+    public void deleteSecret(@PathVariable String name) {
+        secretsDAO.deleteSecret(name);
     }
 }
