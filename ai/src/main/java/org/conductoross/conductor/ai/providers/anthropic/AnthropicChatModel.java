@@ -54,6 +54,7 @@ import tools.jackson.databind.ObjectMapper;
 public class AnthropicChatModel implements ChatModel {
 
     private static final int DEFAULT_MAX_TOKENS = 8192;
+    private static final int MIN_ANSWER_TOKENS = 8192;
 
     private final AnthropicMessagesApi messagesApi;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -135,10 +136,16 @@ public class AnthropicChatModel implements ChatModel {
                 }
             } else if (wantsThinking) {
                 builder.thinking(Thinking.enabled(budget));
-                // The API rejects the request (HTTP 400) unless budget_tokens < max_tokens, so
-                // leave room for the visible answer on top of the thinking budget.
-                if (effectiveMaxTokens <= budget) {
-                    builder.maxTokens(budget + DEFAULT_MAX_TOKENS);
+                // Legacy thinking and the visible answer share max_tokens. Reserve answer room
+                // even when the request already satisfies budget_tokens < max_tokens.
+                if (effectiveMaxTokens - budget < MIN_ANSWER_TOKENS) {
+                    int adjustedMaxTokens = Math.addExact(budget, MIN_ANSWER_TOKENS);
+                    log.warn(
+                            "Raising Anthropic max_tokens from {} to {} for thinking budget {}",
+                            effectiveMaxTokens,
+                            adjustedMaxTokens,
+                            budget);
+                    builder.maxTokens(adjustedMaxTokens);
                 }
             }
 

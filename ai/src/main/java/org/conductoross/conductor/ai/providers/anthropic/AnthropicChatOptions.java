@@ -33,11 +33,22 @@ public class AnthropicChatOptions implements ChatOptions {
     private Double temperature;
     private Double topP;
     private Integer topK;
+
+    /**
+     * For legacy enabled thinking, this limit covers both thinking and the visible answer. The
+     * client raises it when necessary to leave room for the answer.
+     */
     private Integer maxTokens;
+
     private List<String> stopSequences;
 
     // Anthropic-specific
+    /**
+     * For legacy enabled thinking, this budget consumes part of {@code maxTokens}, which must also
+     * leave room for the visible answer.
+     */
     private Integer thinkingBudgetTokens;
+
     // One of "low", "medium", "high", "xhigh", "max". Serialized as
     // ``output_config.effort`` on the request. Required (alongside adaptive thinking) on
     // Opus 4.7, which rejects ``thinking.type.enabled``. Optional on older models.

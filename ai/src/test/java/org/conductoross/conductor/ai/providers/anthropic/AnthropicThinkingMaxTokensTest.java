@@ -24,7 +24,6 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.ai.chat.prompt.Prompt;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -67,22 +66,27 @@ class AnthropicThinkingMaxTokensTest {
     @Test
     void defaultMaxTokensIsRaisedAboveLargeBudget() throws Exception {
         MessagesRequest request = send(null, 10000);
-        assertTrue(
-                request.maxTokens() > request.thinking().budgetTokens(),
-                "max_tokens " + request.maxTokens() + " must exceed budget 10000");
+        assertEquals(10000, request.thinking().budgetTokens());
+        assertEquals(18192, request.maxTokens());
     }
 
     @Test
     void explicitMaxTokensBelowBudgetIsRaised() throws Exception {
-        MessagesRequest request = send(1024, 2000);
-        assertTrue(
-                request.maxTokens() > 2000,
-                "max_tokens must exceed budget: " + request.maxTokens());
+        assertEquals(10192, send(1024, 2000).maxTokens());
     }
 
     @Test
-    void maxTokensAlreadyAboveBudgetIsKept() throws Exception {
-        MessagesRequest request = send(4096, 2000);
-        assertEquals(4096, request.maxTokens());
+    void maxTokensJustAboveBudgetIsRaised() throws Exception {
+        assertEquals(18192, send(10001, 10000).maxTokens());
+    }
+
+    @Test
+    void maxTokensAtAnswerFloorIsKept() throws Exception {
+        assertEquals(18192, send(18192, 10000).maxTokens());
+    }
+
+    @Test
+    void maxTokensAboveAnswerFloorIsKept() throws Exception {
+        assertEquals(20000, send(20000, 10000).maxTokens());
     }
 }
