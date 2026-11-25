@@ -16,6 +16,8 @@ import java.time.Duration;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
+import com.netflix.conductor.core.utils.QueueUtils;
+import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -182,6 +184,16 @@ public class ExecutorUtils {
      * blocked on external human input and may remain in this state indefinitely, so it should be
      * removed from the decider queue rather than re-swept on every offset.
      */
+    /** Puts a task on its queue with no delay: moves its message to now, or adds one. */
+    public static void expedite(QueueDAO queueDAO, TaskModel task) {
+        String queueName = QueueUtils.getQueueName(task);
+        if (queueDAO.containsMessage(queueName, task.getTaskId())) {
+            queueDAO.postpone(queueName, task.getTaskId(), task.getWorkflowPriority(), 0);
+        } else {
+            queueDAO.push(queueName, task.getTaskId(), task.getWorkflowPriority(), 0);
+        }
+    }
+
     public static boolean hasInProgressHumanTask(WorkflowModel workflow) {
         return workflow.getTasks().stream()
                 .anyMatch(

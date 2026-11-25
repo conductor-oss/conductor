@@ -12,12 +12,15 @@
  */
 package com.netflix.conductor.test.integration
 
+import org.springframework.beans.factory.annotation.Autowired
+
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskDef
 import com.netflix.conductor.common.metadata.tasks.TaskResult
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask
 import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.core.exception.ConflictException
+import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.test.base.AbstractSpecification
 
 /**
@@ -33,6 +36,9 @@ class NativeWorkflowSpec extends AbstractSpecification {
 
     static final String SKELETON = 'native_skeleton'
     static final String CODE_TYPE = 'native_skeleton.v1.code'
+
+    @Autowired
+    QueueDAO queueDAO
 
     def setup() {
         workflowTestUtil.registerWorkflows('native_skeleton_integration_test.json')
@@ -151,6 +157,35 @@ class NativeWorkflowSpec extends AbstractSpecification {
             wf.getTaskByRefName('join_1').status == Task.Status.IN_PROGRESS
             wf.tasks.size() == 5 // fork, join, and the three tasks the code called
         }
+    }
+
+    def "a JOIN is checked with no delay when its last lane ends"() {
+        given: 'two lanes with one task each, and a JOIN that is in its backoff'
+        def workflowId = startWorkflow(SKELETON, 1, 'native-join-wake', [:], null)
+        def bootstrap = workflowExecutionService.poll(CODE_TYPE, 'worker-a')
+        def fork = new WorkflowTask(name: 'fork_1', taskReferenceName: 'fork_1', type: 'FORK_JOIN')
+        fork.metadata.lane = 'main'
+        fork.forkTasks = [
+                [simple('integration_task_1', [:], 'fork_1.0')],
+                [simple('integration_task_2', [:], 'fork_1.1')]
+        ]
+        def join = new WorkflowTask(name: 'join_1', taskReferenceName: 'join_1', type: 'JOIN', joinOn: [])
+        join.metadata.lane = 'main'
+        complete(bootstrap, 'worker-a', completion(bootstrap, [fork, paused(join, 'main', 2)], null))
+        def joinId = workflowExecutionService.getExecutionStatus(workflowId, true).getTaskByRefName('join_1').taskId
+        queueDAO.postpone('JOIN', joinId, 0, 600)
+
+        when: 'the first lane ends'
+        workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.worker', [:])
+
+        then: 'the JOIN stays in its backoff'
+        !queueDAO.pop('JOIN', 100, 100).contains(joinId)
+
+        when: 'the last lane ends'
+        workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.worker', [:])
+
+        then: 'the JOIN is on its queue with no delay'
+        queueDAO.pop('JOIN', 100, 100).contains(joinId)
     }
 
     def "a completion that does not match the current lease is refused"() {

@@ -33,16 +33,18 @@ import org.testcontainers.utility.DockerImageName;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.execution.DeciderService;
-import com.netflix.conductor.core.execution.NativeContinuationService;
+import com.netflix.conductor.core.execution.NativeDriver;
+import com.netflix.conductor.core.execution.StandardDriver;
+import com.netflix.conductor.core.execution.WorkflowDrivers;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
-import com.netflix.conductor.core.metadata.MetadataMapperService;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.tasks.http.providers.DefaultRestTemplateProvider;
@@ -375,11 +377,13 @@ public class HttpTaskTest {
                         metadataDAO,
                         externalPayloadStorageUtils,
                         systemTaskRegistry,
-                        new NativeContinuationService(
-                                objectMapper,
-                                new ConductorProperties(),
-                                new MetadataMapperService(metadataDAO),
-                                Collections.emptyMap()),
+                        new WorkflowDrivers(
+                                new StandardDriver(
+                                        parametersUtils,
+                                        externalPayloadStorageUtils,
+                                        mock(ExecutionDAOFacade.class),
+                                        mock(QueueDAO.class)),
+                                mock(NativeDriver.class)),
                         Collections.emptyMap(),
                         Collections.emptyMap(),
                         Duration.ofMinutes(60))

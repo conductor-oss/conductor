@@ -30,7 +30,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.core.LifecycleAwareComponent;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.NotFoundException;
-import com.netflix.conductor.core.execution.NativeContinuationService;
+import com.netflix.conductor.core.execution.WorkflowDrivers;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
@@ -67,6 +67,7 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
     private final ObjectMapper objectMapper;
     private SystemTaskRegistry systemTaskRegistry;
     private final ExecutionLockService executionLockService;
+    private final WorkflowDrivers drivers;
     private final Clock clock = Clock.systemDefaultZone();
     private AtomicBoolean stop = new AtomicBoolean(false);
 
@@ -79,8 +80,10 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
             SweeperProperties sweeperProperties,
             SystemTaskRegistry systemTaskRegistry,
             ObjectMapper objectMapper,
-            ExecutionLockService executionLockService) {
+            ExecutionLockService executionLockService,
+            WorkflowDrivers drivers) {
         this.queueDAO = queueDAO;
+        this.drivers = drivers;
         this.executionDAO = executionDAO;
         this.sweeperProperties = sweeperProperties;
         this.workflowExecutor = workflowExecutor;
@@ -275,11 +278,7 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
 
             // Workflow is in running status, there MUST be at-least one task that is not terminal
             // (scheduled, in progress)
-            boolean hasRunningTasks =
-                    workflow.getTasks().stream().anyMatch(task -> !task.getStatus().isTerminal());
-            // a native workflow's running work may be a queued or leased continuation, which
-            // decide re-pushes; its tasks all being terminal is normal
-            if (!hasRunningTasks && !NativeContinuationService.isNative(workflow)) {
+            if (drivers.of(workflow).isStalled(workflow)) {
                 // Workflow is in RUNNING status but there are no tasks that are running
                 // This can happen in case of the database failures where the task scheduling failed
                 // after the last task was completed

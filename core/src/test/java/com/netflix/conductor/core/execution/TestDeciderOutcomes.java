@@ -42,6 +42,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.DeciderService.DeciderOutcome;
 import com.netflix.conductor.core.execution.evaluators.Evaluator;
@@ -63,11 +64,11 @@ import com.netflix.conductor.core.execution.tasks.Join;
 import com.netflix.conductor.core.execution.tasks.Switch;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
-import com.netflix.conductor.core.metadata.MetadataMapperService;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -184,11 +185,8 @@ public class TestDeciderOutcomes {
         taskMappers.put(HTTP.name(), new HTTPTaskMapper(parametersUtils, metadataDAO));
 
         this.nativeContinuationService =
-                new NativeContinuationService(
-                        objectMapper,
-                        new ConductorProperties(),
-                        new MetadataMapperService(metadataDAO),
-                        taskMappers);
+                WorkflowDriversFixture.nativeContinuationService(
+                        objectMapper, new ConductorProperties(), metadataDAO, taskMappers);
         this.deciderService =
                 new DeciderService(
                         new IDGenerator(),
@@ -196,7 +194,14 @@ public class TestDeciderOutcomes {
                         metadataDAO,
                         externalPayloadStorageUtils,
                         systemTaskRegistry,
-                        nativeContinuationService,
+                        WorkflowDriversFixture.drivers(
+                                parametersUtils,
+                                externalPayloadStorageUtils,
+                                nativeContinuationService,
+                                metadataDAO,
+                                mock(ExecutionDAOFacade.class),
+                                mock(QueueDAO.class),
+                                systemTaskRegistry),
                         taskMappers,
                         new HashMap<>(),
                         Duration.ofMinutes(60));
@@ -625,11 +630,7 @@ public class TestDeciderOutcomes {
         // the executor wakes it in the same decide
         assertEquals(
                 List.of(task.getTaskId()),
-                deciderService
-                        .getNativeContinuationService()
-                        .repairAndWake(workflow)
-                        .offers
-                        .stream()
+                nativeContinuationService.repairAndWake(workflow).offers.stream()
                         .map(NativeContinuationService.Offer::messageId)
                         .toList());
         assertTrue(marker(workflow, task).isLeased());
@@ -1004,7 +1005,7 @@ public class TestDeciderOutcomes {
 
     private static com.netflix.conductor.common.metadata.tasks.TaskContinuation marker(
             WorkflowModel workflow, TaskModel task) {
-        return NativeContinuationService.markerOf(workflow, task);
+        return NativeWorkflows.markerOf(workflow, task);
     }
 
     private static void setMarker(

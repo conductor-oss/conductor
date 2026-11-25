@@ -204,6 +204,18 @@ public class TestWorkflowExecutor {
         taskMappers.put(LAMBDA.name(), new LambdaTaskMapper(parametersUtils, metadataDAO));
         taskMappers.put(INLINE.name(), new InlineTaskMapper(parametersUtils, metadataDAO));
 
+        nativeService =
+                WorkflowDriversFixture.nativeContinuationService(
+                        objectMapper, new ConductorProperties(), metadataDAO, taskMappers);
+        WorkflowDrivers drivers =
+                WorkflowDriversFixture.drivers(
+                        parametersUtils,
+                        externalPayloadStorageUtils,
+                        nativeService,
+                        metadataDAO,
+                        executionDAOFacade,
+                        queueDAO,
+                        systemTaskRegistry);
         DeciderService deciderService =
                 new DeciderService(
                         idGenerator,
@@ -211,12 +223,7 @@ public class TestWorkflowExecutor {
                         metadataDAO,
                         externalPayloadStorageUtils,
                         systemTaskRegistry,
-                        nativeService =
-                                new NativeContinuationService(
-                                        objectMapper,
-                                        new ConductorProperties(),
-                                        new MetadataMapperService(metadataDAO),
-                                        taskMappers),
+                        drivers,
                         taskMappers,
                         new HashMap<>(),
                         Duration.ofMinutes(60));
@@ -244,7 +251,9 @@ public class TestWorkflowExecutor {
                         parametersUtils,
                         idGenerator,
                         Optional.empty(),
-                        mock(SchemaService.class));
+                        mock(SchemaService.class),
+                        nativeService,
+                        drivers);
     }
 
     @Test
@@ -2397,12 +2406,12 @@ public class TestWorkflowExecutor {
         ifEntry.setEvaluatorType("native-code");
         ifEntry.setExpression("c");
         ifEntry.setDecisionCases(new HashMap<>(Map.of("true", new ArrayList<>(List.of(b)))));
-        ifEntry.getMetadata().put(NativeContinuationService.APPENDED_BY, "main#2");
+        ifEntry.getMetadata().put(NativeWorkflows.APPENDED_BY, "main#2");
         WorkflowTask mark = new WorkflowTask();
         mark.setName("thrown");
         mark.setType(TaskType.TERMINATE.name());
         mark.setTaskReferenceName("thrown");
-        mark.getMetadata().put(NativeContinuationService.APPENDED_BY, "main#2");
+        mark.getMetadata().put(NativeWorkflows.APPENDED_BY, "main#2");
         def.getTasks().addAll(List.of(a, ifEntry, mark));
 
         WorkflowModel workflow = new WorkflowModel();
@@ -3774,7 +3783,7 @@ public class TestWorkflowExecutor {
 
     private static com.netflix.conductor.common.metadata.tasks.TaskContinuation marker(
             WorkflowModel workflow, TaskModel task) {
-        return NativeContinuationService.markerOf(workflow, task);
+        return NativeWorkflows.markerOf(workflow, task);
     }
 
     private static void setMarker(

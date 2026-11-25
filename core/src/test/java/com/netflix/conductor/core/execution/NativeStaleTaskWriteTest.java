@@ -246,8 +246,11 @@ public class NativeStaleTaskWriteTest {
                 new NativeContinuationService(
                         json,
                         properties,
-                        mock(MetadataMapperService.class),
-                        new HashMap<String, TaskMapper>());
+                        new NativeFragmentValidator(
+                                json,
+                                properties,
+                                mock(MetadataMapperService.class),
+                                new HashMap<String, TaskMapper>()));
 
         QueueDAO queue = mock(QueueDAO.class);
         when(queue.setUnackTimeout(anyString(), anyString(), anyLong())).thenReturn(true);
@@ -394,7 +397,9 @@ public class NativeStaleTaskWriteTest {
                         mock(ParametersUtils.class),
                         mock(IDGenerator.class),
                         Optional.empty(),
-                        mock(SchemaService.class));
+                        mock(SchemaService.class),
+                        mock(NativeContinuationService.class),
+                        WorkflowDriversFixture.standardOnly());
         TaskResult result = new TaskResult();
         result.setWorkflowInstanceId(WF);
         result.setTaskId("id-a");

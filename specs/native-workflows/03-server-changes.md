@@ -363,9 +363,11 @@ Two more forms exist for lanes the code does not wait for at once. A JOIN with
 lanes instead of the preceding fork, and can sit anywhere after it; it waits for the next
 evaluation when a lane is not in the definition it is reading. All targets include the branch ends
 of any fork a branch started. Native JOINs do not use `joinMode: SYNC`: a JOIN re-evaluated without
-pause takes the workflow lock continuously and refuses task updates. They are checked continuously
-for the first `systemTaskPostponeThreshold` evaluations and then every second, instead of backing
-off to the system task callback duration.
+pause takes the workflow lock continuously and refuses task updates. They back off as a standard
+JOIN does, up to the system task callback duration. After each decide of the execution, the server
+puts each JOIN that can end now on its queue with no delay, so a JOIN ends right after its last
+lane and not one backoff later. A JOIN evaluation that is in progress when the last lane ends can
+set the backoff again; the JOIN then ends at its next evaluation, one backoff later at most.
 
 ### Edge cases
 
