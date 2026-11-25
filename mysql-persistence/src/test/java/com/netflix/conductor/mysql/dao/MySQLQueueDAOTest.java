@@ -559,4 +559,71 @@ public class MySQLQueueDAOTest {
         assertNotNull(size);
         assertEquals(size.longValue(), count - unackedCount);
     }
+
+    /**
+     * An unack timeout of N seconds on a popped message makes it due again after N seconds, as on
+     * the Redis queue, not after N seconds plus the wait for processAllUnacks (60 to 120 s).
+     */
+    @Test
+    public void aPoppedMessageIsDueAgainWhenItsUnackTimeoutRunsOut() {
+        queueDAO.push("unack_timeout", "msg-1", 0);
+        assertEquals(List.of("msg-1"), queueDAO.pop("unack_timeout", 1, 100));
+
+        // two seconds: a deliver_on stored to the whole second (MySQL) is at least one ahead
+        assertTrue(queueDAO.setUnackTimeout("unack_timeout", "msg-1", 2_000));
+        assertEquals(List.of(), queueDAO.pop("unack_timeout", 1, 100));
+
+        await().atMost(6, TimeUnit.SECONDS)
+                .until(() -> queueDAO.pop("unack_timeout", 1, 100).equals(List.of("msg-1")));
+    }
+
+    /**
+     * A pop leases the message for a minute from the pop, not from when the message became due: a
+     * message that waited before it was popped is not taken again right away, and one whose lease
+     * ran out without an ack is taken again.
+     */
+    @Test
+    public void aPopLeasesTheMessageForAMinuteFromThePop() {
+        queueDAO.push("lease", "msg-1", 0);
+        setDeliverOn("lease", "msg-1", -120); // it waited two minutes to be polled
+
+        assertEquals(List.of("msg-1"), queueDAO.pop("lease", 1, 100));
+        queueDAO.processAllUnacks();
+        assertEquals(List.of(), queueDAO.pop("lease", 1, 100));
+
+        setDeliverOn("lease", "msg-1", -1); // the lease ran out without an ack
+        assertEquals(List.of("msg-1"), queueDAO.pop("lease", 1, 100));
+    }
+
+    /** processUnacks releases a popped message once its unack timeout has run out, and no other. */
+    @Test
+    public void processUnacksReleasesOnlyMessagesWhoseUnackTimeoutRanOut() {
+        queueDAO.push("release", "due", 0);
+        queueDAO.push("release", "held", 0);
+        assertEquals(2, queueDAO.pop("release", 2, 100).size());
+        setDeliverOn("release", "due", -1); // its unack timeout ran out
+
+        queueDAO.processUnacks("release");
+
+        Map<String, Long> shard = queueDAO.queuesDetailVerbose().get("release").get("a");
+        assertEquals("the expired one is queued again", 1L, shard.get("size").longValue());
+        assertEquals("the leased one is still out", 1L, shard.get("uacked").longValue());
+    }
+
+    private void setDeliverOn(String queueName, String messageId, int offsetSeconds) {
+        try (Connection c = dataSource.getConnection()) {
+            c.setAutoCommit(true);
+            String SET =
+                    "UPDATE queue_message SET deliver_on = TIMESTAMPADD(SECOND, ?, CURRENT_TIMESTAMP)"
+                            + " WHERE queue_name = ? AND message_id = ?";
+            try (Query q = new Query(objectMapper, c, SET)) {
+                q.addParameter(offsetSeconds)
+                        .addParameter(queueName)
+                        .addParameter(messageId)
+                        .executeUpdate();
+            }
+        } catch (Exception ex) {
+            fail(ex.getMessage());
+        }
+    }
 }

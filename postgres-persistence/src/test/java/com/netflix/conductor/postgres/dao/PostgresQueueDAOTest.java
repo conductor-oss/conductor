@@ -625,6 +625,66 @@ public class PostgresQueueDAOTest {
         assertEquals(messageId, repopped.get(0));
     }
 
+    /**
+     * An unack timeout of N seconds on a popped message makes it due again after N seconds, as on
+     * the Redis queue, not after N seconds plus the wait for processAllUnacks (60 to 120 s).
+     */
+    @Test
+    public void aPoppedMessageIsDueAgainWhenItsUnackTimeoutRunsOut() {
+        queueDAO.push("unack_timeout", "msg-1", 0);
+        assertEquals(List.of("msg-1"), queueDAO.pop("unack_timeout", 1, 100));
+
+        // two seconds: a deliver_on stored to the whole second (MySQL) is at least one ahead
+        assertTrue(queueDAO.setUnackTimeout("unack_timeout", "msg-1", 2_000));
+        assertEquals(List.of(), queueDAO.pop("unack_timeout", 1, 100));
+
+        await().atMost(6, TimeUnit.SECONDS)
+                .until(() -> queueDAO.pop("unack_timeout", 1, 100).equals(List.of("msg-1")));
+    }
+
+    /**
+     * A pop leases the message for a minute from the pop, not from when the message became due: a
+     * message that waited before it was popped is not taken again right away, and one whose lease
+     * ran out without an ack is taken again.
+     */
+    @Test
+    public void aPopLeasesTheMessageForAMinuteFromThePop() {
+        queueDAO.push("lease", "msg-1", 0);
+        setDeliverOn("lease", "msg-1", "-2 minutes"); // it waited two minutes to be polled
+
+        assertEquals(List.of("msg-1"), queueDAO.pop("lease", 1, 100));
+        queueDAO.processAllUnacks();
+        assertEquals(List.of(), queueDAO.pop("lease", 1, 100));
+
+        setDeliverOn("lease", "msg-1", "-1 second"); // the lease ran out without an ack
+        assertEquals(List.of("msg-1"), queueDAO.pop("lease", 1, 100));
+    }
+
+    /** processUnacks releases a popped message once its unack timeout has run out, and no other. */
+    @Test
+    public void processUnacksReleasesOnlyMessagesWhoseUnackTimeoutRanOut() {
+        queueDAO.push("release", "due", 0);
+        queueDAO.push("release", "held", 0);
+        assertEquals(2, queueDAO.pop("release", 2, 100).size());
+        setDeliverOn("release", "due", "-1 second"); // its unack timeout ran out
+
+        queueDAO.processUnacks("release");
+
+        assertFalse("the expired one is queued again", getPoppedState("release", "due"));
+        assertTrue("the leased one is still out", getPoppedState("release", "held"));
+    }
+
+    private void setDeliverOn(String queueName, String messageId, String offset) {
+        executeSql(
+                "UPDATE queue_message SET deliver_on = current_timestamp + interval '"
+                        + offset
+                        + "' WHERE queue_name = '"
+                        + queueName
+                        + "' AND message_id = '"
+                        + messageId
+                        + "'");
+    }
+
     private boolean getPoppedState(String queueName, String messageId) {
         try (Connection conn = dataSource.getConnection();
                 PreparedStatement stmt =
@@ -662,7 +722,8 @@ public class PostgresQueueDAOTest {
         String queueName = "unack_survives_failed_run";
         queueDAO.push(queueName, "m1", 0);
         assertEquals(1, queueDAO.pollMessages(queueName, 1, 1_000).size());
-        // processAllUnacks only un-pops messages whose deliver_on is more than 60 s in the past.
+        // processAllUnacks only un-pops messages whose deliver_on (the end of the pop's lease) has
+        // passed.
         executeSql(
                 "UPDATE queue_message SET deliver_on = current_timestamp - interval '2 minutes'"
                         + " WHERE queue_name = '"
