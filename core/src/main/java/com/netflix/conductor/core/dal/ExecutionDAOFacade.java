@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.core.dal;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +23,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.events.EventExecution;
@@ -48,9 +48,9 @@ import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PreDestroy;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
 
@@ -76,6 +76,7 @@ public class ExecutionDAOFacade {
     private final ObjectMapper objectMapper;
     private final ConductorProperties properties;
     private final ExternalPayloadStorageUtils externalPayloadStorageUtils;
+    private WorkflowMessageQueueDAO workflowMessageQueueDAO;
 
     private final ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
 
@@ -189,7 +190,7 @@ public class ExecutionDAOFacade {
                 if (!includeTasks) {
                     workflow.getTasks().clear();
                 }
-            } catch (IOException e) {
+            } catch (JacksonException e) {
                 String errorMsg = String.format("Error reading workflow: %s", workflowId);
                 LOGGER.error(errorMsg);
                 throw new TransientException(errorMsg, e);
@@ -348,6 +349,12 @@ public class ExecutionDAOFacade {
         executionDAO.removeFromPendingWorkflow(workflowType, workflowId);
     }
 
+    /** Set when the workflow message queue is enabled. */
+    @Autowired(required = false)
+    public void setWorkflowMessageQueueDAO(WorkflowMessageQueueDAO workflowMessageQueueDAO) {
+        this.workflowMessageQueueDAO = workflowMessageQueueDAO;
+    }
+
     /**
      * Removes the workflow from the data store.
      *
@@ -367,7 +374,7 @@ public class ExecutionDAOFacade {
             }
             // Idempotent deletion: missing index records should not block DAO removal.
             LOGGER.info("Workflow {} not found in index during removal, continuing", workflowId, e);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new TransientException("Workflow can not be serialized to json", e);
         }
 
@@ -388,7 +395,7 @@ public class ExecutionDAOFacade {
                                         task.getTaskId(),
                                         workflowId,
                                         e);
-                            } catch (JsonProcessingException e) {
+                            } catch (JacksonException e) {
                                 throw new TransientException(
                                         String.format(
                                                 "Task %s of workflow %s can not be serialized to json",
@@ -396,6 +403,11 @@ public class ExecutionDAOFacade {
                                         e);
                             }
                         });
+
+        // A removed workflow never ends, so its message queue is deleted here.
+        if (workflowMessageQueueDAO != null) {
+            workflowMessageQueueDAO.delete(workflowId);
+        }
 
         // Only remove from the source of truth after index operations succeed.
         executionDAO.removeWorkflow(workflowId);
@@ -424,7 +436,7 @@ public class ExecutionDAOFacade {
     }
 
     private void removeWorkflowIndex(WorkflowModel workflow, boolean archiveWorkflow)
-            throws JsonProcessingException {
+            throws JacksonException {
         if (archiveWorkflow) {
             if (workflow.getStatus().isTerminal()) {
                 // Only allow archival if workflow is in terminal state
@@ -593,7 +605,7 @@ public class ExecutionDAOFacade {
     }
 
     private void removeTaskIndex(WorkflowModel workflow, TaskModel task, boolean archiveTask)
-            throws JsonProcessingException {
+            throws JacksonException {
         if (!properties.isTaskIndexingEnabled()) {
             return;
         }

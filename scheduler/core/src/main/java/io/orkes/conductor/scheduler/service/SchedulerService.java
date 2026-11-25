@@ -43,7 +43,6 @@ import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.service.WorkflowService;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
 import com.google.common.util.concurrent.Uninterruptibles;
@@ -63,6 +62,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
 @Conditional(SchedulerConditions.class)
@@ -574,6 +574,16 @@ public class SchedulerService extends LifecycleAwareComponent {
                         scheduleName,
                         CONDUCTOR_SYSTEM_SCHEDULER_QUEUE_NAME);
                 WorkflowScheduleModel schedule = schedulerDAO.findScheduleByName(scheduleName);
+                if (schedule == null && queueMsg.orgId != null) {
+                    // The "{orgId}:" prefix is a convention of enterprise message ids only, but
+                    // getOrgAndPayload strips it whenever the fifth character is a colon. An OSS
+                    // schedule named e.g. "prod:daily" would be looked up as "daily" and dropped
+                    // as deleted, so fall back to the full message id before giving up.
+                    schedule = schedulerDAO.findScheduleByName(msgId);
+                    if (schedule != null) {
+                        scheduleName = msgId;
+                    }
+                }
                 if (schedule == null) {
                     log.warn(
                             "Schedule {} has been deleted, removing from processing", scheduleName);

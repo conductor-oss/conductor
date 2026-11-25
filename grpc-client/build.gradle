@@ -21,9 +21,9 @@ dependencies {
     implementation "com.google.protobuf:protobuf-java:${revProtoBuf}"
     implementation "org.slf4j:slf4j-api"
     implementation "org.apache.commons:commons-lang3"
-    implementation "jakarta.annotation:jakarta.annotation-api:${revJakartaAnnotation}"
+    implementation "jakarta.annotation:jakarta.annotation-api"
     implementation "com.google.guava:guava:${revGuava}"
-    implementation "com.fasterxml.jackson.core:jackson-databind"
-    implementation "com.fasterxml.jackson.core:jackson-core"
+    implementation "tools.jackson.core:jackson-databind"
+    implementation "tools.jackson.core:jackson-core"
     implementation "com.fasterxml.jackson.core:jackson-annotations"
 }

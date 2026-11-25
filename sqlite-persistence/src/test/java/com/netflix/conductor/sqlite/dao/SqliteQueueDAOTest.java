@@ -32,7 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
+import org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -42,8 +42,8 @@ import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.sqlite.config.SqliteConfiguration;
 import com.netflix.conductor.sqlite.util.Query;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.*;
@@ -163,6 +163,23 @@ public class SqliteQueueDAOTest {
      * as at least one message is available rather than blocking for the full timeout waiting to
      * fill the whole batch.
      */
+    /**
+     * A message id is unique within a queue, not across queues: a native workflow's continuation is
+     * offered on the queue of the worker that holds the execution and, as a fallback, on the shared
+     * queue, under the same id. A pop takes it from the queue polled and from no other.
+     */
+    @Test
+    public void popTakesAMessageFromTheQueuePolledOnly() {
+        queueDAO.push("pin-a:code", "msg-1", 0);
+        queueDAO.push("code", "msg-1", 0);
+
+        assertEquals(List.of("msg-1"), queueDAO.pop("pin-a:code", 10, 100));
+
+        // still on the other queue, to be taken once
+        assertEquals(List.of("msg-1"), queueDAO.pop("code", 10, 100));
+        assertEquals(List.of(), queueDAO.pop("code", 10, 100));
+    }
+
     @Test
     public void pollMessagesReturnsPromptlyWhenFewerThanCountAvailable() {
         final String queueName = "issue142_testQueue";

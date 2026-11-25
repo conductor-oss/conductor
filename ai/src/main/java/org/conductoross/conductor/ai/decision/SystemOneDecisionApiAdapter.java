@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 
 import static org.conductoross.conductor.ai.decision.DecisionValidation.requireResponse;
 
@@ -91,9 +91,8 @@ public class SystemOneDecisionApiAdapter implements DecisionApiAdapter {
                 "invalid Decision response");
         Map<String, DecisionResult.Answer> answers = new LinkedHashMap<>();
         data.path("answers")
-                .fields()
-                .forEachRemaining(
-                        entry -> answers.put(entry.getKey(), decodeAnswer(entry.getValue())));
+                .properties()
+                .forEach(entry -> answers.put(entry.getKey(), decodeAnswer(entry.getValue())));
         return new DecisionResult(
                 provider,
                 data.get("model").textValue(),

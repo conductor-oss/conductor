@@ -32,8 +32,8 @@ This is the task configuration for a Set Variable task.
   "type": "SET_VARIABLE",
   "inputParameters": {
     "variableName": "value",
-    "variableName2": "${workflow.input.someKey}"
-    "variableName3": 5,
+    "variableName2": "${workflow.input.someKey}",
+    "variableName3": 5
   }
 }
 ```

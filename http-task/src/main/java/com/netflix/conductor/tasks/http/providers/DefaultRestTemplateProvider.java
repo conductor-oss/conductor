@@ -14,15 +14,16 @@ package com.netflix.conductor.tasks.http.providers;
 
 import java.time.Duration;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.hc.core5.http.io.SocketConfig;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.core5.util.Timeout;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
@@ -52,27 +53,37 @@ public class DefaultRestTemplateProvider implements RestTemplateProvider {
 
     @Override
     public @NonNull RestTemplate getRestTemplate(@NonNull HttpTask.Input input) {
-        Duration timeout =
-                Duration.ofMillis(
-                        Optional.ofNullable(input.getReadTimeOut()).orElse(defaultReadTimeout));
-        threadLocalRestTemplateBuilder.get().setReadTimeout(timeout);
+        int readTimeoutMillis =
+                Optional.ofNullable(input.getReadTimeOut()).orElse(defaultReadTimeout);
+        int connectTimeoutMillis =
+                Optional.ofNullable(input.getConnectionTimeOut()).orElse(defaultConnectTimeout);
+        Duration readTimeout = Duration.ofMillis(readTimeoutMillis);
+
         RestTemplate restTemplate =
-                threadLocalRestTemplateBuilder.get().setReadTimeout(timeout).build();
+                threadLocalRestTemplateBuilder.get().readTimeout(readTimeout).build();
+
+        // The connect timeout belongs on the connection manager rather than the request factory:
+        // Framework 7 dropped HttpComponentsClientHttpRequestFactory.setConnectTimeout, since
+        // HttpClient 5 owns connection establishment.
+        ConnectionConfig connectionConfig =
+                ConnectionConfig.custom()
+                        .setConnectTimeout(Timeout.ofMilliseconds(connectTimeoutMillis))
+                        .setSocketTimeout(Timeout.ofMilliseconds(readTimeoutMillis))
+                        .build();
+        PoolingHttpClientConnectionManager connectionManager =
+                PoolingHttpClientConnectionManagerBuilder.create()
+                        .setDefaultConnectionConfig(connectionConfig)
+                        .build();
         RequestConfig requestConfig =
                 RequestConfig.custom()
-                        .setResponseTimeout(Timeout.ofMilliseconds(timeout.toMillis()))
+                        .setResponseTimeout(Timeout.ofMilliseconds(readTimeoutMillis))
                         .build();
-        HttpClient httpClient = HttpClients.custom().setDefaultRequestConfig(requestConfig).build();
-        HttpComponentsClientHttpRequestFactory requestFactory =
-                new HttpComponentsClientHttpRequestFactory(httpClient);
-        SocketConfig.Builder builder = SocketConfig.custom();
-        builder.setSoTimeout(
-                Timeout.of(
-                        Optional.ofNullable(input.getReadTimeOut()).orElse(defaultReadTimeout),
-                        TimeUnit.MILLISECONDS));
-        requestFactory.setConnectTimeout(
-                Optional.ofNullable(input.getConnectionTimeOut()).orElse(defaultConnectTimeout));
-        restTemplate.setRequestFactory(requestFactory);
+        HttpClient httpClient =
+                HttpClients.custom()
+                        .setConnectionManager(connectionManager)
+                        .setDefaultRequestConfig(requestConfig)
+                        .build();
+        restTemplate.setRequestFactory(new HttpComponentsClientHttpRequestFactory(httpClient));
         return restTemplate;
     }
 }

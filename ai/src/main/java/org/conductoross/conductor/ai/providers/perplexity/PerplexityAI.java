@@ -63,7 +63,6 @@ public class PerplexityAI implements AIModel {
                 .topP(input.getTopP())
                 .temperature(input.getTemperature())
                 .toolCallbacks(getToolCallback(input))
-                .internalToolExecutionEnabled(false)
                 .frequencyPenalty(input.getFrequencyPenalty())
                 .topK(input.getTopK())
                 .presencePenalty(input.getPresencePenalty())

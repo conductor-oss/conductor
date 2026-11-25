@@ -42,8 +42,8 @@ import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.service.TaskService;
 import com.netflix.conductor.service.WorkflowService;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -107,19 +107,19 @@ class A2ANativeAgentFacadeTest {
 
     @Test
     void isExposed_returnsTrueForRegisteredAgent() {
-        when(agentService.listAgents()).thenReturn(List.of(summary("greeter")));
+        when(agentService.listAgentsWithoutChecksum()).thenReturn(List.of(summary("greeter")));
         assertTrue(facade.isExposed("greeter"));
     }
 
     @Test
     void isExposed_returnsFalseForUnknownAgent() {
-        when(agentService.listAgents()).thenReturn(List.of(summary("greeter")));
+        when(agentService.listAgentsWithoutChecksum()).thenReturn(List.of(summary("greeter")));
         assertFalse(facade.isExposed("unknown"));
     }
 
     @Test
     void notExposed_throwsOnAgentCard() {
-        when(agentService.listAgents()).thenReturn(List.of());
+        when(agentService.listAgentsWithoutChecksum()).thenReturn(List.of());
         assertThrows(A2AServerException.class, () -> facade.agentCard("greeter", "http://host"));
     }
 
@@ -127,7 +127,7 @@ class A2ANativeAgentFacadeTest {
 
     @Test
     void agentCard_builtFromAgentSummary() {
-        when(agentService.listAgents()).thenReturn(List.of(summary("greeter")));
+        when(agentService.listAgentsWithoutChecksum()).thenReturn(List.of(summary("greeter")));
 
         AgentCard card = facade.agentCard("greeter", "http://host:8080");
 
@@ -140,9 +140,21 @@ class A2ANativeAgentFacadeTest {
     }
 
     @Test
+    void agentCard_description_isTheAgentsIntroduction_whenItHasOne() {
+        AgentSummary greeter = summary("greeter");
+        greeter.setIntroduction("Greets people.");
+        when(agentService.listAgentsWithoutChecksum()).thenReturn(List.of(greeter));
+
+        AgentCard card = facade.agentCard("greeter", "http://host");
+
+        assertEquals("Greets people.", card.getDescription());
+        assertEquals("Greets people.", card.getSkills().get(0).getDescription());
+    }
+
+    @Test
     void agentCard_fallbackDescription_whenNoneSet() {
         AgentSummary noDesc = AgentSummary.builder().name("greeter").version(1).build();
-        when(agentService.listAgents()).thenReturn(List.of(noDesc));
+        when(agentService.listAgentsWithoutChecksum()).thenReturn(List.of(noDesc));
 
         AgentCard card = facade.agentCard("greeter", "http://host");
 
@@ -154,7 +166,7 @@ class A2ANativeAgentFacadeTest {
 
     @Test
     void sendMessage_startsAgentWithIdempotencyKey() {
-        when(agentService.listAgents()).thenReturn(List.of(summary("greeter")));
+        when(agentService.listAgentsWithoutChecksum()).thenReturn(List.of(summary("greeter")));
         when(agentService.start(any(AgentStartRequest.class)))
                 .thenReturn(AgentStartResponse.builder().executionId("exec-1").build());
         when(workflowService.getExecutionStatus("exec-1", false))
@@ -176,7 +188,7 @@ class A2ANativeAgentFacadeTest {
 
     @Test
     void sendMessage_unknownAgent_throws() {
-        when(agentService.listAgents()).thenReturn(List.of());
+        when(agentService.listAgentsWithoutChecksum()).thenReturn(List.of());
         assertThrows(A2AServerException.class, () -> facade.sendMessage("unknown", userMessage()));
     }
 
@@ -185,7 +197,7 @@ class A2ANativeAgentFacadeTest {
     @Test
     @SuppressWarnings("unchecked")
     void sendMessage_withExistingTaskId_resumesPausedExecution() {
-        when(agentService.listAgents()).thenReturn(List.of(summary("greeter")));
+        when(agentService.listAgentsWithoutChecksum()).thenReturn(List.of(summary("greeter")));
 
         Workflow blocked = workflow("exec-1", WorkflowStatus.RUNNING);
         Task human = new Task();
@@ -219,7 +231,7 @@ class A2ANativeAgentFacadeTest {
 
     @Test
     void sendMessage_withTaskId_terminalExecution_returnsStateWithoutResuming() {
-        when(agentService.listAgents()).thenReturn(List.of(summary("greeter")));
+        when(agentService.listAgentsWithoutChecksum()).thenReturn(List.of(summary("greeter")));
         when(workflowService.getExecutionStatus("exec-1", true))
                 .thenReturn(workflow("exec-1", WorkflowStatus.COMPLETED));
 
@@ -240,7 +252,7 @@ class A2ANativeAgentFacadeTest {
     @SuppressWarnings("unchecked")
     void streamMessage_emitsTaskThenArtifactThenFinalStatus() throws Exception {
         properties.setStreamPollIntervalMillis(1);
-        when(agentService.listAgents()).thenReturn(List.of(summary("greeter")));
+        when(agentService.listAgentsWithoutChecksum()).thenReturn(List.of(summary("greeter")));
         when(agentService.start(any()))
                 .thenReturn(AgentStartResponse.builder().executionId("exec-1").build());
         when(workflowService.getExecutionStatus("exec-1", false))
@@ -280,7 +292,7 @@ class A2ANativeAgentFacadeTest {
 
     @Test
     void getTask_completed_mapsToCompletedWithArtifacts() {
-        when(agentService.listAgents()).thenReturn(List.of(summary("greeter")));
+        when(agentService.listAgentsWithoutChecksum()).thenReturn(List.of(summary("greeter")));
         Workflow wf = workflow("exec-1", WorkflowStatus.COMPLETED);
         wf.setOutput(Map.of("reply", "hi"));
         when(workflowService.getExecutionStatus("exec-1", true)).thenReturn(wf);
@@ -294,7 +306,7 @@ class A2ANativeAgentFacadeTest {
 
     @Test
     void getTask_blockedOnHuman_mapsToInputRequired() {
-        when(agentService.listAgents()).thenReturn(List.of(summary("greeter")));
+        when(agentService.listAgentsWithoutChecksum()).thenReturn(List.of(summary("greeter")));
         Workflow wf = workflow("exec-1", WorkflowStatus.RUNNING);
         Task human = new Task();
         human.setTaskType("HUMAN");
@@ -310,7 +322,7 @@ class A2ANativeAgentFacadeTest {
 
     @Test
     void getTask_unknownAgent_throws() {
-        when(agentService.listAgents()).thenReturn(List.of());
+        when(agentService.listAgentsWithoutChecksum()).thenReturn(List.of());
         assertThrows(A2AServerException.class, () -> facade.getTask("unknown", "exec-1"));
     }
 
@@ -318,7 +330,7 @@ class A2ANativeAgentFacadeTest {
 
     @Test
     void cancelTask_terminatesAndReturnsCanceled() {
-        when(agentService.listAgents()).thenReturn(List.of(summary("greeter")));
+        when(agentService.listAgentsWithoutChecksum()).thenReturn(List.of(summary("greeter")));
         when(workflowService.getExecutionStatus("exec-1", true))
                 .thenReturn(workflow("exec-1", WorkflowStatus.RUNNING));
         when(workflowService.getExecutionStatus("exec-1", false))
@@ -332,7 +344,7 @@ class A2ANativeAgentFacadeTest {
 
     @Test
     void cancelTask_alreadyTerminal_skipsTerminate() {
-        when(agentService.listAgents()).thenReturn(List.of(summary("greeter")));
+        when(agentService.listAgentsWithoutChecksum()).thenReturn(List.of(summary("greeter")));
         when(workflowService.getExecutionStatus("exec-1", true))
                 .thenReturn(workflow("exec-1", WorkflowStatus.COMPLETED));
 
@@ -345,7 +357,7 @@ class A2ANativeAgentFacadeTest {
 
     @Test
     void mapState_coversAllStatuses() {
-        when(agentService.listAgents()).thenReturn(List.of(summary("greeter")));
+        when(agentService.listAgentsWithoutChecksum()).thenReturn(List.of(summary("greeter")));
         when(agentService.start(any()))
                 .thenReturn(AgentStartResponse.builder().executionId("exec-1").build());
 
@@ -359,7 +371,7 @@ class A2ANativeAgentFacadeTest {
 
     private String taskState(Workflow wf) {
         when(workflowService.getExecutionStatus(wf.getWorkflowId(), true)).thenReturn(wf);
-        when(agentService.listAgents()).thenReturn(List.of(summary("greeter")));
+        when(agentService.listAgentsWithoutChecksum()).thenReturn(List.of(summary("greeter")));
         return facade.getTask("greeter", wf.getWorkflowId()).getStatus().getState();
     }
 
@@ -385,7 +397,7 @@ class A2ANativeAgentFacadeTest {
 
     @Test
     void dispatch_messageSend_callsSendMessageAndReturnsTask() {
-        when(agentService.listAgents()).thenReturn(List.of(summary("greeter")));
+        when(agentService.listAgentsWithoutChecksum()).thenReturn(List.of(summary("greeter")));
         when(agentService.start(any()))
                 .thenReturn(AgentStartResponse.builder().executionId("exec-1").build());
         when(workflowService.getExecutionStatus("exec-1", false))
@@ -404,7 +416,7 @@ class A2ANativeAgentFacadeTest {
 
     @Test
     void dispatch_tasksSend_aliasCallsSendMessage() {
-        when(agentService.listAgents()).thenReturn(List.of(summary("greeter")));
+        when(agentService.listAgentsWithoutChecksum()).thenReturn(List.of(summary("greeter")));
         when(agentService.start(any()))
                 .thenReturn(AgentStartResponse.builder().executionId("exec-2").build());
         when(workflowService.getExecutionStatus("exec-2", false))
@@ -422,7 +434,7 @@ class A2ANativeAgentFacadeTest {
 
     @Test
     void dispatch_tasksGet_returnsTask() {
-        when(agentService.listAgents()).thenReturn(List.of(summary("greeter")));
+        when(agentService.listAgentsWithoutChecksum()).thenReturn(List.of(summary("greeter")));
         when(workflowService.getExecutionStatus("exec-1", true))
                 .thenReturn(workflow("exec-1", WorkflowStatus.COMPLETED));
 
@@ -435,7 +447,7 @@ class A2ANativeAgentFacadeTest {
 
     @Test
     void dispatch_tasksCancel_returnsCanceled() {
-        when(agentService.listAgents()).thenReturn(List.of(summary("greeter")));
+        when(agentService.listAgentsWithoutChecksum()).thenReturn(List.of(summary("greeter")));
         when(workflowService.getExecutionStatus("exec-1", true))
                 .thenReturn(workflow("exec-1", WorkflowStatus.RUNNING));
         when(workflowService.getExecutionStatus("exec-1", false))
@@ -451,7 +463,7 @@ class A2ANativeAgentFacadeTest {
 
     @Test
     void dispatch_unknownMethod_returnsMethodNotFound() {
-        when(agentService.listAgents()).thenReturn(List.of(summary("greeter")));
+        when(agentService.listAgentsWithoutChecksum()).thenReturn(List.of(summary("greeter")));
 
         ResponseEntity<JsonNode> response = dispatch("greeter", "foo/bar", "{}");
 
@@ -469,7 +481,7 @@ class A2ANativeAgentFacadeTest {
 
     @Test
     void dispatch_serverException_mapsToJsonRpcError() {
-        when(agentService.listAgents()).thenReturn(List.of());
+        when(agentService.listAgentsWithoutChecksum()).thenReturn(List.of());
 
         ResponseEntity<JsonNode> response = dispatch("greeter", "tasks/get", "{\"id\":\"exec-1\"}");
 
@@ -478,7 +490,7 @@ class A2ANativeAgentFacadeTest {
 
     @Test
     void dispatch_messageStream_returnsSseEmitter() {
-        when(agentService.listAgents()).thenReturn(List.of(summary("greeter")));
+        when(agentService.listAgentsWithoutChecksum()).thenReturn(List.of(summary("greeter")));
 
         JsonNode request;
         try {

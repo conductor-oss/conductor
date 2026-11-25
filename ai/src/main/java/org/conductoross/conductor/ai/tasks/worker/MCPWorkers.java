@@ -16,17 +16,28 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.conductoross.conductor.ai.mcp.MCPClientMetrics;
+import org.conductoross.conductor.ai.mcp.MCPClientProperties;
+import org.conductoross.conductor.ai.mcp.MCPFields;
+import org.conductoross.conductor.ai.mcp.MCPOptions;
 import org.conductoross.conductor.ai.mcp.MCPService;
 import org.conductoross.conductor.ai.model.MCPListToolsRequest;
 import org.conductoross.conductor.ai.model.MCPToolCallRequest;
+import org.conductoross.conductor.ai.tasks.mapper.CallMCPToolTaskMapper;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.conductoross.conductor.core.execution.tasks.AnnotatedSystemTaskWorker;
+import org.conductoross.conductor.core.execution.tasks.TaskCancellationHandler;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
+import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
+import com.netflix.conductor.sdk.workflow.executor.task.TaskContext;
 import com.netflix.conductor.sdk.workflow.task.OutputParam;
 import com.netflix.conductor.sdk.workflow.task.WorkerTask;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.modelcontextprotocol.spec.McpSchema;
 import lombok.extern.slf4j.Slf4j;
 
@@ -38,12 +49,14 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 @Conditional(AIIntegrationEnabledCondition.class)
-public class MCPWorkers implements AnnotatedSystemTaskWorker {
+public class MCPWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHandler {
 
     private final MCPService mcpService;
+    private final MCPTasksCall mcpTasksCall;
 
-    public MCPWorkers(MCPService mcpService) {
+    public MCPWorkers(MCPService mcpService, MCPClientProperties clientProperties) {
         this.mcpService = mcpService;
+        this.mcpTasksCall = new MCPTasksCall(mcpService, clientProperties.getMaxDuration());
         log.debug("MCP Workers initialized");
     }
 
@@ -71,14 +84,54 @@ public class MCPWorkers implements AnnotatedSystemTaskWorker {
     /**
      * Calls a specific tool on an MCP server.
      *
-     * <p>All additional input parameters (beyond mcpServer, toolName, headers) are automatically
-     * passed as tool arguments.
+     * <p>Tool arguments are taken only from the {@code arguments} input. Without {@code
+     * mcpOptions.protocolVersion}, the call is a single synchronous {@code tools/call}, exactly as
+     * before MCP Tasks support. With {@code protocolVersion: "2026-07-28"}, the call uses that
+     * protocol and declares the MCP Tasks extension; the server decides whether it answers
+     * immediately or creates a task to poll. {@code mcpOptions} is validated before any request; an
+     * invalid value fails the task with a terminal error, because a retry cannot fix it.
      *
      * @param request MCP tool call request
      * @return Tool call result
      */
     @WorkerTask("CALL_MCP_TOOL")
     public ToolCallResult callTool(MCPToolCallRequest request) {
+        try {
+            String protocolVersion;
+            try {
+                protocolVersion = MCPOptions.protocolVersion(request.getMcpOptions());
+            } catch (IllegalArgumentException e) {
+                throw new NonRetryableException(e.getMessage());
+            }
+            if (protocolVersion != null) {
+                ToolCallResult result = mcpTasksCall.run(request);
+                // The Tasks path sets the status itself; IN_PROGRESS means it is still polling.
+                recordOutcome(TaskContext.get().getTaskResult().getStatus());
+                return result;
+            }
+            ToolCallResult result = callSynchronously(request);
+            recordOutcome(TaskResult.Status.COMPLETED);
+            return result;
+        } catch (NonRetryableException e) {
+            recordOutcome(TaskResult.Status.FAILED_WITH_TERMINAL_ERROR);
+            throw e;
+        } catch (RuntimeException e) {
+            recordOutcome(TaskResult.Status.FAILED);
+            throw e;
+        }
+    }
+
+    /**
+     * Records a call that ended; a call still polling a remote task ({@code IN_PROGRESS}) has not.
+     */
+    private static void recordOutcome(TaskResult.Status status) {
+        if (status != null && status != TaskResult.Status.IN_PROGRESS) {
+            MCPClientMetrics.clientCall(status.name());
+        }
+    }
+
+    /** One {@code tools/call} without a protocol version, exactly as before MCP Tasks support. */
+    private ToolCallResult callSynchronously(MCPToolCallRequest request) {
         log.debug(
                 "Calling MCP tool '{}' on server: {} with args: {}",
                 request.getMethod(),
@@ -92,9 +145,23 @@ public class MCPWorkers implements AnnotatedSystemTaskWorker {
                         request.getArguments(),
                         request.getHeaders());
 
-        log.debug("MCP tool call completed. IsError: {}", result.get("isError"));
+        log.debug(
+                "MCP tool call completed. IsError: {}", result.get(MCPFields.ToolResult.IS_ERROR));
 
         return ToolCallResult.from(result);
+    }
+
+    /**
+     * Propagates a Conductor cancellation (for example, workflow termination) to the MCP server: a
+     * best-effort {@code tasks/cancel} for a {@code CALL_MCP_TOOL} call that selected a protocol
+     * version and is polling a remote task. {@code LIST_MCP_TOOLS} shares this bean and is ignored.
+     */
+    @Override
+    public void cancel(Task task, String reason) {
+        if (!CallMCPToolTaskMapper.TASK_TYPE.equals(task.getTaskType())) {
+            return;
+        }
+        mcpTasksCall.cancel(task, reason);
     }
 
     /** Simplified tool information for output. */
@@ -112,10 +179,68 @@ public class MCPWorkers implements AnnotatedSystemTaskWorker {
         }
     }
 
+    /**
+     * Persisted polling state of a remote MCP task (output key {@code mcpTask}): an immutable
+     * snapshot, written to task output on each run and read back from the output map by {@link
+     * #from}. Part of the persisted contract: a running poll may have been written by an earlier
+     * release, so fields never change name, type or meaning; new optional fields may be added.
+     *
+     * @param taskId the remote task ID
+     * @param pollFailures consecutive transient {@code tasks/get} failures; {@code 0} after a
+     *     successful check
+     * @param retryCount the Conductor task's {@code retryCount} when the remote task was created.
+     *     It tells this execution's remote task apart from one that an earlier execution left in
+     *     the output. The engine can reset a task in place and keep its output; it increments
+     *     {@code retryCount} when it re-schedules a cancelled task, but not when a rerun resets a
+     *     failed one.
+     * @param pollIntervalMs the last {@code pollIntervalMs} the server gave, or {@code null} if it
+     *     gave none. Reused when a later {@code tasks/get} gives none, and as the base of the wait
+     *     after a failed check.
+     * @param ttlMs the last {@code ttlMs} the server gave, or {@code null} if it gave none. When it
+     *     is shorter than the maximum duration, it is the deadline of the call.
+     */
+    public record MCPTaskState(
+            String taskId,
+            Integer pollFailures,
+            Integer retryCount,
+            Long pollIntervalMs,
+            Long ttlMs) {
+
+        /**
+         * Reads the state back from task output, where it is a plain map. Lenient, because the
+         * output can be edited: a missing or blank {@code taskId} reads as {@code null}, a missing
+         * or negative {@code pollFailures} as {@code 0}, a missing {@code retryCount} as {@code
+         * null}, and a missing or non-positive {@code pollIntervalMs} or {@code ttlMs} as {@code
+         * null}. A value that is not a map reads as all of these.
+         */
+        static MCPTaskState from(Object state) {
+            if (!(state instanceof Map<?, ?> map)) {
+                return new MCPTaskState(null, 0, null, null, null);
+            }
+            return new MCPTaskState(
+                    map.get("taskId") instanceof String id && !id.isBlank() ? id : null,
+                    map.get("pollFailures") instanceof Number n ? Math.max(0, n.intValue()) : 0,
+                    map.get("retryCount") instanceof Number n ? n.intValue() : null,
+                    positiveMillis(map.get("pollIntervalMs")),
+                    positiveMillis(map.get("ttlMs")));
+        }
+
+        private static Long positiveMillis(Object value) {
+            return value instanceof Number n && n.longValue() > 0 ? n.longValue() : null;
+        }
+    }
+
     /** Tool call result for output. */
     public static class ToolCallResult {
         public List<ContentItem> content;
         public Boolean isError;
+
+        /**
+         * Polling state of a remote MCP task, for calls that select a protocol version and whose
+         * server creates a task. {@code null} otherwise, and then omitted from task output.
+         */
+        @JsonProperty(MCPTasksCall.STATE_KEY)
+        public MCPTaskState mcpTask;
 
         public static ToolCallResult from(McpSchema.CallToolResult result) {
             ToolCallResult callResult = new ToolCallResult();
@@ -128,9 +253,9 @@ public class MCPWorkers implements AnnotatedSystemTaskWorker {
         @SuppressWarnings("unchecked")
         public static ToolCallResult from(Map<String, Object> resultMap) {
             ToolCallResult callResult = new ToolCallResult();
-            callResult.isError = (Boolean) resultMap.get("isError");
+            callResult.isError = (Boolean) resultMap.get(MCPFields.ToolResult.IS_ERROR);
             List<Map<String, Object>> contentList =
-                    (List<Map<String, Object>>) resultMap.get("content");
+                    (List<Map<String, Object>>) resultMap.get(MCPFields.ToolResult.CONTENT);
             callResult.content =
                     contentList.stream().map(ContentItem::fromMap).collect(Collectors.toList());
             return callResult;
@@ -175,10 +300,10 @@ public class MCPWorkers implements AnnotatedSystemTaskWorker {
         @SuppressWarnings("unchecked")
         public static ContentItem fromMap(Map<String, Object> contentMap) {
             ContentItem item = new ContentItem();
-            item.type = (String) contentMap.get("type");
-            item.text = (String) contentMap.get("text");
-            item.data = (String) contentMap.get("data");
-            item.mimeType = (String) contentMap.get("mimeType");
+            item.type = (String) contentMap.get(MCPFields.ToolResult.TYPE);
+            item.text = (String) contentMap.get(MCPFields.ToolResult.TEXT);
+            item.data = (String) contentMap.get(MCPFields.ToolResult.DATA);
+            item.mimeType = (String) contentMap.get(MCPFields.ToolResult.MIME_TYPE);
             item.parsed = contentMap.get("parsed"); // Extract the parsed field
             return item;
         }

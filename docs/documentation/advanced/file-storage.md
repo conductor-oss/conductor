@@ -1,3 +1,7 @@
+---
+description: "Configure Conductor file storage so workflows pass opaque conductor://file handles instead of exposing storage buckets, object paths, or credentials."
+---
+
 # File Storage
 
 ## Context

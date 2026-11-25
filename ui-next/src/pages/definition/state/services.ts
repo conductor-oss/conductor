@@ -3,6 +3,7 @@ import { DefinitionMachineContext } from "pages/definition/state/types";
 import {
   addLocalCopyTime,
   extractKeyFromContext,
+  removeLocalCopyTime,
 } from "pages/runWorkflow/runWorkflowUtils";
 import { fetchContextNonHook, fetchWithContext } from "plugins/fetch";
 import { queryClient } from "queryClient";
@@ -12,7 +13,7 @@ import {
   fetchWorkflowWithDependencies,
   ImportSummary,
 } from "utils/cloudTemplates";
-import { FEATURES, featureFlags } from "utils/flags";
+import { featureFlags, FEATURES } from "utils/flags";
 import { logger } from "utils/logger";
 import { getErrors } from "utils/utils";
 import { getEnvVariables } from "../commonService";
@@ -55,8 +56,23 @@ export const persistCopyInLocalStorage = (
       isNewWorkflow: context.isNewWorkflow,
     });
 
-    localStorage.setItem(wfKey, JSON.stringify(workflowChanges));
-    addLocalCopyTime(wfKey);
+    try {
+      localStorage.setItem(wfKey, JSON.stringify(workflowChanges));
+      addLocalCopyTime(wfKey);
+    } catch (error) {
+      // Usually QuotaExceededError: the draft is bigger than the browser's
+      // per-site localStorage limit (~5 MB), e.g. a workflow embedding a large
+      // base64 ZIP. setItem leaves the previous value in place, so drop it —
+      // otherwise a reload would silently restore an older draft.
+      try {
+        localStorage.removeItem(wfKey);
+        removeLocalCopyTime(wfKey);
+      } catch {
+        // Ignore: storage may be entirely unavailable.
+      }
+      logger.error("Could not back up workflow draft to localStorage", error);
+      return Promise.reject(error);
+    }
 
     return Promise.resolve("Saved to local storage");
   }
@@ -136,9 +152,10 @@ export const fetchSecretsEndEnvironmentsList = async (
 export const refetchCurrentWorkflowVersionsService = async ({
   authHeaders: headers,
   workflowName,
+  isNewWorkflow,
 }: DefinitionMachineContext) => {
-  if (!workflowName) {
-    return {};
+  if (!workflowName || isNewWorkflow) {
+    return { versions: [] };
   }
 
   const url = `/metadata/workflow?includeShared=false&name=${encodeURIComponent(
@@ -150,9 +167,15 @@ export const refetchCurrentWorkflowVersionsService = async ({
       [fetchContext.stack, url],
       () => fetchWithContext(url, fetchContext, { headers }),
     );
-    const versions = result?.map((item) => item?.version) ?? [];
+    // Some backends ignore the `name` param and return every definition in the
+    // cluster (#1590), so keep only this workflow's versions.
+    const versions =
+      result
+        ?.filter((item) => item?.name === workflowName)
+        .map((item) => item?.version)
+        .filter((v): v is number => typeof v === "number") ?? [];
     return { versions };
   } catch {
-    return {};
+    return { versions: [] };
   }
 };

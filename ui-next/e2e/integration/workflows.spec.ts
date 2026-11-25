@@ -6,6 +6,8 @@
  * confirming versioned definitions resolve to the right URL.
  */
 
+import type { Page } from "@playwright/test";
+
 import { expect, test } from "../coverage-fixture";
 import {
   createWorkflowDef,
@@ -46,6 +48,25 @@ const WF_EDITOR = makeWorkflowDef("editor");
 // suite uses the production bundle and a real browser, so allow the same
 // network window as navigation rather than Playwright's 5-second default.
 const MONACO_CONTENT_TIMEOUT_MS = 30_000;
+
+async function readEditorWorkflow(page: Page, name: string) {
+  return page.evaluate((expectedName) => {
+    const monaco = (
+      window as {
+        monaco?: { editor: { getModels(): Array<{ getValue(): string }> } };
+      }
+    ).monaco;
+    for (const model of monaco?.editor.getModels() ?? []) {
+      try {
+        const workflow = JSON.parse(model.getValue());
+        if (workflow?.name === expectedName) return workflow;
+      } catch {
+        // Editor models can contain incomplete JSON while loading.
+      }
+    }
+    return null;
+  }, name);
+}
 
 test.beforeAll(async () => {
   await createWorkflowDef(WF_LIST);
@@ -168,11 +189,17 @@ test("switching to the Code tab shows the workflow JSON editor", async ({
     "true",
   );
 
-  // The Monaco editor renders JSON into .view-lines DOM nodes; verify the
-  // workflow definition JSON is actually present in the editor content.
-  await expect(
-    page.locator("#editor-panel-tab-content #code-tab"),
-  ).toContainText("SET_VARIABLE", { timeout: MONACO_CONTENT_TIMEOUT_MS });
+  // Monaco only renders visible lines. Read the model so JSON property ordering
+  // cannot hide the task definition below the viewport.
+  await expect
+    .poll(() => readEditorWorkflow(page, WF_EDITOR.name), {
+      timeout: MONACO_CONTENT_TIMEOUT_MS,
+    })
+    .toMatchObject({
+      name: WF_EDITOR.name,
+      version: 1,
+      tasks: [{ taskReferenceName: "set_var_ref", type: "SET_VARIABLE" }],
+    });
 });
 
 test("navigating to /newWorkflowDef opens an empty editor", async ({
@@ -199,9 +226,11 @@ test("navigating to /newWorkflowDef opens an empty editor", async ({
     page.locator("#editor-panel-tab-content #code-tab"),
   ).toBeVisible();
 
-  // An empty workflow has "tasks": [] in its JSON. Verify this is present and
-  // that no task reference names snuck in from a previously loaded definition.
-  await expect(
-    page.locator("#editor-panel-tab-content #code-tab"),
-  ).toContainText('"tasks": []', { timeout: MONACO_CONTENT_TIMEOUT_MS });
+  // Check the model here too; an empty tasks array can also be off-screen.
+  const name = await page.locator("#workflow-name-display").innerText();
+  await expect
+    .poll(() => readEditorWorkflow(page, name.trim()), {
+      timeout: MONACO_CONTENT_TIMEOUT_MS,
+    })
+    .toMatchObject({ tasks: [] });
 });

@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

@@ -24,17 +24,17 @@ import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
-import static com.fasterxml.jackson.databind.DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS;
 import static org.conductoross.conductor.ai.decision.DecisionValidation.requireResponse;
+import static tools.jackson.databind.DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS;
 
 /** Provider-neutral HTTP transport for structured decision inference. */
 @Component
@@ -88,7 +88,7 @@ public class HttpDecisionClient implements DecisionClient {
                 DecisionValidation.result(input, result);
                 return result;
             }
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new NonRetryableException("Invalid Decision JSON response");
         } catch (IOException e) {
             // Provider errors may contain credentials; omit response bodies and causes.
@@ -98,7 +98,7 @@ public class HttpDecisionClient implements DecisionClient {
 
     private Request buildRequest(
             DecisionRequest input, DecisionConfiguration.Route route, DecisionApiAdapter adapter)
-            throws JsonProcessingException {
+            throws JacksonException {
         byte[] payload = mapper.writeValueAsBytes(adapter.encode(input));
         DecisionHttpRequest providerRequest = adapter.createRequest(input, route, payload);
         validateRequest(providerRequest);

@@ -24,10 +24,10 @@ import org.junit.jupiter.api.Test;
 
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.OkHttpClient;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -97,7 +97,7 @@ class HttpDecisionClientTest {
                     }
 
                     public DecisionResult decode(
-                            com.fasterxml.jackson.databind.JsonNode data,
+                            tools.jackson.databind.JsonNode data,
                             long latencyMs,
                             String selectedProvider) {
                         assertEquals("custom", selectedProvider);
