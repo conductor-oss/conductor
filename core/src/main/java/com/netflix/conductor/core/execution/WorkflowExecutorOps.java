@@ -2698,6 +2698,9 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             return;
         }
         List<TaskModel> tasksToQueue = new ArrayList<>();
+        // the tasks this reset; the rerun task and what the rerun reopened are saved and queued
+        // already, and saving them again could put back a state a worker has moved on from
+        List<TaskModel> reset = new ArrayList<>();
         workflow.getTasks()
                 .forEach(
                         task -> {
@@ -2727,11 +2730,12 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                                 task.setStartTime(System.currentTimeMillis());
                                 task.setEndTime(0);
                                 task.setReasonForIncompletion(null);
+                                reset.add(task);
                             }
                         });
         // Write SCHEDULED to DB before queueing so async workers (e.g. SystemTaskWorker)
         // never read a stale CANCELED/FAILED state and silently drop the queue entry.
-        executionDAOFacade.updateTasks(workflow.getTasks());
+        executionDAOFacade.updateTasks(reset);
         tasksToQueue.forEach(this::addTaskToQueue);
         // Push AFTER all sibling tasks are reset so async decider never sees stale CANCELED/FAILED
         queueDAO.push(

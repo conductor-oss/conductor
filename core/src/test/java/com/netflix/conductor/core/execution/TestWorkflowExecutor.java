@@ -2346,6 +2346,83 @@ public class TestWorkflowExecutor {
         order.verify(queueDAO).push(anyString(), eq(joinTask.getTaskId()), anyInt(), anyLong());
     }
 
+    /**
+     * A native retry runs the failed task again under its own id, queued as soon as it is saved
+     * SCHEDULED. A worker can take it and finish it at once; the rerun must not save that task
+     * again afterwards, or it puts SCHEDULED back over the worker's COMPLETED, whose update already
+     * removed the queue message: the task then waits for the sweeper (seen live: 30 s), and the
+     * code's next continuation, offered in between, finds the task scheduled again and diverges.
+     */
+    @Test
+    public void aRetryDoesNotSaveTheTaskItRunsAgainAfterQueueingIt() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("native-retry");
+        def.setSchemaVersion(2);
+        def.getMetadata().put("native", Map.of("codeType", "native-retry.v1.code"));
+        WorkflowTask patch = new WorkflowTask();
+        patch.setName("patch");
+        patch.setType("SIMPLE");
+        patch.setTaskReferenceName("patch");
+        patch.getMetadata().put("lane", "main");
+        patch.getMetadata().put("continuation", 2);
+        def.getTasks().add(patch);
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(def);
+        workflow.setWorkflowId("native-rerun-1");
+        workflow.setStatus(WorkflowModel.Status.FAILED);
+        workflow.setCreateTime(System.currentTimeMillis());
+        workflow.setNativeState(new NativeState());
+        TaskModel patchTask = taskOf(patch, "patch", 1);
+        patchTask.setStatus(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR);
+        TaskContinuation marker = new TaskContinuation();
+        marker.setEndTime(1);
+        marker.setDone(true); // the code threw at the failed patch
+        setMarker(workflow, patchTask, marker);
+        workflow.getTasks().add(patchTask);
+        workflow.setFailedTaskId(patchTask.getTaskId());
+        workflow.setReasonForIncompletion("task patch FAILED_WITH_TERMINAL_ERROR");
+        when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
+
+        // from the moment the task is on its queue, a worker may have finished it
+        java.util.concurrent.atomic.AtomicBoolean queued =
+                new java.util.concurrent.atomic.AtomicBoolean();
+        List<String> savedAfterQueued = new ArrayList<>();
+        doAnswer(
+                        i -> {
+                            if (patchTask.getTaskId().equals(i.getArgument(1))) {
+                                queued.set(true);
+                            }
+                            return null;
+                        })
+                .when(queueDAO)
+                .push(anyString(), anyString(), anyInt(), anyLong());
+        doAnswer(
+                        i -> {
+                            if (queued.get() && i.getArgument(0) == patchTask) {
+                                savedAfterQueued.add("updateTask");
+                            }
+                            return null;
+                        })
+                .when(executionDAOFacade)
+                .updateTask(any());
+        doAnswer(
+                        i -> {
+                            List<TaskModel> tasks = i.getArgument(0);
+                            if (queued.get() && tasks.contains(patchTask)) {
+                                savedAfterQueued.add("updateTasks");
+                            }
+                            return null;
+                        })
+                .when(executionDAOFacade)
+                .updateTasks(any());
+
+        workflowExecutor.retry(workflow.getWorkflowId(), false);
+
+        assertTrue(queued.get());
+        assertEquals(TaskModel.Status.SCHEDULED, patchTask.getStatus());
+        assertEquals("the retry saved the task after queueing it", List.of(), savedAfterQueued);
+    }
+
     @Test
     public void retryAfterTheCodeThrewRemovesWhatThatContinuationDrew() {
         WorkflowModel workflow = threwAfterAnIf();
