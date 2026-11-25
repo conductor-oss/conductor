@@ -66,7 +66,7 @@ class MCPProtocolHeadersTest {
     @Test
     void clientVersionFallsBackToUnknownWithoutAJarManifest() {
         // Test classes run from a directory, so there is no Implementation-Version.
-        assertEquals("unknown", MCPProtocolHeaders.clientVersion());
+        assertEquals("unknown", MCPProtocolHeaders.IMPLEMENTATION_VERSION);
     }
 
     // ---- headers (task 2.4) ---------------------------------------------------------------------
@@ -147,6 +147,22 @@ class MCPProtocolHeadersTest {
         assertEquals("Bearer t", request.header("Authorization"));
         assertEquals("application/json, text/event-stream", request.header("Accept"));
         assertTrue(request.headers("Accept").size() == 1);
+    }
+
+    @Test
+    void decodeHeaderValueReversesEncodeAndKeepsOtherValues() {
+        for (String value :
+                new String[] {"plain", "météo", " a", "a ", "\ta", "=?base64?x?=", "Hello, 世界"}) {
+            assertEquals(
+                    value,
+                    MCPProtocolHeaders.decodeHeaderValue(
+                            MCPProtocolHeaders.encodeHeaderValue(value)));
+        }
+        assertEquals("plain", MCPProtocolHeaders.decodeHeaderValue("plain"));
+        assertEquals(
+                "=?base64?not base64!?=",
+                MCPProtocolHeaders.decodeHeaderValue("=?base64?not base64!?="));
+        assertNull(MCPProtocolHeaders.decodeHeaderValue(null));
     }
 
     private static Request build(MCPMethod method, String name) {

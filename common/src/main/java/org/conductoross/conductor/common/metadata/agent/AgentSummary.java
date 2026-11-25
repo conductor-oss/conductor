@@ -35,6 +35,13 @@ public class AgentSummary {
     private Long createTime;
     private Long updateTime;
     private String description;
+
+    /**
+     * The agent's own introduction, when its author set one: how the MCP and A2A servers describe
+     * it.
+     */
+    private String introduction;
+
     private String checksum;
 
     // These fields mirror the underlying workflow definition so the agent list can use the same
