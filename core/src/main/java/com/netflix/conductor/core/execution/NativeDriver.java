@@ -28,6 +28,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.NativeWorkflows.LastMain;
+import com.netflix.conductor.core.execution.tasks.Join;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.metadata.MetadataMapperService;
 import com.netflix.conductor.dao.MetadataDAO;
@@ -36,6 +37,8 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
 import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
+
+import static org.conductoross.conductor.core.execution.ExecutorUtils.expedite;
 
 /**
  * The driver of a native (code-defined) workflow: the code decides the next task, and the
@@ -135,7 +138,7 @@ public class NativeDriver implements WorkflowDriver {
 
     /**
      * Wakes the code for every marker that is now runnable, and repairs markers a crash left
-     * behind. Saved before pushed, pushed idempotently.
+     * behind. Saved before pushed, pushed idempotently. Then wakes the JOINs whose lanes ended.
      */
     @Override
     public void continueCode(WorkflowModel workflow) {
@@ -149,6 +152,26 @@ public class NativeDriver implements WorkflowDriver {
         }
         if (!wakeups.offers.isEmpty()) {
             nativeContinuationService.push(workflow, wakeups.offers);
+        }
+        wakeJoins(workflow);
+    }
+
+    /**
+     * Puts each JOIN that can end now on its queue with no delay. A JOIN is an async task that
+     * checks its tasks again on a backoff of up to the system task callback time; nothing else
+     * tells it that a lane ended. Each end of a lane (its last task, or the continuation after it)
+     * is followed by a decide, so the JOIN finishes right after its last lane and not one backoff
+     * later. A JOIN evaluation that is in progress at that moment can set the backoff again; the
+     * JOIN then ends at its next evaluation, one backoff later at most.
+     */
+    private void wakeJoins(WorkflowModel workflow) {
+        for (TaskModel task : workflow.getTasks()) {
+            if (TaskType.TASK_TYPE_JOIN.equals(task.getTaskType())
+                    && task.getStatus() == TaskModel.Status.IN_PROGRESS
+                    && task.getWorkflowTask() != null
+                    && Join.isReady(workflow, task)) {
+                expedite(queueDAO, task);
+            }
         }
     }
 

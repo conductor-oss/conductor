@@ -63,7 +63,11 @@ public interface WorkflowDriver {
      */
     boolean isComplete(WorkflowModel workflow, BooleanSupplier tasksComplete);
 
-    /** After a decide saved its tasks: lets the code of the workflow continue, if it has code. */
+    /**
+     * After a decide saved its tasks: lets the code of the workflow continue, if it has code. A
+     * native execution gets its next continuation offered, and each JOIN that can end now is put on
+     * its queue with no delay.
+     */
     void continueCode(WorkflowModel workflow);
 
     /**

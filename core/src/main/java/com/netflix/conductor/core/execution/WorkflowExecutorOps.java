@@ -70,6 +70,7 @@ import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
 import static com.netflix.conductor.model.TaskModel.Status.*;
 
 import static org.conductoross.conductor.core.execution.ExecutorUtils.computePostpone;
+import static org.conductoross.conductor.core.execution.ExecutorUtils.expedite;
 import static org.conductoross.conductor.core.execution.ExecutorUtils.hasInProgressHumanTask;
 
 /** Workflow services provider interface */
@@ -1627,13 +1628,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     || joinTask.getStatus() != TaskModel.Status.IN_PROGRESS) {
                 continue;
             }
-            String queueName = QueueUtils.getQueueName(joinTask);
-            if (queueDAO.containsMessage(queueName, joinTask.getTaskId())) {
-                queueDAO.postpone(
-                        queueName, joinTask.getTaskId(), joinTask.getWorkflowPriority(), 0);
-            } else {
-                queueDAO.push(queueName, joinTask.getTaskId(), joinTask.getWorkflowPriority(), 0);
-            }
+            expedite(queueDAO, joinTask);
         }
     }
 

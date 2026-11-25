@@ -280,15 +280,124 @@ public class NativeJoinTest {
     }
 
     @Test
-    public void aNativeJoinKeepsPollingAtItsIntervalAfterTheFastStart() {
+    public void aNativeJoinBacksOffAsAStandardJoinDoes() {
+        // the engine wakes a native JOIN when a lane ends, so it needs no shorter interval
         TaskModel nativeJoin = joinTask(joinDef());
         nativeJoin.getWorkflowTask().getMetadata().put("lane", "main");
         nativeJoin.setPollCount(1000);
-        assertEquals(1L, (long) join.getEvaluationOffset(nativeJoin, 30).orElseThrow());
+        assertEquals(30L, (long) join.getEvaluationOffset(nativeJoin, 30).orElseThrow());
 
         TaskModel plainJoin = joinTask(joinDef());
         plainJoin.setPollCount(1000);
         assertEquals(30L, (long) join.getEvaluationOffset(plainJoin, 30).orElseThrow());
+    }
+
+    @Test
+    public void aJoinWithLiveTargetsIsReadyWhenTheLastTaskOfEachBranchEnded() {
+        WorkflowTask jd = joinDef();
+        WorkflowModel wf = workflow(List.of(simple("a1")), List.of(simple("b1")), jd);
+        wf.getTasks().add(task("a1", TaskModel.Status.COMPLETED));
+        TaskModel b1 = task("b1", TaskModel.Status.IN_PROGRESS);
+        wf.getTasks().add(b1);
+        TaskModel j = joinTask(jd);
+        assertFalse(Join.isReady(wf, j));
+
+        b1.setStatus(TaskModel.Status.COMPLETED);
+        assertTrue(Join.isReady(wf, j));
+    }
+
+    @Test
+    public void aJoinWithLiveTargetsIsNotReadyWhileALaneHasAContinuationToRun() {
+        WorkflowTask jd = joinDef();
+        WorkflowModel wf = workflow(List.of(simple("a1")), List.of(simple("b1")), jd);
+        wf.getTasks().add(task("a1", TaskModel.Status.COMPLETED));
+        wf.getTasks().add(paused("b1", NOT_RUN, false));
+        assertFalse(Join.isReady(wf, joinTask(jd)));
+    }
+
+    @Test
+    public void aJoinWithNamedTargetsIsReadyWhenThoseTasksEnded() {
+        WorkflowTask jd = joinDef();
+        WorkflowModel wf = workflow(List.of(simple("a1")), List.of(simple("b1")), jd);
+        TaskModel a1 = task("a1", TaskModel.Status.IN_PROGRESS);
+        wf.getTasks().add(a1);
+        wf.getTasks().add(task("b1", TaskModel.Status.IN_PROGRESS));
+        TaskModel j = joinTask(jd);
+        j.getInputData().put("joinOn", List.of("a1"));
+        assertFalse(Join.isReady(wf, j));
+
+        a1.setStatus(
+                TaskModel.Status.COMPLETED); // lane b still runs, and the JOIN does not name it
+        assertTrue(Join.isReady(wf, j));
+    }
+
+    @Test
+    public void aJoinWithNamedTargetsIsReadyWhenOneOfThemFailed() {
+        WorkflowTask jd = joinDef();
+        WorkflowModel wf = workflow(List.of(simple("a1")), List.of(simple("b1")), jd);
+        wf.getTasks().add(task("a1", TaskModel.Status.FAILED));
+        wf.getTasks().add(task("b1", TaskModel.Status.IN_PROGRESS));
+        TaskModel j = joinTask(jd);
+        j.getInputData().put("joinOn", List.of("a1", "b1"));
+
+        assertTrue(Join.isReady(wf, j));
+    }
+
+    @Test
+    public void aJoinIsNotReadyWhileAnOptionalTargetThatFailedWaitsForTheOthers() {
+        WorkflowTask jd = joinDef();
+        WorkflowModel wf = workflow(List.of(simple("a1")), List.of(simple("b1")), jd);
+        TaskModel a1 = task("a1", TaskModel.Status.FAILED);
+        a1.getWorkflowTask().setOptional(true);
+        wf.getTasks().add(a1);
+        TaskModel b1 = task("b1", TaskModel.Status.IN_PROGRESS);
+        wf.getTasks().add(b1);
+        TaskModel j = joinTask(jd);
+        j.getInputData().put("joinOn", List.of("a1", "b1"));
+        assertFalse(Join.isReady(wf, j)); // an evaluation now does not end the JOIN
+
+        b1.setStatus(TaskModel.Status.COMPLETED);
+        assertTrue(Join.isReady(wf, j));
+    }
+
+    @Test
+    public void aJoinInALoopIsReadyWhenTheTasksOfItsIterationEnded() {
+        WorkflowTask jd = joinDef();
+        WorkflowModel wf = workflow(List.of(simple("a1")), List.of(simple("b1")), jd);
+        TaskModel a1 = task("a1", TaskModel.Status.IN_PROGRESS);
+        a1.setReferenceTaskName("a1__2");
+        wf.getTasks().add(a1);
+        TaskModel j = joinTask(jd);
+        j.setIteration(2);
+        j.getInputData().put("joinOn", List.of("a1"));
+        assertFalse(Join.isReady(wf, j));
+
+        a1.setStatus(TaskModel.Status.COMPLETED);
+        assertTrue(Join.isReady(wf, j));
+    }
+
+    @Test
+    public void aJoinAfterADynamicForkIsReadyOnlyWhenItsNamedTargetsEnded() {
+        WorkflowTask jd = joinDef();
+        WorkflowModel wf = workflow(List.of(), List.of(), jd);
+        wf.getWorkflowDefinition().getTasks().get(0).setType(TaskType.FORK_JOIN_DYNAMIC.name());
+        wf.getTasks().add(task("d1", TaskModel.Status.COMPLETED));
+        TaskModel d2 = task("d2", TaskModel.Status.IN_PROGRESS);
+        wf.getTasks().add(d2);
+        TaskModel j = joinTask(jd);
+        j.getInputData().put("joinOn", List.of("d1", "d2"));
+        assertFalse(Join.isReady(wf, j));
+
+        d2.setStatus(TaskModel.Status.COMPLETED);
+        assertTrue(Join.isReady(wf, j));
+    }
+
+    @Test
+    public void aJoinWithLiveTargetsIsNotReadyWhenItsForkIsNotInTheDefinitionYet() {
+        WorkflowTask jd = joinDef();
+        WorkflowModel wf = workflow(List.of(simple("a1")), List.of(simple("b1")), jd);
+        wf.getWorkflowDefinition().setTasks(new ArrayList<>());
+        assertFalse(Join.isReady(wf, joinTask(jd)));
     }
 
     @Test
