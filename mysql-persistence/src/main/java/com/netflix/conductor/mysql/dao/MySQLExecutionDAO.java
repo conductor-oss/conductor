@@ -157,6 +157,40 @@ public class MySQLExecutionDAO extends MySQLBaseDAO
     @Override
     public void updateTask(TaskModel task) {
         withTransaction(connection -> updateTask(connection, task));
+        releaseConcurrencySlot(task);
+    }
+
+    @Override
+    public boolean updateTaskIfStatus(TaskModel task, TaskModel.Status expected) {
+        // the status check and the write are one statement, and the row stays locked until the
+        // rest of the update commits
+        String UPDATE_TASK_IF_STATUS =
+                "UPDATE task SET json_data=?, modified_on=CURRENT_TIMESTAMP WHERE task_id=? AND JSON_UNQUOTE(JSON_EXTRACT(json_data, '$.status')) = ?";
+        java.util.concurrent.atomic.AtomicBoolean updated =
+                new java.util.concurrent.atomic.AtomicBoolean();
+        withTransaction(
+                connection -> {
+                    int rows =
+                            query(
+                                    connection,
+                                    UPDATE_TASK_IF_STATUS,
+                                    q ->
+                                            q.addJsonParameter(task)
+                                                    .addParameter(task.getTaskId())
+                                                    .addParameter(expected.name())
+                                                    .executeUpdate());
+                    if (rows > 0) {
+                        updateTask(connection, task);
+                        updated.set(true);
+                    }
+                });
+        if (updated.get()) {
+            releaseConcurrencySlot(task);
+        }
+        return updated.get();
+    }
+
+    private void releaseConcurrencySlot(TaskModel task) {
         Optional<TaskDef> taskDefinition = task.getTaskDefinition();
         if (taskDefinition.isPresent()
                 && taskDefinition.get().concurrencyLimit() > 0
