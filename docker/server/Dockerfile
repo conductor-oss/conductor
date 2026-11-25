@@ -7,10 +7,31 @@
 #   Default:        Builds JAR and UI from source (docker-compose, local dev)
 #
 
+# The builder stages below run on Debian + Temurin 25 (JDK). The shipped runtime (final stage)
+# runs on the Alpine Temurin 25 JRE pinned to the same 25.0.5+8 release.
+FROM debian:trixie-slim AS java-base
+
+ARG TEMURIN_VERSION=25.0.5.0.0+8-0
+ARG CA_CERTIFICATES_MIN_VERSION=20250419+deb13u1
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl ca-certificates \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' ca-certificates)" ge "$CA_CERTIFICATES_MIN_VERSION" \
+    && install -d -m 0755 /etc/apt/keyrings \
+    && curl -fsSL https://packages.adoptium.net/artifactory/api/gpg/key/public -o /etc/apt/keyrings/adoptium.asc \
+    && echo "deb [signed-by=/etc/apt/keyrings/adoptium.asc] https://packages.adoptium.net/artifactory/deb trixie main" > /etc/apt/sources.list.d/adoptium.list \
+    && rm -rf /var/lib/apt/lists/*
+
+FROM java-base AS jdk
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends "temurin-25-jdk=${TEMURIN_VERSION}" \
+    && rm -rf /var/lib/apt/lists/*
+
 # ===========================================================================================================
 # 0. Builder stage
 # ===========================================================================================================
-FROM azul/zulu-openjdk-debian:21 AS builder
+FROM jdk AS builder
 
 ARG PREBUILT=false
 ARG INDEXING_BACKEND=elasticsearch8
@@ -63,11 +84,20 @@ RUN if [ "$SKIP_UI" = "true" ]; then \
 # could not patch past 1.26.3 (CVE-2026-60005). The temurin JRE ships in the base image, so the
 # only package we add is nginx. The healthcheck uses busybox wget (built in) instead of curl,
 # which also removes curl's libcurl/libssh2 chain from the image entirely.
-FROM eclipse-temurin:21-jre-alpine
+#
+# Floating 25-jre-alpine tag so each rebuild picks up the latest 25.x JVM patch and Alpine
+# package updates automatically -- the point of this image is to stay current on OS/JVM CVEs.
+# The builder stage pins its JDK for a reproducible bytecode target; the shipped runtime does not
+# need to match that patch level (it only runs the compiled jar), so the two can drift.
+FROM eclipse-temurin:25-jre-alpine AS runtime
 
 LABEL maintainer="Orkes OSS <oss@orkes.io>"
 
-RUN apk add --no-cache nginx ca-certificates \
+# nginx floor pinned above 1.30.6-r0: that build carried CVE-2026-113425 / -121810 / -123007 /
+# -123633 / -123634 (all mail-proxy or HTTP/2-proxy paths, none of which this image's config uses,
+# so real exposure is nil -- the floor just keeps a rebuild from silently regressing onto it).
+# The 25-jre-alpine base (Alpine 3.24) ships the fixed 1.30.7-r0, so a rebuild picks it up.
+RUN apk add --no-cache "nginx>1.30.6-r0" ca-certificates \
     && rm -f /etc/nginx/http.d/default.conf \
     && mkdir -p /run/nginx
 
@@ -78,6 +108,8 @@ RUN apk add --no-cache nginx ca-certificates \
 # java invocation only (not nginx/busybox). Without these packages the preload paths would not
 # exist and the dynamic loader would error.
 RUN apk add --no-cache gcompat libunwind
+
+FROM runtime AS final
 
 # Make app folders
 RUN mkdir -p /app/config /app/logs /app/libs
