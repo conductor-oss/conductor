@@ -20,7 +20,8 @@ interface SidebarMenuProps {
   user: Auth0User | null;
   conductorUser: { id: string } | null;
   logOut?: () => void;
-  conductorVersion: string;
+  /** undefined = loading (skeleton), null = error/unavailable, string = loaded */
+  conductorVersion?: string | null;
   uiVersion: string;
   showCopyAlert: boolean;
   setShowCopyAlert: (show: boolean) => void;

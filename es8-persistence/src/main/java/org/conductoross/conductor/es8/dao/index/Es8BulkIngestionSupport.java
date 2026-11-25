@@ -26,7 +26,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.conductoross.conductor.es8.config.ElasticSearchProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.metrics.Monitors;
 
@@ -91,11 +91,18 @@ class Es8BulkIngestionSupport {
     }
 
     void indexObject(String index, String docType, Object doc) {
-        indexObject(index, docType, null, doc, null);
+        indexObject(index, docType, null, doc, defaultRefreshPolicy());
     }
 
     void indexObject(
             String index, String docType, String docId, Object doc, Refresh refreshPolicy) {
+        Refresh effectiveRefreshPolicy =
+                refreshPolicy != null ? refreshPolicy : defaultRefreshPolicy();
+        if (effectiveRefreshPolicy != null) {
+            indexObjectSynchronously(index, docType, docId, doc, effectiveRefreshPolicy);
+            return;
+        }
+
         BulkOperation operation =
                 BulkOperation.of(
                         op ->
@@ -107,8 +114,44 @@ class Es8BulkIngestionSupport {
                                             }
                                             return i;
                                         }));
-        BulkIngester<Void> ingester = getBulkIngester(docType, refreshPolicy);
+        BulkIngester<Void> ingester = getBulkIngester(docType, effectiveRefreshPolicy);
         ingester.add(operation);
+    }
+
+    private Refresh defaultRefreshPolicy() {
+        if (properties.isRefreshOnWrite()) {
+            return Refresh.True;
+        }
+        return properties.isWaitForIndexRefresh() ? Refresh.WaitFor : null;
+    }
+
+    private void indexObjectSynchronously(
+            String index, String docType, String docId, Object doc, Refresh refreshPolicy) {
+        long startTime = System.currentTimeMillis();
+        try {
+            retryTemplate.execute(
+                    () -> {
+                        elasticSearchClient.index(
+                                i -> {
+                                    i.index(index).document(doc).refresh(refreshPolicy);
+                                    if (docId != null) {
+                                        i.id(docId);
+                                    }
+                                    return i;
+                                });
+                        return null;
+                    });
+            Monitors.recordESIndexTime(
+                    "index_object", docType, System.currentTimeMillis() - startTime);
+            Monitors.recordWorkerQueueSize(
+                    "indexQueue", ((ThreadPoolExecutor) executorService).getQueue().size());
+            Monitors.recordWorkerQueueSize(
+                    "logQueue", ((ThreadPoolExecutor) logExecutorService).getQueue().size());
+        } catch (Exception e) {
+            Monitors.error(className, "index");
+            throw new RuntimeException(
+                    String.format("Synchronous index failed for doc type %s", docType), e);
+        }
     }
 
     private BulkIngester<Void> getBulkIngester(String docType, Refresh refreshPolicy) {
@@ -170,7 +213,7 @@ class Es8BulkIngestionSupport {
                         logger.error("Bulk indexing failed for doc type {}", docType, failure);
                         try {
                             retryTemplate.execute(
-                                    context -> {
+                                    () -> {
                                         elasticSearchClient.bulk(request);
                                         return null;
                                     });
@@ -236,7 +279,7 @@ class Es8BulkIngestionSupport {
         }
         try {
             retryTemplate.execute(
-                    context -> {
+                    () -> {
                         elasticSearchClient.bulk(b -> b.operations(failedOperations));
                         return null;
                     });

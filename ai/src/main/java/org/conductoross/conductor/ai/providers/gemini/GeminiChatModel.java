@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.conductoross.conductor.ai.models.ToolSpec;
+import org.conductoross.conductor.ai.model.ToolSpec;
 import org.conductoross.conductor.ai.providers.gemini.api.GeminiApi;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
@@ -33,8 +33,8 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Spring AI {@link ChatModel} implementation backed by the OkHttp-based {@link GeminiApi} client.
@@ -213,9 +213,33 @@ public class GeminiChatModel implements ChatModel {
         switch (msg.getMessageType()) {
             case USER -> {
                 UserMessage userMsg = (UserMessage) msg;
-                contents.add(
-                        new GeminiApi.Content(
-                                "user", List.of(GeminiApi.Part.text(userMsg.getText()))));
+                List<org.springframework.ai.content.Media> media = userMsg.getMedia();
+                if (media != null && !media.isEmpty()) {
+                    // Multi-modal: text + inline image parts. Without this the
+                    // image is silently dropped and the model never sees it.
+                    List<GeminiApi.Part> parts = new ArrayList<>();
+                    if (userMsg.getText() != null && !userMsg.getText().isBlank()) {
+                        parts.add(GeminiApi.Part.text(userMsg.getText()));
+                    }
+                    for (org.springframework.ai.content.Media m : media) {
+                        String mimeType =
+                                m.getMimeType() != null
+                                        ? m.getMimeType().toString()
+                                        : "application/octet-stream";
+                        // Conductor downloads media URLs to bytes upstream; encode
+                        // to the base64 payload Gemini's inlineData expects.
+                        String base64 =
+                                m.getData() instanceof byte[] bytes
+                                        ? java.util.Base64.getEncoder().encodeToString(bytes)
+                                        : m.getData().toString();
+                        parts.add(GeminiApi.Part.inlineData(mimeType, base64));
+                    }
+                    contents.add(new GeminiApi.Content("user", parts));
+                } else {
+                    contents.add(
+                            new GeminiApi.Content(
+                                    "user", List.of(GeminiApi.Part.text(userMsg.getText()))));
+                }
             }
 
             case ASSISTANT -> {

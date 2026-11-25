@@ -10,12 +10,25 @@
  */
 
 import { execSync } from "child_process";
-import { existsSync, writeFileSync, mkdirSync } from "fs";
+import { existsSync, writeFileSync, mkdirSync, rmSync } from "fs";
 import { resolve, dirname } from "path";
 import { tmpdir } from "os";
 import { fileURLToPath } from "url";
+import { loadIntegrationEnv } from "./load-env";
+
+// Load .env.local into process.env before `compose up` so any overrides there
+// (e.g. E2E_OPENAI_BASE_URL / OPENAI_API_KEY for real OpenAI) reach the server.
+loadIntegrationEnv();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// Drop stale V8 dumps from prior runs so the coverage report doesn't grind
+// through multi‑GB of accumulated JSON (workers only append otherwise).
+if (process.env.E2E_COVERAGE === "true") {
+  const coverageDir = resolve(__dirname, "../../.playwright-coverage");
+  rmSync(coverageDir, { recursive: true, force: true });
+  mkdirSync(coverageDir, { recursive: true });
+}
 
 const BACKEND_URL = process.env.CONDUCTOR_SERVER_URL ?? "http://localhost:8000";
 const HEALTH_URL = `${BACKEND_URL}/health`;

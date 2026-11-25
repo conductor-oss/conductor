@@ -23,7 +23,8 @@ class HuggingFaceConfigurationTest {
     @Test
     void testDefaultBaseURL() {
         HuggingFaceConfiguration config = new HuggingFaceConfiguration();
-        assertEquals("https://huggingface.co/api", config.getBaseURL());
+        // OpenAI-compatible router root; the Responses client appends /responses.
+        assertEquals("https://router.huggingface.co/v1", config.getBaseURL());
     }
 
     @Test

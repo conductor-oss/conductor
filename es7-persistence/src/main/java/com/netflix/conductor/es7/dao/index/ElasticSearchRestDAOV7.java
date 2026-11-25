@@ -48,16 +48,19 @@ import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
+import org.elasticsearch.search.sort.ScriptSortBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.elasticsearch.xcontent.XContentType;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventExecution;
@@ -73,13 +76,13 @@ import com.netflix.conductor.es7.config.ElasticSearchProperties;
 import com.netflix.conductor.es7.dao.query.parser.internal.ParserException;
 import com.netflix.conductor.metrics.Monitors;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.type.MapType;
-import com.fasterxml.jackson.databind.type.TypeFactory;
 import jakarta.annotation.*;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.type.MapType;
+import tools.jackson.databind.type.TypeFactory;
 
 @Trace
 public class ElasticSearchRestDAOV7 extends ElasticSearchBaseDAO implements IndexDAO {
@@ -563,7 +566,7 @@ public class ElasticSearchRestDAOV7 extends ElasticSearchBaseDAO implements Inde
             byte[] docBytes;
             try {
                 docBytes = objectMapper.writeValueAsBytes(log);
-            } catch (JsonProcessingException e) {
+            } catch (JacksonException e) {
                 logger.error("Failed to convert task log to JSON for task {}", log.getTaskId());
                 continue;
             }
@@ -654,7 +657,7 @@ public class ElasticSearchRestDAOV7 extends ElasticSearchBaseDAO implements Inde
 
     private List<Message> mapGetMessagesResponse(SearchResponse response) throws IOException {
         SearchHit[] hits = response.getHits().getHits();
-        TypeFactory factory = TypeFactory.defaultInstance();
+        TypeFactory factory = objectMapper.getTypeFactory();
         MapType type = factory.constructMapType(HashMap.class, String.class, String.class);
         List<Message> messages = new ArrayList<>(hits.length);
         for (SearchHit hit : hits) {
@@ -1065,19 +1068,7 @@ public class ElasticSearchRestDAOV7 extends ElasticSearchBaseDAO implements Inde
         searchSourceBuilder.from(start);
         searchSourceBuilder.size(size);
 
-        if (sortOptions != null && !sortOptions.isEmpty()) {
-
-            for (String sortOption : sortOptions) {
-                SortOrder order = SortOrder.ASC;
-                String field = sortOption;
-                int index = sortOption.indexOf(":");
-                if (index > 0) {
-                    field = sortOption.substring(0, index);
-                    order = SortOrder.valueOf(sortOption.substring(index + 1));
-                }
-                searchSourceBuilder.sort(new FieldSortBuilder(field).order(order));
-            }
-        }
+        addSortOptions(searchSourceBuilder, sortOptions);
 
         // Generate the actual request to send to ES.
         SearchRequest searchRequest = new SearchRequest(indexName);
@@ -1108,19 +1099,7 @@ public class ElasticSearchRestDAOV7 extends ElasticSearchBaseDAO implements Inde
             searchSourceBuilder.fetchSource(false);
         }
 
-        if (sortOptions != null && !sortOptions.isEmpty()) {
-
-            for (String sortOption : sortOptions) {
-                SortOrder order = SortOrder.ASC;
-                String field = sortOption;
-                int index = sortOption.indexOf(":");
-                if (index > 0) {
-                    field = sortOption.substring(0, index);
-                    order = SortOrder.valueOf(sortOption.substring(index + 1));
-                }
-                searchSourceBuilder.sort(new FieldSortBuilder(field).order(order));
-            }
-        }
+        addSortOptions(searchSourceBuilder, sortOptions);
 
         // Generate the actual request to send to ES.
         SearchRequest searchRequest = new SearchRequest(indexName);
@@ -1128,6 +1107,56 @@ public class ElasticSearchRestDAOV7 extends ElasticSearchBaseDAO implements Inde
 
         SearchResponse response = elasticSearchClient.search(searchRequest, RequestOptions.DEFAULT);
         return mapSearchResult(response, idOnly, clazz);
+    }
+
+    /**
+     * Adds search ordering, including the internal agent hierarchy marker emitted by the workflow
+     * search resource. The script sorts a parent and its direct children on the same workflow-id
+     * key, then ranks the parent before children. It avoids an invalid field sort for the marker on
+     * Elasticsearch-backed deployments.
+     */
+    private static void addSortOptions(
+            SearchSourceBuilder searchSourceBuilder, List<String> sortOptions) {
+        if (sortOptions == null || sortOptions.isEmpty()) {
+            return;
+        }
+
+        for (String sortOption : sortOptions) {
+            SortOrder order = SortOrder.ASC;
+            String field = sortOption;
+            int index = sortOption.indexOf(":");
+            if (index > 0) {
+                field = sortOption.substring(0, index);
+                order = SortOrder.valueOf(sortOption.substring(index + 1));
+            }
+
+            if ("agentHierarchy".equals(field)) {
+                searchSourceBuilder.sort(
+                        new ScriptSortBuilder(
+                                        new Script(
+                                                ScriptType.INLINE,
+                                                "painless",
+                                                "doc['parentWorkflowId'].size() != 0 && "
+                                                        + "doc['parentWorkflowId'].value != '' ? "
+                                                        + "doc['parentWorkflowId'].value : "
+                                                        + "doc['workflowId'].value",
+                                                Collections.emptyMap()),
+                                        ScriptSortBuilder.ScriptSortType.STRING)
+                                .order(SortOrder.ASC));
+                searchSourceBuilder.sort(
+                        new ScriptSortBuilder(
+                                        new Script(
+                                                ScriptType.INLINE,
+                                                "painless",
+                                                "doc['parentWorkflowId'].size() != 0 && "
+                                                        + "doc['parentWorkflowId'].value != '' ? 1 : 0",
+                                                Collections.emptyMap()),
+                                        ScriptSortBuilder.ScriptSortType.NUMBER)
+                                .order(SortOrder.ASC));
+            } else {
+                searchSourceBuilder.sort(new FieldSortBuilder(field).order(order));
+            }
+        }
     }
 
     private <T> SearchResult<T> mapSearchResult(
@@ -1148,7 +1177,7 @@ public class ElasticSearchRestDAOV7 extends ElasticSearchBaseDAO implements Inde
                                         try {
                                             return objectMapper.readValue(
                                                     hit.getSourceAsString(), clazz);
-                                        } catch (JsonProcessingException e) {
+                                        } catch (JacksonException e) {
                                             logger.error(
                                                     "Failed to de-serialize elasticsearch from source: {}",
                                                     hit.getSourceAsString(),
@@ -1254,7 +1283,7 @@ public class ElasticSearchRestDAOV7 extends ElasticSearchBaseDAO implements Inde
         byte[] docBytes;
         try {
             docBytes = objectMapper.writeValueAsBytes(doc);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             logger.error("Failed to convert {} '{}' to byte string", docType, docId);
             return;
         }
@@ -1307,8 +1336,7 @@ public class ElasticSearchRestDAOV7 extends ElasticSearchBaseDAO implements Inde
             final BulkRequest request, final String operationDescription, String docType) {
         try {
             long startTime = Instant.now().toEpochMilli();
-            retryTemplate.execute(
-                    context -> elasticSearchClient.bulk(request, RequestOptions.DEFAULT));
+            retryTemplate.execute(() -> elasticSearchClient.bulk(request, RequestOptions.DEFAULT));
             long endTime = Instant.now().toEpochMilli();
             logger.debug(
                     "Time taken {} for indexing object of type: {}", endTime - startTime, docType);

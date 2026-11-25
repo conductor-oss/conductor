@@ -23,11 +23,14 @@ import { useLocation, useParams } from "react-router";
 import SectionContainer from "components/ui/layout/SectionContainer";
 import { colors } from "theme/tokens/variables";
 import { IObject } from "types/common";
+import { CronSchedule } from "types/Schedulers";
 import { DOC_LINK_URL } from "utils/constants/docLink";
+import { formatScheduleNameConflictMessage } from "utils/constants/common";
 import { SCHEDULER_DEFINITION_URL } from "utils/constants/route";
 import { usePushHistory } from "utils/hooks/usePushHistory";
 import { getErrors } from "utils/index";
-import { useWorkflowDefsByVersions } from "utils/query";
+import { useAgentNames, useWorkflowDefsByVersions } from "utils/query";
+import { AdditionalCronSchedules } from "./components/AdditionalCronSchedules";
 import { CronExpressionSection } from "./components/CronExpressionSection";
 import { ScheduleTimingSection } from "./components/ScheduleTimingSection";
 import { WorkflowConfigSection } from "./components/WorkflowConfigSection";
@@ -41,10 +44,12 @@ import ScheduleDiffEditor from "./ScheduleDiffEditor";
 import { useSaveSchedule, useSchedule } from "./schedulerHooks";
 import {
   codeToFormData,
+  cronFieldsFor,
   formToCodeData,
   getDateFromField,
   JSONParse,
 } from "./utils/scheduleTransformers";
+import { duplicateCronMessage } from "./utils/duplicateCrons";
 
 export type ScheduleType = {
   name: string;
@@ -66,6 +71,11 @@ export type ScheduleType = {
   scheduleEndTime: string | number;
   priority: string;
   zoneId?: string;
+  /**
+   * Cron expressions beyond the first, each with its own timezone. The first stays in
+   * `cronExpression`/`zoneId`, so a schedule with one cron behaves exactly as it always has.
+   */
+  extraCronSchedules: CronSchedule[];
   startWorkflowRequest?: Record<string, unknown>;
 };
 
@@ -93,6 +103,7 @@ export function Schedule() {
   );
 
   const workflowDefByVersions = useWorkflowDefsByVersions();
+  const agentNames = useAgentNames();
 
   // Custom hooks for state management
   const {
@@ -113,6 +124,7 @@ export function Schedule() {
     scheduleState.workflowType || null,
     scheduleState.workflowVersions,
     scheduleState.workflowInputTemplate,
+    agentNames,
   );
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -175,6 +187,8 @@ export function Schedule() {
           setErrorMessage(
             `Error - You don't have permissions to schedule the selected workflow.`,
           );
+        } else if (response.status === 409 && errors.message) {
+          setErrorMessage(formatScheduleNameConflictMessage(errors.message));
         } else {
           if (errors.message) {
             setErrorMessage(`Error - ${response.status} - ${errors.message}`);
@@ -251,6 +265,13 @@ export function Schedule() {
     [cronHook, setScheduleState],
   );
 
+  const handleExtraCronSchedulesChange = useCallback(
+    (extraCronSchedules: CronSchedule[]) => {
+      setScheduleState((prevState) => ({ ...prevState, extraCronSchedules }));
+    },
+    [setScheduleState],
+  );
+
   // Memoized values
   const minWidthCronExpression = useMemo(() => {
     if (selectedTemplate && isMDWidth) {
@@ -300,13 +321,31 @@ export function Schedule() {
       return;
     }
 
+    const extras = scheduleState.extraCronSchedules ?? [];
+    const allCrons = [
+      {
+        cronExpression: scheduleState.cronExpression,
+        zoneId: scheduleState.zoneId || "UTC",
+      },
+      ...extras,
+    ];
+
+    // The server queues a job per entry without comparing them, so a repeated expression runs
+    // the workflow twice at the same moment. Refused rather than silently collapsed, so the
+    // expression that would be lost is not lost without the author knowing.
+    const repeated = duplicateCronMessage(allCrons);
+    if (repeated) {
+      setErrorMessage(repeated);
+      return;
+    }
+    const cronFields = cronFieldsFor(scheduleState);
+
     const body = JSON.stringify({
-      id: schedule?.id,
       paused: scheduleState.paused,
       runCatchupScheduleInstances: scheduleState.runCatchupScheduleInstances,
       name: scheduleState.name,
       description: scheduleState.description,
-      cronExpression: scheduleState.cronExpression,
+      ...cronFields,
       scheduleStartTime: start,
       scheduleEndTime: to,
       startWorkflowRequest: {
@@ -322,11 +361,16 @@ export function Schedule() {
           scheduleState.externalInputPayloadStoragePath,
         priority: scheduleState.priority,
       },
-      zoneId: scheduleState.zoneId,
     });
 
-    saveSchedule({ body } as any);
-  }, [scheduleState, schedule, clearErrors, setErrorMessage, saveSchedule]);
+    saveSchedule({ body, overwrite: !isNewScheduleDef });
+  }, [
+    scheduleState,
+    clearErrors,
+    setErrorMessage,
+    saveSchedule,
+    isNewScheduleDef,
+  ]);
 
   const clearScheduleForm = useCallback(() => {
     if (schedule) {
@@ -352,6 +396,7 @@ export function Schedule() {
         scheduleStartTime: "",
         scheduleEndTime: "",
         priority: "",
+        extraCronSchedules: [],
         zoneId: "UTC",
       });
     }
@@ -375,6 +420,20 @@ export function Schedule() {
   };
 
   const setSaveConfirmationOpen = useCallback(() => {
+    // Checked here too: the confirmation swaps the form for a diff, and a message raised from
+    // there renders behind the page header where nobody sees it.
+    const repeated = duplicateCronMessage([
+      {
+        cronExpression: scheduleState.cronExpression,
+        zoneId: scheduleState.zoneId || "UTC",
+      },
+      ...(scheduleState.extraCronSchedules ?? []),
+    ]);
+    if (repeated) {
+      setErrorMessage(repeated);
+      return;
+    }
+
     setIsConfirmingSave(true);
     setIsInFormView(0);
     if (interimString !== "") {
@@ -405,13 +464,12 @@ export function Schedule() {
 
       const body = JSON.stringify(
         {
-          id: schedule?.id,
           paused: scheduleState.paused,
           runCatchupScheduleInstances:
             scheduleState.runCatchupScheduleInstances,
           name: scheduleState.name,
           description: scheduleState.description,
-          cronExpression: scheduleState.cronExpression,
+          ...cronFieldsFor(scheduleState),
           scheduleStartTime: start,
           scheduleEndTime: to,
           startWorkflowRequest: {
@@ -426,20 +484,13 @@ export function Schedule() {
               scheduleState.externalInputPayloadStoragePath,
             priority: scheduleState.priority,
           },
-          zoneId: scheduleState.zoneId,
         },
         null,
         2,
       );
       setNewData(body);
     }
-  }, [
-    interimString,
-    scheduleState,
-    schedule,
-    setErrorMessage,
-    setScheduleState,
-  ]);
+  }, [interimString, scheduleState, setErrorMessage, setScheduleState]);
 
   const cancelConfirmSave = useCallback(() => {
     const body = JSON.parse(newData);
@@ -688,6 +739,20 @@ export function Schedule() {
                           setZoneId={handleZoneIdChange}
                           cronError={errors?.cronExpression}
                           minWidthCronExpression={minWidthCronExpression}
+                          label={
+                            scheduleState.extraCronSchedules?.length
+                              ? "Cron expression 1"
+                              : "Cron expression"
+                          }
+                        />
+                        <AdditionalCronSchedules
+                          schedules={scheduleState.extraCronSchedules ?? []}
+                          firstCron={{
+                            cronExpression: scheduleState.cronExpression,
+                            zoneId: scheduleState.zoneId || "UTC",
+                          }}
+                          onChange={handleExtraCronSchedulesChange}
+                          defaultZoneId={scheduleState.zoneId}
                         />
                         <WorkflowConfigSection
                           workflowType={scheduleState.workflowType || null}
@@ -700,6 +765,7 @@ export function Schedule() {
                           setWorkflowVersion={handleWorkflowVersionChange}
                           workflowVersions={workflowVersions}
                           workflowNames={workflowNames}
+                          agentNames={agentNames}
                           workflowInputTemplate={
                             scheduleState.workflowInputTemplate || ""
                           }

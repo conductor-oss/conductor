@@ -50,6 +50,9 @@ class ForkJoinSpec extends AbstractSpecification {
     @Shared
     def FORK_JOIN_PERMISSIVE_WF = 'FanInOutPermissiveTest'
 
+    @Shared
+    def WORKFLOW_FORK_JOIN_PERMISSIVE_SW = 'integration_test_fork_join_permissive_sw'
+
     @Autowired
     SubWorkflow subWorkflowTask
 
@@ -64,6 +67,7 @@ class ForkJoinSpec extends AbstractSpecification {
                 'fork_join_with_optional_sub_workflow_forks_integration_test.json',
                 'fork_join_sub_workflow.json',
                 'fork_join_permissive_integration_test.json',
+                'fork_join_with_permissive_sub_workflow_forks_integration_test.json',
         )
     }
 
@@ -1202,6 +1206,83 @@ class ForkJoinSpec extends AbstractSpecification {
             tasks[2].status == Task.Status.COMPLETED_WITH_ERRORS
             tasks[3].taskType == 'JOIN'
             tasks[3].status == Task.Status.COMPLETED_WITH_ERRORS
+        }
+    }
+
+    def "Test fork join with permissive sub workflow forks terminated by the user"() {
+        given: "A input to the workflow that has forks of permissive sub workflows"
+        Map workflowInput = new HashMap<String, Object>()
+        workflowInput['param1'] = 'p1 value'
+        workflowInput['param2'] = 'p2 value'
+
+        when: "A workflow that has forks of permissive sub workflows is started"
+        def workflowInstanceId = startWorkflow(WORKFLOW_FORK_JOIN_PERMISSIVE_SW, 1,
+                '', workflowInput,
+                null)
+
+        then: "verify that the workflow is in a running state"
+        def scheduledSubWfTasks = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
+                .tasks.findAll { it.taskType == TASK_TYPE_SUB_WORKFLOW && it.status == Task.Status.SCHEDULED }
+        scheduledSubWfTasks.each { asyncSystemTaskExecutor.execute(subWorkflowTask, it.taskId) }
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 4
+            tasks[0].taskType == 'FORK'
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[1].taskType == 'SUB_WORKFLOW'
+            tasks[1].status == Task.Status.IN_PROGRESS
+            tasks[2].taskType == 'SUB_WORKFLOW'
+            tasks[2].status == Task.Status.IN_PROGRESS
+            tasks[3].taskType == 'JOIN'
+            tasks[3].status == Task.Status.IN_PROGRESS
+        }
+
+        when: "both the sub workflows are started by issuing a system task call"
+        def workflowWithScheduledSubWorkflows = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
+        def joinTaskId = workflowWithScheduledSubWorkflows.getTaskByRefName("fanouttask_join").taskId
+        def st1SubWfId = workflowWithScheduledSubWorkflows.getTaskByRefName('st1').subWorkflowId
+        def st2SubWfId = workflowWithScheduledSubWorkflows.getTaskByRefName('st2').subWorkflowId
+        sweep(st1SubWfId)
+        sweep(st2SubWfId)
+
+        then: "verify that the sub workflows are in a RUNNING state"
+        with(workflowExecutionService.getExecutionStatus(st1SubWfId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+        }
+        with(workflowExecutionService.getExecutionStatus(st2SubWfId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+        }
+
+        when: "both the sub workflows are terminated by the user"
+        def terminateReason = 'terminated by the user'
+        workflowExecutor.terminateWorkflow(st1SubWfId, terminateReason)
+        workflowExecutor.terminateWorkflow(st2SubWfId, terminateReason)
+
+        then: "verify that both the sub workflows are in a TERMINATED state"
+        with(workflowExecutionService.getExecutionStatus(st1SubWfId, true)) {
+            status == Workflow.WorkflowStatus.TERMINATED
+        }
+        with(workflowExecutionService.getExecutionStatus(st2SubWfId, true)) {
+            status == Workflow.WorkflowStatus.TERMINATED
+        }
+
+        when: "the parent workflow is evaluated and the JOIN task is executed"
+        sweep(workflowInstanceId)
+        asyncSystemTaskExecutor.execute(joinTask, joinTaskId)
+        sweep(workflowInstanceId)
+
+        then: "verify that the parent workflow is TERMINATED and not FAILED, and the join task is CANCELED"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.TERMINATED
+            tasks.size() == 4
+            tasks[0].taskType == 'FORK'
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[1].taskType == 'SUB_WORKFLOW'
+            tasks[1].status == Task.Status.CANCELED
+            tasks[2].taskType == 'SUB_WORKFLOW'
+            tasks[2].status == Task.Status.CANCELED
+            tasks[3].taskType == 'JOIN'
+            tasks[3].status == Task.Status.CANCELED
         }
     }
 

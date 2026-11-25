@@ -6,11 +6,22 @@ import {
   UpdateVariablesEvent,
 } from "./types";
 import { getErrors } from "utils";
-import { fetchExecution } from "commonServices";
+import {
+  fetchAgentExecution,
+  fetchExecution as fetchWorkflowExecution,
+} from "commonServices";
 import { toMaybeQueryString } from "utils/toMaybeQueryString";
 import { maybeTriggerFailureWorkflow } from "utils/maybeTriggerWorkflow";
 
-export { fetchExecution };
+export const fetchExecution = (context: ExecutionMachineContext) => {
+  const request = {
+    executionId: context.executionId!,
+    authHeaders: context.authHeaders ?? {},
+  };
+  return context.agentExecution
+    ? fetchAgentExecution(request)
+    : fetchWorkflowExecution(request);
+};
 
 export const restartExecution = async (
   { executionId, authHeaders }: ExecutionMachineContext,

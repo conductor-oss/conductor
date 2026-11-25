@@ -55,6 +55,7 @@ export enum DefinitionMachineEventTypes {
   CHANGE_VERSION_EVT = "changeVersion",
   ASSIGN_MESSAGE_EVT = "assignMessage",
   MESSAGE_RESET_EVT = "messageReset",
+  DISMISS_LOCAL_BACKUP_WARNING_EVT = "dismissLocalBackupWarning",
   RESET_CONFIRM_EVT = "resetConfirm",
   CANCEL_EVENT_EVT = "cancel",
   DELETE_CONFIRM_EVT = "deleteConfirm",
@@ -244,6 +245,10 @@ export type MessageResetEvent = {
   type: DefinitionMachineEventTypes.MESSAGE_RESET_EVT;
 };
 
+export type DismissLocalBackupWarningEvent = {
+  type: DefinitionMachineEventTypes.DISMISS_LOCAL_BACKUP_WARNING_EVT;
+};
+
 export type RedirectToExecutionPageEvent = {
   type: DefinitionMachineEventTypes.REDIRECT_TO_EXECUTION_PAGE;
   executionId: string;
@@ -280,6 +285,7 @@ export type ToggleAgentExpandedEvent = {
 };
 
 export type WorkflowDefinitionEvents =
+  | DismissLocalBackupWarningEvent
   | ConfirmLastForkTaskRemoval
   | UpdateAttributesEvent
   | ErrorOnInvokeEvent
@@ -343,6 +349,10 @@ export interface DefinitionMachineContext {
   flowMachine?: ActorRef<FlowEvents>;
   workflowTemplateId?: string;
   localCopyMessage?: string;
+  /** Last attempt to back up the draft to localStorage failed (e.g. quota). */
+  localBackupFailed?: boolean;
+  /** User closed the backup-failed warning; don't re-show it for this session. */
+  localBackupWarningDismissed?: boolean;
   collapseWorkflowList?: string[];
   codeTextReference?: CodeTextReference;
   isNewVersion?: boolean;
@@ -355,4 +365,7 @@ export interface DefinitionMachineContext {
   importSummary?: ImportSummary;
   runTabFormState?: RunWorkflowFields;
   isAgentExpanded?: boolean;
+  // Set while the user is heading to the run tab to edit inputs before executing,
+  // so the run tab knows to focus its input editor.
+  runWithInputs?: boolean;
 }

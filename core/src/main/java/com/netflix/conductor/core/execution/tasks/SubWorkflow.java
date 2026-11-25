@@ -31,7 +31,7 @@ import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SUB_WORKFLOW;
 
@@ -196,6 +196,12 @@ public class SubWorkflow extends WorkflowSystemTask {
             // initial decide continues asynchronously through the decider queue.
             WorkflowModel subWorkflow =
                     workflowExecutor.startWorkflowIdempotent(startWorkflowInput);
+            if (subWorkflow.getStatus().isTerminal() && !subWorkflow.getStatus().isSuccessful()) {
+                // The deterministic ID collides with a previously-terminated child (e.g. after a
+                // rerun). Start a fresh child with a new random ID instead of reusing the dead one.
+                startWorkflowInput.setWorkflowId(idGenerator.generate());
+                subWorkflow = workflowExecutor.startWorkflowIdempotent(startWorkflowInput);
+            }
             attachToSubWorkflow(task, subWorkflow);
         } catch (TransientException te) {
             task.setStatus(TaskModel.Status.SCHEDULED);

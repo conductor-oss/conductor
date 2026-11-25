@@ -12,6 +12,7 @@ import {
   WORKFLOW_DEFINITION_URL,
   WORKFLOW_EXECUTION_URL,
 } from "utils/constants/route";
+import { FEATURES, featureFlags } from "utils";
 import { calculateTimeFromMillis, totalPages } from "utils/utils";
 import BulkActionModule from "./BulkActionModule";
 import executionsStyles from "./executionsStyles";
@@ -226,6 +227,9 @@ export default function ResultsTable({
   filterOn,
   handleReset,
 }: ResultsTableProps) {
+  const showTaskReferenceName = featureFlags.isEnabled(
+    FEATURES.SHOW_TASK_REFERENCE_NAME,
+  );
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [toggleCleared, setToggleCleared] = useState(false);
   const pushHistory = usePushHistory();
@@ -278,7 +282,13 @@ export default function ResultsTable({
           )}`
         }
         data={resultObj?.results ? resultObj?.results : []}
-        columns={executionFields}
+        columns={
+          showTaskReferenceName
+            ? executionFields
+            : executionFields.filter(
+                (column) => column.id !== "taskReferenceName",
+              )
+        }
         defaultShowColumns={[
           "startTime",
           "endTime",

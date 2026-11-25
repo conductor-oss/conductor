@@ -22,6 +22,7 @@ export enum ErrorIds {
   TASK_REQUIRED_INPUT_PARAMETERS_MISSING = "task-required-input-parameters",
   ALLOWED_VALUES = "non-allowed-values",
   TYPE_ERROR = "type-error",
+  GUARDRAIL_CONFIG_INVALID = "guardrail-config-invalid",
   GENERIC_ERROR = "generic-error",
   FLOW_ERROR = "flow-error",
   REFERENCE_PROBLEMS = "reference-problems",

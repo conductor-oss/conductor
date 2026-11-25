@@ -1,6 +1,6 @@
 import { FunctionComponent } from "react";
 import { getChipStatusColor } from "utils/helpers";
-import { capitalizeFirstLetter } from "utils/utils";
+import { humanizeStatus } from "utils/utils";
 import TagChip from "./ui/TagChip";
 import { WorkflowExecutionStatus } from "types/Execution";
 
@@ -18,11 +18,7 @@ const WorkflowStatusBadge: FunctionComponent<WorkflowStatusBadgeProps> = ({
       : {
           backgroundColor: color,
         };
-  let formattedStatus = status ? status.toLowerCase() : "";
-  formattedStatus =
-    formattedStatus && formattedStatus.length > 0
-      ? capitalizeFirstLetter(formattedStatus)
-      : "";
+  const formattedStatus = humanizeStatus(status);
   return (
     <TagChip
       style={chipStyles}

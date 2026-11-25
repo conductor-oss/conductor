@@ -12,9 +12,9 @@
  */
 package com.netflix.conductor.test.integration;
 
+import java.io.ByteArrayInputStream;
 import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
 
 import org.conductoross.conductor.model.file.FileDownloadUrlResponse;
 import org.conductoross.conductor.model.file.FileHandle;
@@ -22,7 +22,6 @@ import org.conductoross.conductor.model.file.FileIdToFileHandleIdConverter;
 import org.conductoross.conductor.model.file.FileUploadCompleteResponse;
 import org.conductoross.conductor.model.file.FileUploadResponse;
 import org.conductoross.conductor.model.file.FileUploadStatus;
-import org.conductoross.conductor.model.file.MultipartInitResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.context.TestPropertySource;
 
@@ -32,16 +31,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-/**
- * Integration tests for the file-storage feature backed by the local FS adapter. Inherits the Redis
- * testcontainer + Spring wiring from {@link AbstractFileStorageIntegrationTest} and only sets the
- * local-backend specific properties here.
- */
+/** Integration tests for the file-storage feature backed by the Conductor filesystem adapter. */
 @TestPropertySource(
         properties = {
             "conductor.file-storage.enabled=true",
-            "conductor.file-storage.type=local",
-            "conductor.file-storage.local.directory=build/tmp/file-storage-spec"
+            "conductor.file-storage.type=conductor",
+            "conductor.file-storage.conductor.directory=build/tmp/file-storage-spec",
+            "conductor.file-storage.conductor.base-url=http://localhost:8080"
         })
 class FileStorageIntegrationTest extends AbstractFileStorageIntegrationTest {
 
@@ -62,7 +58,7 @@ class FileStorageIntegrationTest extends AbstractFileStorageIntegrationTest {
                 fileStorageService.createFile(newRequest("doc.pdf", "application/pdf"));
         String fileId = FileIdToFileHandleIdConverter.toFileId(created.getFileHandleId());
 
-        FileHandle handle = fileStorageService.getFileMetadata(fileId);
+        FileHandle handle = fileStorageService.getFileMetadata(WORKFLOW_ID, fileId);
 
         assertEquals(created.getFileHandleId(), handle.getFileHandleId());
         assertEquals("doc.pdf", handle.getFileName());
@@ -72,7 +68,8 @@ class FileStorageIntegrationTest extends AbstractFileStorageIntegrationTest {
     @Test
     void getMetadataForUnknownFileThrowsNotFoundException() {
         assertThrows(
-                NotFoundException.class, () -> fileStorageService.getFileMetadata("nonexistent"));
+                NotFoundException.class,
+                () -> fileStorageService.getFileMetadata(WORKFLOW_ID, "nonexistent"));
     }
 
     @Test
@@ -84,7 +81,7 @@ class FileStorageIntegrationTest extends AbstractFileStorageIntegrationTest {
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> fileStorageService.getDownloadUrl(fileId, "wf-test"));
+                () -> fileStorageService.getDownloadUrl(WORKFLOW_ID, fileId));
     }
 
     @Test
@@ -92,28 +89,31 @@ class FileStorageIntegrationTest extends AbstractFileStorageIntegrationTest {
         FileUploadResponse created =
                 fileStorageService.createFile(newRequest("test.txt", "text/plain"));
         String fileId = FileIdToFileHandleIdConverter.toFileId(created.getFileHandleId());
-        // Resolve the upload target from the URL the service handed back (format-agnostic).
-        Path storagePath = Path.of(URI.create(created.getUploadUrl()));
-        Files.createDirectories(storagePath.getParent());
-        Files.writeString(storagePath, "hello");
+        URI uploadUrl = URI.create(created.getUploadUrl());
+        assertEquals("http", uploadUrl.getScheme());
+        assertEquals("localhost", uploadUrl.getHost());
+        assertEquals("/api/files/content/" + WORKFLOW_ID + "/" + fileId, uploadUrl.getPath());
+        fileStorageService.uploadContent(
+                WORKFLOW_ID,
+                fileId,
+                new ByteArrayInputStream("hello".getBytes(StandardCharsets.UTF_8)));
 
-        FileUploadCompleteResponse confirmed = fileStorageService.confirmUpload(fileId);
-        FileDownloadUrlResponse download = fileStorageService.getDownloadUrl(fileId, "wf-test");
+        FileUploadCompleteResponse confirmed =
+                fileStorageService.confirmUpload(WORKFLOW_ID, fileId);
+        FileDownloadUrlResponse download = fileStorageService.getDownloadUrl(WORKFLOW_ID, fileId);
 
         assertEquals(FileUploadStatus.UPLOADED, confirmed.getUploadStatus());
         assertNotNull(download.getDownloadUrl());
     }
 
     @Test
-    void multipartLifecycleInitiatePartUrl() {
+    void multipartLifecycleIsUnsupported() {
         FileUploadResponse created =
                 fileStorageService.createFile(newRequest("large.bin", "application/octet-stream"));
         String fileId = FileIdToFileHandleIdConverter.toFileId(created.getFileHandleId());
 
-        MultipartInitResponse init = fileStorageService.initiateMultipartUpload(fileId);
-
-        assertNotNull(init.getUploadId());
-        assertNotNull(
-                fileStorageService.getPartUploadUrl(fileId, init.getUploadId(), 1).getUploadUrl());
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> fileStorageService.initiateMultipartUpload(WORKFLOW_ID, fileId));
     }
 }

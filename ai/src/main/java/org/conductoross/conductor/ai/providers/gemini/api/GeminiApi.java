@@ -32,7 +32,7 @@ public class GeminiApi {
     private final String endpointBase; // e.g. "https://generativelanguage.googleapis.com/v1beta"
     private final String apiKey; // null for Vertex
     private final com.google.auth.oauth2.GoogleCredentials credentials; // null for API key mode
-    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+    private final tools.jackson.databind.ObjectMapper objectMapper;
 
     /** Factory: API-key mode (AI Studio / generativelanguage.googleapis.com). */
     public static GeminiApi forApiKey(
@@ -267,6 +267,14 @@ public class GeminiApi {
 
         public static Part functionResponse(String name, Map<String, Object> response) {
             return new Part(null, null, new FunctionResponsePart(name, response), null, null);
+        }
+
+        /**
+         * Inline image (or other binary) part. {@code mimeType} is e.g. {@code image/png}; {@code
+         * base64Data} is the raw base64 payload without any {@code data:} URI prefix.
+         */
+        public static Part inlineData(String mimeType, String base64Data) {
+            return new Part(null, null, null, new InlineData(mimeType, base64Data), null);
         }
     }
 

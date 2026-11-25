@@ -348,4 +348,16 @@ public class ConstraintParamUtilTest {
                 ConstraintParamUtil.validateInputParam(inputParam, "task_1", workflowDef);
         assertEquals(results.size(), 0);
     }
+
+    @Test
+    public void testImmutableInputMapsWithScalarValuesDoNotNeedMutationToValidate() {
+        Map<String, Object> inputParam =
+                Map.of("maxRetries", 3, "enabled", true, "nested", Map.of("limit", 10));
+
+        List<String> results =
+                ConstraintParamUtil.validateInputParam(
+                        inputParam, "task_1", constructWorkflowDef());
+
+        assertEquals(0, results.size());
+    }
 }

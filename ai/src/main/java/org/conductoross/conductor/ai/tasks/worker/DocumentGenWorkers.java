@@ -17,9 +17,9 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.conductoross.conductor.ai.document.DocumentLoader;
-import org.conductoross.conductor.ai.models.LLMResponse;
-import org.conductoross.conductor.ai.models.MarkdownToPdfRequest;
-import org.conductoross.conductor.ai.models.Media;
+import org.conductoross.conductor.ai.model.LLMResponse;
+import org.conductoross.conductor.ai.model.MarkdownToPdfRequest;
+import org.conductoross.conductor.ai.model.Media;
 import org.conductoross.conductor.ai.pdf.MarkdownToPdfConverter;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.conductoross.conductor.core.execution.tasks.AnnotatedSystemTaskWorker;

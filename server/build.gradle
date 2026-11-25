@@ -20,6 +20,9 @@ dependencies {
     implementation project(':conductor-rest')
     implementation project(':conductor-grpc-server')
     implementation project(':conductor-ai')
+    // Embedded Conductor-Agents runtime (REST controllers, agent services); activated only when
+    // conductor.integrations.ai.enabled=true.
+    implementation project(':conductor-agentspan')
 
     //Event Systems
     implementation project(':conductor-amqp')
@@ -32,7 +35,7 @@ dependencies {
     implementation project(':conductor-azureblob-storage')
     implementation project(':conductor-postgres-external-storage')
     implementation project(':conductor-awss3-storage')
-    implementation project(':conductor-local-file-storage')
+    implementation project(':conductor-file-storage')
     implementation project(':conductor-gcs-storage')
 
 
@@ -45,22 +48,26 @@ dependencies {
     implementation project(':conductor-sqlite-persistence')
 
     // Indexing backend selection (build-time) to avoid Lucene conflicts between ES and OS
-    def indexingBackend = project.findProperty('indexingBackend') ?: 'elasticsearch'
+    def indexingBackend = project.findProperty('indexingBackend') ?: 'elasticsearch8'
 
     if (indexingBackend == 'opensearch3' || indexingBackend == 'os3') {
         implementation project(':conductor-os-persistence-v3')
     } else if (indexingBackend == 'opensearch' || indexingBackend == 'os') {
         implementation project(':conductor-os-persistence')
         implementation project(':conductor-os-persistence-v2')
-    } else if (indexingBackend == 'elasticsearch8' || indexingBackend == 'es8') {
+    } else if (indexingBackend == 'elasticsearch7' || indexingBackend == 'es7') {
+        // Legacy ES7 backend, opt-in only. Pulls org.elasticsearch:elasticsearch 7.17.x, which
+        // carries the unpatchable CVE-2025-37731. Retained for users not yet moved to ES 8.x.
+        implementation project(':conductor-es7-persistence')
+    } else if (indexingBackend == 'elasticsearch8' || indexingBackend == 'es8' || indexingBackend == 'elasticsearch') {
         implementation project(':conductor-es8-persistence')
-    } else if (indexingBackend == 'elasticsearch7' || indexingBackend == 'es7' || indexingBackend == 'elasticsearch') {
-        implementation project(':conductor-es7-persistence')
     } else {
-        implementation project(':conductor-es7-persistence')
+        implementation project(':conductor-es8-persistence')
     }
     implementation project(':conductor-redis-lock')
     implementation project(':conductor-redis-concurrency-limit')
+    // Runtime side of conductor-redis-concurrency-limit, which declares it compileOnly.
+    runtimeOnly 'org.springframework.data:spring-data-redis'
 
     //System Tasks
     implementation project(':conductor-http-task')
@@ -76,9 +83,16 @@ dependencies {
     implementation project(':conductor-scheduler-sqlite-persistence')
 
     //Metrics
-    implementation "io.micrometer:micrometer-registry-cloudwatch2:${revMicrometer}"
-    implementation "io.micrometer:micrometer-registry-azure-monitor:${revMicrometer}"
-    implementation "io.micrometer:micrometer-registry-prometheus:${revMicrometer}"
+    implementation "io.micrometer:micrometer-registry-cloudwatch2"
+    implementation "io.micrometer:micrometer-registry-azure-monitor"
+    implementation "io.micrometer:micrometer-registry-prometheus"
+    // Restores OTLP metrics export removed when the conductor-metrics module was
+    // retired (commit 396a09a4f, #1059). Spring Boot's OtlpMetricsAutoConfiguration
+    // wires OtlpMeterRegistry when management.otlp.metrics.export.enabled=true,
+    // mirroring how the prometheus registry is auto-configured.
+    implementation "io.micrometer:micrometer-registry-otlp"
+    // Boot 4's OTLP registry auto-configuration requires OpenTelemetryProperties from this module.
+    runtimeOnly 'org.springframework.boot:spring-boot-opentelemetry'
 
     //Event Listener
     implementation project(':conductor-workflow-event-listener')
@@ -87,11 +101,10 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.retry:spring-retry'
 
     implementation 'org.springframework.boot:spring-boot-starter-log4j2'
     implementation 'org.apache.logging.log4j:log4j-web'
-    implementation "redis.clients:jedis:${revJedis}"
+    implementation "redis.clients:jedis"
     implementation "org.postgresql:postgresql:${revPostgres}"
 
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
@@ -100,7 +113,14 @@ dependencies {
     implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${revSpringDoc}"
 
 
-    runtimeOnly "org.glassfish.jaxb:jaxb-runtime:${revJAXB}"
+    runtimeOnly "org.glassfish.jaxb:jaxb-runtime"
+
+    // reactor-netty brings netty-transport-classes-epoll along with the linux-x86_64 native library
+    // only. The cassandra driver probes for the epoll transport with Class.forName (NettyUtil), and
+    // on linux-aarch_64 the missing native library surfaces as an UnsatisfiedLinkError, which the
+    // driver does not catch - the server then fails to start on arm64. Ship both architectures.
+    runtimeOnly group: 'io.netty', name: 'netty-transport-native-epoll', classifier: 'linux-x86_64'
+    runtimeOnly group: 'io.netty', name: 'netty-transport-native-epoll', classifier: 'linux-aarch_64'
 
     testImplementation project(':conductor-rest')
     testImplementation project(':conductor-common')

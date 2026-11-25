@@ -1,25 +1,26 @@
 import { Component, ErrorInfo, ReactNode } from "react";
-import { Box } from "@mui/material";
+import { Box, Button } from "@mui/material";
+import { useLocation } from "react-router";
 // import { reportErrorToHeap, isHeapEnabled } from "utils";
 
 import { reportErrorToLogRocket, isLogRocketEnabled } from "utils";
 interface Props {
   children?: ReactNode;
-  location?: any;
+  locationKey: string;
 }
 
 interface State {
-  hasError: boolean;
+  error: Error | null;
 }
 
-class ErrorBoundary extends Component<Props, State> {
+class ErrorBoundaryContent extends Component<Props, State> {
   public state: State = {
-    hasError: false,
+    error: null,
   };
 
-  public static getDerivedStateFromError(_: Error): State {
+  public static getDerivedStateFromError(error: Error): State {
     // Update state so the next render will show the fallback UI.
-    return { hasError: true };
+    return { error };
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
@@ -34,15 +35,21 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidUpdate(prevProps: Props) {
-    if (prevProps?.location?.pathname !== this.props.location?.pathname) {
-      this.setState({ hasError: false });
+    if (
+      prevProps.locationKey !== this.props.locationKey &&
+      this.state.error !== null
+    ) {
+      this.setState({ error: null });
     }
   }
 
+  private handleRetry = () => this.setState({ error: null });
+
   public render() {
-    if (this.state.hasError) {
+    if (this.state.error) {
       return (
         <Box
+          role="alert"
           sx={{
             width: "100%",
             height: "100%",
@@ -59,9 +66,16 @@ class ErrorBoundary extends Component<Props, State> {
           >
             There was an error performing this action. Please try again.
           </Box>
+          <Box sx={{ fontSize: "1rem", mt: 1 }}>
+            {this.state.error.message || "An unexpected error occurred."}
+          </Box>
+          <Button sx={{ mt: 2 }} onClick={this.handleRetry} variant="contained">
+            Try again
+          </Button>
           <Box
             sx={{
               fontSize: "1rem",
+              mt: 2,
             }}
           >
             Contact support if the error persists.
@@ -74,4 +88,14 @@ class ErrorBoundary extends Component<Props, State> {
   }
 }
 
-export default ErrorBoundary;
+/** Resets the boundary when the active route changes. */
+export default function ErrorBoundary({ children }: { children?: ReactNode }) {
+  const location = useLocation();
+  const locationKey = `${location.pathname}${location.search}${location.hash}`;
+
+  return (
+    <ErrorBoundaryContent locationKey={locationKey}>
+      {children}
+    </ErrorBoundaryContent>
+  );
+}

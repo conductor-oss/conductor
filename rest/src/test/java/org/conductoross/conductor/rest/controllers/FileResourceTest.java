@@ -12,118 +12,151 @@
  */
 package org.conductoross.conductor.rest.controllers;
 
-import java.util.List;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 import org.conductoross.conductor.controllers.FileResource;
+import org.conductoross.conductor.core.exception.FileStorageException;
+import org.conductoross.conductor.core.storage.FileContent;
 import org.conductoross.conductor.core.storage.FileStorageService;
-import org.conductoross.conductor.model.file.*;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import com.netflix.conductor.core.exception.AccessForbiddenException;
+import com.netflix.conductor.core.exception.NotFoundException;
+import com.netflix.conductor.rest.controllers.ApplicationExceptionMapper;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class FileResourceTest {
 
     private static final String FILE_ID = "abc";
-    private static final String FILE_HANDLE_ID = FileIdToFileHandleIdConverter.PREFIX + FILE_ID;
+    private static final String WORKFLOW_ID = "wf-1";
+    private static final String CONTENT_PATH = "/api/files/content/" + WORKFLOW_ID + "/" + FILE_ID;
 
     private FileStorageService fileStorageService;
-    private FileResource fileResource;
+    private MockMvc mockMvc;
 
     @Before
     public void setUp() {
         fileStorageService = mock(FileStorageService.class);
-        fileResource = new FileResource(fileStorageService);
+        mockMvc =
+                MockMvcBuilders.standaloneSetup(new FileResource(fileStorageService))
+                        .setControllerAdvice(new ApplicationExceptionMapper())
+                        .build();
     }
 
     @Test
-    public void testCreateFile() {
-        FileUploadRequest request = new FileUploadRequest();
-        request.setFileName("test.pdf");
-        FileUploadResponse expected = new FileUploadResponse();
-        expected.setFileHandleId(FILE_HANDLE_ID);
-        when(fileStorageService.createFile(request)).thenReturn(expected);
+    public void streamsRawUploadContentToService() throws Exception {
+        byte[] expected = "upload bytes".getBytes(StandardCharsets.UTF_8);
+        ArgumentCaptor<InputStream> contentCaptor = ArgumentCaptor.forClass(InputStream.class);
 
-        FileUploadResponse result = fileResource.createFile(request);
-        assertEquals(FILE_HANDLE_ID, result.getFileHandleId());
-        verify(fileStorageService).createFile(request);
+        mockMvc.perform(MockMvcRequestBuilders.put(CONTENT_PATH).content(expected))
+                .andExpect(status().isNoContent());
+
+        verify(fileStorageService)
+                .uploadContent(eq(WORKFLOW_ID), eq(FILE_ID), contentCaptor.capture());
+        assertArrayEquals(expected, contentCaptor.getValue().readAllBytes());
     }
 
     @Test
-    public void testGetUploadUrl() {
-        FileUploadUrlResponse expected = new FileUploadUrlResponse();
-        expected.setFileHandleId(FILE_HANDLE_ID);
-        expected.setUploadUrl("https://s3/url");
-        when(fileStorageService.getUploadUrl(FILE_ID)).thenReturn(expected);
+    public void streamsDownloadWithRecordedContentTypeAndLength() throws Exception {
+        byte[] expected = "download bytes".getBytes(StandardCharsets.UTF_8);
+        when(fileStorageService.downloadContent(WORKFLOW_ID, FILE_ID))
+                .thenReturn(
+                        new FileContent(
+                                new ByteArrayInputStream(expected),
+                                MediaType.TEXT_PLAIN_VALUE,
+                                expected.length));
 
-        FileUploadUrlResponse result = fileResource.getUploadUrl(FILE_ID);
-        assertEquals("https://s3/url", result.getUploadUrl());
+        MvcResult result =
+                mockMvc.perform(MockMvcRequestBuilders.get(CONTENT_PATH))
+                        .andExpect(request().asyncStarted())
+                        .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.TEXT_PLAIN))
+                .andExpect(header().longValue("Content-Length", expected.length))
+                .andExpect(content().bytes(expected));
     }
 
     @Test
-    public void testConfirmUpload() {
-        FileUploadCompleteResponse expected = new FileUploadCompleteResponse();
-        expected.setUploadStatus(FileUploadStatus.UPLOADED);
-        when(fileStorageService.confirmUpload(FILE_ID)).thenReturn(expected);
+    public void rejectsUploadForNonOwningWorkflow() throws Exception {
+        doThrow(new AccessForbiddenException("not the file owner"))
+                .when(fileStorageService)
+                .uploadContent(eq("other-workflow"), eq(FILE_ID), any());
 
-        FileUploadCompleteResponse result = fileResource.confirmUpload(FILE_ID);
-        assertEquals(FileUploadStatus.UPLOADED, result.getUploadStatus());
+        mockMvc.perform(
+                        MockMvcRequestBuilders.put("/api/files/content/other-workflow/" + FILE_ID)
+                                .content("bytes"))
+                .andExpect(status().isForbidden());
     }
 
     @Test
-    public void testGetDownloadUrl() {
-        FileDownloadUrlResponse expected = new FileDownloadUrlResponse();
-        expected.setDownloadUrl("https://s3/download");
-        when(fileStorageService.getDownloadUrl(FILE_ID, "wf-1")).thenReturn(expected);
+    public void returnsNotFoundForUnknownFile() throws Exception {
+        doThrow(new NotFoundException("file not found"))
+                .when(fileStorageService)
+                .uploadContent(eq(WORKFLOW_ID), eq(FILE_ID), any());
 
-        FileDownloadUrlResponse result = fileResource.getDownloadUrl("wf-1", FILE_ID);
-        assertEquals("https://s3/download", result.getDownloadUrl());
+        mockMvc.perform(MockMvcRequestBuilders.put(CONTENT_PATH).content("bytes"))
+                .andExpect(status().isNotFound());
     }
 
     @Test
-    public void testGetFileMetadata() {
-        FileHandle expected = new FileHandle();
-        expected.setFileHandleId(FILE_HANDLE_ID);
-        expected.setFileName("test.pdf");
-        when(fileStorageService.getFileMetadata(FILE_ID)).thenReturn(expected);
+    public void rejectsDownloadBeforeUploadCompletes() throws Exception {
+        when(fileStorageService.downloadContent(WORKFLOW_ID, FILE_ID))
+                .thenThrow(new IllegalArgumentException("File not yet uploaded"));
 
-        FileHandle result = fileResource.getFileMetadata(FILE_ID);
-        assertEquals("test.pdf", result.getFileName());
+        mockMvc.perform(MockMvcRequestBuilders.get(CONTENT_PATH))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
-    public void testInitiateMultipartUpload() {
-        MultipartInitResponse expected = new MultipartInitResponse();
-        expected.setUploadId("mp-123");
-        when(fileStorageService.initiateMultipartUpload(FILE_ID)).thenReturn(expected);
+    public void mapsStreamingUploadLimitToPayloadTooLarge() throws Exception {
+        doAnswer(
+                        invocation -> {
+                            invocation.getArgument(2, InputStream.class).readAllBytes();
+                            throw new FileStorageException("File exceeds configured maximum size");
+                        })
+                .when(fileStorageService)
+                .uploadContent(
+                        org.mockito.ArgumentMatchers.eq(WORKFLOW_ID),
+                        org.mockito.ArgumentMatchers.eq(FILE_ID),
+                        org.mockito.ArgumentMatchers.any());
 
-        MultipartInitResponse result = fileResource.initiateMultipartUpload(FILE_ID);
-        assertEquals("mp-123", result.getUploadId());
+        mockMvc.perform(MockMvcRequestBuilders.put(CONTENT_PATH).content("too large"))
+                .andExpect(status().isPayloadTooLarge());
+
+        verify(fileStorageService).uploadContent(eq(WORKFLOW_ID), eq(FILE_ID), any());
+        verifyNoMoreInteractions(fileStorageService);
     }
 
     @Test
-    public void testGetPartUploadUrl() {
-        FileUploadUrlResponse expected = new FileUploadUrlResponse();
-        expected.setUploadUrl("https://s3/part/1");
-        when(fileStorageService.getPartUploadUrl(FILE_ID, "mp-123", 1)).thenReturn(expected);
+    public void returnsNotFoundForMissingDownload() throws Exception {
+        when(fileStorageService.downloadContent(WORKFLOW_ID, FILE_ID))
+                .thenThrow(new NotFoundException("file not found"));
 
-        FileUploadUrlResponse result = fileResource.getPartUploadUrl(FILE_ID, "mp-123", 1);
-        assertEquals("https://s3/part/1", result.getUploadUrl());
-    }
-
-    @Test
-    public void testCompleteMultipartUpload() {
-        MultipartCompleteRequest request = new MultipartCompleteRequest();
-        request.setPartETags(List.of("etag1", "etag2"));
-        FileUploadCompleteResponse expected = new FileUploadCompleteResponse();
-        expected.setUploadStatus(FileUploadStatus.UPLOADED);
-        when(fileStorageService.completeMultipartUpload(
-                        FILE_ID, "mp-123", List.of("etag1", "etag2")))
-                .thenReturn(expected);
-
-        FileUploadCompleteResponse result =
-                fileResource.completeMultipartUpload(FILE_ID, "mp-123", request);
-        assertEquals(FileUploadStatus.UPLOADED, result.getUploadStatus());
+        mockMvc.perform(MockMvcRequestBuilders.get(CONTENT_PATH)).andExpect(status().isNotFound());
     }
 }

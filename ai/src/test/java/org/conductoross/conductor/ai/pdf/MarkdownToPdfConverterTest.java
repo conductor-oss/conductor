@@ -20,7 +20,7 @@ import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.conductoross.conductor.ai.document.DocumentLoader;
-import org.conductoross.conductor.ai.models.MarkdownToPdfRequest;
+import org.conductoross.conductor.ai.model.MarkdownToPdfRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

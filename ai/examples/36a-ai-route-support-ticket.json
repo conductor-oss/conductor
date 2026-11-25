@@ -1,0 +1,19 @@
+{
+  "name": "ai_route_support_ticket",
+  "description": "Example child workflow for support and troubleshooting requests.",
+  "version": 1,
+  "schemaVersion": 2,
+  "inputParameters": ["request", "routingReason"],
+  "tasks": [
+    {
+      "name": "record_support_route",
+      "taskReferenceName": "record_support_route",
+      "type": "NOOP"
+    }
+  ],
+  "outputParameters": {
+    "route": "support",
+    "request": "${workflow.input.request}",
+    "routingReason": "${workflow.input.routingReason}"
+  }
+}

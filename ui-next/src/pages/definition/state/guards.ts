@@ -35,6 +35,11 @@ const fetchContext = fetchContextNonHook();
 export const isNewWorkflow = (context: DefinitionMachineContext) =>
   context.isNewWorkflow;
 
+export const isWorkflowNotFound = (
+  _context: DefinitionMachineContext,
+  event: DoneInvokeEvent<{ message?: string; status?: number }>,
+) => event?.data?.status === 404;
+
 export const isEditorTab = ({ openedTab }: DefinitionMachineContext) =>
   openedTab === CODE_TAB;
 
@@ -168,6 +173,35 @@ export const isSaveAndRunWithNoChanges = (
   event: SaveAndRunRequestEvent,
 ) => {
   return isSaveAndRunRequest(context, event) && hasNoChanges(context);
+};
+
+export const hasWorkflowInputParams = (context: DefinitionMachineContext) => {
+  const params =
+    context.workflowChanges?.inputParameters ??
+    context.currentWf?.inputParameters;
+  return Array.isArray(params) && params.length > 0;
+};
+
+// Executing from the run tab has to run the config the user is looking at, which
+// means the run actor must not be torn down and re-created first.
+export const isSaveAndRunFromRunTab = (
+  context: DefinitionMachineContext,
+  event: SaveAndRunRequestEvent,
+) => {
+  return isSaveAndRunWithNoChanges(context, event) && isRunTab(context);
+};
+
+// Execute should open the run tab first when the workflow declares input
+// parameters, unless the user is already reviewing them.
+export const isSaveAndRunWithInputParams = (
+  context: DefinitionMachineContext,
+  event: SaveAndRunRequestEvent,
+) => {
+  return (
+    isSaveAndRunWithNoChanges(context, event) &&
+    hasWorkflowInputParams(context) &&
+    !isRunTab(context)
+  );
 };
 
 export const isFirstTimeFlow = (context: DefinitionMachineContext) => {

@@ -43,7 +43,6 @@ import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.service.WorkflowService;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
 import com.google.common.util.concurrent.Uninterruptibles;
@@ -63,6 +62,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
 @Conditional(SchedulerConditions.class)
@@ -1106,7 +1106,11 @@ public class SchedulerService extends LifecycleAwareComponent {
     }
 
     public WorkflowSchedule getSchedule(String name) {
-        return schedulerDAO.findScheduleByName(name);
+        WorkflowScheduleModel schedule = schedulerDAO.findScheduleByName(name);
+        if (schedule == null) {
+            throw new NotFoundException("Schedule '%s' not found".formatted(name));
+        }
+        return schedule;
     }
 
     public List<WorkflowScheduleModel> getAllSchedules(String workflowName) {

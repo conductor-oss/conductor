@@ -1,7 +1,42 @@
 overrides:
-  vis-timeline: "7.3.6"
+  vis-timeline: "7.7.4"
   vis-data: "7.1.9"
   mini-css-extract-plugin: "2.4.5"
+  vis-util: ">=5.0.1 <6"
+  undici: ">=8.10.2"
+  form-data: ">=4.0.6"
+  underscore: ">=1.13.8"
+  jsonpath-plus: ">=10.3.0"
+  axios: ">=1.20.0"
+  "brace-expansion@1": "1.1.21"
+  "brace-expansion@5": "5.0.12"
+  react-router: "7.18.2"
+  js-yaml: ">=4.3.2 <5"
+  nanoid: ">=3.3.17"
+  "immutable@<4": "4.3.9"
+  "immutable@>=5": ">=5.1.8"
+  fast-uri: ">=4.1.5"
+  next: ">=16.2.11"
+  sharp: ">=0.35.0"
+  postcss: ">=8.5.18"
+  browserslist: ">=4.28.7"
+  dompurify: ">=3.4.13 <4"
+  prismjs: ">=1.30.0"
+  moment: ">=2.31.0 <3"
+  qs: ">=6.16.0"
+  uuid: ">=11.1.1 <12"
+  esbuild: ">=0.28.1 <0.29"
+  vitest: ">=4.1.11 <5"
+
+packageExtensions:
+  use-location-state:
+    peerDependenciesMeta:
+      next:
+        optional: true
+
+peerDependencyRules:
+  ignoreMissing:
+    - next
 
 allowBuilds:
   "@parcel/watcher": true

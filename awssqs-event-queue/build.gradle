@@ -1,4 +1,7 @@
 dependencies {
+    implementation "tools.jackson.core:jackson-core"
+    implementation "tools.jackson.core:jackson-databind"
+    implementation "com.fasterxml.jackson.core:jackson-annotations"
     implementation project(':conductor-common')
     implementation project(':conductor-core')
     compileOnly 'org.springframework.boot:spring-boot-starter'
@@ -12,5 +15,5 @@ dependencies {
     implementation "io.reactivex:rxjava:${revRxJava}"
 
     testImplementation 'org.springframework.boot:spring-boot-starter'
-    testImplementation project(':conductor-common').sourceSets.test.output
+    testImplementation rootProject.project(':conductor-common').sourceSets.test.output
 }

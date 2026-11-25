@@ -27,14 +27,14 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * Serves the UI runtime config {@code /context.js} so the embedded AgentSpan agent pages are gated
+ * Serves the UI runtime config {@code /context.js} so the embedded Conductor-Agents pages are gated
  * by the server's {@code conductor.integrations.ai.enabled} flag.
  *
  * <p>Mirrors orkes-conductor's {@code UIContextGenerator}: a controller mapping takes precedence
  * over the bundled static {@code /static/context.js}, so we serve the bundled file (preserving all
- * other feature flags) and append a runtime override of {@code AGENTSPAN_ENABLED}. The UI reads
- * {@code window.conductor.AGENTSPAN_ENABLED} to show/hide the Agents, Executions, Skills and
- * Secrets pages. Only active when UI serving is enabled.
+ * other feature flags) and append a runtime override of {@code CONDUCTOR_INTEGRATIONS_AI_ENABLED}.
+ * The UI reads {@code window.conductor.CONDUCTOR_INTEGRATIONS_AI_ENABLED} to show/hide the Agents,
+ * Executions, Skills and Secrets pages. Only active when UI serving is enabled.
  *
  * <p>Writes directly to the response to avoid content-negotiation on {@code
  * application/javascript}.
@@ -46,11 +46,11 @@ import jakarta.servlet.http.HttpServletResponse;
         matchIfMissing = true)
 public class AgentSpanUiContextController {
 
-    private final boolean agentSpanEnabled;
+    private final boolean aiIntegrationEnabled;
 
     public AgentSpanUiContextController(
-            @Value("${conductor.integrations.ai.enabled:false}") boolean agentSpanEnabled) {
-        this.agentSpanEnabled = agentSpanEnabled;
+            @Value("${conductor.integrations.ai.enabled:false}") boolean aiIntegrationEnabled) {
+        this.aiIntegrationEnabled = aiIntegrationEnabled;
     }
 
     @GetMapping("/context.js")
@@ -74,7 +74,9 @@ public class AgentSpanUiContextController {
         // Runtime override driven by the server configuration.
         js.append("\n// Injected by Conductor server (conductor.integrations.ai.enabled)\n");
         js.append("window.conductor = window.conductor || {};\n");
-        js.append("window.conductor.AGENTSPAN_ENABLED = ").append(agentSpanEnabled).append(";\n");
+        js.append("window.conductor.CONDUCTOR_INTEGRATIONS_AI_ENABLED = ")
+                .append(aiIntegrationEnabled)
+                .append(";\n");
 
         response.getWriter().write(js.toString());
     }

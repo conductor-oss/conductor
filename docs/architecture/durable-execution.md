@@ -17,6 +17,20 @@ When a workflow executes, Conductor persists:
 
 All state is written to the configured persistence store (Redis, PostgreSQL, MySQL, or Cassandra) before the next step proceeds. If the server restarts, execution resumes from the last persisted state.
 
+```mermaid
+flowchart LR
+    subgraph exec["Persisted for every execution"]
+        def["Workflow definition snapshot"]
+        wf["Workflow state"]
+        task["Every task execution"]
+        queue["Task queue state"]
+    end
+    def --> store[("Persistence store<br/>Redis · PostgreSQL · MySQL · Cassandra")]
+    wf --> store
+    task --> store
+    queue --> store
+    store --> resume["After a restart:<br/>resume from last persisted state"]
+```
 
 ## Task delivery guarantees
 
@@ -29,6 +43,13 @@ Conductor provides **at-least-once delivery** for all tasks:
 
 A task is never silently lost. If a worker polls a task but never responds, the response timeout triggers redelivery.
 
+```mermaid
+flowchart LR
+    sched["Task SCHEDULED<br/>in persistent queue"] --> prog["Worker polls<br/>task IN_PROGRESS"]
+    prog --> done["Worker reports COMPLETED<br/>workflow advances"]
+    prog --> fail["Worker fails, crashes,<br/>or never responds"]
+    fail -- "retry / response timeout" --> sched
+```
 
 ## Failure matrix
 

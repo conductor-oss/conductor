@@ -19,13 +19,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.conductoross.conductor.ai.models.AudioGenRequest;
-import org.conductoross.conductor.ai.models.ChatCompletion;
-import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
-import org.conductoross.conductor.ai.models.ImageGenRequest;
-import org.conductoross.conductor.ai.models.LLMResponse;
-import org.conductoross.conductor.ai.models.ToolSpec;
-import org.conductoross.conductor.ai.models.VideoGenRequest;
+import org.conductoross.conductor.ai.model.AudioGenRequest;
+import org.conductoross.conductor.ai.model.ChatCompletion;
+import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
+import org.conductoross.conductor.ai.model.ImageGenRequest;
+import org.conductoross.conductor.ai.model.LLMResponse;
+import org.conductoross.conductor.ai.model.ToolSpec;
+import org.conductoross.conductor.ai.model.VideoGenRequest;
 import org.conductoross.conductor.ai.video.VideoModel;
 import org.conductoross.conductor.ai.video.VideoOptions;
 import org.conductoross.conductor.ai.video.VideoOptionsBuilder;
@@ -40,8 +40,8 @@ import org.springframework.ai.tool.function.FunctionToolCallback;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /** Interface for LLM implementations. */
 public interface AIModel {
@@ -101,6 +101,11 @@ public interface AIModel {
      */
     ChatModel getChatModel();
 
+    /** Request-scoped model selection, used by playback to capture output constraints. */
+    default ChatModel getChatModel(ChatCompletion input) {
+        return getChatModel();
+    }
+
     /**
      * @param input request to do chat completion
      * @return Options
@@ -115,7 +120,6 @@ public interface AIModel {
                 .stopSequences(input.getStopWords())
                 .frequencyPenalty(input.getFrequencyPenalty())
                 .topK(input.getTopK())
-                .internalToolExecutionEnabled(false)
                 .presencePenalty(input.getPresencePenalty())
                 .build();
     }
@@ -129,7 +133,7 @@ public interface AIModel {
                 .model(input.getModel())
                 .height(input.getHeight())
                 .width(input.getWidth())
-                .N(input.getN())
+                .n(input.getN())
                 .responseFormat("b64_json")
                 .style(input.getStyle())
                 .build();
@@ -216,7 +220,7 @@ public interface AIModel {
                                 .build();
                 functions.add(function);
             }
-        } catch (JsonProcessingException jpe) {
+        } catch (JacksonException jpe) {
             throw new RuntimeException(jpe);
         }
         return functions;

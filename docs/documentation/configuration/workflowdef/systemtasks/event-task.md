@@ -1,122 +1,65 @@
 ---
-description: "Event Task — publish events to message brokers (Kafka, SQS, NATS) from Conductor workflows for event-driven orchestration."
+description: EVENT system task inputs, payload, sink expansion, and asynchronous completion behavior.
 ---
-# Event Task
 
-```json
-"type" : "EVENT"
-```
+# Publish events with the Event task
 
-The Event task (`EVENT`) is used to publish events to supported eventing systems. It enables event-based dependencies within workflows and tasks, making it possible to trigger external systems as part of the workflow execution.
-
-The following queuing systems are supported:
-
-- Conductor internal queue
-- AMQP (RabbitMQ)
-- Kafka
-- NATS
-- NATS Streaming
-- SQS
-
-For details on configuring connections to these event buses (Kafka bootstrap servers, NATS URLs, AMQP credentials, etc.), see the [Event Bus Orchestration](../../../../devguide/how-tos/event-bus.md#configuration) guide.
-
+`EVENT` publishes a JSON message through a registered event-queue provider. It is the generic publishing task: use [`KAFKA_PUBLISH`](kafka-publish-task.md) when the message contract needs Kafka-specific keys, headers, serializers, or producer controls.
 
 ## Task parameters
 
-Use these parameters in top level of the Event task configuration.
+| Parameter | Required | Behavior |
+|---|---|---|
+| `sink` | Yes | `provider:<provider-specific destination>`; expressions resolve at runtime |
+| `inputParameters` | No | User payload fields |
+| `asyncComplete` | No | Defaults to `false`; when true the task remains `IN_PROGRESS` after publish |
 
-| Parameter          | Type                | Description                                       | Required / Optional  |
-| ------------------ | ------------------- | ------------------------------------------------- | -------------------- |
-| sink               | String              | The target event queue in the format `prefix:location`, where the prefix denotes the queuing system, and the location represents the specific queue name (e.g., `send_email_queue`). Supported prefixes: <ul><li>`conductor`</li> <li>`ampq`, `amqp_queue`, or `amqp_exchange`</li> <li>`kafka`</li> <li>`nats`</li> <li>`nats-stream`</li> <li>`sqs`</li></ul> <br/> **Note:** For all queuing systems except the Conductor queue, you should use the queue's name, not the URI in `location`. The URI will be looked up based on the queue name. Refer to [Conductor sink configuration](#conductor-sink-configuration) for more details on how to use the Conductor queue.         | Required. |
-| inputParameters   | Map[String, Any].    | Any other input parameters for the Event task, which will be published to the queuing system.  | Optional. |
-| asyncComplete     | Boolean              | Whether the task is completed asynchronously. The default value is false. <ul><li>**false**—Task status is set to COMPLETED upon successful execution.</li> <li>**true**—Task status is kept as IN_PROGRESS until an external event marks it as complete.</li></ul> | Optional. |
+In OSS, registered provider identifiers are `conductor`, `kafka`, `sqs`, `nats`, `jsm`, `nats_stream`, `amqp_queue`, and `amqp_exchange`, subject to the corresponding server module being enabled. The provider owns the destination grammar after the first colon; for example, it might be a Kafka topic, an SQS queue URL, a NATS subject, or an AMQP queue/exchange.
 
+## Conductor sink expansion
 
-### Conductor sink configuration
+- `conductor` becomes `conductor:<workflowName>:<taskReferenceName>`.
+- `conductor:<suffix>` becomes `conductor:<workflowName>:<suffix>`.
 
-When using Conductor as sink, you have two options to set the sink: 
-* `conductor` 
-* `conductor:<workflow_name>:<queue_name>` (same as the `event` value of the event handler)
+The event handler must listen on the expanded name.
 
-If the workflow name and queue name is omitted, it will default to the Event task's workflow name and its own `taskReferenceName` for the queue name.
+## Published payload and output
 
-## Configuration JSON
+The task begins with its resolved input parameters and adds workflow metadata:
 
-Here is the task configuration for an Event task.
+| Field | Value |
+|---|---|
+| `workflowInstanceId` | Parent workflow execution ID |
+| `workflowType` | Parent workflow name |
+| `workflowVersion` | Parent version |
+| `correlationId` | Parent correlation ID |
+| `taskToDomain` | Parent domain map |
+
+The task output also contains `event_produced`, the expanded sink. The published message is the task output without `event_produced`. The Event task uses its task ID as the broker message identity, so consumers can use that stable value for duplicate detection.
+
+## Completion behavior
+
+With `asyncComplete: false`, a successful publish completes the task. With `asyncComplete: true`, publishing succeeds but the task remains `IN_PROGRESS`; an external task update or an event-handler `complete_task`/`fail_task` action must resolve it.
+
+## Example
 
 ```json
 {
-  "name": "event",
-  "taskReferenceName": "event_ref",
+  "name": "publish_order_status",
+  "taskReferenceName": "publish_order_status",
   "type": "EVENT",
-  "inputParameters": {},
-  "sink": "sqs:sqs_queue_name",
+  "sink": "conductor:order-status",
+  "inputParameters": {
+    "orderId": "${workflow.input.orderId}",
+    "status": "READY"
+  },
   "asyncComplete": false
 }
 ```
 
-## Output
+For a practical first-use walkthrough, see [Publish events](../../../../devguide/how-tos/publish-events.md). Use [Event-Driven Orchestration](../../../../devguide/how-tos/event-bus.md) for the provider matrix, routing, webhooks, signals, and delivery observability.
 
-The Event task will return the following parameters.
-
-| Name             | Type         | Description                                                   |
-| ---------------- | ------------ | ------------------------------------------------------------- |
-| event_produced     | String  | The name of the event produced. When producing an event with Conductor as a sink, the event name will be formatted as
-`conductor:<workflow_name>:<task_reference_name>`.           |
-| workflowInstanceId | String  | The workflow execution ID.                 |
-| workflowType       | String  | The workflow name.                         |
-| workflowVersion    | Integer | The workflow version.                      |
-| correlationId      | String  | The workflow correlation ID.               |
-| sink               | String  | The `sink` value.                          |
-| asyncComplete      | Boolean | The `asyncComplete` value.                 |
-| taskToDomain       | Map[String, String] | The Event task's domain mapping, if any. |
-
-
-The published event's payload is identical to the task output, minus `event_produced`.
-
-## Examples
-
-In this example, the Event task sends a message to the Conductor queue.
-
-``` json
-{
-  "name": "event_task",
-  "taskReferenceName": "event_0",
-  "inputParameters": {
-    "mod": "${workflow.input.mod}",
-    "oddEven": "${workflow.input.oddEven}",
-    "sink": "conductor",
-    "asyncComplete": false
-  },
-  "type": "EVENT",
-  "decisionCases": {},
-  "defaultCase": [],
-  "forkTasks": [],
-  "startDelay": 0,
-  "joinOn": [],
-  "sink": "conductor",
-  "optional": false,
-  "defaultExclusiveJoinTask": [],
-  "asyncComplete": false,
-  "loopOver": [],
-  "onStateChange": {},
-  "permissive": false
-}
-```
-
-Here is the Event task output upon execution:
-
-``` json
-{
-  "event_produced": "conductor:test workflow:event_0",
-  "mod": "2",
-  "oddEven": "5",
-  "asyncComplete": false,
-  "sink": "conductor",
-  "workflowType": "test workflow",
-  "correlationId": null,
-  "taskToDomain": {},
-  "workflowVersion": 1,
-  "workflowInstanceId": "b7c1e6d9-4a80-48b6-b901-487afef9d7c1"
-}
-```
+<a id="configuration-json"></a>
+<a id="conductor-sink-configuration"></a>
+<a id="output"></a>
+<a id="examples"></a>

@@ -1,0 +1,12 @@
+# Overlay for the e2e suite only: e2e/run_tests*.sh add it to COMPOSE_FILE.
+# Not for deployments.
+#
+# Rules for this file:
+# - Only turn on features that are off by default, or shorten waits so the tests run fast.
+# - Do not change behavior that is on by default. Unit and test-harness tests cover the defaults.
+services:
+  conductor-server:
+    environment:
+      - conductor.mcp.server.enabled=true
+      # Short, so the MCP blocking-cap cases do not wait 25 s each.
+      - conductor.mcp.server.blockingCapSeconds=3

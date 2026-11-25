@@ -25,6 +25,8 @@ import org.conductoross.conductor.es8.dao.query.parser.internal.Name;
 import org.conductoross.conductor.es8.dao.query.parser.internal.ParserException;
 import org.conductoross.conductor.es8.dao.query.parser.internal.Range;
 
+import com.netflix.conductor.common.metadata.workflow.WorkflowClassifier;
+
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.json.JsonData;
@@ -105,12 +107,16 @@ public class NameValue extends AbstractNode implements FilterProvider {
             if (unquoted.contains("*")) {
                 return Query.of(q -> q.wildcard(w -> w.field(name.getName()).value(unquoted)));
             }
-            return Query.of(
-                    q ->
-                            q.term(
-                                    t ->
-                                            t.field(name.getName())
-                                                    .value(toFieldValue(value.toString()))));
+            Query query =
+                    Query.of(
+                            q ->
+                                    q.term(
+                                            t ->
+                                                    t.field(name.getName())
+                                                            .value(
+                                                                    toFieldValue(
+                                                                            value.toString()))));
+            return includeLegacyUntaggedWorkflows(query, List.of(toFieldValue(value.toString())));
         } else if (op.getOperator().equals(Operators.BETWEEN.value())) {
             return Query.of(
                     q ->
@@ -131,8 +137,14 @@ public class NameValue extends AbstractNode implements FilterProvider {
                     valueList.getList().stream()
                             .map(value -> toFieldValue(String.valueOf(value)))
                             .toList();
-            return Query.of(
-                    q -> q.terms(t -> t.field(name.getName()).terms(tf -> tf.value(values))));
+            Query query =
+                    Query.of(
+                            q ->
+                                    q.terms(
+                                            t ->
+                                                    t.field(name.getName())
+                                                            .terms(tf -> tf.value(values))));
+            return includeLegacyUntaggedWorkflows(query, values);
         } else if (op.getOperator().equals(Operators.NOT_EQUALS.value())) {
             if (value.isSysConstant()) {
                 return systemConstantQuery(value.getSysConstant(), false);
@@ -197,6 +209,24 @@ public class NameValue extends AbstractNode implements FilterProvider {
 
     private Query missingFieldQuery() {
         return Query.of(q -> q.bool(b -> b.mustNot(existsFieldQuery())));
+    }
+
+    private Query includeLegacyUntaggedWorkflows(Query classifierQuery, List<FieldValue> values) {
+        if (!"classifier".equals(name.getName())
+                || values.stream()
+                        .noneMatch(
+                                value ->
+                                        value.isString()
+                                                && WorkflowClassifier.WORKFLOW.equalsIgnoreCase(
+                                                        value.stringValue()))) {
+            return classifierQuery;
+        }
+        return Query.of(
+                q ->
+                        q.bool(
+                                b ->
+                                        b.should(classifierQuery, missingFieldQuery())
+                                                .minimumShouldMatch("1")));
     }
 
     private FieldValue toFieldValue(String rawValue) {

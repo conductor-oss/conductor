@@ -17,6 +17,7 @@ import {
 // OSS build - no enterprise plugins are registered
 // Enterprise builds import and register plugins in their own main.tsx
 
+import "./monacoLoader";
 import { router } from "./routes/router";
 import "./index.css";
 import { queryClient } from "./queryClient";

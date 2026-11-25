@@ -16,8 +16,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.conductoross.conductor.ai.document.DocumentLoader;
-import org.conductoross.conductor.ai.models.LLMResponse;
-import org.conductoross.conductor.ai.models.MarkdownToPdfRequest;
+import org.conductoross.conductor.ai.model.LLMResponse;
+import org.conductoross.conductor.ai.model.MarkdownToPdfRequest;
 import org.conductoross.conductor.ai.tasks.worker.DocumentGenWorkers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

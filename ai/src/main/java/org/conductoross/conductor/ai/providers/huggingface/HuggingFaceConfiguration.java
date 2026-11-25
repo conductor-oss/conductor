@@ -46,7 +46,8 @@ public class HuggingFaceConfiguration implements ModelConfiguration<HuggingFace>
     }
 
     public String getBaseURL() {
-        return baseURL == null ? "https://huggingface.co/api" : baseURL; // changethis
+        // HuggingFace's OpenAI-compatible router (Responses API lives at /responses).
+        return baseURL == null ? "https://router.huggingface.co/v1" : baseURL;
     }
 
     @Override

@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.netflix.runtime.health.api.HealthCheckStatus;
 
 @RestController
-@RequestMapping("/health")
+@RequestMapping({"/health", "/api/health"})
 public class HealthCheckResource {
 
     // SBMTODO: Move this Spring boot health check

@@ -8,6 +8,7 @@ services:
       # stays unconfigured and the LLM e2e tests that depend on it self-skip.
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - COHERE_API_KEY=${COHERE_API_KEY:-}
     image: conductor:server
     container_name: conductor-server
     build:
@@ -21,7 +22,7 @@ services:
       - 8000:8080
       - 8127:5000
     healthcheck:
-      test: [ "CMD", "curl","-I" ,"-XGET", "http://localhost:8080/health" ]
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/health"]
       interval: 60s
       timeout: 30s
       retries: 12

@@ -3,7 +3,7 @@ import { fetchWithContext } from "plugins/fetch";
 import { SaveEventHandlerMachineContext } from "./types";
 import { queryClient } from "../../../../../queryClient";
 import { fetchContextNonHook } from "plugins/fetch";
-import { tryFunc } from "utils";
+import { getErrors, logger, tryFunc } from "utils";
 import { NEW_EVENT_HANDLER_TEMPLATE } from "../eventHandlerSchema";
 
 const fetchContext = fetchContextNonHook();
@@ -94,15 +94,23 @@ export const deleteEventHandler = async (
   { eventHandlerName, authHeaders }: SaveEventHandlerMachineContext,
   __: any,
 ) => {
-  return tryFunc({
-    fn: async () => {
-      const path = `/event/${encodeURIComponent(eventHandlerName)}`;
-      const result = await fetchWithContext(path, fetchContext, {
-        method: "DELETE",
-        headers: authHeaders,
+  try {
+    const path = `/event/${encodeURIComponent(eventHandlerName)}`;
+    return await fetchWithContext(path, fetchContext, {
+      method: "DELETE",
+      headers: authHeaders,
+    });
+  } catch (error: any) {
+    logger.error("[deleteEventHandler] error:", error);
+    if (error?.status === 403) {
+      return Promise.reject({
+        message: "You do not have permission to delete this event handler.",
       });
-
-      return result;
-    },
-  });
+    }
+    const details = await getErrors(error);
+    return Promise.reject({
+      originalError: details,
+      message: details?.message,
+    });
+  }
 };

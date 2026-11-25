@@ -30,9 +30,11 @@ import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
+import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
@@ -166,6 +168,55 @@ public class TaskServiceImpl implements TaskService {
         if (updatedTask != null) {
             return updatedTask.getTaskId();
         }
+        return null;
+    }
+
+    @Override
+    public String signalTask(
+            String workflowId, TaskResult.Status status, Map<String, Object> output) {
+        Task pending = findPendingBlockingTask(workflowId);
+        if (pending == null) {
+            return null;
+        }
+
+        TaskResult taskResult = new TaskResult(pending);
+        taskResult.setStatus(status);
+        if (output != null) {
+            taskResult.getOutputData().putAll(output);
+        }
+        TaskModel updatedTask = updateTask(taskResult);
+        return updatedTask != null ? updatedTask.getTaskId() : null;
+    }
+
+    /**
+     * Finds the first non-terminal {@code WAIT} task in the workflow, descending into running
+     * sub-workflows. Returns {@code null} if the workflow has no blocked task waiting to be
+     * signaled.
+     */
+    private Task findPendingBlockingTask(String workflowId) {
+        Workflow workflow = executionService.getExecutionStatus(workflowId, true);
+        if (workflow == null) {
+            return null;
+        }
+
+        for (Task task : workflow.getTasks()) {
+            if (TaskType.TASK_TYPE_WAIT.equals(task.getTaskType())
+                    && !task.getStatus().isTerminal()) {
+                return task;
+            }
+        }
+
+        for (Task task : workflow.getTasks()) {
+            if (TaskType.TASK_TYPE_SUB_WORKFLOW.equals(task.getTaskType())
+                    && !task.getStatus().isTerminal()
+                    && StringUtils.isNotBlank(task.getSubWorkflowId())) {
+                Task subTask = findPendingBlockingTask(task.getSubWorkflowId());
+                if (subTask != null) {
+                    return subTask;
+                }
+            }
+        }
+
         return null;
     }
 

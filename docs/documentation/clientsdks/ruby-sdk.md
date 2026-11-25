@@ -1,11 +1,10 @@
 ---
 description: "Build Conductor workers in Ruby with idiomatic task definitions and workflow management."
+source_repo: "https://github.com/conductor-oss/ruby-sdk"
+sdk_page: ruby
 ---
 
 # Ruby SDK
-
-!!! info "Source"
-    GitHub: [conductor-oss/ruby-sdk](https://github.com/conductor-oss/ruby-sdk) | Report issues and contribute on GitHub.
 
 ## Features
 
@@ -303,7 +302,7 @@ workflow = Conductor.workflow :ai_assistant, executor: executor do
   # Generate image
   generate_image :create_image,
     provider: 'openai',
-    model: 'dall-e-3',
+    model: 'gpt-image-1',
     prompt: 'A sunset over mountains',
     size: '1024x1024'
 
@@ -516,7 +515,7 @@ Apache 2.0 - see [LICENSE](https://github.com/conductor-oss/ruby-sdk/blob/main/L
 - [Orkes Cloud](https://orkes.io)
 - [Documentation](https://conductor-oss.org)
 - [Python SDK](https://github.com/conductor-sdk/conductor-python)
-- [Community Slack](https://join.slack.com/t/orkes-conductor/shared_invite/zt-2vdbx239s-Eacdyqya9giNLHfrCavfaA)
+- [Community Slack](https://join.slack.com/t/orkes-conductor/shared_invite/zt-4gilmdmpj-Fu_PxACC60BG4ctur8OeDg)
 
 
 ## Examples

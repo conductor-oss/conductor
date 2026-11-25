@@ -13,6 +13,7 @@
 package com.netflix.conductor.service;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.conductoross.conductor.core.listener.MetadataChangeListenerStub;
 import org.junit.Test;
@@ -27,6 +28,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.tasks.TaskType;
+import com.netflix.conductor.common.metadata.workflow.StateChangeEvent;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDefSummary;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
@@ -36,6 +39,7 @@ import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 
+import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 
 import static com.netflix.conductor.TestUtils.getConstraintViolationMessages;
@@ -46,6 +50,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -373,7 +378,9 @@ public class MetadataServiceTest {
         workflowTask.setName("hello");
         workflowTask.setType("SWITCH");
         workflowTask.setEvaluatorType("javascript");
-        workflowTask.setExpression("1>abcd");
+        // A genuine syntax error: registration validates syntax only, since expressions
+        // referencing runtime bound values cannot be evaluated at registration time
+        workflowTask.setExpression("1 >");
         WorkflowTask caseTask = new WorkflowTask();
         caseTask.setTaskReferenceName("casetrue");
         caseTask.setName("casetrue");
@@ -498,6 +505,155 @@ public class MetadataServiceTest {
         assertEquals(2, workflowDef.getSchemaVersion());
     }
 
+    @Test
+    public void testRegisterWorkflowDefWithValidNestedWorkflowTasksAndOnStateChange() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("nested_validation_def");
+        workflowDef.setOwnerEmail("sample@test.com");
+
+        WorkflowTask decisionTask = new WorkflowTask();
+        decisionTask.setName("decision_task");
+        decisionTask.setTaskReferenceName("decision_task_ref");
+        decisionTask.setType(TaskType.DECISION.name());
+        decisionTask.setCaseValueParam("case");
+        WorkflowTask caseTask = workflowTask("case_task", "case_task_ref");
+        decisionTask.setDecisionCases(
+                Collections.singletonMap("true", Collections.singletonList(caseTask)));
+        WorkflowTask defaultCaseTask = workflowTask("default_case_task", "default_case_task_ref");
+        decisionTask.setDefaultCase(Collections.singletonList(defaultCaseTask));
+
+        WorkflowTask forkTask = new WorkflowTask();
+        forkTask.setName("fork_task");
+        forkTask.setTaskReferenceName("fork_task_ref");
+        forkTask.setType(TaskType.FORK_JOIN.name());
+        WorkflowTask forkBranchTask = workflowTask("fork_branch_task", "fork_branch_task_ref");
+        forkTask.setForkTasks(Collections.singletonList(Collections.singletonList(forkBranchTask)));
+
+        WorkflowTask simpleTask = new WorkflowTask();
+        simpleTask.setName("simple_task");
+        simpleTask.setTaskReferenceName("simple_task_ref");
+        StateChangeEvent stateChangeEvent = new StateChangeEvent();
+        stateChangeEvent.setType("task_status_change");
+        simpleTask.setOnStateChange(
+                Collections.singletonMap(
+                        "onTaskUpdate", Collections.singletonList(stateChangeEvent)));
+
+        List<WorkflowTask> tasks = new ArrayList<>();
+        tasks.add(decisionTask);
+        tasks.add(forkTask);
+        tasks.add(simpleTask);
+        workflowDef.setTasks(tasks);
+
+        // Populated nested structures including onStateChange must remain registrable under
+        // Hibernate Validator 9 (issue #1752).
+        metadataService.registerWorkflowDef(workflowDef);
+        verify(metadataDAO, times(1)).createWorkflowDef(workflowDef);
+    }
+
+    @Test(expected = ConstraintViolationException.class)
+    public void testRegisterWorkflowDefWithInvalidNestedTaskInDecisionCases() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("invalid_nested_decision_def");
+        workflowDef.setOwnerEmail("sample@test.com");
+
+        WorkflowTask decisionTask = new WorkflowTask();
+        decisionTask.setName("decision_task");
+        decisionTask.setTaskReferenceName("decision_task_ref");
+        decisionTask.setType(TaskType.DECISION.name());
+        decisionTask.setCaseValueParam("case");
+        // Nested task without a name: rejected through the cascaded validation of decisionCases.
+        decisionTask.setDecisionCases(
+                Collections.singletonMap(
+                        "true",
+                        Collections.singletonList(workflowTaskWithoutName("nested_case_ref"))));
+
+        List<WorkflowTask> tasks = new ArrayList<>();
+        tasks.add(decisionTask);
+        workflowDef.setTasks(tasks);
+
+        try {
+            metadataService.registerWorkflowDef(workflowDef);
+        } catch (ConstraintViolationException ex) {
+            assertEquals(1, ex.getConstraintViolations().size());
+            Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
+            assertTrue(messages.contains("WorkflowTask name cannot be empty or null"));
+            assertNestedViolationPath(ex.getConstraintViolations(), "decisionCases");
+            verify(metadataDAO, never()).createWorkflowDef(workflowDef);
+            throw ex;
+        }
+        fail("metadataService.registerWorkflowDef did not throw ConstraintViolationException !");
+    }
+
+    @Test(expected = ConstraintViolationException.class)
+    public void testRegisterWorkflowDefWithInvalidNestedTaskInDefaultCase() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("invalid_nested_default_case_def");
+        workflowDef.setOwnerEmail("sample@test.com");
+
+        WorkflowTask decisionTask = new WorkflowTask();
+        decisionTask.setName("decision_task");
+        decisionTask.setTaskReferenceName("decision_task_ref");
+        decisionTask.setType(TaskType.DECISION.name());
+        decisionTask.setCaseValueParam("case");
+        // A valid case branch keeps the DECISION task itself valid, so the only violation is the
+        // nested task inside defaultCase.
+        decisionTask.setDecisionCases(
+                Collections.singletonMap(
+                        "true",
+                        Collections.singletonList(workflowTask("case_task", "case_task_ref"))));
+        // Nested task without a name: rejected through the cascaded validation of defaultCase.
+        decisionTask.setDefaultCase(
+                Collections.singletonList(workflowTaskWithoutName("nested_default_case_ref")));
+
+        List<WorkflowTask> tasks = new ArrayList<>();
+        tasks.add(decisionTask);
+        workflowDef.setTasks(tasks);
+
+        try {
+            metadataService.registerWorkflowDef(workflowDef);
+        } catch (ConstraintViolationException ex) {
+            assertEquals(1, ex.getConstraintViolations().size());
+            Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
+            assertTrue(messages.contains("WorkflowTask name cannot be empty or null"));
+            assertNestedViolationPath(ex.getConstraintViolations(), "defaultCase");
+            verify(metadataDAO, never()).createWorkflowDef(workflowDef);
+            throw ex;
+        }
+        fail("metadataService.registerWorkflowDef did not throw ConstraintViolationException !");
+    }
+
+    @Test(expected = ConstraintViolationException.class)
+    public void testRegisterWorkflowDefWithInvalidNestedTaskInForkTasks() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("invalid_nested_fork_def");
+        workflowDef.setOwnerEmail("sample@test.com");
+
+        WorkflowTask forkTask = new WorkflowTask();
+        forkTask.setName("fork_task");
+        forkTask.setTaskReferenceName("fork_task_ref");
+        forkTask.setType(TaskType.FORK_JOIN.name());
+        // Nested task without a name: rejected through the cascaded validation of forkTasks.
+        forkTask.setForkTasks(
+                Collections.singletonList(
+                        Collections.singletonList(workflowTaskWithoutName("nested_fork_ref"))));
+
+        List<WorkflowTask> tasks = new ArrayList<>();
+        tasks.add(forkTask);
+        workflowDef.setTasks(tasks);
+
+        try {
+            metadataService.registerWorkflowDef(workflowDef);
+        } catch (ConstraintViolationException ex) {
+            assertEquals(1, ex.getConstraintViolations().size());
+            Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
+            assertTrue(messages.contains("WorkflowTask name cannot be empty or null"));
+            assertNestedViolationPath(ex.getConstraintViolations(), "forkTasks");
+            verify(metadataDAO, never()).createWorkflowDef(workflowDef);
+            throw ex;
+        }
+        fail("metadataService.registerWorkflowDef did not throw ConstraintViolationException !");
+    }
+
     @Test(expected = ConstraintViolationException.class)
     public void testUnregisterWorkflowDefNoName() {
         try {
@@ -587,5 +743,34 @@ public class MetadataServiceTest {
             assertNotNull(summary.getCreateTime());
         }
         verify(metadataDAO, times(1)).getWorkflowVersions("test_workflow_def");
+    }
+
+    private WorkflowTask workflowTask(String name, String taskReferenceName) {
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setName(name);
+        workflowTask.setTaskReferenceName(taskReferenceName);
+        return workflowTask;
+    }
+
+    private WorkflowTask workflowTaskWithoutName(String taskReferenceName) {
+        // Leaves the name unset so the nested @NotEmpty constraint on WorkflowTask.name is
+        // violated.
+        return workflowTask(null, taskReferenceName);
+    }
+
+    /**
+     * Asserts that a constraint violation is reported inside the given nested workflow task
+     * structure (decisionCases, defaultCase or forkTasks), proving that cascaded validation reached
+     * the nested {@link WorkflowTask} rather than only the top level.
+     */
+    private void assertNestedViolationPath(
+            Set<ConstraintViolation<?>> violations, String structure) {
+        Set<String> paths =
+                violations.stream()
+                        .map(violation -> violation.getPropertyPath().toString())
+                        .collect(Collectors.toSet());
+        assertTrue(
+                paths.stream()
+                        .anyMatch(path -> path.contains(structure) && path.endsWith(".name")));
     }
 }

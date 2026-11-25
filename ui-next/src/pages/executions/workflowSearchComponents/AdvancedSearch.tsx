@@ -81,6 +81,8 @@ export interface AdvancedSearchProps {
   openEndDatePicker: boolean;
   setEndOpenDatePicker: (val: boolean) => void;
   recentSearches: { start: string; end: string };
+  /** Classifier filter passed to /workflow/search (e.g. "workflow" or "agent"). */
+  classifier?: string;
 }
 
 export default function AdvancedSearch({
@@ -114,6 +116,7 @@ export default function AdvancedSearch({
   openEndDatePicker,
   setEndOpenDatePicker,
   recentSearches,
+  classifier = "workflow",
 }: AdvancedSearchProps) {
   const disposeRef = useRef<null | (() => void)>(null);
   const [queryText, setQueryText] = useQueryState("query", "");
@@ -208,6 +211,9 @@ export default function AdvancedSearch({
       sort,
       query: queryFT.query,
       freeText: queryFT.freeText,
+      // Scope results to a single classifier: "workflow" for plain workflow
+      // executions, "agent" for Conductor-Agents runs on the Agents pages.
+      classifier,
     },
     {},
     {
@@ -260,9 +266,7 @@ export default function AdvancedSearch({
   };
 
   const handleSort = (changedColumn: string, direction: string) => {
-    const sortColumn =
-      changedColumn === "workflowType" ? "workflowName" : changedColumn;
-    const newSort = `${sortColumn}:${direction.toUpperCase()}`;
+    const newSort = `${changedColumn}:${direction.toUpperCase()}`;
 
     // Only refetch if sort actually changed
     if (sort !== newSort) {
@@ -453,8 +457,8 @@ export default function AdvancedSearch({
                 onChange={(__, val: string[]) => setStatus(val)}
                 value={status}
                 renderTags={renderStatusTagChip}
-                renderOption={(props, option) => (
-                  <Box component="li" {...props}>
+                renderOption={({ key, ...props }, option) => (
+                  <Box component="li" key={key} {...props}>
                     <StatusBadge status={option} />
                   </Box>
                 )}

@@ -20,7 +20,6 @@ import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -28,6 +27,7 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * OkHttp REST client for OpenAI-compatible Chat Completions API (POST /chat/completions).
@@ -239,6 +239,11 @@ public class OpenAIChatCompletionsApi {
             return new MessageItem("user", content, null, null, null);
         }
 
+        /** Multi-part user message (text + image parts) for vision input. */
+        public static MessageItem user(List<ContentPart> content) {
+            return new MessageItem("user", content, null, null, null);
+        }
+
         public static MessageItem assistant(String content) {
             return new MessageItem("assistant", content, null, null, null);
         }
@@ -250,6 +255,24 @@ public class OpenAIChatCompletionsApi {
         public static MessageItem tool(String toolCallId, String content) {
             return new MessageItem("tool", content, null, null, toolCallId);
         }
+    }
+
+    /** A content part of a multi-part user message (OpenAI vision format). */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record ContentPart(
+            String type, String text, @JsonProperty("image_url") ImageUrl imageUrl) {
+
+        public static ContentPart text(String text) {
+            return new ContentPart("text", text, null);
+        }
+
+        /** {@code url} is an https URL or a {@code data:<mime>;base64,<...>} URI. */
+        public static ContentPart imageUrl(String url) {
+            return new ContentPart("image_url", null, new ImageUrl(url));
+        }
+
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        public record ImageUrl(String url) {}
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)

@@ -9,7 +9,7 @@
       "type": "GENERATE_IMAGE",
       "inputParameters": {
         "llmProvider": "openai",
-        "model": "dall-e-3",
+        "model": "gpt-image-1",
         "prompt": "A futuristic cityscape at sunset",
         "width": 1024,
         "height": 1024,

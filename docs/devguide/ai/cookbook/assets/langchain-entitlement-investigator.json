@@ -1,0 +1,28 @@
+{
+  "name": "langchain_entitlement_investigator",
+  "description": "Invokes a deployed LangChain-authored Conductor Agent through the stable Conductor runtime.",
+  "version": 1,
+  "schemaVersion": 2,
+  "timeoutSeconds": 300,
+  "timeoutPolicy": "TIME_OUT_WF",
+  "inputParameters": [
+    "customerId",
+    "question"
+  ],
+  "tasks": [
+    {
+      "name": "investigate_entitlement",
+      "taskReferenceName": "investigate_entitlement",
+      "type": "AGENT",
+      "inputParameters": {
+        "agentType": "conductor",
+        "name": "langchain-entitlement-investigator",
+        "prompt": "Customer ${workflow.input.customerId}: ${workflow.input.question}"
+      }
+    }
+  ],
+  "outputParameters": {
+    "investigation": "${investigate_entitlement.output.output}",
+    "executionId": "${investigate_entitlement.output.executionId}"
+  }
+}

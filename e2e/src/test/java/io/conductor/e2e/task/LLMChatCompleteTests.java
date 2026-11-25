@@ -15,6 +15,7 @@ package io.conductor.e2e.task;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -70,6 +71,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *         <li>{@link #OPENAI_CHAT_MODEL} — general-purpose, non-reasoning chat.
  *         <li>{@link #OPENAI_REASONING_MODEL} — reasoning model that honors {@code reasoningEffort}
  *             / {@code reasoningSummary} via the Responses API.
+ *       </ul>
+ *   <li><b>Cohere</b> (from <a
+ *       href="https://docs.cohere.com/docs/image-inputs">docs.cohere.com/docs/image-inputs</a>):
+ *       <ul>
+ *         <li>{@link #COHERE_VISION_MODEL} — vision-capable; exercises image media input ({@code
+ *             messages[].media}) through the Cohere adapter.
  *       </ul>
  * </ul>
  *
@@ -137,6 +144,55 @@ public class LLMChatCompleteTests {
      * use today.
      */
     private static final String OPENAI_REASONING_MODEL = "gpt-5-mini";
+
+    /**
+     * Cohere's GA vision model. Source: docs.cohere.com/docs/image-inputs ("Image inputs are
+     * supported on Command A Vision").
+     */
+    private static final String COHERE_VISION_MODEL = "command-a-vision-07-2025";
+
+    /**
+     * Vision-test image embedding the machine-unguessable token below. The asset is committed in
+     * this repo (e2e/src/test/resources/assets/melon7391.png) and referenced at a raw URL pinned to
+     * the immutable commit SHA that added it, so the bytes can never drift and no third-party image
+     * host is involved — GitHub, which already hosts the code, is the only dependency.
+     *
+     * <p>A remote HTTPS URL is deliberate, not a convenience — the local alternatives cannot work
+     * or would test less:
+     *
+     * <ul>
+     *   <li><b>localhost / 127.0.0.1 URL:</b> the server's {@code DocumentAccessPolicy} rejects
+     *       loopback addresses outright (SSRF protection, {@code checkResolvedAddress}); a local
+     *       URL only works if that security check is disabled in the config under test, which would
+     *       make the e2e certify a configuration users don't run.
+     *   <li><b>Bare base64 or data URI in {@code media}:</b> never reaches any provider — {@code
+     *       FileSystemDocumentLoader.supports()} claims any string without {@code ://} and the
+     *       access policy rejects it as a disallowed file path.
+     *   <li><b>{@code file://} path:</b> requires the test and server to share a filesystem and the
+     *       path to sit under the server's allowed directories — breaks the dockerized e2e flow
+     *       where the server runs in a container.
+     * </ul>
+     *
+     * <p>A remote HTTPS URL is also the shape real workflow media takes in production, so the test
+     * covers the genuine path: {@code LLMHelper} downloads it via {@code HttpDocumentLoader}
+     * (through the access-policy checks) and hands the bytes to the provider adapter.
+     */
+    private static final String TOKEN_IMAGE_URL =
+            "https://raw.githubusercontent.com/conductor-oss/conductor/"
+                    + "d8db275351294084203df3ed881c8435a38810af"
+                    + "/e2e/src/test/resources/assets/melon7391.png";
+
+    /**
+     * The token rendered inside {@link #TOKEN_IMAGE_URL}. Transcribing it proves the model saw the
+     * image: unlike a color question, the answer cannot be guessed — it appears nowhere in the
+     * prompt, so it can only come from the image itself.
+     */
+    private static final String IMAGE_SECRET_TOKEN = "MELON7391";
+
+    /** Shared transcription prompt for the vision media tests. */
+    private static final String TRANSCRIBE_PROMPT =
+            "Transcribe the exact text shown in the image. Reply with only that text and"
+                    + " nothing else.";
 
     private final WorkflowClient workflowClient = ApiUtil.WORKFLOW_CLIENT;
     private final MetadataClient metadataClient = ApiUtil.METADATA_CLIENT;
@@ -720,6 +776,91 @@ public class LLMChatCompleteTests {
     }
 
     // ====================================================================
+    // Anthropic — vision (image media input; regression for the #1238 media fix)
+    // ====================================================================
+
+    @Test
+    @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
+    public void anthropic_haiku_vision_imageMediaInMessages_modelSeesTheImage() {
+        // Regression lock for the Anthropic media fix (PR #1238, merged): pre-fix the
+        // adapter dropped ``media`` from user messages, so the model never saw the
+        // image. The server downloads the URL and the adapter must forward the bytes
+        // as an Anthropic image content block. The embedded token is unguessable, so
+        // a correct transcription can only come from the image (see the counterfactual
+        // test below for the negative control).
+        String wfName = "ai_e2e_anthropic_vision_media";
+        registerMessagesWorkflow(wfName);
+
+        Workflow wf =
+                runAndWait(
+                        wfName,
+                        Map.of(
+                                "llmProvider",
+                                "anthropic",
+                                "model",
+                                ANTHROPIC_HAIKU_MODEL,
+                                "messages",
+                                transcribeMessages(true)),
+                        90);
+
+        assertTranscribed(wf, true);
+    }
+
+    @Test
+    @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
+    public void anthropic_haiku_vision_withoutMedia_tokenIsAbsent() {
+        // Counterfactual for the positive case above: the same prompt with NO media
+        // must complete without ever producing the token — proving the token cannot
+        // leak from the prompt and a passing positive case is real image reading.
+        String wfName = "ai_e2e_anthropic_vision_media_counterfactual";
+        registerMessagesWorkflow(wfName);
+
+        Workflow wf =
+                runAndWait(
+                        wfName,
+                        Map.of(
+                                "llmProvider",
+                                "anthropic",
+                                "model",
+                                ANTHROPIC_HAIKU_MODEL,
+                                "messages",
+                                transcribeMessages(false)),
+                        90);
+
+        assertTranscribed(wf, false);
+    }
+
+    // ====================================================================
+    // Cohere — vision model + image media input
+    // ====================================================================
+
+    @Test
+    @EnabledIfEnvironmentVariable(named = "COHERE_API_KEY", matches = ".+")
+    public void cohere_vision_imageMediaInMessages_modelSeesTheImage() {
+        // Regression lock for the Cohere media fix. Pre-fix, the adapter built the
+        // user message from text only and silently dropped ``media``, so the model
+        // never saw the image and the token was untranscribable. The server downloads
+        // the URL and the adapter must forward the bytes as a Cohere v2 ``image_url``
+        // data-URI content part.
+        String wfName = "ai_e2e_cohere_vision_media";
+        registerMessagesWorkflow(wfName);
+
+        Workflow wf =
+                runAndWait(
+                        wfName,
+                        Map.of(
+                                "llmProvider",
+                                "cohere",
+                                "model",
+                                COHERE_VISION_MODEL,
+                                "messages",
+                                transcribeMessages(true)),
+                        90);
+
+        assertTranscribed(wf, true);
+    }
+
+    // ====================================================================
     // Workflow-def helpers
     // ====================================================================
 
@@ -1071,6 +1212,77 @@ public class LLMChatCompleteTests {
     // ====================================================================
     // Workflow execution + assertion helpers
     // ====================================================================
+
+    /**
+     * Workflow whose chat task takes the entire {@code messages} array from workflow input — for
+     * tests that need per-run message content (e.g. media attachments), unlike {@link
+     * #registerHistoryWorkflow} which pins a fixed conversation in the definition.
+     */
+    private void registerMessagesWorkflow(String name) {
+        ensureLLMChatCompleteTaskDef();
+
+        WorkflowTask chat = new WorkflowTask();
+        chat.setName("LLM_CHAT_COMPLETE");
+        chat.setTaskReferenceName("chat");
+        chat.setType("LLM_CHAT_COMPLETE");
+        Map<String, Object> inputParameters = new HashMap<>();
+        inputParameters.put("llmProvider", "${workflow.input.llmProvider}");
+        inputParameters.put("model", "${workflow.input.model}");
+        inputParameters.put("messages", "${workflow.input.messages}");
+        chat.setInputParameters(inputParameters);
+
+        WorkflowDef def = new WorkflowDef();
+        def.setName(name);
+        def.setVersion(1);
+        def.setOwnerEmail("ai-e2e@conductor.test");
+        def.setTasks(List.of(chat));
+        metadataClient.updateWorkflowDefs(List.of(def));
+    }
+
+    /** The transcription conversation, with or without the token image attached. */
+    private static List<Map<String, Object>> transcribeMessages(boolean withMedia) {
+        return List.of(
+                withMedia
+                        ? Map.of(
+                                "role",
+                                "user",
+                                "message",
+                                TRANSCRIBE_PROMPT,
+                                "media",
+                                List.of(TOKEN_IMAGE_URL),
+                                "mimeType",
+                                "image/png")
+                        : Map.of("role", "user", "message", TRANSCRIBE_PROMPT));
+    }
+
+    /**
+     * Asserts the chat task completed and, depending on whether the image was attached, that the
+     * embedded token was (or was not) transcribed. Normalizes case and punctuation so model
+     * formatting quirks don't flake the assertion.
+     */
+    private static void assertTranscribed(Workflow wf, boolean expectToken) {
+        Task chat = chatTasks(wf).get(0);
+        assertEquals(
+                Task.Status.COMPLETED,
+                chat.getStatus(),
+                "chat task must complete; reason: " + chat.getReasonForIncompletion());
+        String result = String.valueOf(chat.getOutputData().get("result"));
+        String normalized = result.toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]", "");
+        if (expectToken) {
+            assertTrue(
+                    normalized.contains(IMAGE_SECRET_TOKEN),
+                    "the model must transcribe the embedded token '"
+                            + IMAGE_SECRET_TOKEN
+                            + "' from the image; got: "
+                            + result);
+        } else {
+            assertFalse(
+                    normalized.contains(IMAGE_SECRET_TOKEN),
+                    "without media the token must not appear — it can only come from the"
+                            + " image; got: "
+                            + result);
+        }
+    }
 
     private Workflow runAndWait(String wfName, Map<String, Object> input, int maxSeconds) {
         StartWorkflowRequest req = new StartWorkflowRequest();

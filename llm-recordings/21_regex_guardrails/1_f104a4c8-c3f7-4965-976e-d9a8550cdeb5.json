@@ -1,0 +1,81 @@
+{
+  "schemaVersion" : 3,
+  "request" : {
+    "messages" : [ {
+      "role" : "system",
+      "text" : "You are an HR assistant. When asked about employees, look up their profile and share ALL the details you find.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "Tell me everything about user U-001.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    } ],
+    "tools" : [ {
+      "name" : "get_user_profile",
+      "description" : "Retrieve a user's profile from the database.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "user_id" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "user_id" ]
+      }
+    } ],
+    "jsonOutput" : false,
+    "outputSchema" : null,
+    "generationOptions" : {
+      "temperature" : 0.0,
+      "maxTokens" : 16384,
+      "thinkingTokenLimit" : 0
+    }
+  },
+  "response" : {
+    "metadata" : {
+      "id" : "resp_048722550284514c006aa82c0f506487d08ed9f474e5127eca",
+      "model" : "gpt-5.6-luna",
+      "usage" : {
+        "promptTokens" : 82,
+        "completionTokens" : 33,
+        "totalTokens" : 115,
+        "nativeUsage" : null
+      },
+      "rateLimit" : {
+        "requestsLimit" : 0,
+        "requestsRemaining" : 0,
+        "requestsReset" : 0,
+        "tokensLimit" : 0,
+        "tokensRemaining" : 0,
+        "tokensReset" : 0
+      },
+      "promptMetadata" : [ ],
+      "properties" : {
+        "response_id" : "resp_048722550284514c006aa82c0f506487d08ed9f474e5127eca",
+        "reasoning_tokens" : 9
+      }
+    },
+    "results" : [ {
+      "output" : {
+        "text" : "",
+        "metadata" : {
+          "messageType" : "ASSISTANT"
+        },
+        "toolCalls" : [ {
+          "id" : "call_8nuk8yIY6ImHVETsCbdTaEj4",
+          "type" : "function",
+          "name" : "get_user_profile",
+          "arguments" : "{\"user_id\":\"U-001\"}"
+        } ],
+        "media" : [ ]
+      },
+      "metadata" : {
+        "finishReason" : "TOOL_CALLS",
+        "contentFilters" : [ ],
+        "properties" : { }
+      }
+    } ]
+  }
+}

@@ -1,4 +1,4 @@
-import { Box, Tooltip } from "@mui/material";
+import { Box, Divider, Tooltip } from "@mui/material";
 import {
   CopySimple as CopyIcon,
   Trash as DeleteIcon,
@@ -19,6 +19,7 @@ import TagList from "components/ui/TagList";
 import PlayIcon from "components/icons/PlayIcon";
 import { MessageContext } from "components/providers/messageContext";
 import SplitWorkflowDefinitionButton from "pages/executions/SplitWorkflowDefinitionButton/SplitWorkflowDefinitionButton";
+import ImportBpmnButton from "pages/executions/SplitWorkflowDefinitionButton/ImportBpmnButton";
 import { removeDeletedWorkflow } from "pages/runWorkflow/runWorkflowUtils";
 import { useCallback, useContext, useMemo, useState } from "react";
 import { Helmet } from "react-helmet";
@@ -54,8 +55,6 @@ Read more:
 * [Core Concepts: Workflows](https://orkes.io/content/core-concepts#workflow-definition)
 * [Developer Guides: Workflows](https://orkes.io/content/developer-guides/workflows)
 * [Workflow API Reference](https://orkes.io/content/reference-docs/api/workflow)
-
-Browse our templates to get started with easy examples!
 `;
 
 export default function WorkflowDefinitions() {
@@ -64,8 +63,9 @@ export default function WorkflowDefinitions() {
 
   const isPlayground = featureFlags.isEnabled(FEATURES.PLAYGROUND);
   const tagsEnabled = featureFlags.isEnabled(FEATURES.TAG_VISIBILITY);
+  const isImportBpmnHidden = featureFlags.isEnabled(FEATURES.HIDE_IMPORT_BPMN);
   const { data, isFetching, refetch }: UseQueryResult<WorkflowDef[]> =
-    useWorkflowDefs();
+    useWorkflowDefs({}, "workflow");
   const [showAddTagDialog, setShowAddTagDialog] = useState(false);
   const [addTagDialogData, setAddTagDialogData] =
     useState<TagDialogProps | null>(null);
@@ -183,6 +183,7 @@ export default function WorkflowDefinitions() {
         id: "restartable",
         name: "restartable",
         label: "Restartable",
+        type: ColumnCustomType.BOOLEAN,
         grow: 0.5,
         tooltip: "Whether the workflow is restartable",
       },
@@ -190,6 +191,7 @@ export default function WorkflowDefinitions() {
         id: "status_listener_enabled",
         name: "workflowStatusListenerEnabled",
         label: "Status listener enabled",
+        type: ColumnCustomType.BOOLEAN,
         grow: 0.5,
         tooltip: "Whether the status listener is enabled",
       },
@@ -473,6 +475,20 @@ export default function WorkflowDefinitions() {
         actions={
           <SectionHeaderActions
             buttons={[
+              ...(isImportBpmnHidden
+                ? []
+                : [
+                    { customButtonElement: <ImportBpmnButton /> },
+                    {
+                      customButtonElement: (
+                        <Divider
+                          orientation="vertical"
+                          flexItem
+                          sx={{ height: 24, alignSelf: "center" }}
+                        />
+                      ),
+                    },
+                  ]),
               {
                 label: "Run workflow",
                 color: "secondary",
@@ -494,7 +510,7 @@ export default function WorkflowDefinitions() {
               localStorageKey="workflowsTable"
               quickSearchEnabled
               quickSearchPlaceholder="Search workflow definitions"
-              searchTerm={searchParam}
+              searchTerm={searchParam ?? ""}
               onSearchTermChange={setSearchParam}
               defaultShowColumns={[
                 "workflow_name",

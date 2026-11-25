@@ -15,8 +15,8 @@ package org.conductoross.conductor.model.file;
 import java.util.Objects;
 
 /**
- * Response to {@code POST /api/files/{fileId}/upload-complete}. {@code contentHash} is the
- * backend-reported hash, or {@code null} for backends that do not expose one.
+ * Response to {@code POST /api/files/{workflowId}/{fileId}/upload-complete}. {@code contentHash} is
+ * the backend-reported hash, or {@code null} for backends that do not expose one.
  */
 public class FileUploadCompleteResponse {
 

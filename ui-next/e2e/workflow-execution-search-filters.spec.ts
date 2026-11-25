@@ -27,15 +27,25 @@ const VIEWPORTS = [
   { width: 390, height: 844, label: "mobile" },
 ];
 
+// The "Execution Start Time" filter defaults to `Date.now() - 72h`, rendered as
+// an absolute timestamp. Left to the live clock the chip drifts every run (and a
+// load-timing race can show the "Last 72 Hours" label instead), so the snapshots
+// are only stable if the value is pinned. Freeze the clock and seed `startFrom`
+// with the matching fixed epoch so the chip always renders "May 29, 2026 @
+// 12:00:00"; seeding the query param also settles the value on the first render.
+const FIXED_NOW = new Date("2026-06-01T12:00:00.000Z");
+const FIXED_START_FROM = FIXED_NOW.getTime() - 72 * 60 * 60 * 1000; // 1780056000000
+
 const gotoExecutions = async (page: Page) => {
   await mockCommonApis(page);
+  await page.clock.setFixedTime(FIXED_NOW);
   await page.addInitScript(() => {
     localStorage.setItem(
       "tooltipFlags",
       JSON.stringify({ executionSearch: true }),
     );
   });
-  await page.goto("/executions");
+  await page.goto(`/executions?startFrom=${FIXED_START_FROM}`);
   await page.waitForLoadState("domcontentloaded");
   await page.waitForSelector("#workflow-search-name-dropdown");
   await page.waitForSelector("#search-workflow-btn");
@@ -45,6 +55,21 @@ const getMaskElements = (p: Page) => [
   p.locator("[data-testid='user-avatar']"),
   p.locator("#linear-indeterminate-progress"),
 ];
+
+/**
+ * MUI commits an autocomplete selection on the next React render. Wait for its selected tag before
+ * moving on so a following action cannot race the state update in CI.
+ */
+const selectWorkflowStatus = async (page: Page, status: string) => {
+  const statusInput = page.locator("#workflow-search-status");
+  const statusField = statusInput.locator("xpath=..");
+  await statusInput.click();
+  await page.getByRole("option", { name: status }).click();
+  await expect(statusField).toContainText(
+    status.charAt(0) + status.slice(1).toLowerCase(),
+  );
+  await page.keyboard.press("Escape");
+};
 
 const screenshotAtAllViewports = async (
   page: Page,
@@ -95,9 +120,7 @@ test.describe("Workflow execution search - filters visual snapshot", () => {
   }) => {
     await gotoExecutions(page);
 
-    await page.locator("#workflow-search-status").click();
-    await page.getByRole("option", { name: "COMPLETED" }).click();
-    await page.keyboard.press("Escape");
+    await selectWorkflowStatus(page, "COMPLETED");
 
     await screenshotAtAllViewports(
       page,
@@ -114,11 +137,8 @@ test.describe("Workflow execution search - filters visual snapshot", () => {
   }) => {
     await gotoExecutions(page);
 
-    await page.locator("#workflow-search-status").click();
-    await page.getByRole("option", { name: "COMPLETED" }).click();
-    await page.locator("#workflow-search-status").click();
-    await page.getByRole("option", { name: "FAILED" }).click();
-    await page.keyboard.press("Escape");
+    await selectWorkflowStatus(page, "COMPLETED");
+    await selectWorkflowStatus(page, "FAILED");
 
     await page
       .locator("#workflow-search-correlation-id")
@@ -138,9 +158,7 @@ test.describe("Workflow execution search - filters visual snapshot", () => {
   test("Should match search form after reset", async ({ page }) => {
     await gotoExecutions(page);
 
-    await page.locator("#workflow-search-status").click();
-    await page.getByRole("option", { name: "COMPLETED" }).click();
-    await page.keyboard.press("Escape");
+    await selectWorkflowStatus(page, "COMPLETED");
     await page.locator("#workflow-search-id").fill("some-id");
 
     await page.locator("#reset-workflow-btn").click();
@@ -157,9 +175,7 @@ test.describe("Workflow execution search - filters visual snapshot", () => {
   }) => {
     await gotoExecutions(page);
 
-    await page.locator("#workflow-search-status").click();
-    await page.getByRole("option", { name: "COMPLETED" }).click();
-    await page.keyboard.press("Escape");
+    await selectWorkflowStatus(page, "COMPLETED");
 
     await page.locator("#search-workflow-btn").click();
     await page.waitForTimeout(1000);
@@ -174,6 +190,124 @@ test.describe("Workflow execution search - filters visual snapshot", () => {
         ],
         ...SCREENSHOT_CONFIG,
       },
+    );
+  });
+});
+
+// ─── Execution start time picker ───────────────────────────────────────────
+
+test.describe("Workflow execution search - start time picker visual snapshot", () => {
+  const openStartTimePicker = async (page: Page) => {
+    await gotoExecutions(page);
+    await page.locator("#date-picker-start-time").locator("p").nth(1).click();
+    await expect(page.getByRole("tab", { name: "Presets" })).toBeVisible();
+  };
+
+  test("Should match the open start time menu", async ({ page }) => {
+    await openStartTimePicker(page);
+
+    await expect(page.locator(".MuiTooltip-popper")).toHaveScreenshot(
+      "execution-start-time-picker.png",
+      SCREENSHOT_CONFIG,
+    );
+  });
+
+  test("Should match the Absolute tab calendar with a hovered end date", async ({
+    page,
+  }) => {
+    await openStartTimePicker(page);
+
+    await page.locator("#date-picker-absolute-tab").click();
+    const calendar = page.locator(".react-datepicker");
+    await expect(calendar).toBeVisible();
+
+    // Weekday letters and the date cells share one column grid.
+    const columns = await page.evaluate(() => {
+      const center = (el: Element) => {
+        const box = el.getBoundingClientRect();
+        return box.x + box.width / 2;
+      };
+      const root = document.querySelector(".react-datepicker")!;
+      const names = [...root.querySelectorAll(".react-datepicker__day-name")];
+      const days = [
+        ...root.querySelectorAll(".react-datepicker__week")[1].children,
+      ];
+      return names.map((name, index) => ({
+        name: center(name),
+        day: center(days[index]),
+      }));
+    });
+    for (const column of columns) {
+      expect(Math.abs(column.name - column.day)).toBeLessThan(1);
+    }
+
+    // Pick a start day, then hover a later day so the snapshot shows the
+    // in-progress range instead of a single selected day.
+    const startDay = page.getByRole("option", { name: /May 10th, 2026/ });
+    const endDay = page.getByRole("option", { name: /May 20th, 2026/ });
+    await startDay.click();
+    await expect(startDay).toHaveAttribute("aria-selected", "true");
+
+    const selected = await startDay.boundingBox();
+    expect(selected).not.toBeNull();
+    expect(Math.abs(selected!.width - selected!.height)).toBeLessThan(1);
+
+    const before = await endDay.boundingBox();
+    await endDay.hover();
+    const after = await endDay.boundingBox();
+    expect(before).not.toBeNull();
+    expect(after).not.toBeNull();
+    expect(Math.abs(after!.x - before!.x)).toBeLessThan(1);
+    expect(Math.abs(after!.width - before!.width)).toBeLessThan(1);
+    expect(Math.abs(after!.height - before!.height)).toBeLessThan(1);
+
+    await expect(startDay).toHaveClass(/react-datepicker__day--selected/);
+    await expect(endDay).toHaveClass(
+      /react-datepicker__day--selecting-range-end/,
+    );
+    await expect(
+      page.getByRole("option", { name: /May 15th, 2026/ }),
+    ).toHaveClass(/react-datepicker__day--in-selecting-range/);
+    await expect(
+      page.getByRole("option", { name: /May 21st, 2026/ }),
+    ).not.toHaveClass(/react-datepicker__day--in-selecting-range/);
+
+    await expect(page.locator(".MuiTooltip-popper")).toHaveScreenshot(
+      "execution-start-time-absolute.png",
+      SCREENSHOT_CONFIG,
+    );
+  });
+
+  test("Should match the Absolute tab calendar with a selected date range", async ({
+    page,
+  }) => {
+    await openStartTimePicker(page);
+
+    await page.locator("#date-picker-absolute-tab").click();
+    const calendar = page.locator(".react-datepicker");
+    await expect(calendar).toBeVisible();
+
+    const startDay = page.getByRole("option", { name: /May 10th, 2026/ });
+    const endDay = page.getByRole("option", { name: /May 20th, 2026/ });
+    await startDay.click();
+    await endDay.click();
+
+    await expect(startDay).toHaveClass(/react-datepicker__day--range-start/);
+    await expect(endDay).toHaveClass(/react-datepicker__day--range-end/);
+    await expect(
+      page.getByRole("option", { name: /May 15th, 2026/ }),
+    ).toHaveClass(/react-datepicker__day--in-range/);
+    await expect(
+      page.getByRole("option", { name: /May 21st, 2026/ }),
+    ).not.toHaveClass(/react-datepicker__day--in-range/);
+
+    // Leave the pointer off the calendar so the snapshot shows the committed
+    // range rather than a hover preview.
+    await calendar.locator(".react-datepicker__current-month").hover();
+
+    await expect(page.locator(".MuiTooltip-popper")).toHaveScreenshot(
+      "execution-start-time-absolute-selected-range.png",
+      SCREENSHOT_CONFIG,
     );
   });
 });

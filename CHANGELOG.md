@@ -3,6 +3,12 @@
 ## [Unreleased]
 
 ### Breaking Changes
+- **`GET /api/scheduler/schedules/{name}` now returns 404 for an unknown schedule**
+  - Previously returned `200 OK` with an empty body when the schedule did not exist
+  - Now returns `404 Not Found` with the standard error body, matching every other not-found
+    response in the API (including this same resource's `pause`/`resume` of a missing schedule)
+  - If your integration checks for an empty body to detect a missing schedule, switch to
+    handling the `404` status instead
 - **JavaScript Evaluator Migration from Nashorn to GraalJS**
   - Minimum Java version is now **Java 17** (previously Java 11+)
   - Nashorn JavaScript engine (deprecated in Java 11, removed in Java 15) replaced with GraalJS

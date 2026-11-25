@@ -13,6 +13,7 @@ interface WorkflowConfigSectionProps {
   setWorkflowVersion: (workflowVersion: string | null) => void;
   workflowVersions: string[];
   workflowNames: string[];
+  agentNames?: string[];
   workflowInputTemplate: string;
   setWorkflowInputTemplate: (value: string) => void;
   workflowCorrelationId: string;
@@ -32,6 +33,7 @@ export function WorkflowConfigSection({
   setWorkflowVersion,
   workflowVersions,
   workflowNames,
+  agentNames = [],
   workflowInputTemplate,
   setWorkflowInputTemplate,
   workflowCorrelationId,
@@ -46,12 +48,22 @@ export function WorkflowConfigSection({
         <ConductorAutoComplete
           fullWidth
           required
-          label="Workflow name"
+          label="Workflow or agent"
           options={workflowNames}
+          groupBy={(option) =>
+            agentNames.includes(option) ? "Agents" : "Workflows"
+          }
           onChange={(__, val: any) => setWorkflowType(val)}
           value={workflowType}
           error={errors?.["startWorkflowRequest.name"]}
           helperText={errors ? errors["startWorkflowRequest.name"] : undefined}
+          conductorInputProps={{
+            tooltip: {
+              title: "Workflow or agent",
+              content:
+                "Scheduled agents run their deployed workflow definition. Provide their prompt in Input params.",
+            },
+          }}
         />
       </Grid>
       <Grid size={{ xs: 12, md: 3 }}>

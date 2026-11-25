@@ -1,0 +1,60 @@
+[
+  {
+    "name": "greet",
+    "description": "Greets a name.",
+    "version": 1,
+    "schemaVersion": 2,
+    "ownerEmail": "mcp-conformance@conductor.test",
+    "inputParameters": ["name"],
+    "tasks": [
+      {
+        "name": "set_greeting",
+        "taskReferenceName": "set_greeting",
+        "type": "SET_VARIABLE",
+        "inputParameters": {"greeting": "Hello, ${workflow.input.name}!"}
+      }
+    ],
+    "outputParameters": {"greeting": "Hello, ${workflow.input.name}!"},
+    "metadata": {"mcp.enabled": true}
+  },
+  {
+    "name": "slow_compute",
+    "description": "Waits the given number of seconds, then returns the label.",
+    "version": 1,
+    "schemaVersion": 2,
+    "ownerEmail": "mcp-conformance@conductor.test",
+    "inputParameters": ["seconds", "label"],
+    "tasks": [
+      {
+        "name": "sleep",
+        "taskReferenceName": "sleep",
+        "type": "WAIT",
+        "inputParameters": {"duration": "${workflow.input.seconds}s"}
+      }
+    ],
+    "outputParameters": {"label": "${workflow.input.label}", "seconds": "${workflow.input.seconds}"},
+    "metadata": {"mcp.enabled": true, "mcp.syncWaitSeconds": 0}
+  },
+  {
+    "name": "failing_job",
+    "description": "Fails after about one second.",
+    "version": 1,
+    "schemaVersion": 2,
+    "ownerEmail": "mcp-conformance@conductor.test",
+    "tasks": [
+      {
+        "name": "sleep",
+        "taskReferenceName": "sleep",
+        "type": "WAIT",
+        "inputParameters": {"duration": "1s"}
+      },
+      {
+        "name": "fail",
+        "taskReferenceName": "fail",
+        "type": "TERMINATE",
+        "inputParameters": {"terminationStatus": "FAILED", "terminationReason": "failing_job always fails"}
+      }
+    ],
+    "metadata": {"mcp.enabled": true, "mcp.syncWaitSeconds": 0}
+  }
+]

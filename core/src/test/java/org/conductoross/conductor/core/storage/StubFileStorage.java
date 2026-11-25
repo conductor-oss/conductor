@@ -12,6 +12,8 @@
  */
 package org.conductoross.conductor.core.storage;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -22,10 +24,11 @@ import org.conductoross.conductor.model.file.StorageType;
 public class StubFileStorage implements FileStorage {
 
     private final Map<String, byte[]> files = new ConcurrentHashMap<>();
+    private final Map<String, String> abortedUploads = new ConcurrentHashMap<>();
 
     @Override
     public StorageType getStorageType() {
-        return StorageType.LOCAL;
+        return StorageType.CONDUCTOR;
     }
 
     @Override
@@ -68,7 +71,34 @@ public class StubFileStorage implements FileStorage {
         files.putIfAbsent(storagePath, new byte[0]);
     }
 
+    @Override
+    public void abortMultipartUpload(String storagePath, String uploadId) {
+        abortedUploads.put(storagePath, uploadId);
+    }
+
+    @Override
+    public void writeContent(String storagePath, InputStream content) {
+        try {
+            files.put(storagePath, content.readAllBytes());
+        } catch (Exception exception) {
+            throw new IllegalStateException("Unable to store stub content", exception);
+        }
+    }
+
+    @Override
+    public InputStream readContent(String storagePath) {
+        byte[] content = files.get(storagePath);
+        if (content == null) {
+            throw new IllegalStateException("Stub content not found: " + storagePath);
+        }
+        return new ByteArrayInputStream(content);
+    }
+
     public void putFile(String storagePath, byte[] data) {
         files.put(storagePath, data);
+    }
+
+    public boolean wasMultipartUploadAborted(String storagePath, String uploadId) {
+        return uploadId.equals(abortedUploads.get(storagePath));
     }
 }

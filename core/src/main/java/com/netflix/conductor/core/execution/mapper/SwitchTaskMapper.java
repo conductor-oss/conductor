@@ -25,6 +25,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.evaluators.Evaluator;
+import com.netflix.conductor.core.execution.tasks.Switch;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -85,33 +86,34 @@ public class SwitchTaskMapper implements TaskMapper {
             throw new TerminateWorkflowException(errorMsg);
         }
 
-        String evalResult = "";
-        try {
-            evalResult = "" + evaluator.evaluate(workflowTask.getExpression(), taskInput);
-        } catch (Exception exception) {
-            TaskModel switchTask = taskMapperContext.createTaskModel();
-            switchTask.setTaskType(TaskType.TASK_TYPE_SWITCH);
-            switchTask.setTaskDefName(TaskType.TASK_TYPE_SWITCH);
-            switchTask.getInputData().putAll(taskInput);
-            switchTask.setStartTime(System.currentTimeMillis());
-            switchTask.setStatus(TaskModel.Status.FAILED);
-            switchTask.setReasonForIncompletion(exception.getMessage());
-            tasksToBeScheduled.add(switchTask);
-
-            return tasksToBeScheduled;
-        }
-
-        // QQ why is the case value and the caseValue passed and caseOutput passes as the same ??
         TaskModel switchTask = taskMapperContext.createTaskModel();
         switchTask.setTaskType(TaskType.TASK_TYPE_SWITCH);
         switchTask.setTaskDefName(TaskType.TASK_TYPE_SWITCH);
         switchTask.getInputData().putAll(taskInput);
-        switchTask.getInputData().put("case", evalResult);
-        switchTask.addOutput("evaluationResult", List.of(evalResult));
-        switchTask.addOutput("selectedCase", evalResult);
         switchTask.setStartTime(System.currentTimeMillis());
-        switchTask.setStatus(TaskModel.Status.IN_PROGRESS);
         tasksToBeScheduled.add(switchTask);
+
+        String evalResult;
+        try {
+            Object result = evaluator.evaluate(workflowTask.getExpression(), taskInput);
+            if (result instanceof Map<?, ?> output && output.containsKey(Switch.SELECTED_CASE)) {
+                // Decision evaluators return routing plus provider output; scalar evaluators
+                // continue to use their result directly as the case key.
+                output.forEach((key, value) -> switchTask.addOutput(String.valueOf(key), value));
+                evalResult = String.valueOf(output.get(Switch.SELECTED_CASE));
+            } else {
+                evalResult = String.valueOf(result);
+            }
+        } catch (Exception exception) {
+            switchTask.setStatus(TaskModel.Status.FAILED);
+            switchTask.setReasonForIncompletion(exception.getMessage());
+            return tasksToBeScheduled;
+        }
+
+        switchTask.getInputData().put("case", evalResult);
+        switchTask.addOutput(Switch.EVALUATION_RESULT, List.of(evalResult));
+        switchTask.addOutput(Switch.SELECTED_CASE, evalResult);
+        switchTask.setStatus(TaskModel.Status.IN_PROGRESS);
 
         // get the list of tasks based on the evaluated expression
         List<WorkflowTask> selectedTasks = workflowTask.getDecisionCases().get(evalResult);
@@ -136,7 +138,7 @@ public class SwitchTaskMapper implements TaskMapper {
                                     retryCount,
                                     taskMapperContext.getRetryTaskId());
             tasksToBeScheduled.addAll(caseTasks);
-            switchTask.getInputData().put("hasChildren", "true");
+            switchTask.getInputData().put(Switch.HAS_CHILDREN, "true");
         }
         return tasksToBeScheduled;
     }

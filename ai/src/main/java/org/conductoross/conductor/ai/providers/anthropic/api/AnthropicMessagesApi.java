@@ -21,7 +21,6 @@ import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -29,6 +28,7 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * OkHttp REST client for the Anthropic Messages API.
@@ -291,6 +291,24 @@ public class AnthropicMessagesApi {
         public static ContentBlock toolResult(String toolUseId, String content) {
             return new ContentBlock(
                     "tool_result", null, null, null, null, toolUseId, content, null, null);
+        }
+
+        /**
+         * Image content block from base64-encoded data. {@code mediaType} is the image MIME type
+         * (e.g. {@code image/png}); {@code base64Data} is the raw base64 payload without any {@code
+         * data:} URI prefix.
+         */
+        public static ContentBlock image(String mediaType, String base64Data) {
+            return new ContentBlock(
+                    "image",
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    new Source("base64", mediaType, base64Data));
         }
 
         @JsonInclude(JsonInclude.Include.NON_NULL)

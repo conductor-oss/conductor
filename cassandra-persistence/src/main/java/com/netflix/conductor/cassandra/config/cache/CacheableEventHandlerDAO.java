@@ -67,14 +67,17 @@ public class CacheableEventHandlerDAO implements EventHandlerDAO {
                         this::refreshEventHandlersCache, 0, cacheRefreshTime, TimeUnit.SECONDS);
     }
 
+    // The key expressions reference the argument positionally rather than by name: this module is
+    // not compiled with -parameters, so an "#eventHandler" reference resolves to null and every
+    // call fails with SpelEvaluationException EL1007E instead of being cached.
     @Override
-    @CachePut(value = EVENT_HANDLER_CACHE, key = "#eventHandler.name")
+    @CachePut(value = EVENT_HANDLER_CACHE, key = "#p0.name")
     public void addEventHandler(EventHandler eventHandler) {
         cassandraEventHandlerDAO.addEventHandler(eventHandler);
     }
 
     @Override
-    @CachePut(value = EVENT_HANDLER_CACHE, key = "#eventHandler.name")
+    @CachePut(value = EVENT_HANDLER_CACHE, key = "#p0.name")
     public void updateEventHandler(EventHandler eventHandler) {
         cassandraEventHandlerDAO.updateEventHandler(eventHandler);
     }

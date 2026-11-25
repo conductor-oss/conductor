@@ -1,6 +1,7 @@
 import react from "@vitejs/plugin-react";
 import { createHash } from "crypto";
-import { dirname, resolve } from "path";
+import { readdirSync } from "fs";
+import { dirname, resolve, sep } from "path";
 import { fileURLToPath } from "url";
 import { defineConfig, loadEnv, Plugin } from "vite";
 import svgr from "vite-plugin-svgr";
@@ -35,26 +36,80 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, packageDir);
   const BASE_URL = env.VITE_PUBLIC_URL || "/";
 
-  // Library build mode - creates npm package
-  // Note: Type declarations (dts) disabled due to compatibility issues
-  // Run `tsc --emitDeclarationOnly` separately if needed
+  // Library build mode — emits individual ES modules preserving the src/
+  // directory structure so enterprise can consume pre-built dist/ files via
+  // deep imports (e.g. "conductor-ui/pages/definition/...").
   if (mode === "lib") {
+    const srcDir = resolve(__dirname, "src");
+    const srcFiles = readdirSync(srcDir, { recursive: true })
+      .map((entry) => entry.toString().split(sep).join("/"))
+      .filter(
+        (file) =>
+          /\.tsx?$/.test(file) &&
+          !file.includes(".test.") &&
+          !file.includes(".spec.") &&
+          !file.endsWith("setupTests.ts"),
+      );
+
+    const input = Object.fromEntries(
+      srcFiles.map((file) => [
+        file.replace(/\.[^.]+$/, ""),
+        resolve(srcDir, file),
+      ]),
+    );
+
+    // Bare-import roots from tsconfig paths — these resolve into src/ and
+    // must NOT be externalized.  Everything else (node_modules) is external.
+    const tsconfigPathRoots = [
+      "commonServices",
+      "components",
+      "growthbook",
+      "images",
+      "pages",
+      "plugins",
+      "queryClient",
+      "shared",
+      "templates",
+      "testData",
+      "theme",
+      "types",
+      "useArrowNavigation",
+      "utils",
+    ];
+
+    const isExternal = (id: string) => {
+      if (id.startsWith(".") || id.startsWith("/")) return false;
+      if (tsconfigPathRoots.some((r) => id === r || id.startsWith(`${r}/`)))
+        return false;
+      return true;
+    };
+
     return {
       plugins: [react(), tsconfigPaths(), svgr()],
       build: {
-        lib: {
-          entry: resolve(__dirname, "src/index.ts"),
-          name: "ConductorUI",
-          fileName: "conductor-ui",
-          formats: ["es"] as const,
-        },
+        // Inline all assets as data URIs so the lib output is self-contained.
+        // Without this, Vite emits asset references like "/assets/logo-xxxx.svg"
+        // which only resolve within the OSS app's own build output.
+        assetsInlineLimit: Infinity,
+        // Vite strips CSS imports out of the emitted JS, so per-chunk CSS would
+        // be orphaned — nothing in dist/ imports it. Collect it into one
+        // dist/style.css that consumers import via "conductor-ui/styles.css".
+        cssCodeSplit: false,
         rollupOptions: {
-          external: isLibPeerExternal,
+          input,
+          external: isExternal,
+          preserveEntrySignatures: "allow-extension",
           output: {
-            globals: {
-              react: "React",
-              "react-dom": "ReactDOM",
-              "react-router-dom": "ReactRouterDOM",
+            dir: "dist",
+            format: "es" as const,
+            preserveModules: true,
+            preserveModulesRoot: "src",
+            entryFileNames: "[name].js",
+            assetFileNames: (asset) => {
+              const name = asset.names?.[0] ?? "";
+              return name.endsWith(".css")
+                ? "style.css"
+                : "assets/[name]-[hash][extname]";
             },
           },
         },
@@ -138,6 +193,7 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       outDir: "dist",
+      sourcemap: !!process.env.E2E_COVERAGE,
     },
     test: {
       globals: true,

@@ -1,20 +1,23 @@
-/**
- * API Reference Page
- *
- * Redirects to the Swagger UI for API documentation.
- * This is a simple redirect component that opens the Swagger UI in the current window.
- */
-
 import { useEffect } from "react";
+import { useNavigate, useLocation } from "react-router";
 import { Box, CircularProgress, Typography } from "@mui/material";
 
 const getSwaggerUrl = () =>
   `//${window.location.host}/swagger-ui/index.html?configUrl=/api-docs/swagger-config#/`;
 
 export default function ApiReferencePage() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   useEffect(() => {
-    // Redirect to Swagger UI
-    window.location.href = getSwaggerUrl();
+    window.open(getSwaggerUrl(), "_blank", "noopener,noreferrer");
+    // Go back to wherever the user was; fall back to home on a fresh load.
+    if (location.key === "default") {
+      navigate("/");
+    } else {
+      navigate(-1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

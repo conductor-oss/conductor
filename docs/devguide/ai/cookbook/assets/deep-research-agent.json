@@ -1,0 +1,186 @@
+{
+  "name": "deep_research_agent",
+  "description": "Decomposes a research goal into subtopics, researches them in parallel with provider-native web search, has a model review coverage after each round, and loops for up to five rounds before rendering a source-linked brief as a PDF.",
+  "version": 1,
+  "schemaVersion": 2,
+  "timeoutSeconds": 3600,
+  "timeoutPolicy": "TIME_OUT_WF",
+  "inputParameters": [
+    "goal",
+    "audience"
+  ],
+  "variables": {
+    "open_subtopics": [],
+    "evidence": [],
+    "review": {
+      "sufficient": false,
+      "gaps": [],
+      "rounds": 0
+    }
+  },
+  "tasks": [
+    {
+      "name": "decompose_goal",
+      "taskReferenceName": "decompose",
+      "type": "LLM_CHAT_COMPLETE",
+      "inputParameters": {
+        "llmProvider": "openai",
+        "model": "gpt-4o-mini",
+        "messages": [
+          {
+            "role": "system",
+            "message": "Break a research goal into 3 to 5 independent, specifically searchable subtopics. Return JSON: {\"subtopics\": [string]}. Each subtopic must be answerable on its own with a web search; do not return overlapping subtopics."
+          },
+          {
+            "role": "user",
+            "message": "Goal: ${workflow.input.goal}\nAudience: ${workflow.input.audience}"
+          }
+        ],
+        "temperature": 0.2,
+        "maxTokens": 500,
+        "jsonOutput": true
+      }
+    },
+    {
+      "name": "seed_subtopics",
+      "taskReferenceName": "seed_subtopics",
+      "type": "SET_VARIABLE",
+      "inputParameters": {
+        "open_subtopics": "${decompose.output.result.subtopics}"
+      }
+    },
+    {
+      "name": "research_rounds",
+      "taskReferenceName": "research_loop",
+      "type": "DO_WHILE",
+      "evaluatorType": "graaljs",
+      "inputParameters": {
+        "research_loop": "${research_loop.output}",
+        "sufficient": "${review_coverage.output.result.sufficient}"
+      },
+      "loopCondition": "(function(){ return $.research_loop['iteration'] < 5 && $.sufficient !== true; })();",
+      "loopOver": [
+        {
+          "name": "prepare_research_fanout",
+          "taskReferenceName": "prepare_fanout",
+          "type": "JSON_JQ_TRANSFORM",
+          "inputParameters": {
+            "subtopics": "${workflow.variables.open_subtopics}",
+            "goal": "${workflow.input.goal}",
+            "queryExpression": ". as $root | {forkInputs: (($root.subtopics // [])[:5] | map({llmProvider: \"openai\", model: \"gpt-4o-mini\", webSearch: true, temperature: 0.2, maxTokens: 1200, messages: [{role: \"system\", message: \"Research the subtopic with web search. Return markdown with findings and a Sources section of full URLs. If the evidence is thin or contested, say so explicitly rather than filling the gap.\"}, {role: \"user\", message: (\"Goal: \" + $root.goal + \"\\nSubtopic: \" + .)}]}))}"
+          }
+        },
+        {
+          "name": "research_subtopics",
+          "taskReferenceName": "research_fanout",
+          "type": "FORK_JOIN_DYNAMIC",
+          "inputParameters": {
+            "forkTaskType": "LLM_CHAT_COMPLETE",
+            "forkTaskInputs": "${prepare_fanout.output.result.forkInputs}"
+          }
+        },
+        {
+          "name": "join_research",
+          "taskReferenceName": "join_research",
+          "type": "JOIN",
+          "joinOn": []
+        },
+        {
+          "name": "accumulate_evidence",
+          "taskReferenceName": "accumulate",
+          "type": "JSON_JQ_TRANSFORM",
+          "inputParameters": {
+            "existing": "${workflow.variables.evidence}",
+            "round": "${join_research.output}",
+            "queryExpression": "{evidence: (((.existing // []) + [((.round | tojson)[0:20000])]) | .[-5:])}"
+          }
+        },
+        {
+          "name": "store_evidence",
+          "taskReferenceName": "store_evidence",
+          "type": "SET_VARIABLE",
+          "inputParameters": {
+            "evidence": "${accumulate.output.result.evidence}"
+          }
+        },
+        {
+          "name": "review_coverage",
+          "taskReferenceName": "review_coverage",
+          "type": "LLM_CHAT_COMPLETE",
+          "inputParameters": {
+            "llmProvider": "openai",
+            "model": "gpt-4o",
+            "messages": [
+              {
+                "role": "system",
+                "message": "You review research coverage against a goal. You do not write the brief. Return JSON: {\"sufficient\": boolean, \"gaps\": [string], \"nextSubtopics\": [string]}. Set sufficient=true only when the evidence supports a decision-ready brief with real sources. When false, nextSubtopics must be 1 to 3 new searchable subtopics that close the largest gaps."
+              },
+              {
+                "role": "user",
+                "message": "Goal: ${workflow.input.goal}\nAudience: ${workflow.input.audience}\nEvidence so far: ${workflow.variables.evidence}"
+              }
+            ],
+            "temperature": 0.0,
+            "maxTokens": 700,
+            "jsonOutput": true
+          }
+        },
+        {
+          "name": "record_review",
+          "taskReferenceName": "record_review",
+          "type": "SET_VARIABLE",
+          "inputParameters": {
+            "open_subtopics": "${review_coverage.output.result.nextSubtopics}",
+            "review": {
+              "sufficient": "${review_coverage.output.result.sufficient}",
+              "gaps": "${review_coverage.output.result.gaps}",
+              "rounds": "${research_loop.output.iteration}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "write_brief",
+      "taskReferenceName": "write_brief",
+      "type": "LLM_CHAT_COMPLETE",
+      "inputParameters": {
+        "llmProvider": "openai",
+        "model": "gpt-4o",
+        "messages": [
+          {
+            "role": "system",
+            "message": "Write a decision-ready research brief in markdown for the stated audience. Sections: Executive summary, Findings, Competing evidence, Open questions, Sources. Every non-obvious claim must trace to a source URL in the evidence. Carry any remaining gaps into Open questions rather than resolving them from your own knowledge."
+          },
+          {
+            "role": "user",
+            "message": "Goal: ${workflow.input.goal}\nAudience: ${workflow.input.audience}\nEvidence: ${workflow.variables.evidence}\nKnown gaps: ${workflow.variables.review.gaps}"
+          }
+        ],
+        "temperature": 0.3,
+        "maxTokens": 3000
+      }
+    },
+    {
+      "name": "render_brief_pdf",
+      "taskReferenceName": "render_pdf",
+      "type": "GENERATE_PDF",
+      "inputParameters": {
+        "markdown": "${write_brief.output.result}",
+        "pageSize": "A4",
+        "theme": "default",
+        "pdfMetadata": {
+          "title": "${workflow.input.goal}",
+          "author": "Conductor Deep Research Agent",
+          "subject": "Research brief for ${workflow.input.audience}"
+        }
+      }
+    }
+  ],
+  "outputParameters": {
+    "brief": "${write_brief.output.result}",
+    "pdf": "${render_pdf.output}",
+    "review": "${workflow.variables.review}",
+    "rounds": "${research_loop.output.iteration}"
+  }
+}

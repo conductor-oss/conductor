@@ -1,2 +1,0 @@
-org.springframework.boot.env.EnvironmentPostProcessor=\
-org.conductoross.conductor.ai.agentspan.AgentSpanEmbeddedEnvironmentPostProcessor

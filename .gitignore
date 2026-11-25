@@ -46,11 +46,8 @@ build/
 .qodo
 conductorosstest.db
 conductorosstest.db
-/server-lite/src/main/resources/static
 yarn.lock
 .java-version
-server-lite/conductorosstest.db-shm
-server-lite/conductorosstest.db-wal
 /server/src/main/resources/static
 *.factorypath
 server/*.db*
@@ -59,3 +56,7 @@ server/*.db*
 *.db-shm
 *.db-wal
 docs/superpowers
+
+# local working notes, not part of the published repo
+/blogs
+/design

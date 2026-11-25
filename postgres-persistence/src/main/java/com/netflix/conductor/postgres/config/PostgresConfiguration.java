@@ -13,31 +13,34 @@
 package com.netflix.conductor.postgres.config;
 
 import java.sql.SQLException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Map;
-import java.util.Optional;
 
 import javax.sql.DataSource;
 
+import org.conductoross.conductor.dao.schema.SchemaDAO;
 import org.conductoross.conductor.postgres.dao.PostgresFileMetadataDAO;
+import org.conductoross.conductor.postgres.dao.PostgresSchemaDAO;
 import org.conductoross.conductor.postgres.dao.PostgresSkillMetadataDAO;
 import org.conductoross.conductor.postgres.dao.PostgresSkillPackageDAO;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.context.annotation.*;
-import org.springframework.retry.RetryContext;
-import org.springframework.retry.backoff.NoBackOffPolicy;
-import org.springframework.retry.policy.SimpleRetryPolicy;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryTemplate;
 
+import com.netflix.conductor.core.config.WorkflowMessageQueueProperties;
+import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.dao.WorkflowMessageQueueDAO;
 import com.netflix.conductor.postgres.dao.*;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.*;
+import tools.jackson.databind.ObjectMapper;
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(PostgresProperties.class)
@@ -79,6 +82,9 @@ public class PostgresConfiguration {
                 .dataSource(dataSource)
                 .outOfOrder(true)
                 .baselineOnMigrate(true)
+                // default baseline version 1 would skip V1 when the scheduler flyway
+                // (same schema, own history table) migrates first
+                .baselineVersion("0")
                 .load();
     }
 
@@ -96,7 +102,7 @@ public class PostgresConfiguration {
     public PostgresExecutionDAO postgresExecutionDAO(
             @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper,
-            PostgresQueueDAO queueDAO) {
+            QueueDAO queueDAO) {
         return new PostgresExecutionDAO(retryTemplate, objectMapper, dataSource, queueDAO);
     }
 
@@ -111,7 +117,7 @@ public class PostgresConfiguration {
 
     @Bean
     @DependsOn({"flywayForPrimaryDb"})
-    public PostgresQueueDAO postgresQueueDAO(
+    public QueueDAO postgresQueueDAO(
             @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper,
             PostgresProperties properties) {
@@ -137,6 +143,19 @@ public class PostgresConfiguration {
             @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper) {
         return new PostgresLockDAO(retryTemplate, objectMapper, dataSource);
+    }
+
+    /**
+     * Durable workflow message queue, replacing the in-memory fallback when the queue is enabled,
+     * so messages pushed to running workflows survive a server restart.
+     */
+    @Bean
+    @Primary
+    @DependsOn("flywayForPrimaryDb")
+    @ConditionalOnProperty(name = "conductor.workflow-message-queue.enabled", havingValue = "true")
+    public WorkflowMessageQueueDAO postgresWorkflowMessageQueueDAO(
+            ObjectMapper objectMapper, WorkflowMessageQueueProperties properties) {
+        return new PostgresWorkflowMessageQueueDAO(dataSource, objectMapper, properties);
     }
 
     @Bean
@@ -167,31 +186,32 @@ public class PostgresConfiguration {
     }
 
     @Bean
-    public RetryTemplate postgresRetryTemplate(PostgresProperties properties) {
-        SimpleRetryPolicy retryPolicy = new CustomRetryPolicy();
-        retryPolicy.setMaxAttempts(3);
-
-        RetryTemplate retryTemplate = new RetryTemplate();
-        retryTemplate.setRetryPolicy(retryPolicy);
-        retryTemplate.setBackOffPolicy(new NoBackOffPolicy());
-        return retryTemplate;
+    @DependsOn("flywayForPrimaryDb")
+    public SchemaDAO postgresSchemaDAO(
+            @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper) {
+        return new PostgresSchemaDAO(retryTemplate, objectMapper, dataSource);
     }
 
-    public static class CustomRetryPolicy extends SimpleRetryPolicy {
+    @Bean
+    public RetryTemplate postgresRetryTemplate(PostgresProperties properties) {
+        // Three attempts in total, so two retries, taken immediately: a deadlock victim only needs
+        // the competing transaction to finish, and it already has.
+        return new RetryTemplate(
+                RetryPolicy.builder()
+                        .maxRetries(2)
+                        .delay(Duration.ZERO)
+                        .predicate(CustomRetryPolicy::isDeadLockError)
+                        .build());
+    }
+
+    /** Retries only the failures Postgres reports as a deadlock or a serialization conflict. */
+    public static class CustomRetryPolicy {
 
         private static final String ER_LOCK_DEADLOCK = "40P01";
         private static final String ER_SERIALIZATION_FAILURE = "40001";
 
-        @Override
-        public boolean canRetry(final RetryContext context) {
-            final Optional<Throwable> lastThrowable =
-                    Optional.ofNullable(context.getLastThrowable());
-            return lastThrowable
-                    .map(throwable -> super.canRetry(context) && isDeadLockError(throwable))
-                    .orElseGet(() -> super.canRetry(context));
-        }
-
-        private boolean isDeadLockError(Throwable throwable) {
+        static boolean isDeadLockError(Throwable throwable) {
             SQLException sqlException = findCauseSQLException(throwable);
             if (sqlException == null) {
                 return false;
@@ -200,7 +220,7 @@ public class PostgresConfiguration {
                     || ER_SERIALIZATION_FAILURE.equals(sqlException.getSQLState());
         }
 
-        private SQLException findCauseSQLException(Throwable throwable) {
+        private static SQLException findCauseSQLException(Throwable throwable) {
             Throwable causeException = throwable;
             while (null != causeException && !(causeException instanceof SQLException)) {
                 causeException = causeException.getCause();

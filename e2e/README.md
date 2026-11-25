@@ -5,7 +5,7 @@ End-to-end tests for conductor-oss covering workflow execution, task types, cont
 ## Prerequisites
 
 - Docker and Docker Compose
-- Java 17+
+- Java 25+
 - Gradle (use the `./gradlew` wrapper at the repo root)
 
 ## Quick Start
@@ -22,8 +22,10 @@ From the **repo root**:
 ./e2e/run_tests.sh                  # Redis + Elasticsearch 7 (default)
 ./e2e/run_tests-es8.sh              # Redis + Elasticsearch 8
 ./e2e/run_tests-postgres-es7.sh     # Postgres + Elasticsearch 7 (explicit)
+./e2e/run_tests-postgres-es8.sh     # Postgres + Elasticsearch 8
 ./e2e/run_tests-redis-os2.sh        # Redis + OpenSearch 2.x
 ./e2e/run_tests-redis-os3.sh        # Redis + OpenSearch 3.x
+./e2e/run_tests-mysql-es8.sh        # MySQL + Elasticsearch 8
 ./e2e/run_tests-mysql.sh            # MySQL
 ```
 
@@ -39,7 +41,7 @@ If you already have a Conductor server running, skip the scripts and run Gradle 
 
 ```bash
 # Using the environment variable (recommended)
-RUN_E2E=true SERVER_ROOT_URI=http://localhost:6000 ./gradlew :conductor-e2e:test
+RUN_E2E=true SERVER_ROOT_URI=http://localhost:8000 ./gradlew :conductor-e2e:test
 
 # Or using Gradle properties
 ./gradlew :conductor-e2e:test -PrunE2E -DSERVER_ROOT_URI=http://localhost:8000
@@ -58,11 +60,12 @@ If you need to test against a locally built server (e.g., after changing `core/`
 # 2. Build the Docker image
 docker build -t conductor:server -f docker/server/Dockerfile .
 
-# 3. Start with the e2e compose file (maps port 6000 → 8080)
-docker compose -f docker/docker-compose-postgres-e2e.yaml up -d
+# 3. Start with the e2e compose file (maps port 8000 → 8080). The e2e overlay
+#    turns on the features that the e2e tests need, such as the MCP server.
+docker compose -f docker/docker-compose-postgres-e2e.yaml -f docker/docker-compose-e2e.yaml up -d
 
 # 4. Run tests
-RUN_E2E=true SERVER_ROOT_URI=http://localhost:6000 ./gradlew :conductor-e2e:test
+RUN_E2E=true SERVER_ROOT_URI=http://localhost:8000 ./gradlew :conductor-e2e:test
 ```
 
 ## Test Options
@@ -70,13 +73,25 @@ RUN_E2E=true SERVER_ROOT_URI=http://localhost:6000 ./gradlew :conductor-e2e:test
 ### Run a specific test class or method
 
 ```bash
-RUN_E2E=true SERVER_ROOT_URI=http://localhost:6000 \
+RUN_E2E=true SERVER_ROOT_URI=http://localhost:8000 \
   ./gradlew :conductor-e2e:test --tests "io.conductor.e2e.control.SubWorkflowTests"
 
 # Single method
-RUN_E2E=true SERVER_ROOT_URI=http://localhost:6000 \
+RUN_E2E=true SERVER_ROOT_URI=http://localhost:8000 \
   ./gradlew :conductor-e2e:test --tests "io.conductor.e2e.control.DoWhileTests.testDoWhileSetVariableFix"
 ```
+
+### Run the server-backed agent lifecycle suite
+
+```bash
+RUN_E2E=true SERVER_ROOT_URI=http://localhost:8080 \
+  ./gradlew :conductor-e2e:test --tests "io.conductor.e2e.task.AgentTaskTests"
+```
+
+This deterministic suite needs no LLM credentials. It covers basic and nested agent execution,
+measured callback/poll intervals, manually completed long-running work, multi-turn human input,
+concurrent calls, parent and explicit `CANCEL_AGENT` cancellation, child cancellation, wrapper
+deadlines, agent workflow timeouts, internal failures, and missing agents.
 
 ### Exclude a test class
 
@@ -100,7 +115,7 @@ Tests run with `maxParallelForks = 4` by default. Reduce if the server is under-
 | Package | What it covers |
 |---------|----------------|
 | `control` | DO_WHILE, SWITCH, SUB_WORKFLOW, DYNAMIC_FORK |
-| `task` | WAIT, HTTP, concurrency limit, task timeout, backoff |
+| `task` | AGENT lifecycle, WAIT, HTTP, concurrency limit, task timeout, backoff |
 | `workflow` | Retry, restart, rerun, search, priority, failure workflows |
 | `processing` | GraalJS inline tasks, SET_VARIABLE, JSON_JQ |
 | `event` | Event handlers |
@@ -108,7 +123,7 @@ Tests run with `maxParallelForks = 4` by default. Reduce if the server is under-
 
 ## Disabled Tests
 
-17 tests are `@Disabled` due to conductor-oss behavioural differences or infrastructure constraints. All other skips during `./gradlew build` (without `RUN_E2E=true`) are simply the suite waiting for a server — those tests are not broken.
+18 tests are `@Disabled` due to conductor-oss behavioural differences or infrastructure constraints. All other skips during `./gradlew build` (without `RUN_E2E=true`) are simply the suite waiting for a server — those tests are not broken.
 
 ### Rerun behaviour (conductor-oss does not support rerun from non-terminal or complex task states)
 

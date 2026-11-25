@@ -8,6 +8,8 @@ import { ColorModeContext } from "theme/material/ColorModeContext";
 import { colors } from "theme/tokens/variables";
 import { DynamicTaskDef, TaskStatus, TaskType, WaitTaskDef } from "types";
 import { MCPTaskDef } from "types/TaskType";
+import { FlowExecutionContext } from "pages/execution/state/FlowExecutionContext/FlowExecutionContext";
+import SideTaskCards from "../SideTaskCards";
 import { getCardVariant } from "../styles";
 import AddPathButton from "./AddPathButton";
 import CardAttemptsBadge from "./CardAttemptsBadge";
@@ -19,6 +21,7 @@ import { DynamicTask } from "./DynamicTask";
 import EventTask from "./EventTask";
 import ForkJoinDynamicTask from "./ForkJoinDynamicTask";
 import { showIterationChip } from "./helpers";
+import { getAgentTaskPresentation } from "utils/agentMetadata";
 import HTTPTask from "./HTTPTask";
 import INLINETask from "./INLINETask";
 import JSONJQTransformTask from "./JSONJQTransformTask";
@@ -71,9 +74,19 @@ const TaskCard = ({
 }) => {
   const { mode } = useContext(ColorModeContext);
   const darkMode = mode === "dark";
+  const { onSelectTask } = useContext(FlowExecutionContext);
 
   const { task, status } = nodeData;
   const { name, type, taskReferenceName } = task;
+  const agentPresentation =
+    type === TaskType.AGENT ? getAgentTaskPresentation(task) : undefined;
+  const primaryLabel = agentPresentation
+    ? agentPresentation.unresolved
+      ? `UNRESOLVED: ${agentPresentation.name}`
+      : agentPresentation.name
+    : name;
+  const secondaryLabel =
+    agentPresentation?.taskReferenceName ?? taskReferenceName;
 
   const showIterationsNumber = showIterationChip(nodeData);
   return (
@@ -110,6 +123,17 @@ const TaskCard = ({
         {showIterationsNumber ? (
           <CardAttemptsBadge attempts={nodeData.attempts} />
         ) : null}
+        {/* Tasks run for this one but outside the definition; drawn beside the node so the
+            flow below it never moves. */}
+        <SideTaskCards
+          sideTasks={nodeData.sideTasks ?? []}
+          onSelectTask={(sideTask) =>
+            onSelectTask?.({
+              taskId: sideTask.taskId,
+              ref: sideTask.referenceTaskName,
+            })
+          }
+        />
 
         {/* Definition */}
         <DeleteButton maybeHideData={nodeData} />
@@ -136,9 +160,10 @@ const TaskCard = ({
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
+                paddingRight: agentPresentation ? "112px" : undefined,
               }}
             >
-              {name}
+              {primaryLabel}
             </div>
             <div
               style={{
@@ -149,7 +174,7 @@ const TaskCard = ({
                 whiteSpace: "nowrap",
               }}
             >
-              {taskReferenceName}
+              {secondaryLabel}
             </div>
             <div
               style={{
@@ -177,6 +202,7 @@ const TaskCard = ({
 
           <CardLabel
             type={type}
+            label={agentPresentation?.badge}
             displayDescription={false}
             integrationIconName={
               task.type === TaskType.INTEGRATION

@@ -1,0 +1,11 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`CardAttemptsBadge > renders the total attempt count on the task card 1`] = `
+<div>
+  <div
+    style="position: absolute; bottom: -15px; right: -15px; border-radius: 30px; width: 30px; height: 30px; background: rgb(240, 240, 240); color: rgb(17, 17, 17); display: flex; justify-content: center; align-items: center; box-shadow: 0 0 4px black; font-size: 10pt;"
+  >
+    3
+  </div>
+</div>
+`;

@@ -18,11 +18,11 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.conductoross.conductor.ai.LLMs;
-import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
-import org.conductoross.conductor.ai.models.IndexDocInput;
-import org.conductoross.conductor.ai.models.IndexedDoc;
-import org.conductoross.conductor.ai.models.StoreEmbeddingsInput;
-import org.conductoross.conductor.ai.models.VectorDBInput;
+import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
+import org.conductoross.conductor.ai.model.IndexDocInput;
+import org.conductoross.conductor.ai.model.IndexedDoc;
+import org.conductoross.conductor.ai.model.StoreEmbeddingsInput;
+import org.conductoross.conductor.ai.model.VectorDBInput;
 import org.conductoross.conductor.ai.vectordb.VectorDBs;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.conductoross.conductor.core.execution.tasks.AnnotatedSystemTaskWorker;
@@ -35,8 +35,8 @@ import com.netflix.conductor.sdk.workflow.executor.task.TaskContext;
 import com.netflix.conductor.sdk.workflow.task.OutputParam;
 import com.netflix.conductor.sdk.workflow.task.WorkerTask;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.core.type.TypeReference;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 

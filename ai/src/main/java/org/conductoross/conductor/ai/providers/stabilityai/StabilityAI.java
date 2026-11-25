@@ -17,8 +17,8 @@ import java.util.List;
 
 import org.conductoross.conductor.ai.AIModel;
 import org.conductoross.conductor.ai.http.AIHttpClients;
-import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
-import org.conductoross.conductor.ai.models.ImageGenRequest;
+import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
+import org.conductoross.conductor.ai.model.ImageGenRequest;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.image.Image;
 import org.springframework.ai.image.ImageGeneration;
@@ -145,7 +145,7 @@ public class StabilityAI implements AIModel {
         // in our StabilityAiApi (sd3 vs core vs ultra).
         return org.springframework.ai.image.ImageOptionsBuilder.builder()
                 .model(input.getModel())
-                .N(input.getN())
+                .n(input.getN())
                 .height(input.getHeight())
                 .width(input.getWidth())
                 .responseFormat("b64_json")

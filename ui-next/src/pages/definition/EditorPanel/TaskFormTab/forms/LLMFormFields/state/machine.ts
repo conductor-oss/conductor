@@ -28,6 +28,7 @@ export const llmFormFieldsMachine = createMachine<
       embeddingModelOptions: [],
       selectedPromptName: undefined,
       selectedPrompt: null,
+      promptNamesFetched: false,
     },
     states: {
       [LLMFormFieldsMachineStates.DETERMINE_INITIAL_STATE]: {
@@ -46,6 +47,14 @@ export const llmFormFieldsMachine = createMachine<
                 (field) => field === UiIntegrationsFieldType.LLM_PROVIDER,
               ),
           },
+          {
+            target: LLMFormFieldsMachineStates.FETCH_PROMPT_NAMES,
+            cond: (context) =>
+              context.fields.some(
+                (field) => field === UiIntegrationsFieldType.INSTRUCTIONS,
+              ) && !context.promptNamesFetched,
+          },
+          { target: LLMFormFieldsMachineStates.IDLE },
         ],
       },
       [LLMFormFieldsMachineStates.IDLE]: {
@@ -85,10 +94,20 @@ export const llmFormFieldsMachine = createMachine<
       [LLMFormFieldsMachineStates.FETCH_LLM_PROVIDER_OPTIONS]: {
         invoke: {
           src: "fetchLlmProviderOptionsService",
-          onDone: {
-            actions: "persistLlmProviderOptions",
-            target: LLMFormFieldsMachineStates.IDLE,
-          },
+          onDone: [
+            {
+              actions: "persistLlmProviderOptions",
+              target: LLMFormFieldsMachineStates.FETCH_PROMPT_NAMES,
+              cond: (context) =>
+                context.fields.some(
+                  (field) => field === UiIntegrationsFieldType.INSTRUCTIONS,
+                ) && !context.promptNamesFetched,
+            },
+            {
+              actions: "persistLlmProviderOptions",
+              target: LLMFormFieldsMachineStates.IDLE,
+            },
+          ],
         },
       },
       [LLMFormFieldsMachineStates.FETCH_MODEL_OPTIONS]: {
@@ -118,7 +137,10 @@ export const llmFormFieldsMachine = createMachine<
             actions: "persistPromptNameOptions",
             target: LLMFormFieldsMachineStates.IDLE,
           },
-          onError: LLMFormFieldsMachineStates.IDLE,
+          onError: {
+            actions: "markPromptNamesFetched",
+            target: LLMFormFieldsMachineStates.IDLE,
+          },
         },
       },
       [LLMFormFieldsMachineStates.FETCH_INDEX_OPTIONS]: {

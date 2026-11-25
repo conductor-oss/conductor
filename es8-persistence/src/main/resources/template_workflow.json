@@ -83,6 +83,10 @@
         "parentWorkflowId": {
           "type": "keyword",
           "index": true
+        },
+        "classifier": {
+          "type": "keyword",
+          "index": true
         }
       }
     }

@@ -9,6 +9,8 @@
  * - Task definitions
  * - Event handlers
  * - Scheduler definitions and executions
+ * - Task executions
+ * - Schemas
  * - Queue monitor
  * - Event monitor
  * - API reference
@@ -25,7 +27,6 @@
  * - Remote Services
  * - Metrics
  * - Environment Variables
- * - Schemas
  * - Workers
  */
 
@@ -44,10 +45,16 @@ import {
 import ErrorPage from "pages/error/ErrorPage";
 import { EventMonitor } from "pages/eventMonitor/EventMonitor";
 import { EventMonitorDetail } from "pages/eventMonitor/EventMonitorDetail/EventMonitorDetail";
-import { SchedulerExecutions, WorkflowSearch } from "pages/executions";
+import {
+  SchedulerExecutions,
+  TaskSearch,
+  WorkflowSearch,
+} from "pages/executions";
+import { SchemaEditPage, SchemaList } from "pages/schema";
 import { pluginRegistry } from "plugins/registry";
-import { RouteObject } from "react-router-dom";
+import { Navigate, RouteObject } from "react-router-dom";
 import { featureFlags, FEATURES } from "utils";
+import { resolveDefaultHomePath } from "utils/resolveDefaultHomePath";
 import {
   API_REFERENCE_URL,
   EVENT_HANDLERS_URL,
@@ -55,13 +62,18 @@ import {
   NEW_TASK_DEF_URL,
   RUN_WORKFLOW_URL,
   SCHEDULER_DEFINITION_URL,
+  SCHEMAS_URL,
   TASK_DEF_URL,
+  TASK_EXECUTION_URL,
   TASK_QUEUE_URL,
   WORKFLOW_DEFINITION_URL,
 } from "utils/constants/route";
 import {
+  AgentDefinition,
   AgentDefinitions,
+  CreateAgentGuide,
   AgentExecutions as AgentExecutionsPage,
+  RunAgent,
   Secrets as AgentSecretsPage,
   Skills as SkillsPage,
 } from "pages/agent";
@@ -69,14 +81,11 @@ import {
   AGENT_DEFINITION_URL,
   AGENT_EXECUTIONS_URL,
   AGENT_SECRETS_URL,
+  RUN_AGENT_URL,
   SKILLS_URL,
 } from "utils/constants/route";
 import EventHandlerDefinition from "../pages/definition/EventHandler/EventHandler";
 import Execution from "../pages/execution/Execution";
-import Examples from "../pages/kitchensink/Examples";
-import Gantt from "../pages/kitchensink/Gantt";
-import KitchenSink from "../pages/kitchensink/KitchenSink";
-import ThemeSampler from "../pages/kitchensink/ThemeSampler";
 import TaskQueue from "../pages/queueMonitor/TaskQueue";
 import { Schedule } from "../pages/scheduler";
 
@@ -181,34 +190,28 @@ const getCoreAuthenticatedRoutes = () => [
     element: <ApiReferencePage />,
   },
 
-  // Dev/Debug pages (Kitchen Sink)
-  {
-    path: "/kitchen",
-    element: <KitchenSink />,
-  },
-  {
-    path: "/kitchen/examples",
-    element: <Examples />,
-  },
-  {
-    path: "/kitchen/gantt",
-    element: <Gantt />,
-  },
-  {
-    path: "/kitchen/theme",
-    element: <ThemeSampler />,
-  },
+  // Dev/Debug pages
   {
     path: "/flags",
     element: <CreatorFlags />,
   },
 
-  // Embedded AgentSpan pages (registered only when AGENTSPAN_ENABLED, i.e.
+  // Embedded Conductor-Agents pages (registered only when CONDUCTOR_INTEGRATIONS_AI_ENABLED, i.e.
   // the server's conductor.integrations.ai.enabled is true).
-  ...(featureFlags.isEnabled(FEATURES.AGENTSPAN_ENABLED)
+  ...(featureFlags.isEnabled(FEATURES.CONDUCTOR_INTEGRATIONS_AI_ENABLED)
     ? [
         { path: AGENT_DEFINITION_URL.BASE, element: <AgentDefinitions /> },
-        { path: AGENT_EXECUTIONS_URL, element: <AgentExecutionsPage /> },
+        { path: AGENT_DEFINITION_URL.NEW, element: <CreateAgentGuide /> },
+        {
+          path: AGENT_DEFINITION_URL.NAME_VERSION,
+          element: <AgentDefinition />,
+        },
+        { path: AGENT_EXECUTIONS_URL.BASE, element: <AgentExecutionsPage /> },
+        { path: RUN_AGENT_URL, element: <RunAgent /> },
+        // Same Execution page/component as "/execution/:id/:taskId?" — just
+        // reached from the Agents section, so the sidebar keeps "Executions"
+        // (under Agents) highlighted instead of the plain Workflow item.
+        { path: AGENT_EXECUTIONS_URL.ID_TASK_ID, element: <Execution /> },
         { path: SKILLS_URL.BASE, element: <SkillsPage /> },
         { path: AGENT_SECRETS_URL, element: <AgentSecretsPage /> },
       ]
@@ -216,16 +219,59 @@ const getCoreAuthenticatedRoutes = () => [
 ];
 
 /**
+ * Schema registry routes.
+ *
+ * Withheld when a plugin has already claimed the same paths. Core routes are
+ * matched ahead of plugin routes, so registering these unconditionally would
+ * displace a plugin-provided schema screen rather than defer to it.
+ */
+export const getSchemaRoutes = (pluginRoutes: RouteObject[]): RouteObject[] => {
+  const routes = [
+    {
+      path: SCHEMAS_URL.BASE,
+      element: <SchemaList />,
+    },
+    {
+      path: SCHEMAS_URL.EDIT,
+      element: <SchemaEditPage />,
+    },
+  ];
+  const claimedByPlugin = routes.some((route) =>
+    pluginRoutes.some((pluginRoute) => pluginRoute.path === route.path),
+  );
+  return claimedByPlugin ? [] : routes;
+};
+
+/**
+ * Task execution search route.
+ *
+ * Withheld when a plugin has already claimed the path, for the same reason as
+ * the schema routes: a plugin that gates this screen (e.g. on task indexing)
+ * must not be bypassed by a core route matched ahead of it.
+ */
+export const getTaskExecutionRoutes = (
+  pluginRoutes: RouteObject[],
+): RouteObject[] => {
+  const claimedByPlugin = pluginRoutes.some(
+    (pluginRoute) => pluginRoute.path === TASK_EXECUTION_URL.LIST,
+  );
+  return claimedByPlugin
+    ? []
+    : [{ path: TASK_EXECUTION_URL.LIST, element: <TaskSearch /> }];
+};
+
+/**
  * Get the default index route based on feature flags
  */
 const getIndexRoute = (isPlayground: boolean) => {
   if (isPlayground) {
-    // In playground mode, we need the hub pages - these come from plugins
-    return null; // Will be provided by playground plugin
+    // In playground mode, Launch Pad / Hub is the public index from plugins
+    return null;
   }
+  // Redirect `/` to the first visible in-app sidebar destination (usually /executions).
   return {
     index: true,
-    element: <WorkflowSearch />,
+    element: <Navigate to={resolveDefaultHomePath()} replace />,
   };
 };
 
@@ -252,6 +298,8 @@ export const getRoutes = (): RouteObject[] => {
   const allAuthenticatedRoutes = [
     ...(indexRoute ? [indexRoute] : []),
     ...coreRoutes,
+    ...getSchemaRoutes(pluginAuthenticatedRoutes),
+    ...getTaskExecutionRoutes(pluginAuthenticatedRoutes),
     ...pluginAuthenticatedRoutes,
   ];
 

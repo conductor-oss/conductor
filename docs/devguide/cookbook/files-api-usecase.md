@@ -1,3 +1,7 @@
+---
+description: "Five real-world scenarios where Conductor workflows create, process, and deliver files, from refund processing to invoices and shipping labels."
+---
+
 # Conductor OSS — File Management Use Cases
 
 Five real-world scenarios where Conductor orchestrates file creation, processing, and delivery across workflow stages.
@@ -74,7 +78,7 @@ flowchart TD
     E --> H
     F --> H
     G --> H
-    H --> I["DYNAMIC_FORK:<br/>Generate Embeddings<br/>(1 per chunk)"]
+    H --> I["FORK_JOIN_DYNAMIC:<br/>Generate Embeddings<br/>(1 per chunk)"]
     I --> J["LLM_TEXT_COMPLETE:<br/>Create Embedding Vector"]
     J --> K["JOIN:<br/>Collect All Vectors"]
     K --> L["HTTP Task:<br/>Upsert to Vector DB<br/>(Pinecone / Weaviate)"]
@@ -105,7 +109,7 @@ flowchart TD
 
 ### Conductor Primitives
 
-DO_WHILE, SWITCH, DYNAMIC_FORK, LLM_TEXT_COMPLETE, HTTP, INLINE
+DO_WHILE, SWITCH, FORK_JOIN_DYNAMIC, LLM_TEXT_COMPLETE, HTTP, INLINE
 
 ---
 
@@ -120,7 +124,7 @@ flowchart TD
     A["Master Video<br/>Uploaded (4K ProRes)"] --> B["INLINE Task:<br/>Validate & Extract<br/>Media Metadata"]
     B --> C["FORK (3 Branches)"]
     
-    C --> D["Branch 1:<br/>DYNAMIC_FORK<br/>Transcode Variants"]
+    C --> D["Branch 1:<br/>FORK_JOIN_DYNAMIC<br/>Transcode Variants"]
     D --> D1["1080p H.264 MP4"]
     D --> D2["720p H.264 MP4"]
     D --> D3["480p H.264 MP4"]
@@ -170,7 +174,7 @@ flowchart TD
 
 ### Conductor Primitives
 
-FORK/JOIN, DYNAMIC_FORK, LLM_TEXT_COMPLETE, HTTP, INLINE
+FORK/JOIN, FORK_JOIN_DYNAMIC, LLM_TEXT_COMPLETE, HTTP, INLINE
 
 ---
 

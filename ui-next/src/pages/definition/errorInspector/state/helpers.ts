@@ -190,9 +190,9 @@ export const jakatraPathToPropertyPath = (path?: string): string => {
       .replace(/<list element>/g, "")
       // Remove <map value> markers
       .replace(/<map value>/g, "")
-      // Clean up any double brackets that might have been created
-      .replace(/\]\[/g, "][")
       // Remove any dots that appear right before a bracket
+      // (adjacent brackets like "[0][1]" are valid lodash nested access
+      // and are intentionally left as-is)
       .replace(/\.\[/g, "[")
   );
 };
@@ -250,6 +250,10 @@ export const filterServerErrorsNotPresentInNodes = (
 ) => {
   const serverError = _nth(serverErrors, 0);
   if (serverError != null) {
+    if (!serverError.validationErrors?.length) {
+      // Workflow level error: nothing to match against nodes, so it stays valid.
+      return serverErrors;
+    }
     const validationErrors =
       serverError.validationErrors
         ?.map((sve) => {

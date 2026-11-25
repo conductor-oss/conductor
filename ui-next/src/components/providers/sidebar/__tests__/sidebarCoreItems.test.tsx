@@ -19,7 +19,7 @@ vi.mock("utils", () => ({
     PLAYGROUND: "PLAYGROUND",
     SHOW_FEEDBACK_FORM: "SHOW_FEEDBACK_FORM",
     SCHEDULER: "SCHEDULER",
-    AGENTSPAN_ENABLED: "AGENTSPAN_ENABLED",
+    CONDUCTOR_INTEGRATIONS_AI_ENABLED: "CONDUCTOR_INTEGRATIONS_AI_ENABLED",
   },
   featureFlags: {
     isEnabled: vi.fn((feature: string) => feature === "SCHEDULER"),
@@ -41,11 +41,20 @@ vi.mock("utils/constants/route", () => ({
     NEW: "/newScheduleDef",
   },
   SCHEDULER_EXECUTION_URL: "/schedulerExecs",
+  SCHEMAS_URL: {
+    BASE: "/schemas",
+    EDIT: "/schemas/:schemaName/:version?",
+    DEF: "/schemas/schemaDef",
+  },
   AGENT_DEFINITION_URL: { BASE: "/agents" },
-  AGENT_EXECUTIONS_URL: "/agentExecutions",
+  AGENT_EXECUTIONS_URL: {
+    BASE: "/agentExecutions",
+    ID_TASK_ID: "/agentExecutions/:id/:taskId?",
+  },
   AGENT_SECRETS_URL: "/agentSecrets",
   SKILLS_URL: { BASE: "/skills" },
   TASK_DEF_URL: { BASE: "/taskDef", NAME: "/taskDef/:name" },
+  TASK_EXECUTION_URL: { LIST: "/taskExecs" },
   TASK_QUEUE_URL: { BASE: "/taskQueue" },
   WORKFLOW_DEFINITION_URL: {
     BASE: "/workflowDef",
@@ -56,6 +65,7 @@ vi.mock("utils/constants/route", () => ({
 }));
 
 import { getCoreSidebarItems } from "../sidebarCoreItems";
+import { mergePluginSidebarItems } from "../sidebarMenuUtils";
 import type { MenuItemType } from "../types";
 
 function findItem(items: MenuItemType[], id: string): MenuItemType | undefined {
@@ -76,6 +86,68 @@ describe("getCoreSidebarItems", () => {
 
   beforeEach(() => {
     items = getCoreSidebarItems(true);
+  });
+
+  describe("schemas item", () => {
+    it("is present in the definitionsSubMenu", () => {
+      expect(
+        findNestedItem(items, "definitionsSubMenu", "schemas"),
+      ).toBeDefined();
+    });
+
+    it("links to the schema management screen", () => {
+      const schemas = findNestedItem(items, "definitionsSubMenu", "schemas");
+      expect(schemas?.linkTo).toBe("/schemas");
+      expect(schemas?.hidden).toBe(false);
+      expect(schemas?.title).toBe("Schemas");
+    });
+
+    it("is replaced, not duplicated, by a plugin item of the same id", () => {
+      const merged = mergePluginSidebarItems(items, [
+        {
+          id: "schemas",
+          title: "Schemas",
+          icon: null,
+          linkTo: "/schemas",
+          targetMenu: "definitionsSubMenu",
+          position: 850,
+        },
+      ]);
+
+      const definitions = findItem(merged, "definitionsSubMenu");
+      const schemaItems = definitions?.items?.filter((i) => i.id === "schemas");
+      expect(schemaItems).toHaveLength(1);
+      expect(schemaItems?.[0].position).toBe(850);
+    });
+  });
+
+  describe("task execution item", () => {
+    it("is present in the executionsSubMenu", () => {
+      const taskExe = findNestedItem(items, "executionsSubMenu", "taskExeItem");
+      expect(taskExe).toBeDefined();
+    });
+
+    it("links to the task executions page", () => {
+      const taskExe = findNestedItem(items, "executionsSubMenu", "taskExeItem");
+      expect(taskExe?.linkTo).toBe("/taskExecs");
+    });
+
+    it("is visible (not hidden) by default", () => {
+      const taskExe = findNestedItem(items, "executionsSubMenu", "taskExeItem");
+      expect(taskExe?.hidden).toBe(false);
+    });
+
+    it("is positioned after workflowExeItem and before schedulerExeItem", () => {
+      const execMenu = findItem(items, "executionsSubMenu");
+      const position = (id: string) =>
+        execMenu?.items?.find((i) => i.id === id)?.position;
+      expect(position("taskExeItem")).toBeGreaterThan(
+        position("workflowExeItem") ?? 0,
+      );
+      expect(position("taskExeItem")).toBeLessThan(
+        position("schedulerExeItem") ?? Infinity,
+      );
+    });
   });
 
   describe("scheduler execution item", () => {
@@ -197,10 +269,11 @@ describe("getCoreSidebarItems", () => {
   });
 
   describe("overall structure", () => {
-    it("returns executionsSubMenu with workflow, scheduler, and queue monitor", () => {
+    it("returns executionsSubMenu with workflow, task, scheduler, and queue monitor", () => {
       const execMenu = findItem(items, "executionsSubMenu");
       const childIds = execMenu?.items?.map((i) => i.id) ?? [];
       expect(childIds).toContain("workflowExeItem");
+      expect(childIds).toContain("taskExeItem");
       expect(childIds).toContain("schedulerExeItem");
       expect(childIds).toContain("queueMonitorItem");
     });
