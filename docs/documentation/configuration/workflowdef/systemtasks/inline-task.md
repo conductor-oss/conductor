@@ -10,13 +10,12 @@ The Inline task (`INLINE`) executes lightweight scripting logic inside the Condu
 
 The Inline task is best for small, deterministic logic like simple validation or calculation. For heavy, custom logic, it is best to use a Worker task (`SIMPLE`) instead.
 
-!!! warning "Java host access is changing in Conductor 3.35"
-    Inline scripts run on the shared GraalJS evaluator. Through Conductor 3.34, that evaluator
-    allows unrestricted Java host access by default, so a script can reach Java methods on the
-    objects bound to `$` -- treat `INLINE` expressions as trusted code and only let trusted authors
-    define them. Conductor 3.35 will restrict host access by default: scripts keep collection/array
-    data access and `console.log`/`info`/`error`, but can no longer call arbitrary Java methods. To
-    opt into the restricted policy now, set `conductor.app.graaljs.restricted-host-access=true` (see
+!!! warning "Java host access is restricted by default"
+    Inline scripts run on the shared GraalJS evaluator. As of Conductor 3.35, that evaluator
+    restricts Java host access by default: scripts keep collection/array data access and
+    `console.log`/`info`/`error`, but cannot call arbitrary Java methods on the objects bound to
+    `$`. If you need to retain host access, set `conductor.app.graaljs.restricted-host-access=false`
+    and treat `INLINE` expressions as trusted code that only trusted authors may define (see
     [GraalJS Java host access](../../appconf.md#graaljs-java-host-access)). (GHSA-77c4-x563-ccgr)
 
 ## Task parameters

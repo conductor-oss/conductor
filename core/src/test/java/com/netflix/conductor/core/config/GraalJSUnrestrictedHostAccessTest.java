@@ -13,9 +13,17 @@
 package com.netflix.conductor.core.config;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.util.Map;
 
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.core.appender.WriterAppender;
+import org.apache.logging.log4j.core.layout.PatternLayout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.env.YamlPropertySourceLoader;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -29,6 +37,40 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /** Runs in its own test JVM because the evaluator's host-access policy is startup-only. */
 public class GraalJSUnrestrictedHostAccessTest {
+
+    private final StringWriter logOutput = new StringWriter();
+    private Logger logger;
+    private Level previousLevel;
+    private WriterAppender appender;
+
+    @BeforeEach
+    void captureStartupWarning() {
+        logger = (Logger) LogManager.getLogger(ScriptEvaluator.class);
+        previousLevel = logger.getLevel();
+        appender =
+                WriterAppender.newBuilder()
+                        .setName("graaljs-unrestricted-warning-test")
+                        .setTarget(logOutput)
+                        .setLayout(
+                                PatternLayout.newBuilder().withPattern("%level %message%n").build())
+                        .build();
+        appender.start();
+        logger.addAppender(appender);
+        logger.setLevel(Level.WARN);
+    }
+
+    @AfterEach
+    void restoreLogger() {
+        if (logger != null) {
+            if (appender != null) {
+                logger.removeAppender(appender);
+            }
+            logger.setLevel(previousLevel);
+        }
+        if (appender != null) {
+            appender.stop();
+        }
+    }
 
     @Test
     void yamlCanEnableUnrestrictedHostAccessBeforeBusinessBeansAreCreated() {
@@ -61,6 +103,8 @@ public class GraalJSUnrestrictedHostAccessTest {
                 .run(
                         context -> {
                             assertNull(context.getStartupFailure());
+                            // Explicitly retaining unrestricted access warns loudly at startup.
+                            assertUnrestrictedOptOutWarning();
                             assertEquals("host-only", context.getBean("startupScriptResult"));
                             assertEquals(
                                     "host-only",
@@ -92,6 +136,16 @@ public class GraalJSUnrestrictedHostAccessTest {
                                     IllegalStateException.class,
                                     () -> ScriptEvaluator.configureHostAccess(true));
                         });
+    }
+
+    private void assertUnrestrictedOptOutWarning() {
+        String output = logOutput.toString();
+        assertTrue(
+                output.contains("WARN GraalJS unrestricted Java host access is enabled"), output);
+        assertTrue(
+                output.contains("Restricted host access is the default as of Conductor 3.35"),
+                output);
+        assertTrue(output.contains("conductor.app.graaljs.restricted-host-access=true"), output);
     }
 
     public static class BoundHostObject {

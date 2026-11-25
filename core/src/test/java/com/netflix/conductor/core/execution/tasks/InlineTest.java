@@ -34,7 +34,8 @@ public class InlineTest {
 
     @BeforeClass
     public static void configureRestrictedHostAccess() {
-        // RCE rejection is a restricted-mode guarantee, not the compatibility default.
+        // Restricted host access is the default; pin it explicitly so this suite is independent
+        // of evaluator state left by other tests sharing the JVM.
         ScriptEvaluator.configureHostAccess(true);
     }
 
