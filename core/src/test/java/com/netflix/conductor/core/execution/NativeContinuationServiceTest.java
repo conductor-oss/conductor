@@ -660,6 +660,90 @@ public class NativeContinuationServiceTest {
         assertTrue(marker(workflow, awaited).isDone());
     }
 
+    /**
+     * forEach over three items: a DO_WHILE {@code items} holding {@code items_task}, run to the
+     * end, the main lane paused on the loop (main#2).
+     */
+    private static TaskModel itemsLoop(WorkflowModel workflow, List<TaskModel> iterations) {
+        TaskModel loop = ran(workflow, "items", "main", 2, 300, 310);
+        loop.setTaskType(TaskType.TASK_TYPE_DO_WHILE);
+        loop.getWorkflowTask().setType(TaskType.TASK_TYPE_DO_WHILE);
+        WorkflowTask body = new WorkflowTask();
+        body.setName("item");
+        body.setTaskReferenceName("items_task");
+        body.setType("SIMPLE");
+        body.getMetadata().put("lane", "main");
+        loop.getWorkflowTask().setLoopOver(new ArrayList<>(List.of(body)));
+        loop.setIteration(3);
+        loop.addOutput("iteration", 3);
+        for (int i = 1; i <= 3; i++) {
+            loop.addOutput(String.valueOf(i), Map.of("items_task", Map.of("label", "l" + i)));
+            TaskModel item = new TaskModel();
+            item.setTaskId("id-items_task__" + i);
+            item.setReferenceTaskName("items_task__" + i);
+            item.setTaskType("SIMPLE");
+            item.setWorkflowTask(body);
+            item.setIteration(i);
+            item.setSeq(workflow.getTasks().size() + 1);
+            item.setStatus(TaskModel.Status.COMPLETED);
+            item.setEndTime(100L * i);
+            workflow.getTasks().add(item);
+            iterations.add(item);
+        }
+        return loop;
+    }
+
+    @Test
+    public void aRerunFromALoopItemOpensTheLoopAgainAtThatIteration() {
+        WorkflowModel workflow = freshWorkflow(false);
+        applied(workflow.getNativeState().getBootstrap());
+        List<TaskModel> items = new ArrayList<>();
+        TaskModel loop = itemsLoop(workflow, items);
+        TaskModel second = items.get(1);
+
+        NativeContinuationService.RerunPlan plan = service.planRerun(workflow, second);
+        assertEquals(Set.of("id-items_task__3"), plan.dropTaskIds()); // the later iteration goes
+        assertTrue(plan.resetMarkers().contains("main#2")); // the code after the loop runs again
+        workflow.getTasks().removeIf(t -> plan.dropTaskIds().contains(t.getTaskId()));
+        List<TaskModel> touched = new ArrayList<>();
+        service.adjustRerun(workflow, second, plan, touched);
+
+        // open again, at the rerun item's iteration, without the outputs of the ones that run again
+        assertEquals(TaskModel.Status.IN_PROGRESS, loop.getStatus());
+        assertFalse(loop.isExecuted());
+        assertEquals(2, loop.getIteration());
+        assertEquals(2, loop.getOutputData().get("iteration"));
+        assertTrue(loop.getOutputData().containsKey("1"));
+        assertFalse(loop.getOutputData().containsKey("2"));
+        assertFalse(loop.getOutputData().containsKey("3"));
+        assertTrue(touched.contains(loop));
+        assertNotRun(marker(workflow, loop)); // runs when the loop finishes again
+    }
+
+    @Test
+    public void aFailedLoopItemIsTheWorkflowsFailedTask() {
+        // the code names a task in a loop without its iteration
+        WorkflowModel workflow = freshWorkflow(false);
+        applied(workflow.getNativeState().getBootstrap());
+        List<TaskModel> items = new ArrayList<>();
+        TaskModel loop = itemsLoop(workflow, items);
+        lease(marker(workflow, loop), 1);
+        items.get(1).setStatus(TaskModel.Status.COMPLETED_WITH_ERRORS);
+        items.get(1).addOutput(NativeContinuationService.OUTPUT_FAILED_STATUS, "FAILED");
+        Map<String, Object> out = output(2, 1, List.of());
+        out.put("done", true);
+        out.put(
+                "error",
+                Map.of("message", "task items_task FAILED: unreachable", "ref", "items_task"));
+
+        NativeContinuationService.Completion completion =
+                completeHoldingSlot(workflow, loop, result("id-items", out));
+
+        assertTrue(completion.finished);
+        assertEquals(items.get(1), completion.causeTask);
+        assertEquals(TaskModel.Status.FAILED, items.get(1).getStatus()); // shown as it failed
+    }
+
     private ExecutionDAOFacade dao;
 
     private void useMockedStores(WorkflowModel workflow) {

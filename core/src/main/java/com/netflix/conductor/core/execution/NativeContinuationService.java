@@ -917,6 +917,24 @@ public class NativeContinuationService {
         }
     }
 
+    /** The latest iteration of a loop's task that did not succeed, or null. */
+    private static TaskModel latestFailedIteration(WorkflowModel workflow, String ref) {
+        TaskModel latest = null;
+        for (TaskModel task : workflow.getTasks()) {
+            boolean failed =
+                    !task.getStatus().isSuccessful()
+                            || task.getStatus() == TaskModel.Status.COMPLETED_WITH_ERRORS;
+            if (task.isLoopOverTask()
+                    && failed
+                    && ref.equals(
+                            TaskUtils.removeIterationFromTaskRefName(task.getReferenceTaskName()))
+                    && (latest == null || task.getSeq() > latest.getSeq())) {
+                latest = task;
+            }
+        }
+        return latest;
+    }
+
     /**
      * The task a failed workflow failed at, shown failed. An uncaught task failure names its task,
      * which the SDK made optional so the failure could reach the code: it is put back to the status
@@ -928,6 +946,10 @@ public class NativeContinuationService {
             return null;
         }
         TaskModel task = workflow.getTaskByRefName(ref.toString());
+        if (task == null) {
+            // a task in a loop is named without its iteration: the latest that failed
+            task = latestFailedIteration(workflow, ref.toString());
+        }
         if (task != null) {
             if (task.getStatus() == TaskModel.Status.COMPLETED_WITH_ERRORS) {
                 Object failed = task.getOutputData().get(OUTPUT_FAILED_STATUS);
@@ -1148,6 +1170,7 @@ public class NativeContinuationService {
                 touched.add(task);
             }
         }
+        reopenLoopsHolding(workflow, rerunFrom, touched);
         if (state != null && def.getTasks().isEmpty()) {
             // the same id, <workflowId>|main: the fresh marker counts the rerun as a retry
             state.setBootstrap(
@@ -1177,6 +1200,38 @@ public class NativeContinuationService {
         }
         workflow.setOutput(new HashMap<>());
         return joins;
+    }
+
+    /**
+     * A loop that holds the rerun task runs on from the rerun task's iteration: the rest of that
+     * iteration and the later ones went with the plan ({@link #planRerun}), and the loop, open
+     * again at that iteration, waits for it and schedules the next ones. A loop that finished would
+     * stay finished, its continuation would run, and the code would find the rerun task still
+     * scheduled.
+     */
+    private static void reopenLoopsHolding(
+            WorkflowModel workflow, TaskModel rerunFrom, List<TaskModel> touched) {
+        String ref = TaskUtils.removeIterationFromTaskRefName(rerunFrom.getReferenceTaskName());
+        int iteration = Math.max(1, rerunFrom.getIteration());
+        for (TaskModel loop : workflow.getTasks()) {
+            if (!TaskType.TASK_TYPE_DO_WHILE.equals(loop.getTaskType())
+                    || loop == rerunFrom
+                    || loop.getWorkflowTask() == null
+                    || !loop.getWorkflowTask().has(ref)) {
+                continue;
+            }
+            loop.setStatus(TaskModel.Status.IN_PROGRESS);
+            loop.setExecuted(false);
+            loop.setEndTime(0);
+            loop.setReasonForIncompletion(null);
+            loop.setIteration(iteration);
+            // the outputs of the iterations that run again
+            loop.getOutputData()
+                    .keySet()
+                    .removeIf(k -> k.matches("\\d+") && Integer.parseInt(k) >= iteration);
+            loop.addOutput("iteration", iteration);
+            touched.add(loop);
+        }
     }
 
     /**
