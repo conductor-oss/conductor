@@ -8,7 +8,7 @@ This guide helps to find the most efficient way to contribute, ask questions, an
 Code of conduct
 -----
 
-Please review our [code of conduct](https://orkes.io/orkes-conductor-community-code-of-conduct).
+Please review our [code of conduct](contribute/code-of-conduct.md).
 
 I have a question!
 -----
