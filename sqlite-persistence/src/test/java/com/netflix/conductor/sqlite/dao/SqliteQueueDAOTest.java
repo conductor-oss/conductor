@@ -163,6 +163,23 @@ public class SqliteQueueDAOTest {
      * as at least one message is available rather than blocking for the full timeout waiting to
      * fill the whole batch.
      */
+    /**
+     * A message id is unique within a queue, not across queues: a native workflow's continuation is
+     * offered on the queue of the worker that holds the execution and, as a fallback, on the shared
+     * queue, under the same id. A pop takes it from the queue polled and from no other.
+     */
+    @Test
+    public void popTakesAMessageFromTheQueuePolledOnly() {
+        queueDAO.push("pin-a:code", "msg-1", 0);
+        queueDAO.push("code", "msg-1", 0);
+
+        assertEquals(List.of("msg-1"), queueDAO.pop("pin-a:code", 10, 100));
+
+        // still on the other queue, to be taken once
+        assertEquals(List.of("msg-1"), queueDAO.pop("code", 10, 100));
+        assertEquals(List.of(), queueDAO.pop("code", 10, 100));
+    }
+
     @Test
     public void pollMessagesReturnsPromptlyWhenFewerThanCountAvailable() {
         final String queueName = "issue142_testQueue";

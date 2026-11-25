@@ -26,19 +26,19 @@ import tools.jackson.databind.JsonNode;
 public record MCPRpcError(Integer code, String message, JsonNode data) {
 
     public static MCPRpcError from(JsonNode error) {
-        JsonNode codeNode = error.get("code");
+        JsonNode codeNode = error.get(MCPFields.Error.CODE);
         // canConvertToInt: an integer outside the int range is kept as no code, not thrown on.
         Integer code =
                 codeNode != null && codeNode.isIntegralNumber() && codeNode.canConvertToInt()
                         ? codeNode.asInt()
                         : null;
-        JsonNode messageNode = error.get("message");
+        JsonNode messageNode = error.get(MCPFields.Error.MESSAGE);
         // A conforming server sends a string; any other JSON is kept as text, not thrown on.
         String message =
                 messageNode == null || messageNode.isNull()
                         ? null
                         : messageNode.isString() ? messageNode.asString() : messageNode.toString();
-        return new MCPRpcError(code, message, error.get("data"));
+        return new MCPRpcError(code, message, error.get(MCPFields.Error.DATA));
     }
 
     /** {@code JSON-RPC error <code> <message>}, with placeholders for absent fields. */

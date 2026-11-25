@@ -30,7 +30,7 @@ public class MCPClientProperties {
     /**
      * The longest time a call that the server runs as a task is polled, from the task's start. The
      * server's {@code ttlMs} shortens it when smaller; when the server gives none, this is the
-     * deadline. Must be positive.
+     * deadline. Must be positive, and at most 30 days.
      */
     private Duration maxDuration = DEFAULT_MAX_DURATION;
 }

@@ -198,14 +198,21 @@ class MCPTestkitTasksEndToEndTest {
     }
 
     @Test
-    void taskCancelledByTheServerFailsTheCall() {
+    void taskCancelledByTheServerCancelsTheCall_withoutARetry() {
         String workflowId =
                 startWorkflow(
                         registerWorkflow(scripted("cancelled", "stopped by operator", 1), true, 1));
 
         Workflow done = awaitTerminal(workflowId, 60);
 
-        assertEquals(Workflow.WorkflowStatus.FAILED, done.getStatus());
+        // A CANCELED task is not retried, and the engine terminates its workflow.
+        assertEquals(Workflow.WorkflowStatus.TERMINATED, done.getStatus());
+        assertEquals(Task.Status.CANCELED, mcpTask(done).getStatus());
+        assertEquals(
+                1,
+                done.getTasks().stream()
+                        .filter(t -> t.getTaskType().equals("CALL_MCP_TOOL"))
+                        .count());
         String reason = mcpTask(done).getReasonForIncompletion();
         assertTrue(reason.contains("MCP server cancelled task"), reason);
         assertTrue(reason.contains("stopped by operator"), reason);

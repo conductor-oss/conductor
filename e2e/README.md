@@ -41,7 +41,7 @@ If you already have a Conductor server running, skip the scripts and run Gradle 
 
 ```bash
 # Using the environment variable (recommended)
-RUN_E2E=true SERVER_ROOT_URI=http://localhost:6000 ./gradlew :conductor-e2e:test
+RUN_E2E=true SERVER_ROOT_URI=http://localhost:8000 ./gradlew :conductor-e2e:test
 
 # Or using Gradle properties
 ./gradlew :conductor-e2e:test -PrunE2E -DSERVER_ROOT_URI=http://localhost:8000
@@ -60,11 +60,12 @@ If you need to test against a locally built server (e.g., after changing `core/`
 # 2. Build the Docker image
 docker build -t conductor:server -f docker/server/Dockerfile .
 
-# 3. Start with the e2e compose file (maps port 6000 → 8080)
-docker compose -f docker/docker-compose-postgres-e2e.yaml up -d
+# 3. Start with the e2e compose file (maps port 8000 → 8080). The e2e overlay
+#    turns on the features that the e2e tests need, such as the MCP server.
+docker compose -f docker/docker-compose-postgres-e2e.yaml -f docker/docker-compose-e2e.yaml up -d
 
 # 4. Run tests
-RUN_E2E=true SERVER_ROOT_URI=http://localhost:6000 ./gradlew :conductor-e2e:test
+RUN_E2E=true SERVER_ROOT_URI=http://localhost:8000 ./gradlew :conductor-e2e:test
 ```
 
 ## Test Options
@@ -72,11 +73,11 @@ RUN_E2E=true SERVER_ROOT_URI=http://localhost:6000 ./gradlew :conductor-e2e:test
 ### Run a specific test class or method
 
 ```bash
-RUN_E2E=true SERVER_ROOT_URI=http://localhost:6000 \
+RUN_E2E=true SERVER_ROOT_URI=http://localhost:8000 \
   ./gradlew :conductor-e2e:test --tests "io.conductor.e2e.control.SubWorkflowTests"
 
 # Single method
-RUN_E2E=true SERVER_ROOT_URI=http://localhost:6000 \
+RUN_E2E=true SERVER_ROOT_URI=http://localhost:8000 \
   ./gradlew :conductor-e2e:test --tests "io.conductor.e2e.control.DoWhileTests.testDoWhileSetVariableFix"
 ```
 

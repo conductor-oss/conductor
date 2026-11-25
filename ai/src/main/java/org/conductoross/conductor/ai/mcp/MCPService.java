@@ -134,8 +134,6 @@ public class MCPService {
     /** Upper bound on the {@code tools/list} pages read to find one tool. */
     static final int MAX_TOOLS_LIST_PAGES = 100;
 
-    private static final String JSON_RPC_VERSION = "2.0";
-
     /**
      * The JSON-RPC id of every request. Each request is a single HTTP exchange that carries its own
      * response, so a fixed id is enough.
@@ -176,7 +174,7 @@ public class MCPService {
             }
             ObjectNode params = objectMapper.createObjectNode();
             if (cursor != null) {
-                params.put("cursor", cursor);
+                params.put(MCPFields.Tool.CURSOR, cursor);
             }
             JsonNode result =
                     sendProtocolRequest(
@@ -189,7 +187,7 @@ public class MCPService {
                             httpClient);
             ExternalDataLimits.validateStructure(objectMapper.convertValue(result, Object.class));
 
-            JsonNode tools = result.get("tools");
+            JsonNode tools = result.get(MCPFields.Tool.TOOLS);
             if (tools == null || !tools.isArray()) {
                 throw new RuntimeException(
                         "Invalid tools/list response from "
@@ -197,12 +195,12 @@ public class MCPService {
                                 + ": 'tools' field is missing or not an array");
             }
             for (JsonNode tool : tools) {
-                if (toolName.equals(tool.path("name").asString(null))) {
+                if (toolName.equals(tool.path(MCPFields.Tool.NAME).asString(null))) {
                     return Optional.of(tool);
                 }
             }
 
-            JsonNode next = result.get("nextCursor");
+            JsonNode next = result.get(MCPFields.Tool.NEXT_CURSOR);
             cursor =
                     next != null && next.isString() && !next.asString().isEmpty()
                             ? next.asString()
@@ -233,8 +231,8 @@ public class MCPService {
             Map<String, String> headers,
             Map<String, String> paramHeaders) {
         ObjectNode params = objectMapper.createObjectNode();
-        params.put("name", toolName);
-        params.set("arguments", objectMapper.valueToTree(arguments));
+        params.put(MCPFields.Tool.NAME, toolName);
+        params.set(MCPFields.Tool.ARGUMENTS, objectMapper.valueToTree(arguments));
         JsonNode result =
                 sendProtocolRequest(
                         serverUrl,
@@ -262,7 +260,7 @@ public class MCPService {
      */
     public MCPTask getTask(String serverUrl, String taskId, Map<String, String> headers) {
         ObjectNode params = objectMapper.createObjectNode();
-        params.put("taskId", taskId);
+        params.put(MCPFields.Task.TASK_ID, taskId);
         JsonNode result =
                 sendProtocolRequest(
                         serverUrl,
@@ -285,7 +283,7 @@ public class MCPService {
      */
     public void cancelTask(String serverUrl, String taskId, Map<String, String> headers) {
         ObjectNode params = objectMapper.createObjectNode();
-        params.put("taskId", taskId);
+        params.put(MCPFields.Task.TASK_ID, taskId);
         sendProtocolRequest(
                 serverUrl,
                 MCPMethod.TASKS_CANCEL,
@@ -342,7 +340,7 @@ public class MCPService {
 
     /** The {@code resultType} of a result; an absent value means {@code complete}. */
     private static String resultType(JsonNode result) {
-        JsonNode type = result.get("resultType");
+        JsonNode type = result.get(MCPResultType.FIELD);
         return type == null || type.isNull() ? MCPResultType.COMPLETE.value() : type.asString();
     }
 
@@ -352,7 +350,7 @@ public class MCPService {
      * value, including {@code input_required}, is invalid.
      */
     private static void checkResultType(JsonNode result, MCPMethod method, String serverUrl) {
-        JsonNode typeNode = result.get("resultType");
+        JsonNode typeNode = result.get(MCPResultType.FIELD);
         if (typeNode != null && !typeNode.isNull() && !typeNode.isString()) {
             throw new MCPCallException(
                     "MCP server "
@@ -412,13 +410,13 @@ public class MCPService {
      * returned at once.
      */
     private void validateTaskStructure(JsonNode result) {
-        JsonNode toolResult = result.get("result");
+        JsonNode toolResult = result.get(MCPFields.Task.RESULT);
         if (toolResult == null || !(result instanceof ObjectNode object)) {
             ExternalDataLimits.validateStructure(objectMapper.convertValue(result, Object.class));
             return;
         }
         ObjectNode fields = object.deepCopy();
-        fields.remove("result");
+        fields.remove(MCPFields.Task.RESULT);
         ExternalDataLimits.validateStructure(objectMapper.convertValue(fields, Object.class));
         ExternalDataLimits.validateStructure(objectMapper.convertValue(toolResult, Object.class));
     }
@@ -439,7 +437,7 @@ public class MCPService {
             MCPMethod method,
             String url,
             boolean readResult) {
-        JsonNode idNode = node.get("taskId");
+        JsonNode idNode = node.get(MCPFields.Task.TASK_ID);
         String taskId =
                 idNode != null && idNode.isString() && !idNode.asString().isBlank()
                         ? idNode.asString()
@@ -448,24 +446,24 @@ public class MCPService {
             throw new MCPCallException(
                     "Invalid " + method + " response from " + url + ": missing 'taskId'");
         }
-        JsonNode statusNode = node.get("status");
+        JsonNode statusNode = node.get(MCPFields.Task.STATUS);
         if (statusNode == null || !statusNode.isString()) {
             throw new MCPCallException(
                     "Invalid " + method + " response from " + url + ": missing 'status'");
         }
-        JsonNode messageNode = node.get("statusMessage");
-        Long pollIntervalMs = wholeMillis(node.get("pollIntervalMs"));
-        Long ttlMs = wholeMillis(node.get("ttlMs"));
+        JsonNode messageNode = node.get(MCPFields.Task.STATUS_MESSAGE);
+        Long pollIntervalMs = wholeMillis(node.get(MCPFields.Task.POLL_INTERVAL_MS));
+        Long ttlMs = wholeMillis(node.get(MCPFields.Task.TTL_MS));
         // The Tasks extension defines result only on a completed tasks/get response
         // (CompletedTask in the DetailedTask union); CreateTaskResult has none, even when its
         // seed status is completed. Anywhere else it is an extra field and is ignored, so a
         // stray result can never fail a call.
         JsonNode resultNode =
                 readResult && MCPTaskStatus.COMPLETED.matches(statusNode.asString())
-                        ? node.get("result")
+                        ? node.get(MCPFields.Task.RESULT)
                         : null;
         JsonNode result = resultNode != null && resultNode.isObject() ? resultNode : null;
-        JsonNode errorNode = node.get("error");
+        JsonNode errorNode = node.get(MCPFields.Task.ERROR);
         return new MCPTask(
                 taskId,
                 statusNode.asString(),
@@ -494,11 +492,11 @@ public class MCPService {
      */
     private Request.Builder jsonRpcPost(String serverUrl, MCPMethod method, ObjectNode params) {
         ObjectNode request = objectMapper.createObjectNode();
-        request.put("jsonrpc", JSON_RPC_VERSION);
-        request.put("method", method.value());
-        request.put("id", REQUEST_ID);
+        request.put(MCPFields.JsonRpc.JSONRPC, MCPJsonRpc.VERSION);
+        request.put(MCPFields.JsonRpc.METHOD, method.value());
+        request.put(MCPFields.JsonRpc.ID, REQUEST_ID);
         if (params != null) {
-            request.set("params", params);
+            request.set(MCPFields.JsonRpc.PARAMS, params);
         }
         return new Request.Builder()
                 .url(serverUrl)
@@ -518,6 +516,8 @@ public class MCPService {
         return switch (method) {
             case TOOLS_LIST -> false;
             case TOOLS_CALL, TASKS_GET, TASKS_CANCEL -> true;
+            case SERVER_DISCOVER, TASKS_UPDATE, INITIALIZE, PING, UNKNOWN ->
+                    throw notSentByTheClient(method);
         };
     }
 
@@ -529,7 +529,14 @@ public class MCPService {
         return switch (method) {
             case TOOLS_CALL -> true;
             case TOOLS_LIST, TASKS_GET, TASKS_CANCEL -> false;
+            case SERVER_DISCOVER, TASKS_UPDATE, INITIALIZE, PING, UNKNOWN ->
+                    throw notSentByTheClient(method);
         };
+    }
+
+    private static IllegalArgumentException notSentByTheClient(MCPMethod method) {
+        return new IllegalArgumentException(
+                "The MCP client does not send " + method.name() + " (" + method + ")");
     }
 
     /**
@@ -553,7 +560,9 @@ public class MCPService {
             OkHttpClient client) {
         ResponsePayload response;
         try {
-            params.set("_meta", MCPProtocolHeaders.meta(objectMapper, declaresTasks(method)));
+            params.set(
+                    MCPFields.Session.META,
+                    MCPProtocolHeaders.meta(objectMapper, declaresTasks(method)));
             Request.Builder requestBuilder = jsonRpcPost(serverUrl, method, params);
             addHeaders(requestBuilder, withoutReservedHeaders(userHeaders));
             MCPProtocolHeaders.apply(requestBuilder, method, mcpName);
@@ -572,19 +581,23 @@ public class MCPService {
         }
 
         if (!MCPRequestException.isSuccessStatus(response.statusCode)) {
-            throw MCPRequestException.fromHttpError(
-                    method, response.statusCode, response.body, objectMapper);
+            throw recorded(
+                    MCPRequestException.fromHttpError(
+                            method, response.statusCode, response.body, objectMapper));
         }
 
         JsonNode responseJson =
                 response.contentType != null && response.contentType.contains(SSE_CONTENT_TYPE)
                         ? parseSseResponse(response.body)
                         : objectMapper.readTree(response.body);
-        if (responseJson.hasNonNull("error")) {
-            throw MCPRequestException.fromRpcError(
-                    method, response.statusCode, responseJson.get("error"));
+        if (responseJson.hasNonNull(MCPFields.JsonRpc.ERROR)) {
+            throw recorded(
+                    MCPRequestException.fromRpcError(
+                            method,
+                            response.statusCode,
+                            responseJson.get(MCPFields.JsonRpc.ERROR)));
         }
-        if (!responseJson.has("result")) {
+        if (!responseJson.has(MCPFields.JsonRpc.RESULT)) {
             throw new RuntimeException(
                     "Invalid JSON-RPC response to MCP "
                             + method
@@ -592,7 +605,7 @@ public class MCPService {
                             + serverUrl
                             + ": missing 'result' field");
         }
-        JsonNode result = responseJson.get("result");
+        JsonNode result = responseJson.get(MCPFields.JsonRpc.RESULT);
         if (!result.isObject()) {
             throw new RuntimeException(
                     "Invalid JSON-RPC response to MCP "
@@ -603,6 +616,11 @@ public class MCPService {
         }
         checkResultType(result, method, serverUrl);
         return result;
+    }
+
+    private static MCPRequestException recorded(MCPRequestException error) {
+        MCPClientMetrics.rpcError(error);
+        return error;
     }
 
     /** Lists tools from an HTTP/HTTPS MCP server. */
@@ -651,17 +669,17 @@ public class MCPService {
                 responseJson = objectMapper.readTree(responseBody);
             }
 
-            if (responseJson.has("error")) {
+            if (responseJson.has(MCPFields.JsonRpc.ERROR)) {
                 throw new RuntimeException(
-                        "JSON-RPC error: " + responseJson.get("error").toString());
+                        "JSON-RPC error: " + responseJson.get(MCPFields.JsonRpc.ERROR).toString());
             }
 
-            if (!responseJson.has("result")) {
+            if (!responseJson.has(MCPFields.JsonRpc.RESULT)) {
                 throw new RuntimeException("Invalid JSON-RPC response: missing 'result' field");
             }
 
-            JsonNode result = responseJson.get("result");
-            JsonNode toolsNode = result.get("tools");
+            JsonNode result = responseJson.get(MCPFields.JsonRpc.RESULT);
+            JsonNode toolsNode = result.get(MCPFields.Tool.TOOLS);
 
             if (toolsNode == null || !toolsNode.isArray()) {
                 throw new RuntimeException(
@@ -719,8 +737,8 @@ public class MCPService {
             log.debug("Making direct JSON-RPC call to tool '{}' on: {}", toolName, serverUrl);
 
             ObjectNode params = objectMapper.createObjectNode();
-            params.put("name", toolName);
-            params.set("arguments", objectMapper.valueToTree(arguments));
+            params.put(MCPFields.Tool.NAME, toolName);
+            params.set(MCPFields.Tool.ARGUMENTS, objectMapper.valueToTree(arguments));
 
             Request.Builder requestBuilder =
                     jsonRpcPost(serverUrl, MCPMethod.TOOLS_CALL, params)
@@ -752,15 +770,15 @@ public class MCPService {
                 responseJson = objectMapper.readTree(responseBody);
             }
 
-            if (responseJson.has("error")) {
-                throw new RuntimeException(responseJson.get("error").toString());
+            if (responseJson.has(MCPFields.JsonRpc.ERROR)) {
+                throw new RuntimeException(responseJson.get(MCPFields.JsonRpc.ERROR).toString());
             }
 
-            if (!responseJson.has("result")) {
+            if (!responseJson.has(MCPFields.JsonRpc.RESULT)) {
                 throw new RuntimeException("Invalid JSON-RPC response: missing 'result' field");
             }
 
-            JsonNode resultNode = responseJson.get("result");
+            JsonNode resultNode = responseJson.get(MCPFields.JsonRpc.RESULT);
 
             // Process the result JSON to parse text content as JSON where applicable
             processResultJson(resultNode);
@@ -796,21 +814,21 @@ public class MCPService {
      * <p>Modifies the JSON response before deserialization to convert JSON strings to objects.
      */
     private void processResultJson(JsonNode resultNode) {
-        if (resultNode == null || !resultNode.has("content")) {
+        if (resultNode == null || !resultNode.has(MCPFields.ToolResult.CONTENT)) {
             return;
         }
 
-        JsonNode contentArray = resultNode.get("content");
+        JsonNode contentArray = resultNode.get(MCPFields.ToolResult.CONTENT);
         if (!contentArray.isArray()) {
             return;
         }
 
         for (JsonNode contentItem : contentArray) {
             if (contentItem.isObject()
-                    && "text".equals(contentItem.path("type").asString())
-                    && contentItem.has("text")) {
+                    && "text".equals(contentItem.path(MCPFields.ToolResult.TYPE).asString())
+                    && contentItem.has(MCPFields.ToolResult.TEXT)) {
 
-                String textValue = contentItem.get("text").asString();
+                String textValue = contentItem.get(MCPFields.ToolResult.TEXT).asString();
                 Object parsed = jsonTextParser.parseTextOrJsonAsObject(textValue);
                 // If it parsed as JSON object/array, add a 'parsed' field
                 try {

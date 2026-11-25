@@ -34,6 +34,9 @@ public enum MCPResultType {
      */
     UNKNOWN("");
 
+    /** The name of the result member that holds the result type. */
+    public static final String FIELD = MCPFields.Session.RESULT_TYPE;
+
     private final String value;
 
     MCPResultType(String value) {
