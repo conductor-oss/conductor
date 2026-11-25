@@ -51,7 +51,7 @@ conductor workflow start -w mcp_tool_calling --sync -i '{"mcpServerUrl":"http://
 
 Open **[Executions](http://localhost:8080/executions)** in the Conductor UI and select the new execution to review the task graph, and each task's inputs and outputs.
 
-On mcp-testkit this completes in about 20 seconds: 65 tools discovered, `excludedMutating: 0`, the shortlist narrowed to `get_weather`, and `evidence` carrying the tool's deterministic payload (`77°F, sunny`). Inspect `shortlist` to see what the model was offered and what was `rejected`, and `select_tool` for the `reason` it gave — together they are your audit trail for why a particular tool ran.
+On mcp-testkit this completes in about 20 seconds: every tool discovered (65 on 1.0.4, 67 on 1.1.0 and later), `excludedMutating: 0`, the shortlist narrowed to `get_weather`, and `evidence` carrying the tool's deterministic payload (`77°F, sunny`). Inspect `shortlist` to see what the model was offered and what was `rejected`, and `select_tool` for the `reason` it gave — together they are your audit trail for why a particular tool ran.
 
 ## Production notes
 
