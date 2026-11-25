@@ -577,6 +577,13 @@ public class WorkflowModel {
         workflow.setStatus(Workflow.WorkflowStatus.valueOf(this.status.name()));
         workflow.setTasks(tasks.stream().map(TaskModel::toTask).collect(Collectors.toList()));
         workflow.setUpdateTime(this.updatedTime);
+        if (nativeState != null) {
+            // a native workflow's markers are kept with the workflow; shown on their tasks
+            for (com.netflix.conductor.common.metadata.tasks.Task task : workflow.getTasks()) {
+                task.setContinuation(nativeState.getMarkers().get(task.getTaskId()));
+            }
+            workflow.setNativeState(nativeState.withoutMarkers());
+        }
 
         // ensure that input/output is properly represented
         if (externalInputPayloadStoragePath != null) {

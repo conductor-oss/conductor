@@ -116,7 +116,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         then:
         1 * executionDAOFacade.getTaskModel(taskId) >> null
         0 * workflowSystemTask.start(*_)
-        0 * executionDAOFacade.updateTaskKeepingContinuation(_)
+        0 * executionDAOFacade.updateTask(_)
     }
 
     def "Execute with a task id that fails to load"() {
@@ -129,7 +129,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         then:
         1 * executionDAOFacade.getTaskModel(taskId) >> { throw new RuntimeException("datastore unavailable") }
         0 * workflowSystemTask.start(*_)
-        0 * executionDAOFacade.updateTaskKeepingContinuation(_)
+        0 * executionDAOFacade.updateTask(_)
     }
 
     def "Execute with a task id that is in terminal state"() {
@@ -144,7 +144,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         1 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * queueDAO.remove(task.taskType, taskId)
         0 * workflowSystemTask.start(*_)
-        0 * executionDAOFacade.updateTaskKeepingContinuation(_)
+        0 * executionDAOFacade.updateTask(_)
     }
 
     def "Execute with a task id that is part of a workflow in terminal state"() {
@@ -249,7 +249,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         then:
         1 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
-        2 * executionDAOFacade.updateTaskKeepingContinuation(task) // startTime persist before start() + finally
+        2 * executionDAOFacade.updateTask(task) // startTime persist before start() + finally
         1 * queueDAO.postpone(queueName, taskId, task.workflowPriority, properties.systemTaskWorkerCallbackDuration.seconds)
         1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.IN_PROGRESS }
 
@@ -486,7 +486,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
             Optional.of(task.callbackAfterSeconds)
         }
         1 * queueDAO.postpone(queueName, taskId, task.workflowPriority, 5)
-        2 * executionDAOFacade.updateTaskKeepingContinuation(task) // startTime persist before start() + finally
+        2 * executionDAOFacade.updateTask(task) // startTime persist before start() + finally
 
         task.status == TaskModel.Status.IN_PROGRESS
         task.callbackAfterSeconds == 5
@@ -507,7 +507,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         then:
         1 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
-        2 * executionDAOFacade.updateTaskKeepingContinuation(task) // startTime persist before start() + finally
+        2 * executionDAOFacade.updateTask(task) // startTime persist before start() + finally
 
         1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.COMPLETED }
         1 * queueDAO.remove(queueName, taskId)
@@ -533,7 +533,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         then:
         1 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
-        2 * executionDAOFacade.updateTaskKeepingContinuation(task) // startTime persist before start() + finally
+        2 * executionDAOFacade.updateTask(task) // startTime persist before start() + finally
 
         // simulating a "start" failure that happens after the Task object is modified
         // the modification will be persisted
@@ -565,7 +565,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         then:
         1 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
-        2 * executionDAOFacade.updateTaskKeepingContinuation(task) // startTime persist before start() + finally
+        2 * executionDAOFacade.updateTask(task) // startTime persist before start() + finally
 
         1 * workflowSystemTask.isAsyncComplete(task) >> true
         1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.IN_PROGRESS }
@@ -593,7 +593,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         then:
         1 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
-        1 * executionDAOFacade.updateTaskKeepingContinuation(task) // 1st call for pollCount, 2nd call for status update
+        1 * executionDAOFacade.updateTask(task) // 1st call for pollCount, 2nd call for status update
 
         0 * workflowSystemTask.start(workflow, task, workflowExecutor)
         1 * workflowSystemTask.execute(workflow, task, workflowExecutor)
@@ -617,7 +617,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         then:
         1 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
-        1 * executionDAOFacade.updateTaskKeepingContinuation(task) // only one call since pollCount is not incremented
+        1 * executionDAOFacade.updateTask(task) // only one call since pollCount is not incremented
 
         1 * workflowSystemTask.isAsyncComplete(task) >> true
         0 * workflowSystemTask.start(workflow, task, workflowExecutor)

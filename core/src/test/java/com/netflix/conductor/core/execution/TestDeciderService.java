@@ -2089,11 +2089,30 @@ public class TestDeciderService {
         laneTask.setStatus(TaskModel.Status.COMPLETED);
         laneTask.setExecuted(true);
         TaskContinuation laneMarker = new TaskContinuation();
-        laneTask.setContinuation(laneMarker);
+        setMarker(workflow, laneTask, laneMarker);
         workflow.getTasks().add(laneTask);
         assertFalse(deciderService.checkForWorkflowCompletion(workflow));
 
         laneMarker.setEndTime(1);
         assertTrue(deciderService.checkForWorkflowCompletion(workflow));
+    }
+
+    private static com.netflix.conductor.common.metadata.tasks.TaskContinuation marker(
+            WorkflowModel workflow, TaskModel task) {
+        return NativeContinuationService.markerOf(workflow, task);
+    }
+
+    private static void setMarker(
+            WorkflowModel workflow,
+            TaskModel task,
+            com.netflix.conductor.common.metadata.tasks.TaskContinuation marker) {
+        if (workflow.getNativeState() == null) {
+            workflow.setNativeState(new com.netflix.conductor.common.run.NativeState());
+        }
+        if (marker == null) {
+            workflow.getNativeState().getMarkers().remove(task.getTaskId());
+        } else {
+            workflow.getNativeState().getMarkers().put(task.getTaskId(), marker);
+        }
     }
 }

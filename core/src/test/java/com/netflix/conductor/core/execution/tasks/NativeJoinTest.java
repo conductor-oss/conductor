@@ -24,6 +24,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.core.execution.NativeContinuationService;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -60,14 +61,15 @@ public class NativeJoinTest {
     private static final String APPLIED = "applied";
 
     /** A task the code paused on, with its marker in the given state. */
-    private static TaskModel paused(String ref, String markerState, boolean done) {
+    private static TaskModel paused(
+            WorkflowModel workflow, String ref, String markerState, boolean done) {
         TaskModel t = task(ref, TaskModel.Status.COMPLETED);
         t.getWorkflowTask().getMetadata().put("continuation", 2);
         TaskContinuation marker = new TaskContinuation();
         marker.setLeased(LEASED.equals(markerState));
         marker.setEndTime(APPLIED.equals(markerState) ? 1 : 0);
         marker.setDone(done);
-        t.setContinuation(marker);
+        setMarker(workflow, t, marker);
         return t;
     }
 
@@ -137,17 +139,17 @@ public class NativeJoinTest {
 
         for (String state : List.of(NOT_RUN, LEASED)) {
             wf.getTasks().removeIf(t -> t.getReferenceTaskName().equals("a1"));
-            wf.getTasks().add(paused("a1", state, false));
+            wf.getTasks().add(paused(wf, "a1", state, false));
             assertFalse(state, join.execute(wf, j, null));
             assertEquals(TaskModel.Status.IN_PROGRESS, j.getStatus());
         }
         // applied but the lane went on: in a stale copy of the definition a1 still looks last
         wf.getTasks().removeIf(t -> t.getReferenceTaskName().equals("a1"));
-        wf.getTasks().add(paused("a1", APPLIED, false));
+        wf.getTasks().add(paused(wf, "a1", APPLIED, false));
         assertFalse(join.execute(wf, j, null));
         // applied and the lane returned: settled
         wf.getTasks().removeIf(t -> t.getReferenceTaskName().equals("a1"));
-        wf.getTasks().add(paused("a1", APPLIED, true));
+        wf.getTasks().add(paused(wf, "a1", APPLIED, true));
         assertTrue(join.execute(wf, j, null));
         assertEquals(TaskModel.Status.COMPLETED, j.getStatus());
     }
@@ -178,11 +180,11 @@ public class NativeJoinTest {
 
         // finished, and the code it paused has not returned yet
         wf.getTasks().removeIf(t -> t.getReferenceTaskName().equals("a1"));
-        wf.getTasks().add(paused("a1", NOT_RUN, false));
+        wf.getTasks().add(paused(wf, "a1", NOT_RUN, false));
         assertFalse(join.execute(wf, j, null));
 
         wf.getTasks().removeIf(t -> t.getReferenceTaskName().equals("a1"));
-        wf.getTasks().add(paused("a1", APPLIED, true));
+        wf.getTasks().add(paused(wf, "a1", APPLIED, true));
         assertTrue(join.execute(wf, j, null));
         assertEquals(TaskModel.Status.COMPLETED, j.getStatus());
     }
@@ -304,5 +306,24 @@ public class NativeJoinTest {
         TaskModel j = joinTask(jd);
         assertFalse(join.execute(wf, j, null));
         assertEquals(TaskModel.Status.IN_PROGRESS, j.getStatus());
+    }
+
+    private static com.netflix.conductor.common.metadata.tasks.TaskContinuation marker(
+            WorkflowModel workflow, TaskModel task) {
+        return NativeContinuationService.markerOf(workflow, task);
+    }
+
+    private static void setMarker(
+            WorkflowModel workflow,
+            TaskModel task,
+            com.netflix.conductor.common.metadata.tasks.TaskContinuation marker) {
+        if (workflow.getNativeState() == null) {
+            workflow.setNativeState(new com.netflix.conductor.common.run.NativeState());
+        }
+        if (marker == null) {
+            workflow.getNativeState().getMarkers().remove(task.getTaskId());
+        } else {
+            workflow.getNativeState().getMarkers().put(task.getTaskId(), marker);
+        }
     }
 }

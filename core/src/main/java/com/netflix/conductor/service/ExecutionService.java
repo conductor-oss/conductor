@@ -153,8 +153,7 @@ public class ExecutionService {
                 // worker without touching the task's own status.
                 if (nativeContinuationService != null
                         && (NativeContinuationService.isSyntheticId(taskId)
-                                || (taskModel != null
-                                        && taskModel.getContinuation() != null
+                                || (NativeContinuationService.isAwaited(taskModel)
                                         && !taskType.equals(taskModel.getTaskType())))) {
                     Task leased =
                             nativeContinuationService.lease(queueName, taskId, taskModel, workerId);

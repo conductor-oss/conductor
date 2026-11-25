@@ -52,8 +52,9 @@ A lane is one thread of code. The `@Workflow` method is the main lane. Each `asy
 lane. The handler lane runs the signal and update handlers. A lane pauses when it needs a result
 from the server. The pause is not a task: it is a `continuation` marker on the last entry the lane
 appended, the task it waits on. The SDK puts `metadata.continuation = n` on that entry (its lane is
-the entry's `metadata.lane`), and `TaskMapperContext.createTaskModel` gives the scheduled `TaskModel` a
-new marker, stored as `{}`. Which continuation the marker is stays on the entry: the marker holds
+the entry's `metadata.lane`), and the decide that schedules the task gives it a new marker, stored
+as `{}` on the workflow row (`nativeState.markers`, by task id) and shown on the task by the API.
+Which continuation the marker is stays on the entry: the marker holds
 only its progress. A JOIN, a DO_WHILE and a WAIT carry it like a worker task does, since the code
 pauses on them too.
 

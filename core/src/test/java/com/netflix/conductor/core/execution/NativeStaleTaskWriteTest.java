@@ -35,12 +35,12 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.NativeState;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
+import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.tasks.Join;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.listener.TaskStatusListener;
 import com.netflix.conductor.core.listener.WorkflowStatusListener;
 import com.netflix.conductor.core.metadata.MetadataMapperService;
-import com.netflix.conductor.core.sync.local.LocalOnlyLock;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
@@ -58,6 +58,7 @@ import com.netflix.conductor.service.ExecutionLockService;
 import tools.jackson.databind.ObjectMapper;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -68,18 +69,18 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * A native workflow keeps the marker of the continuation that waits on a task in that task's row,
- * and changes it only under the workflow lock. Other paths save the same row without the lock: a
- * worker's result, an async system task's run. When two of them overlap (the SDK resends a result
- * whose response timed out; a JOIN's message is handed out again while a run still holds it), the
- * one that read the row first may save it last. Its copy holds the marker as it was before the task
- * completed, and saving it would put back a marker the continuation had already applied: the server
- * offers that continuation again, its replay finds what it appended but no applied marker, and the
- * execution is held as diverged. Seen live: 4 of 200 executions of fork { child | child | task }
- * then join.
+ * A worker's result and an async system task's run save a task's whole row without the workflow
+ * lock. When two of them overlap (the SDK resends a result whose response timed out; a JOIN is
+ * evaluated twice, out of order) the one that read the row first may save it last. With the marker
+ * of the continuation that waits on the task kept on that row, the late save put back a marker the
+ * continuation had already applied: 4 of 200 executions of fork { child | child | task } then join
+ * were held as diverged.
  *
- * <p>The store here keeps rows as the persistence modules do: a read returns a copy, a save
- * replaces the whole row. The facade and the lock are the real ones.
+ * <p>Those saves stay as they are. The markers are on the workflow row instead, which only code
+ * under the lock saves: a stale task save lands, as for any workflow, and cannot touch them.
+ *
+ * <p>The store keeps rows as the persistence modules do: a read returns a copy, a save replaces the
+ * whole row.
  */
 public class NativeStaleTaskWriteTest {
 
@@ -90,8 +91,8 @@ public class NativeStaleTaskWriteTest {
     private final Map<String, String> rows = new ConcurrentHashMap<>();
     private String workflowRow;
     private ExecutionDAO store;
-    private ExecutionLockService locks;
     private ExecutionDAOFacade dao;
+    private NativeContinuationService nativeService;
     private AsyncSystemTaskExecutor executor;
 
     // ------------------------------------------------------------------ the store
@@ -115,18 +116,37 @@ public class NativeStaleTaskWriteTest {
         return workflow;
     }
 
-    /** What a continuation's completion does to the marker, under the workflow lock. */
+    private void saveWorkflow(WorkflowModel workflow) {
+        WorkflowModel row = json.readValue(json.writeValueAsString(workflow), WorkflowModel.class);
+        row.setTasks(new ArrayList<>());
+        workflowRow = json.writeValueAsString(row);
+    }
+
+    private TaskContinuation markerOf(String taskId) {
+        return readWorkflow().getNativeState().getMarkers().get(taskId);
+    }
+
+    /** What a continuation's completion saves, under the workflow lock: the workflow row. */
     private void applyContinuation(String taskId) {
-        assertTrue(locks.acquireLock(WF));
-        try {
-            TaskModel task = read(taskId);
-            task.getContinuation().setLeased(false);
-            task.getContinuation().setEndTime(100);
-            save(task);
-        } finally {
-            locks.releaseLock(WF);
-        }
-        assertTrue(read(taskId).getContinuation().isApplied());
+        WorkflowModel workflow = readWorkflow();
+        TaskContinuation marker = workflow.getNativeState().getMarkers().get(taskId);
+        marker.setLeased(false);
+        marker.setEndTime(100);
+        marker.getRecorded().put("once-1", "value the code recorded");
+        saveWorkflow(workflow);
+        assertTrue(markerOf(taskId).isApplied());
+    }
+
+    /** The marker is as the continuation applied it, and nothing is offered again. */
+    private void assertAppliedAsItWas(String taskId) {
+        TaskContinuation marker = markerOf(taskId);
+        assertTrue("not applied: " + marker, marker.isApplied());
+        assertEquals(100, marker.getEndTime());
+        assertEquals("value the code recorded", marker.getRecorded().get("once-1"));
+        assertFalse(marker.isLeased());
+        assertTrue(nativeService.repairAndWake(readWorkflow()).offers.isEmpty());
+        // nothing of it on the task's row
+        assertFalse(json.readTree(rows.get(taskId)).has("continuation"));
     }
 
     // ------------------------------------------------------------------ the execution
@@ -157,12 +177,12 @@ public class NativeStaleTaskWriteTest {
     }
 
     /** A lane's only task: finished, and its continuation applied and ended the lane. */
-    private static TaskModel laneTask(WorkflowTask entry) {
+    private static TaskModel laneTask(WorkflowTask entry, NativeState state) {
         TaskModel t = task(entry, "p1_step", TaskModel.Status.COMPLETED);
         TaskContinuation marker = new TaskContinuation();
         marker.setEndTime(10);
         marker.setDone(true);
-        t.setContinuation(marker);
+        state.getMarkers().put(t.getTaskId(), marker);
         t.setEndTime(5);
         return t;
     }
@@ -184,17 +204,21 @@ public class NativeStaleTaskWriteTest {
         workflow.setWorkflowId(WF);
         workflow.setWorkflowDefinition(def);
         workflow.setStatus(WorkflowModel.Status.RUNNING);
-        workflow.setNativeState(new NativeState());
-        workflowRow = json.writeValueAsString(workflow);
+        NativeState state = new NativeState();
+        TaskContinuation bootstrap = new TaskContinuation();
+        bootstrap.setEndTime(1);
+        state.setBootstrap(bootstrap);
+        workflow.setNativeState(state);
 
         save(task(fork, TaskType.TASK_TYPE_FORK, TaskModel.Status.COMPLETED));
-        save(laneTask(a));
-        save(laneTask(b));
+        save(laneTask(a, state));
+        save(laneTask(b, state));
         TaskModel join = task(joinEntry, TaskType.TASK_TYPE_JOIN, TaskModel.Status.IN_PROGRESS);
         join.setExecuted(false);
-        join.setContinuation(new TaskContinuation()); // not run: the join has not completed
+        state.getMarkers().put(JOIN_ID, new TaskContinuation()); // not run: the join is running
         join.getInputData().put("joinOn", List.of());
         save(join);
+        workflowRow = json.writeValueAsString(workflow);
 
         store = mock(ExecutionDAO.class);
         when(store.getTask(anyString())).thenAnswer(i -> read(i.getArgument(0)));
@@ -207,7 +231,6 @@ public class NativeStaleTaskWriteTest {
                 .when(store)
                 .updateTask(any());
         ConductorProperties properties = new ConductorProperties();
-        locks = new ExecutionLockService(properties, new LocalOnlyLock());
         dao =
                 new ExecutionDAOFacade(
                         store,
@@ -219,7 +242,12 @@ public class NativeStaleTaskWriteTest {
                         json,
                         properties,
                         mock(ExternalPayloadStorageUtils.class));
-        dao.setExecutionLockService(locks);
+        nativeService =
+                new NativeContinuationService(
+                        json,
+                        properties,
+                        mock(MetadataMapperService.class),
+                        new HashMap<String, TaskMapper>());
 
         QueueDAO queue = mock(QueueDAO.class);
         when(queue.setUnackTimeout(anyString(), anyString(), anyLong())).thenReturn(true);
@@ -258,45 +286,36 @@ public class NativeStaleTaskWriteTest {
     }
 
     @Test
-    public void aSlowJoinRunSavedLastKeepsTheMarkerItsContinuationApplied() throws Exception {
+    public void aSlowJoinRunSavedLastLeavesTheMarkerItsContinuationApplied() throws Exception {
         // run A reads the JOIN, IN_PROGRESS, and is slow to finish
         SlowJoin slow = new SlowJoin();
         Thread runA = new Thread(() -> executor.execute(slow, JOIN_ID));
         runA.start();
         assertTrue(slow.read.await(10, TimeUnit.SECONDS));
 
-        // run B of the same JOIN (its message handed out again) completes it
+        // run B of the same JOIN completes it, and main#2 applies
         executor.execute(new Join(new ConductorProperties()), JOIN_ID);
         assertEquals(TaskModel.Status.COMPLETED, read(JOIN_ID).getStatus());
-
-        // the decide offers main#2 and its completion applies
         applyContinuation(JOIN_ID);
 
-        // run A finishes and saves its copy
+        // run A saves its copy of the task
         slow.go.countDown();
         runA.join(10_000);
 
-        TaskContinuation marker = read(JOIN_ID).getContinuation();
-        assertTrue(
-                "the marker of continuation main#2 went back to "
-                        + marker
-                        + " after main#2 had applied",
-                marker.isApplied());
-        assertEquals(TaskModel.Status.COMPLETED, read(JOIN_ID).getStatus());
+        assertAppliedAsItWas(JOIN_ID);
     }
 
     /**
-     * A run that loaded the execution before the last lane settled finds the JOIN not done, and
-     * would save it IN_PROGRESS over the COMPLETED a later run saved, after the code had already
-     * gone on past the join.
+     * A run that loaded the execution before the last lane settled finds the JOIN not done and
+     * saves it IN_PROGRESS after a later run completed it. The JOIN is evaluated again, as for any
+     * workflow; its continuation, which already applied, does not run again.
      */
     @Test
-    public void aJoinRunThatReadBeforeTheLanesSettledDoesNotReopenTheJoin() throws Exception {
+    public void aJoinEvaluatedOutOfOrderDoesNotRunItsContinuationAgain() throws Exception {
         // lane fork_1.1's task finished, but its continuation has not run yet: not settled
-        TaskModel b = read("id-b");
-        b.setContinuation(new TaskContinuation());
-        save(b);
-        TaskModel joinBefore = read(JOIN_ID);
+        WorkflowModel workflow = readWorkflow();
+        workflow.getNativeState().getMarkers().put("id-b", new TaskContinuation());
+        saveWorkflow(workflow);
 
         // run A loads the execution now and is slow to finish
         SlowJoin slow = new SlowJoin();
@@ -305,39 +324,27 @@ public class NativeStaleTaskWriteTest {
         assertTrue(slow.read.await(10, TimeUnit.SECONDS));
 
         // fork_1.1#1 applies and ends its lane
-        assertTrue(locks.acquireLock(WF));
-        try {
-            TaskModel settled = read("id-b");
-            settled.getContinuation().setEndTime(10);
-            settled.getContinuation().setDone(true);
-            save(settled);
-        } finally {
-            locks.releaseLock(WF);
-        }
+        workflow = readWorkflow();
+        TaskContinuation settled = workflow.getNativeState().getMarkers().get("id-b");
+        settled.setEndTime(10);
+        settled.setDone(true);
+        saveWorkflow(workflow);
 
         // run B completes the JOIN, and main#2 applies
         executor.execute(new Join(new ConductorProperties()), JOIN_ID);
-        TaskModel completed = read(JOIN_ID);
-        assertEquals(TaskModel.Status.COMPLETED, completed.getStatus());
+        assertEquals(TaskModel.Status.COMPLETED, read(JOIN_ID).getStatus());
         applyContinuation(JOIN_ID);
 
-        // run A finishes with what it loaded and saves
+        // run A finishes with what it loaded: the JOIN back IN_PROGRESS
         slow.go.countDown();
         runA.join(10_000);
+        assertEquals(TaskModel.Status.IN_PROGRESS, read(JOIN_ID).getStatus());
+        assertAppliedAsItWas(JOIN_ID);
 
-        TaskModel join = read(JOIN_ID);
-        assertEquals(
-                "the JOIN went back to "
-                        + join.getStatus()
-                        + " after main#2, which follows it, had applied",
-                TaskModel.Status.COMPLETED,
-                join.getStatus());
-        assertEquals(
-                "the JOIN's end time was rewritten by the stale run",
-                completed.getEndTime(),
-                join.getEndTime());
-        assertTrue(join.getContinuation().isApplied());
-        assertTrue(joinBefore.getStatus() == TaskModel.Status.IN_PROGRESS);
+        // the JOIN is evaluated again and completes; its continuation stays applied
+        executor.execute(new Join(new ConductorProperties()), JOIN_ID);
+        assertEquals(TaskModel.Status.COMPLETED, read(JOIN_ID).getStatus());
+        assertAppliedAsItWas(JOIN_ID);
     }
 
     /**
@@ -346,14 +353,16 @@ public class NativeStaleTaskWriteTest {
      * deliveries of one result can be on the server at once.
      */
     @Test
-    public void aResentWorkerResultSavedLastKeepsTheMarkerItsContinuationApplied()
+    public void aResentWorkerResultSavedLastLeavesTheMarkerItsContinuationApplied()
             throws Exception {
         // lane fork_1.0 waits on a SIMPLE task a: running, its continuation fork_1.0#1 not run
         TaskModel a = read("id-a");
         a.setStatus(TaskModel.Status.IN_PROGRESS);
         a.setEndTime(0);
-        a.setContinuation(new TaskContinuation());
         save(a);
+        WorkflowModel workflow = readWorkflow();
+        workflow.getNativeState().getMarkers().put("id-a", new TaskContinuation());
+        saveWorkflow(workflow);
 
         CountDownLatch readA = new CountDownLatch(1);
         CountDownLatch goA = new CountDownLatch(1);
@@ -397,23 +406,15 @@ public class NativeStaleTaskWriteTest {
         runA.start();
         assertTrue(readA.await(10, TimeUnit.SECONDS));
 
-        // delivery B, the resend, completes it
+        // delivery B, the resend, completes it, and fork_1.0#1 applies
         weo.updateTask(result);
         assertEquals(TaskModel.Status.COMPLETED, read("id-a").getStatus());
-
-        // the decide offers fork_1.0#1 and its completion applies
         applyContinuation("id-a");
 
-        // delivery A saves its copy
+        // delivery A saves its copy of the task
         goA.countDown();
         runA.join(10_000);
 
-        TaskContinuation marker = read("id-a").getContinuation();
-        assertTrue(
-                "the marker of continuation fork_1.0#1 went back to "
-                        + marker
-                        + " after fork_1.0#1 had applied",
-                marker.isApplied());
-        assertEquals(TaskModel.Status.COMPLETED, read("id-a").getStatus());
+        assertAppliedAsItWas("id-a");
     }
 }

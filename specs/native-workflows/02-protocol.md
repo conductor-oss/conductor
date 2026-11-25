@@ -172,8 +172,9 @@ follows offers it, pushing `<workflowId>|main` to the execution's continuation q
 
 `Task.continuation` (`TaskContinuation`). A task carries one when the code paused on it. Which
 continuation it is comes from the task's entry, not the marker: `metadata.lane` and
-`metadata.continuation` (the lane's `n`-th, counting its pauses), which the SDK put there and
-`TaskMapperContext` reads when it creates the marker.
+`metadata.continuation` (the lane's `n`-th, counting its pauses), which the SDK put there and the
+decide that schedules the task reads when it creates the marker. The server keeps markers on the
+workflow row (`nativeState.markers`) and the API puts each on its task.
 
 ```json
 "continuation": { "leased": true, "retryCount": 1 }
@@ -213,7 +214,7 @@ Where a continuation stands is derived, not stored:
 
 Why a completion did not apply is on the workflow, not the marker: `defer` sets
 `workflow.reasonForIncompletion` to `diverged: …` (held), `worker reported <status>`,
-`variable '…' was changed by another completion` or `waiting for handlers: …`, and the next
+or `waiting for handlers: …`, and the next
 continuation that applies clears it. One continuation runs at a time, so the reason is the run's.
 
 ## 6. Poll
@@ -352,8 +353,8 @@ The output, as `Replayer.process` and `Workers.complete` build it:
 | `n`, `retryCount` | yes | `n` must be the continuation's number (its entry's `metadata.continuation`; 1 for the bootstrap; the run number for the handler lane) and `retryCount` the leased marker's, and the marker must be leased; otherwise `ConflictException` (HTTP 409), metric `native_stale_completion`. A late, duplicate or superseded completion. |
 | `fragment` | no | Inserted after the awaited task (top level for the bootstrap); an entry carrying `metadata.after` starts a run inserted after the entry it names (§8 rule 7, §9 `switchOn`). |
 | `recorded` | no | Values of `once`, `now`, `random` computed by this continuation, `{ "<name>": { "value": …, "type": "<class>" } }`; stored on the marker. |
-| `variables` | no | The lane's `@Variable` values after the continuation. Only entries that differ from `resumedWith` are applied. |
-| `resumedWith` | no | The variables the continuation started from. A variable it changed that another completion changed meanwhile defers the completion (the workflow's `reasonForIncompletion`: `variable 'x' was changed by another completion`). |
+| `variables` | no | The lane's `@Variable` values after the continuation, applied as written: one continuation runs at a time, so nothing else changed them while it ran. |
+| `resumedWith` | no | The variables the continuation started from, stored on the marker for its replay. |
 | `done` | no (false) | `true` when the lane returned or threw. |
 | `result` | main lane, `done` without error | The workflow output: the server writes it to the run's output as the completion applies. |
 | `error` | main lane, `done` by throwing | `{ "message": "…", "ref": "<task>" }`; `ref` is present for an uncaught `TaskFailure`. The workflow fails with `message` and `failedTaskId` from `ref`. Another lane's error is raised by replay in the lane that joins it, so the SDK does not send it. |
@@ -369,7 +370,7 @@ fixed build continues it. `FAILED` (an unexpected worker exception) defers the m
 with `worker reported FAILED`. Every deferral adds one to `retryCount`. A deferred continuation
 keeps its turn: the decide that applies the completion offers it again at once, so it holds the
 slot through its backoff. These two are pushed with a delay of 2^`retryCount` seconds, counted
-before it goes up (1, 2, 4, ...), at most 60; a variable conflict with none. A main lane that
+before it goes up (1, 2, 4, ...), at most 60. A main lane that
 returned while the handler lane has work is deferred with `waiting for handlers: …` and not
 offered again at once (`Completion.waitsForHandlers`, in memory only): `repairAndWake` offers the
 handler lane first while messages are queued, and the main lane once the slot is free and none

@@ -545,7 +545,7 @@ public class TestDeciderOutcomes {
     public void aNativeWorkflowWhoseCodeThrewIsNotCompletedBeforeItIsEnded() {
         // the completion that recorded the throw was saved; the server stopped before ending it
         WorkflowModel workflow = nativeWorkflowPausedOn(TaskModel.Status.COMPLETED);
-        TaskContinuation marker = workflow.getTasks().get(0).getContinuation();
+        TaskContinuation marker = marker(workflow, workflow.getTasks().get(0));
         marker.setEndTime(1);
         marker.setDone(true);
         workflow.setReasonForIncompletion("boom");
@@ -586,7 +586,7 @@ public class TestDeciderOutcomes {
         task.setTaskDefName("task0");
         task.setWorkflowTask(entry);
         task.setStatus(taskStatus);
-        task.setContinuation(new TaskContinuation());
+        setMarker(workflow, task, new TaskContinuation());
         workflow.getTasks().add(task);
         return workflow;
     }
@@ -632,7 +632,7 @@ public class TestDeciderOutcomes {
                         .stream()
                         .map(NativeContinuationService.Offer::messageId)
                         .toList());
-        assertTrue(task.getContinuation().isLeased());
+        assertTrue(marker(workflow, task).isLeased());
     }
 
     @Test
@@ -640,8 +640,8 @@ public class TestDeciderOutcomes {
         // the code returned (marker done) and appended one more task after the task it paused on
         WorkflowModel workflow = nativeWorkflowPausedOn(TaskModel.Status.COMPLETED);
         TaskModel task = workflow.getTasks().get(0);
-        task.getContinuation().setEndTime(1);
-        task.getContinuation().setDone(true);
+        marker(workflow, task).setEndTime(1);
+        marker(workflow, task).setDone(true);
         workflow.setOutput(Map.of("answer", 42)); // set when the code's return applied
         WorkflowTask trailing = new WorkflowTask();
         trailing.setName("task1");
@@ -669,7 +669,7 @@ public class TestDeciderOutcomes {
     }
 
     @Test
-    public void aRetriedAttemptCarriesAFreshMarker() {
+    public void aRetriedAttemptWaitsOnTheSameContinuation() {
         WorkflowModel workflow = nativeWorkflowPausedOn(TaskModel.Status.FAILED);
         workflow.getTasks().get(0).getWorkflowTask().getTaskDefinition().setRetryCount(1);
 
@@ -683,8 +683,8 @@ public class TestDeciderOutcomes {
         assertEquals(1, retry.getRetryCount());
         // the same entry, so the same continuation, not run yet
         assertEquals(workflow.getTasks().get(0).getWorkflowTask(), retry.getWorkflowTask());
-        assertFalse(retry.getContinuation().isApplied());
-        assertFalse(retry.getContinuation().isLeased());
+        // its marker, the one before reset, is given by the decide that schedules it
+        assertEquals(workflow.getTasks().get(0).getTaskId(), retry.getRetriedTaskId());
     }
 
     @Test
@@ -1000,5 +1000,24 @@ public class TestDeciderOutcomes {
         assertEquals(
                 Collections.singletonList("odd"),
                 outcome.tasksToBeScheduled.get(0).getOutputData().get("caseOutput"));
+    }
+
+    private static com.netflix.conductor.common.metadata.tasks.TaskContinuation marker(
+            WorkflowModel workflow, TaskModel task) {
+        return NativeContinuationService.markerOf(workflow, task);
+    }
+
+    private static void setMarker(
+            WorkflowModel workflow,
+            TaskModel task,
+            com.netflix.conductor.common.metadata.tasks.TaskContinuation marker) {
+        if (workflow.getNativeState() == null) {
+            workflow.setNativeState(new com.netflix.conductor.common.run.NativeState());
+        }
+        if (marker == null) {
+            workflow.getNativeState().getMarkers().remove(task.getTaskId());
+        } else {
+            workflow.getNativeState().getMarkers().put(task.getTaskId(), marker);
+        }
     }
 }

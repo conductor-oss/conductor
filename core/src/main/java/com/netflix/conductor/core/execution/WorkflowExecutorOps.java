@@ -972,7 +972,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                                         new NotFoundException(
                                                 "No such task found by id: %s",
                                                 taskResult.getTaskId()));
-        if (task.getContinuation() != null
+        if (NativeContinuationService.isAwaited(task)
                 && taskResult.getOutputData() != null
                 && taskResult
                         .getOutputData()
@@ -1112,7 +1112,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         // Throw a TransientException if below operations fail to avoid workflow
         // inconsistencies.
         try {
-            executionDAOFacade.updateTaskKeepingContinuation(task);
+            executionDAOFacade.updateTask(task);
         } catch (Exception e) {
             String errorMsg =
                     String.format(
@@ -1174,10 +1174,10 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
      * message acknowledged, and the execution completed or failed when its code returned. Returns
      * the task the code paused on (or a stand-in for the bootstrap and handler lanes).
      */
-    private TaskModel completeContinuation(TaskResult taskResult, TaskModel awaited) {
+    private TaskModel completeContinuation(
+            TaskResult taskResult, TaskModel awaited, WorkflowModel workflow) {
         String workflowId = taskResult.getWorkflowInstanceId();
         NativeContinuationService nativeService = deciderService.getNativeContinuationService();
-        WorkflowModel workflow = executionDAOFacade.getWorkflowModel(workflowId, true);
         // What the update returns: a finished task of the code type, so that update-v2 polls the
         // continuation queue for this worker's next continuation rather than the queue of the
         // task the code paused on (which another kind of worker serves).
@@ -1195,13 +1195,18 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     taskResult.getTaskId());
             return standIn;
         }
+        // the task as this execution has it now: one a rerun removed is no longer waited on
         TaskModel target =
                 awaited == null
                         ? null
                         : workflow.getTasks().stream()
                                 .filter(t -> awaited.getTaskId().equals(t.getTaskId()))
                                 .findFirst()
-                                .orElse(awaited);
+                                .orElseThrow(
+                                        () ->
+                                                new ConflictException(
+                                                        "Task %s is no longer part of workflow %s",
+                                                        awaited.getTaskId(), workflowId));
         NativeContinuationService.Completion completion =
                 nativeService.complete(workflow, target, taskResult);
         // a deferred continuation is offered again after its backoff, saved with the rest
@@ -1210,13 +1215,13 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                         ? nativeService.offer(
                                 workflow,
                                 target != null
-                                        ? target.getContinuation()
+                                        ? NativeContinuationService.markerOf(workflow, target)
                                         : NativeContinuationService.syntheticMarkerOf(
                                                 workflow, completion.ackId),
                                 completion.ackId,
                                 completion.retryDelaySeconds)
                         : null;
-        // the definition that holds the fragment first, then the marker that says it applied
+        // the definition that holds the fragment and the marker that says it applied, together
         executionDAOFacade.updateWorkflow(workflow);
         executionDAOFacade.updateTasks(completion.touchedTasks);
         if (completion.ackQueue != null) {
@@ -1244,10 +1249,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     /**
      * A native continuation's completion changes the workflow row (the fragment, variables,
      * markers), which only a decide writes: it is applied under the workflow's lock, then the
-     * decide it triggers runs in that same acquisition. A task update from a worker or a system
-     * task does not take the lock; it saves the task with the marker as stored (see {@link
-     * ExecutionDAOFacade#updateTaskKeepingContinuation}), so a stale copy cannot undo a marker this
-     * path applied.
+     * decide it triggers runs in that same acquisition. The markers are on the workflow row, not on
+     * the tasks' rows, which a worker's result or a system task's run saves without the lock.
      */
     private TaskModel completeContinuationLocked(TaskResult taskResult, TaskModel awaited) {
         String workflowId = taskResult.getWorkflowInstanceId();
@@ -1256,15 +1259,17 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     "Workflow " + workflowId + " is busy; retry the task update");
         }
         try {
+            WorkflowModel workflow = executionDAOFacade.getWorkflowModel(workflowId, true);
             TaskModel updated;
             try {
-                updated = completeContinuation(taskResult, awaited);
+                updated = completeContinuation(taskResult, awaited, workflow);
             } catch (ConflictException e) {
                 // a non-owner's completion was failed so that it is retried: offer it now
-                decideHeld(workflowId);
+                decide(workflow);
                 throw e;
             }
-            decideHeld(workflowId);
+            // the workflow as the completion saved it, still under this lock
+            decide(workflow);
             return updated;
         } finally {
             executionLockService.releaseLock(workflowId);
@@ -1365,10 +1370,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         workflow.setFailedTaskId(null);
         workflow.setEndTime(0);
         workflow.setLastRetriedTime(System.currentTimeMillis());
-        executionDAOFacade.updateWorkflow(workflow);
-        if (last.holder() != null) {
-            executionDAOFacade.updateTasks(List.of(last.holder()));
-        }
+        executionDAOFacade.updateWorkflow(workflow); // with the marker that runs again
         // the decide offers it
         queueDAO.push(DECIDER_QUEUE, workflow.getWorkflowId(), workflow.getPriority(), 0);
         return true;
@@ -1512,14 +1514,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         }
     }
 
-    /** Decides a workflow whose lock the caller holds. */
-    private void decideHeld(String workflowId) {
-        WorkflowModel workflow = executionDAOFacade.getWorkflowModel(workflowId, true);
-        if (workflow != null) {
-            decide(workflow);
-        }
-    }
-
     @Override
     public WorkflowModel decideWithLock(WorkflowModel workflow) {
         if (!executionLockService.acquireLock(workflow.getWorkflowId())) {
@@ -1608,9 +1602,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                             deciderService.getNativeContinuationService();
                     NativeContinuationService.Wakeups wakeups =
                             nativeService.repairAndWake(workflow);
-                    if (!wakeups.touchedTasks.isEmpty()) {
-                        executionDAOFacade.updateTasks(wakeups.touchedTasks);
-                    }
                     if (wakeups.workflowTouched) {
                         executionDAOFacade.updateWorkflow(workflow);
                     }
@@ -2993,7 +2984,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             return;
         }
         executeSubworkflowTaskAndSyncData(subWorkflow, subWorkflowTask);
-        executionDAOFacade.updateTaskKeepingContinuation(subWorkflowTask);
+        executionDAOFacade.updateTask(subWorkflowTask);
         if (subWorkflowTask.getStatus().isTerminal()) {
             // This fork branch's sub-workflow just finished; a sibling JOIN waiting on it may now
             // be satisfiable. Nudge it off its exponential-backoff poll so the parent completes

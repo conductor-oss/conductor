@@ -47,7 +47,7 @@ What went away, and where it went:
 
 | Protocol 1 | Protocol 2 |
 |---|---|
-| `CODE` task per pause: queued, leased, timed out, retried, owner-routed as a worker task | a **continuation marker on the task the code paused on**, and one queue message per wake-up; the queue's lease is the continuation lease. Polled and completed with the regular task poll and update |
+| `CODE` task per pause: queued, leased, timed out, retried, owner-routed as a worker task | a **continuation marker for the task the code paused on**, kept on the workflow row, and one queue message per wake-up; the queue's lease is the continuation lease. Polled and completed with the regular task poll and update |
 | `CODE` output: `fragment`, `applied`, `step`, `resumedWith`, `variables`, `owner` | the marker's **record** once applied: `endTime` (its order, the bootstrap's included), recorded values, `resumedWith`, `done`; the main lane's result is the run's output and its error the run's reason |
 | `RECORD` task per `once`, `now`, `random` | `recorded` in the record of the continuation that produced them |
 | `TERMINATE` with the result or the failure | the engine completes or fails the workflow from the main lane's final record |
@@ -62,12 +62,18 @@ for `sleep`, `sleepUntil` and `awaitCondition`, and every call to a worker or sy
 
 ## 1. The state
 
-### 1.1 On the task: the continuation marker
+### 1.1 For the task: the continuation marker
 
-`TaskModel` and `Task` gain a `continuation` field (`TaskContinuation`, serialized with the task as
-JSON and carried over gRPC as `Task.continuation`). A task carries one when the code
-paused on it: the code's lane will run again once this task is terminal. The lease is flat fields
-on the marker, not a nested object as this plan first drew it:
+A task the code paused on has a marker (`TaskContinuation`): the code's lane will run again once
+this task is terminal. Markers are kept on the workflow row, in `nativeState.markers` by task id,
+not on the task's row. Only code under the workflow lock saves the workflow row; a task's row is
+also saved by a worker's result, an async system task's run (a JOIN evaluated twice, out of
+order) and a child finishing its parent's task, without the lock and from a copy that may be
+older than the marker. A marker on the task's row was put back by such a late save after its
+continuation had applied (4 of 200 executions of fork { child | child | task } then join, held as
+diverged). The API shows each marker on its task (`Task.continuation`, also over gRPC), and
+`nativeState` without them. The lease is flat fields on the marker, not a nested object as this
+plan first drew it:
 
 ```json
 "continuation": { "leased": true, "retryCount": 1 }
@@ -77,8 +83,9 @@ Which continuation it is (here `main` #3) is on the task's entry: `metadata.lane
 `metadata.continuation`.
 
 Once the continuation has run and its completion was applied, the marker is the record replay
-reads. The plan's `delta` became `resumedWith`, the variables the continuation started from (the
-server applies only what differs from it; a replay restores the lane's fields to it):
+reads. The plan's `delta` became `resumedWith`, the variables the continuation started from (a replay
+restores the lane's fields to it; the server applies the variables the completion wrote, since one
+continuation runs at a time):
 
 ```json
 "continuation": {
@@ -96,8 +103,8 @@ server applies only what differs from it; a replay restores the lane's fields to
 | `APPLIED` | `endTime > 0` | the continuation ran and its fragment was appended after this task | never; a rerun resets the marker |
 
 The marker is placed by the SDK: each lane's last blocking entry in a fragment carries
-`metadata.continuation = n` (with the entry's `metadata.lane`), and `TaskMapperContext.createTaskModel` gives
-the `TaskModel` a new marker, stored as `{}`, when the entry is scheduled. A JOIN, a DO_WHILE and a WAIT carry
+`metadata.continuation = n` (with the entry's `metadata.lane`), and the decide that schedules the
+entry's task gives it a new marker, stored as `{}` (`NativeContinuationService.repairAndWake`). A JOIN, a DO_WHILE and a WAIT carry
 it like a worker task does, since the code pauses on them too. A retried attempt copies the marker
 reset (`retryCount + 1`), so the continuation runs after the attempt that finishes.
 
@@ -105,7 +112,7 @@ reset (`retryCount + 1`), so the continuation runs after the attempt that finish
 restores the lane's fields to it before replaying that segment (`Execution.Marker.resumedWith`).
 What a continuation appended is not stored: the definition's per-lane entry order says it (the
 entries after this task up to the next marker of the lane). A marker with nothing recorded adds
-well under 100 bytes to its task.
+well under 100 bytes to the workflow row.
 
 ### 1.2 On the workflow: what has no task to live on, all O(1)
 
@@ -245,9 +252,8 @@ to.)
    entry with `metadata.lane`, inline definitions populated through `populateTaskDefinitions`.
    At most one entry per lane in the fragment carries `metadata.continuation`, the lane's last
    blocking call; none when the lane finished (`done`) or made no blocking call.
-3. **Check conflicts.** The variable conflict check (`resumedWith` against the current
-   variables) and the completion guard (`done` with success while the handler marker is `LEASED`
-   or messages are queued) both defer: the marker's lease is released with `retryCount + 1`, the
+3. **Check the guard.** The completion guard (`done` with success while the handler marker is
+   `LEASED` or messages are queued) defers: the marker's lease is released with `retryCount + 1`, the
    reason goes in the workflow's `reasonForIncompletion`, and the continuation runs again on
    current state. Same
    behaviour as protocol 1's deferral, without a CANCELED task.
