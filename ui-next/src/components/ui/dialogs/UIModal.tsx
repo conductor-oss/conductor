@@ -20,6 +20,8 @@ type UIModalProps = Omit<DialogProps, "title"> & {
   footerChildren?: ReactNode;
   footerSx?: SxProps;
   titleSx?: SxProps;
+  /** When true, clicking the backdrop does not close the modal. Escape and the close button still do. */
+  disableBackdropClose?: boolean;
 };
 
 const modalStyles = {
@@ -129,6 +131,7 @@ const UIModal = forwardRef<HTMLDivElement, UIModalProps>(
       footerSx,
       id,
       titleSx,
+      disableBackdropClose,
       ...props
     },
     ref,
@@ -145,7 +148,10 @@ const UIModal = forwardRef<HTMLDivElement, UIModalProps>(
         fullWidth={true}
         maxWidth={maxWidth}
         open={open}
-        onClose={() => setOpen(false)}
+        onClose={(_, reason) => {
+          if (disableBackdropClose && reason === "backdropClick") return;
+          setOpen(false);
+        }}
         PaperProps={{
           style: { borderRadius: "6px" },
           ...(props.PaperProps !== undefined ? props.PaperProps : {}),

@@ -30,6 +30,8 @@ dependencies {
 
     api("io.modelcontextprotocol.sdk:mcp-core:${revMCP}")
     api "com.squareup.okhttp3:okhttp:4.12.0"
+    // The MCP server answers with Mono; the version comes from the Spring Boot BOM.
+    api "io.projectreactor:reactor-core"
     api "org.apache.commons:commons-lang3"
 
     // Markdown parsing and PDF generation
@@ -66,4 +68,12 @@ dependencies {
     testImplementation "org.apache.commons:commons-compress:${revCommonsCompress}"
     testImplementation "com.h2database:h2:2.4.240"
 
+}
+
+// MCPProtocolHeaders reports this version as clientInfo.version on MCP 2026-07-28 requests.
+jar {
+    manifest {
+        attributes('Implementation-Title': project.name,
+                'Implementation-Version': project.version)
+    }
 }

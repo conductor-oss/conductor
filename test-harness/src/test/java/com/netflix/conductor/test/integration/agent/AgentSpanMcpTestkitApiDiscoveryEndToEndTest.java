@@ -106,10 +106,7 @@ class AgentSpanMcpTestkitApiDiscoveryEndToEndTest {
             new GenericContainer<>(DockerImageName.parse("redis:6.2-alpine"))
                     .withExposedPorts(6379);
 
-    // mcp-testkit 1.0.3 does not constrain its own `mcp` dependency, and mcp 2.0.0 dropped
-    // mcp.server.fastmcp, which the testkit imports at start-up. Without 'mcp<2' the install
-    // succeeds and the server then dies with ModuleNotFoundError, so nothing ever binds 3001.
-    // The log-message wait is what surfaces that: the default port check is satisfied by Docker's
+    // The log-message wait matters: the default port check is satisfied by Docker's
     // published-port proxy before the process inside the container has bound anything.
     @SuppressWarnings("resource")
     private static final GenericContainer<?> MCP_TESTKIT =
@@ -118,7 +115,7 @@ class AgentSpanMcpTestkitApiDiscoveryEndToEndTest {
                     .withCommand(
                             "sh",
                             "-c",
-                            "pip install --no-cache-dir mcp-testkit==1.0.3 'mcp<2'"
+                            "pip install --no-cache-dir mcp-testkit==1.1.0"
                                     + " && mcp-testkit --transport http --host 0.0.0.0 --port 3001"
                                     + " --auth "
                                     + TESTKIT_AUTH)
