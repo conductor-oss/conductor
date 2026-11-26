@@ -57,6 +57,7 @@ import com.netflix.conductor.service.WorkflowService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 @Component
@@ -346,8 +347,7 @@ public class AgentService {
     }
 
     /** The flat string fields of a credential secret, which is what the clients consume. */
-    private static Map<String, String> credentialValues(
-            com.fasterxml.jackson.databind.JsonNode secretJson) {
+    private static Map<String, String> credentialValues(JsonNode secretJson) {
         Map<String, String> values = new java.util.LinkedHashMap<>();
         secretJson
                 .fields()
@@ -909,8 +909,7 @@ public class AgentService {
                     try {
                         String secretValue = secretsDAO.getSecret(secretName);
                         if (secretValue == null || secretValue.isBlank()) continue;
-                        com.fasterxml.jackson.databind.JsonNode secretJson =
-                                MAPPER.readTree(secretValue);
+                        JsonNode secretJson = MAPPER.readTree(secretValue);
                         String endpoint = secretJson.path("endpoint").asText(null);
                         String agentcoreRegion = secretJson.path("agentcoreRegion").asText(null);
                         String region = secretJson.path("region").asText(null);
