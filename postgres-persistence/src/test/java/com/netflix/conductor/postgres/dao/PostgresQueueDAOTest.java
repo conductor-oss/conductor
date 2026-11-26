@@ -594,6 +594,57 @@ public class PostgresQueueDAOTest {
     }
 
     @Test
+    public void popOfAnAlreadyDueMessageIsNotReleasedByTheUnackSweep() throws Exception {
+        String queueName = "pop_resets_ready_time";
+        String messageId = "already-due";
+
+        queueDAO.push(queueName, messageId, 0);
+        setDeliverOnMinutesAgo(queueName, messageId);
+
+        List<String> taken = queueDAO.pop(queueName, 1, 0);
+        assertEquals(1, taken.size());
+        assertEquals(messageId, taken.get(0));
+
+        queueDAO.processAllUnacks();
+
+        List<String> again = queueDAO.pop(queueName, 1, 0);
+        assertTrue(
+                "a take of a message that had already been waiting must not be handed out again",
+                again.isEmpty());
+    }
+
+    @Test
+    public void unackSweepReleasesATakeOlderThanSixtySeconds() throws Exception {
+        String queueName = "stale_take_is_released";
+        String messageId = "stale-take";
+
+        queueDAO.push(queueName, messageId, 0);
+        List<String> taken = queueDAO.pop(queueName, 1, 0);
+        assertEquals(1, taken.size());
+
+        setDeliverOnMinutesAgo(queueName, messageId);
+        queueDAO.processAllUnacks();
+
+        List<String> again = queueDAO.pop(queueName, 1, 0);
+        assertEquals(1, again.size());
+        assertEquals(messageId, again.get(0));
+    }
+
+    private void setDeliverOnMinutesAgo(String queueName, String messageId) throws Exception {
+        try (Connection conn = dataSource.getConnection()) {
+            conn.setAutoCommit(false);
+            try (PreparedStatement statement =
+                    conn.prepareStatement(
+                            "UPDATE queue_message SET deliver_on = current_timestamp - interval '2 minutes' WHERE queue_name = ? AND message_id = ?")) {
+                statement.setString(1, queueName);
+                statement.setString(2, messageId);
+                assertEquals(1, statement.executeUpdate());
+            }
+            conn.commit();
+        }
+    }
+
+    @Test
     public void pushPoppedMessageResetsPoppedStateAndMakesImmediatelyAvailable() {
         String queueName = "requeue_popped_test";
         String messageId = "requeue-msg-1";

@@ -13,6 +13,7 @@
 package com.netflix.conductor.mysql.dao;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -494,6 +495,57 @@ public class MySQLQueueDAOTest {
         List<String> popped = queueDAO.pop(queueName, 1, 100);
         assertEquals(1, popped.size());
         assertEquals(messageId, popped.get(0));
+    }
+
+    @Test
+    public void popOfAnAlreadyDueMessageIsNotReleasedByTheUnackSweep() throws Exception {
+        String queueName = "pop_resets_ready_time";
+        String messageId = "already-due";
+
+        queueDAO.push(queueName, messageId, 0);
+        setDeliverOnMinutesAgo(queueName, messageId);
+
+        List<String> taken = queueDAO.pop(queueName, 1, 0);
+        assertEquals(1, taken.size());
+        assertEquals(messageId, taken.get(0));
+
+        queueDAO.processAllUnacks();
+
+        List<String> again = queueDAO.pop(queueName, 1, 0);
+        assertTrue(
+                "a take of a message that had already been waiting must not be handed out again",
+                again.isEmpty());
+    }
+
+    @Test
+    public void unackSweepReleasesATakeOlderThanSixtySeconds() throws Exception {
+        String queueName = "stale_take_is_released";
+        String messageId = "stale-take";
+
+        queueDAO.push(queueName, messageId, 0);
+        List<String> taken = queueDAO.pop(queueName, 1, 0);
+        assertEquals(1, taken.size());
+
+        setDeliverOnMinutesAgo(queueName, messageId);
+        queueDAO.processAllUnacks();
+
+        List<String> again = queueDAO.pop(queueName, 1, 0);
+        assertEquals(1, again.size());
+        assertEquals(messageId, again.get(0));
+    }
+
+    private void setDeliverOnMinutesAgo(String queueName, String messageId) throws Exception {
+        try (Connection conn = dataSource.getConnection()) {
+            conn.setAutoCommit(false);
+            try (PreparedStatement statement =
+                    conn.prepareStatement(
+                            "UPDATE queue_message SET deliver_on = TIMESTAMPADD(MINUTE, -2, CURRENT_TIMESTAMP) WHERE queue_name = ? AND message_id = ?")) {
+                statement.setString(1, queueName);
+                statement.setString(2, messageId);
+                assertEquals(1, statement.executeUpdate());
+            }
+            conn.commit();
+        }
     }
 
     @Test
