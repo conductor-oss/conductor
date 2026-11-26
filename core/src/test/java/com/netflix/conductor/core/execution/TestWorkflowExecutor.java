@@ -15,11 +15,15 @@ package com.netflix.conductor.core.execution;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import org.conductoross.conductor.common.metadata.agent.AgentStartRequest;
 import org.conductoross.conductor.common.metadata.agent.AgentStartResponse;
+import org.conductoross.conductor.core.execution.SweeperProperties;
+import org.conductoross.conductor.core.execution.WorkflowSweeper;
 import org.conductoross.conductor.service.SchemaService;
 import org.junit.Before;
 import org.junit.Test;
@@ -59,6 +63,7 @@ import com.netflix.conductor.core.metadata.MetadataMapperService;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
+import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.model.TaskModel;
@@ -93,6 +98,9 @@ public class TestWorkflowExecutor {
     private TaskStatusListener taskStatusListener;
     private ExecutionLockService executionLockService;
     private ExternalPayloadStorageUtils externalPayloadStorageUtils;
+    private ParametersUtils parametersUtils;
+    private DeciderService deciderService;
+    private ConductorProperties properties;
 
     @Configuration
     @ComponentScan(basePackageClasses = {Evaluator.class}) // load all Evaluator beans.
@@ -173,7 +181,7 @@ public class TestWorkflowExecutor {
         externalPayloadStorageUtils = mock(ExternalPayloadStorageUtils.class);
         executionLockService = mock(ExecutionLockService.class);
 
-        ParametersUtils parametersUtils = new ParametersUtils(objectMapper);
+        parametersUtils = new ParametersUtils(objectMapper);
         IDGenerator idGenerator = new IDGenerator();
         Map<String, TaskMapper> taskMappers = new HashMap<>();
         taskMappers.put(DECISION.name(), new DecisionTaskMapper());
@@ -200,7 +208,7 @@ public class TestWorkflowExecutor {
         taskMappers.put(LAMBDA.name(), new LambdaTaskMapper(parametersUtils, metadataDAO));
         taskMappers.put(INLINE.name(), new InlineTaskMapper(parametersUtils, metadataDAO));
 
-        DeciderService deciderService =
+        deciderService =
                 new DeciderService(
                         idGenerator,
                         parametersUtils,
@@ -212,7 +220,7 @@ public class TestWorkflowExecutor {
                         Duration.ofMinutes(60));
         MetadataMapperService metadataMapperService = new MetadataMapperService(metadataDAO);
 
-        ConductorProperties properties = mock(ConductorProperties.class);
+        properties = mock(ConductorProperties.class);
         when(properties.getActiveWorkerLastPollTimeout()).thenReturn(Duration.ofSeconds(100));
         when(properties.getTaskExecutionPostponeDuration()).thenReturn(Duration.ofSeconds(60));
         when(properties.getWorkflowOffsetTimeout()).thenReturn(Duration.ofSeconds(30));
@@ -1530,6 +1538,404 @@ public class TestWorkflowExecutor {
         assertEquals(6, workflow.getTasks().size());
         assertEquals(WorkflowModel.Status.FAILED, workflow.getPreviousStatus());
         assertEquals(WorkflowModel.Status.RUNNING, workflow.getStatus());
+    }
+
+    /**
+     * The sweeper or an expedited decide can evaluate the workflow as soon as it is stored as
+     * RUNNING. By then the retry must have stored its tasks: if the failed branch is still the
+     * latest task for its ref, the decider fails the workflow again for the failure the retry was
+     * meant to clear, and the rescheduled branch is canceled before it starts.
+     */
+    @Test
+    public void testRetryStoresTheRescheduledTasksBeforeTheWorkflowIsRunning() {
+        WorkflowModel workflow = failedDynamicFork();
+        StoredExecution stored = storeWritesOf(workflow);
+
+        // a decide the moment the workflow is stored as RUNNING, on the stored state
+        List<String> terminations = new ArrayList<>();
+        doAnswer(
+                        i -> {
+                            stored.status = i.<WorkflowModel>getArgument(0).getStatus();
+                            try {
+                                deciderService.decide(stored.read());
+                            } catch (TerminateWorkflowException e) {
+                                terminations.add(e.getMessage());
+                            }
+                            return null;
+                        })
+                .when(executionDAOFacade)
+                .updateWorkflow(any());
+
+        workflowExecutor.retry(workflow.getWorkflowId(), false);
+
+        assertEquals(WorkflowModel.Status.RUNNING, stored.status);
+        assertEquals("a decide of the stored workflow failed it again", List.of(), terminations);
+    }
+
+    /**
+     * A reopened JOIN is evaluated by its system task worker as soon as it is queued. By then the
+     * workflow must be stored as RUNNING with the rescheduled branch as the latest task for its
+     * ref; earlier, the worker drops the JOIN as still CANCELED, cancels it on a terminal workflow,
+     * or fails it on the branch the retry replaces.
+     */
+    @Test
+    public void testRetryQueuesAReopenedJoinOnlyAfterTheRescheduledTasksAreStored() {
+        WorkflowModel workflow = failedDynamicFork();
+        String joinId = workflow.getTaskByRefName("join").getTaskId();
+        StoredExecution stored = storeWritesOf(workflow);
+
+        // the JOIN's worker, run on the stored state the moment the JOIN is queued
+        List<String> joinWorker = new ArrayList<>();
+        ExecutionDAOFacade storedFacade = mock(ExecutionDAOFacade.class);
+        when(storedFacade.getTaskModel(anyString()))
+                .thenAnswer(i -> stored.readTask(i.getArgument(0)));
+        when(storedFacade.getWorkflowModel(anyString(), anyBoolean()))
+                .thenAnswer(i -> stored.read());
+        doAnswer(i -> joinWorker.add("stored " + i.<TaskModel>getArgument(0).getStatus()))
+                .when(storedFacade)
+                .updateTask(any());
+        QueueDAO joinQueue = mock(QueueDAO.class);
+        doAnswer(i -> joinWorker.add("removed its message"))
+                .when(joinQueue)
+                .remove(anyString(), anyString());
+        when(properties.getSystemTaskWorkerCallbackDuration()).thenReturn(Duration.ofSeconds(30));
+        AsyncSystemTaskExecutor worker =
+                new AsyncSystemTaskExecutor(
+                        storedFacade,
+                        joinQueue,
+                        metadataDAO,
+                        properties,
+                        mock(WorkflowExecutor.class),
+                        parametersUtils);
+        doAnswer(
+                        i -> {
+                            if (joinId.equals(i.getArgument(1))) {
+                                worker.execute(new Join(properties), joinId);
+                            }
+                            return null;
+                        })
+                .when(queueDAO)
+                .push(anyString(), anyString(), anyInt(), anyLong());
+
+        workflowExecutor.retry(workflow.getWorkflowId(), false);
+
+        // the JOIN waits for the rescheduled branch, and its message stays queued
+        assertEquals(
+                "what the JOIN's worker did when the JOIN was queued",
+                List.of("stored IN_PROGRESS"),
+                joinWorker);
+    }
+
+    /**
+     * The decider message is queued before anything is stored, so it is queued before RUNNING is
+     * stored and a retry that cannot queue it changes nothing; and no task is queued while the
+     * stored workflow is still terminal, where its worker would cancel it.
+     */
+    @Test
+    public void testRetryQueuesTheDeciderMessageBeforeTheWorkflowIsRunning() {
+        WorkflowModel workflow = failedDynamicFork();
+        when(executionDAOFacade.getWorkflowModel(workflow.getWorkflowId(), true))
+                .thenReturn(workflow);
+
+        List<String> beforeRunning = new ArrayList<>();
+        AtomicBoolean running = new AtomicBoolean();
+        doAnswer(
+                        i -> {
+                            if (!running.get()) {
+                                beforeRunning.add("stored the tasks");
+                            }
+                            return null;
+                        })
+                .when(executionDAOFacade)
+                .updateTasks(any());
+        doAnswer(
+                        i -> {
+                            if (i.<WorkflowModel>getArgument(0).getStatus()
+                                    == WorkflowModel.Status.RUNNING) {
+                                running.set(true);
+                            }
+                            return null;
+                        })
+                .when(executionDAOFacade)
+                .updateWorkflow(any());
+        doAnswer(
+                        i -> {
+                            if (!running.get()) {
+                                beforeRunning.add(
+                                        DECIDER_QUEUE.equals(i.getArgument(0))
+                                                ? "queued the decider message for "
+                                                        + i.getArgument(3)
+                                                        + " s"
+                                                : "queued " + refOf(workflow, i.getArgument(1)));
+                            }
+                            return null;
+                        })
+                .when(queueDAO)
+                .push(anyString(), anyString(), anyInt(), anyLong());
+
+        workflowExecutor.retry(workflow.getWorkflowId(), false);
+
+        assertTrue(running.get());
+        assertEquals(
+                "what the retry did before it stored the workflow as RUNNING",
+                List.of("queued the decider message for 30 s", "stored the tasks"),
+                beforeRunning);
+    }
+
+    /**
+     * A sweeper that took an old decider message reads the workflow while the retry stores its
+     * tasks, finds it still terminal and removes the message, the one the retry has just queued
+     * included. The retry queues it again once the workflow is RUNNING; otherwise the workflow runs
+     * with no decider message, and nothing decides it again if an event is lost.
+     */
+    @Test
+    public void testRetryRequeuesTheDeciderMessageASweeperRemovedDuringItsTaskWrites() {
+        WorkflowModel workflow = failedDynamicFork();
+        String workflowId = workflow.getWorkflowId();
+        StoredExecution stored = storeWritesOf(workflow);
+        Set<String> deciderQueue = trackDeciderQueue();
+        sweepWhileTheTasksAreStored(stored, deciderQueue);
+
+        workflowExecutor.retry(workflowId, false);
+
+        assertEquals(WorkflowModel.Status.RUNNING, stored.status);
+        assertEquals("decider messages after the retry", Set.of(workflowId), deciderQueue);
+    }
+
+    /**
+     * updateWorkflow can store RUNNING and then fail, on the index write that follows it. The
+     * decider message is queued again anyway: the first one may be gone, as here, where a sweeper
+     * removed it during the task writes.
+     */
+    @Test
+    public void testRetryRequeuesTheDeciderMessageWhenUpdateWorkflowFailsAfterItsWrite() {
+        WorkflowModel workflow = failedDynamicFork();
+        String workflowId = workflow.getWorkflowId();
+        StoredExecution stored = storeWritesOf(workflow);
+        Set<String> deciderQueue = trackDeciderQueue();
+        sweepWhileTheTasksAreStored(stored, deciderQueue);
+        doAnswer(
+                        i -> {
+                            stored.status = i.<WorkflowModel>getArgument(0).getStatus();
+                            throw new TransientException("index write failed");
+                        })
+                .when(executionDAOFacade)
+                .updateWorkflow(any());
+
+        assertThrows(TransientException.class, () -> workflowExecutor.retry(workflowId, false));
+
+        assertEquals(WorkflowModel.Status.RUNNING, stored.status);
+        assertEquals("decider messages after the failed retry", Set.of(workflowId), deciderQueue);
+    }
+
+    /** The decider queue, as the pushes and removals through the mocked QueueDAO leave it. */
+    private Set<String> trackDeciderQueue() {
+        Set<String> deciderQueue = new HashSet<>();
+        doAnswer(i -> deciderQueue.add(i.getArgument(1)))
+                .when(queueDAO)
+                .push(eq(DECIDER_QUEUE), anyString(), anyInt(), anyLong());
+        doAnswer(i -> deciderQueue.add(i.getArgument(1)))
+                .when(queueDAO)
+                .push(eq(DECIDER_QUEUE), anyString(), anyInt(), any(Duration.class));
+        doAnswer(i -> deciderQueue.remove(i.getArgument(1)))
+                .when(queueDAO)
+                .remove(eq(DECIDER_QUEUE), anyString());
+        return deciderQueue;
+    }
+
+    /**
+     * Runs the default sweeper on the stored state right after the retry stores its tasks, as one
+     * that took an old decider message would, and checks that it removed the message. The retry's
+     * own decide gets the lock too.
+     */
+    private void sweepWhileTheTasksAreStored(StoredExecution stored, Set<String> deciderQueue) {
+        String workflowId = stored.workflow.getWorkflowId();
+        when(executionLockService.acquireLock(anyString())).thenReturn(true);
+        when(properties.getMaxPostponeDurationSeconds()).thenReturn(Duration.ofSeconds(3600));
+        WorkflowExecutor storedReader = mock(WorkflowExecutor.class);
+        when(storedReader.getWorkflow(workflowId, true)).thenAnswer(i -> stored.read());
+        WorkflowSweeper sweeper =
+                new WorkflowSweeper(
+                        mock(Executor.class),
+                        queueDAO,
+                        storedReader,
+                        mock(ExecutionDAO.class),
+                        properties,
+                        mock(SweeperProperties.class),
+                        systemTaskRegistry,
+                        objectMapper,
+                        executionLockService);
+        doAnswer(
+                        i -> {
+                            i.<List<TaskModel>>getArgument(0).forEach(stored::put);
+                            sweeper.sweep(workflowId);
+                            assertEquals(
+                                    "decider messages right after the sweep",
+                                    Set.of(),
+                                    deciderQueue);
+                            return null;
+                        })
+                .when(executionDAOFacade)
+                .updateTasks(any());
+    }
+
+    /**
+     * A FORK_JOIN_DYNAMIC that failed because branch_1 failed: branch_0 completed and the JOIN was
+     * canceled when the workflow failed.
+     */
+    private static WorkflowModel failedDynamicFork() {
+        WorkflowTask fork = new WorkflowTask();
+        fork.setName("fork");
+        fork.setTaskReferenceName("fork");
+        fork.setType(FORK_JOIN_DYNAMIC.name());
+        WorkflowTask join = new WorkflowTask();
+        join.setName("join");
+        join.setTaskReferenceName("join");
+        join.setType(JOIN.name());
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("race_parent");
+        workflowDef.setVersion(1);
+        workflowDef.getTasks().addAll(List.of(fork, join));
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId(new IDGenerator().generate());
+        workflow.setWorkflowDefinition(workflowDef);
+        workflow.setStatus(WorkflowModel.Status.FAILED);
+        workflow.setReasonForIncompletion("branch_1 failed");
+        workflow.getTasks()
+                .addAll(
+                        List.of(
+                                task(workflow, fork, TASK_TYPE_FORK, 1, TaskModel.Status.COMPLETED),
+                                task(
+                                        workflow,
+                                        branch("branch_0"),
+                                        TASK_TYPE_SUB_WORKFLOW,
+                                        2,
+                                        TaskModel.Status.COMPLETED),
+                                task(
+                                        workflow,
+                                        branch("branch_1"),
+                                        TASK_TYPE_SUB_WORKFLOW,
+                                        3,
+                                        TaskModel.Status.FAILED),
+                                task(
+                                        workflow,
+                                        join,
+                                        TASK_TYPE_JOIN,
+                                        4,
+                                        TaskModel.Status.CANCELED)));
+        workflow.getTaskByRefName("branch_1").setReasonForIncompletion("on purpose");
+        workflow.getTaskByRefName("join")
+                .getInputData()
+                .put("joinOn", List.of("branch_0", "branch_1"));
+        return workflow;
+    }
+
+    private static String refOf(WorkflowModel workflow, String taskId) {
+        return workflow.getTasks().stream()
+                .filter(task -> task.getTaskId().equals(taskId))
+                .map(TaskModel::getReferenceTaskName)
+                .findFirst()
+                .orElse(taskId);
+    }
+
+    private static WorkflowTask branch(String ref) {
+        WorkflowTask branch = new WorkflowTask();
+        branch.setName(ref);
+        branch.setTaskReferenceName(ref);
+        branch.setType(SUB_WORKFLOW.name());
+        return branch;
+    }
+
+    private static TaskModel task(
+            WorkflowModel workflow,
+            WorkflowTask workflowTask,
+            String type,
+            int seq,
+            TaskModel.Status status) {
+        TaskModel task = new TaskModel();
+        task.setTaskId(new IDGenerator().generate());
+        task.setWorkflowInstanceId(workflow.getWorkflowId());
+        task.setTaskType(type);
+        task.setTaskDefName(workflowTask.getName());
+        task.setReferenceTaskName(workflowTask.getTaskReferenceName());
+        task.setWorkflowTask(workflowTask);
+        task.setSeq(seq);
+        task.setStatus(status);
+        // the decider has moved past the tasks that completed
+        task.setExecuted(status.isSuccessful());
+        return task;
+    }
+
+    /** The workflow and tasks as stored by the retry under test, for a reader to load. */
+    private static final class StoredExecution {
+        private final WorkflowModel workflow;
+        private final Map<String, TaskModel> tasks = new HashMap<>();
+        private WorkflowModel.Status status;
+
+        StoredExecution(WorkflowModel workflow) {
+            this.workflow = workflow;
+            this.status = workflow.getStatus();
+            workflow.getTasks().forEach(this::put);
+        }
+
+        void put(TaskModel task) {
+            tasks.put(task.getTaskId(), task.copy());
+        }
+
+        TaskModel readTask(String taskId) {
+            return tasks.get(taskId).copy();
+        }
+
+        /** What a reader loads: the stored status and the stored tasks, ordered by seq. */
+        WorkflowModel read() {
+            WorkflowModel read = new WorkflowModel();
+            read.setWorkflowId(workflow.getWorkflowId());
+            read.setWorkflowDefinition(workflow.getWorkflowDefinition());
+            read.setStatus(status);
+            tasks.values().stream()
+                    .map(TaskModel::copy)
+                    .sorted(comparingInt(TaskModel::getSeq))
+                    .forEach(read.getTasks()::add);
+            return read;
+        }
+    }
+
+    /** Has the mocked facade load the workflow for the retry and store its writes. */
+    private StoredExecution storeWritesOf(WorkflowModel workflow) {
+        StoredExecution stored = new StoredExecution(workflow);
+        when(executionDAOFacade.getWorkflowModel(workflow.getWorkflowId(), true))
+                .thenReturn(workflow);
+        doAnswer(
+                        i -> {
+                            stored.put(i.getArgument(0));
+                            return null;
+                        })
+                .when(executionDAOFacade)
+                .updateTask(any());
+        doAnswer(
+                        i -> {
+                            i.<List<TaskModel>>getArgument(0).forEach(stored::put);
+                            return null;
+                        })
+                .when(executionDAOFacade)
+                .updateTasks(any());
+        doAnswer(
+                        i -> {
+                            List<TaskModel> tasks = i.getArgument(0);
+                            tasks.forEach(stored::put);
+                            return tasks;
+                        })
+                .when(executionDAOFacade)
+                .createTasks(any());
+        doAnswer(
+                        i -> {
+                            stored.status = i.<WorkflowModel>getArgument(0).getStatus();
+                            return null;
+                        })
+                .when(executionDAOFacade)
+                .updateWorkflow(any());
+        return stored;
     }
 
     @Test

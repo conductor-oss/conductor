@@ -461,6 +461,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         // Throw an exception if there are no FAILED tasks.
         // Handle JOIN task CANCELED status as special case.
         Map<String, TaskModel> retriableMap = new HashMap<>();
+        // JOIN, EXCLUSIVE_JOIN and DO_WHILE tasks reopened in place; queued once RUNNING is stored
+        List<TaskModel> reopenedTasks = new ArrayList<>();
         for (TaskModel task : workflow.getTasks()) {
             switch (task.getStatus()) {
                 case FAILED:
@@ -472,7 +474,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                         boolean joinOnFailedPermissive = isJoinOnFailedPermissive(joinOn, workflow);
                         if (joinOnFailedPermissive) {
                             task.setStatus(IN_PROGRESS);
-                            addTaskToQueue(task);
+                            reopenedTasks.add(task);
                             break;
                         }
                     }
@@ -484,9 +486,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     if (task.getTaskType().equalsIgnoreCase(TaskType.JOIN.toString())
                             || task.getTaskType().equalsIgnoreCase(TaskType.DO_WHILE.toString())) {
                         task.setStatus(IN_PROGRESS);
-                        addTaskToQueue(task);
-                        // Task doesn't have to be updated yet. Will be updated along with other
-                        // Workflow tasks downstream.
+                        reopenedTasks.add(task);
                     } else {
                         retriableMap.put(task.getReferenceTaskName(), task);
                     }
@@ -506,18 +506,11 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     "There are no retryable tasks! Use restart if you want to attempt entire workflow execution again.");
         }
 
-        // Update Workflow with new status.
-        // This should load Workflow from archive, if archived.
+        // Update Workflow with new status. It is stored after its tasks, below.
         workflow.setStatus(WorkflowModel.Status.RUNNING);
         workflow.setLastRetriedTime(System.currentTimeMillis());
         String lastReasonForIncompletion = workflow.getReasonForIncompletion();
         workflow.setReasonForIncompletion(null);
-        executionDAOFacade.updateWorkflow(workflow);
-        notifyWorkflowStatusListener(workflow, WorkflowEventType.RETRIED);
-        LOGGER.info(
-                "Workflow {} that failed due to '{}' was retried",
-                workflow.toShortString(),
-                lastReasonForIncompletion);
 
         // taskToBeRescheduled would set task `retried` to true, and hence it's
         // important to
@@ -530,12 +523,48 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                         .collect(Collectors.toList());
 
         dedupAndAddTasks(workflow, retriableTasks);
-        // Note: updateTasks before updateWorkflow might fail when Workflow is archived
-        // and doesn't
-        // exist in primary store.
+        // Number the copies after the tasks they replace, before they are stored:
+        // getTaskByRefName returns the last match by seq.
+        assignSeq(workflow, retriableTasks);
+
+        // Write order. Deciders and system task workers act on what is stored: a RUNNING workflow
+        // whose latest task for a ref is still the failed one makes a JOIN fail and the workflow
+        // terminate again.
+        // 1. Queue the decider message before anything is stored, so a retry that cannot queue
+        //    it stores nothing. The message waits out the workflow offset, so a decide does not
+        //    come before the writes finish.
+        // 2. Store every task change while the stored workflow is still terminal: the failed
+        //    tasks marked retried, the copies with their seq, the reopened JOIN, EXCLUSIVE_JOIN
+        //    and DO_WHILE tasks. This retry has queued no task yet, and the default
+        //    WorkflowSweeper drops a terminal workflow without deciding it; the legacy sweeper or
+        //    an explicit decide in this window would cancel the stored copies. No ExecutionDAO
+        //    needs the workflow row to store a task, so the order holds for an archived workflow.
+        // 3. Store the workflow as RUNNING, then queue the decider message again, also when
+        //    updateWorkflow fails after its write. This restores a message removed before the
+        //    push; a remove that lands after it still drops the message, and nothing orders that
+        //    remove after this push. The message waits out the workflow offset, so a decide does
+        //    not come before the writes finish.
+        // 4. Queue the copies and the reopened tasks. Queued earlier, a worker would cancel
+        //    them on the terminal workflow, or a JOIN would fail on the replaced task.
+        pushToDeciderQueue(workflow);
         executionDAOFacade.updateTasks(workflow.getTasks());
+        try {
+            executionDAOFacade.updateWorkflow(workflow);
+        } finally {
+            // a sweeper that read the workflow while terminal may have removed the first message
+            pushToDeciderQueue(workflow);
+        }
+        notifyWorkflowStatusListener(workflow, WorkflowEventType.RETRIED);
+        LOGGER.info(
+                "Workflow {} that failed due to '{}' was retried",
+                workflow.toShortString(),
+                lastReasonForIncompletion);
         scheduleTask(workflow, retriableTasks);
-        // Push AFTER tasks are reset so async decider sees SCHEDULED/IN_PROGRESS, not stale state
+        reopenedTasks.forEach(this::addTaskToQueue);
+    }
+
+    /** Queues the workflow for the sweeper, after the workflow offset. */
+    private void pushToDeciderQueue(WorkflowModel workflow) {
         queueDAO.push(
                 DECIDER_QUEUE,
                 workflow.getWorkflowId(),
@@ -2020,6 +2049,17 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         return s + getTaskDuration(s, executionDAOFacade.getTaskModel(task.getRetriedTaskId()));
     }
 
+    /** Numbers each task without a seq after the highest seq in the workflow, in list order. */
+    private static void assignSeq(WorkflowModel workflow, List<TaskModel> tasks) {
+        // Get the highest seq number
+        int count = workflow.getTasks().stream().mapToInt(TaskModel::getSeq).max().orElse(0);
+        for (TaskModel task : tasks) {
+            if (task.getSeq() == 0) { // Set only if the seq was not set
+                task.setSeq(++count);
+            }
+        }
+    }
+
     @VisibleForTesting
     boolean scheduleTask(WorkflowModel workflow, List<TaskModel> tasks) {
         List<TaskModel> tasksToBeQueued;
@@ -2031,13 +2071,9 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 return false;
             }
 
-            // Get the highest seq number
-            int count = workflow.getTasks().stream().mapToInt(TaskModel::getSeq).max().orElse(0);
+            assignSeq(workflow, tasks);
 
             for (TaskModel task : tasks) {
-                if (task.getSeq() == 0) { // Set only if the seq was not set
-                    task.setSeq(++count);
-                }
                 // Stamp the very first time this task enters the queue. Retried tasks carry
                 // this value forward (via TaskModel.copy()), so it is never overwritten here.
                 if (task.getFirstScheduledTime() == 0) {
