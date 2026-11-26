@@ -62,9 +62,9 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.service.ExecutionLockService;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
 import static com.netflix.conductor.model.TaskModel.Status.*;
@@ -1162,7 +1162,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 taskStatusListener.onTaskInProgressIfEnabled(task);
                 break;
             case SCHEDULED:
-                // no-op, already done in addTaskToQueue
+            // no-op, already done in addTaskToQueue
             default:
                 break;
         }
@@ -1646,7 +1646,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
 
     /**
      * @param workflowId the workflow to be resumed
-     * @throws IllegalStateException if the workflow is not in PAUSED state (unless it is already
+     * @throws ConflictException if the workflow is not in PAUSED state (unless it is already
      *     RUNNING, in which case resume is a no-op)
      */
     @Override
@@ -1658,7 +1658,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 return; // Already resumed!
             }
             if (!workflow.getStatus().equals(WorkflowModel.Status.PAUSED)) {
-                throw new IllegalStateException(
+                throw new ConflictException(
                         "The workflow "
                                 + workflowId
                                 + " is not PAUSED so cannot resume. "
@@ -1686,7 +1686,10 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
      * @param workflowId the id of the workflow
      * @param taskReferenceName the referenceName of the task to be skipped
      * @param skipTaskRequest the {@link SkipTaskRequest} object
-     * @throws IllegalStateException
+     * @throws ConflictException if the workflow is not RUNNING, or the task has already been
+     *     processed
+     * @throws IllegalArgumentException if the task reference name is not part of the workflow
+     *     definition
      */
     @Override
     public void skipTaskFromWorkflow(
@@ -1700,7 +1703,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     String.format(
                             "The workflow %s is not running so the task referenced by %s cannot be skipped",
                             workflowId, taskReferenceName);
-            throw new IllegalStateException(errorMsg);
+            throw new ConflictException(errorMsg);
         }
 
         // Check if the reference name is as per the workflowdef
@@ -1711,7 +1714,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     String.format(
                             "The task referenced by %s does not exist in the WorkflowDefinition %s",
                             taskReferenceName, workflow.getWorkflowName());
-            throw new IllegalStateException(errorMsg);
+            throw new IllegalArgumentException(errorMsg);
         }
 
         // If the task is already started the again it cannot be skipped
@@ -1723,7 +1726,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                                         String.format(
                                                 "The task referenced %s has already been processed, cannot be skipped",
                                                 taskReferenceName);
-                                throw new IllegalStateException(errorMsg);
+                                throw new ConflictException(errorMsg);
                             }
                         });
 
@@ -2568,6 +2571,9 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             return;
         }
         List<TaskModel> tasksToQueue = new ArrayList<>();
+        // the tasks this reset; the rerun task and what the rerun reopened are saved and queued
+        // already, and saving them again could put back a state a worker has moved on from
+        List<TaskModel> reset = new ArrayList<>();
         workflow.getTasks()
                 .forEach(
                         task -> {
@@ -2598,11 +2604,12 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                                 task.setStartTime(System.currentTimeMillis());
                                 task.setEndTime(0);
                                 task.setReasonForIncompletion(null);
+                                reset.add(task);
                             }
                         });
         // Write SCHEDULED to DB before queueing so async workers (e.g. SystemTaskWorker)
         // never read a stale CANCELED/FAILED state and silently drop the queue entry.
-        executionDAOFacade.updateTasks(workflow.getTasks());
+        executionDAOFacade.updateTasks(reset);
         tasksToQueue.forEach(this::addTaskToQueue);
         // Push AFTER all sibling tasks are reset so async decider never sees stale CANCELED/FAILED
         queueDAO.push(

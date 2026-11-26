@@ -23,6 +23,7 @@ import org.apache.commons.io.IOUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.InOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -42,7 +43,7 @@ import com.netflix.conductor.dao.*;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -183,6 +184,22 @@ public class ExecutionDAOFacadeTest {
         verify(indexDAO, never()).updateTask(anyString(), anyString(), any(), any());
         verify(indexDAO, times(1)).asyncRemoveWorkflow(anyString());
         verify(indexDAO, times(1)).asyncRemoveTask(anyString(), anyString());
+    }
+
+    @Test
+    public void removingAWorkflowDeletesItsMessageQueueFirst() {
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("workflowId");
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+        when(executionDAO.getWorkflow(anyString(), anyBoolean())).thenReturn(workflow);
+        WorkflowMessageQueueDAO messageQueueDAO = mock(WorkflowMessageQueueDAO.class);
+        executionDAOFacade.setWorkflowMessageQueueDAO(messageQueueDAO);
+
+        executionDAOFacade.removeWorkflow("workflowId", false);
+
+        InOrder order = inOrder(messageQueueDAO, executionDAO);
+        order.verify(messageQueueDAO).delete("workflowId");
+        order.verify(executionDAO).removeWorkflow("workflowId");
     }
 
     @Test

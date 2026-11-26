@@ -15,12 +15,12 @@
 [![GitHub stars](https://img.shields.io/github/stars/conductor-oss/conductor?style=social)](https://github.com/conductor-oss/conductor/stargazers)
 [![Github release](https://img.shields.io/github/v/release/conductor-oss/conductor.svg)](https://github.com/conductor-oss/conductor/releases)
 [![License](https://img.shields.io/github/license/conductor-oss/conductor.svg)](http://www.apache.org/licenses/LICENSE-2.0)
-[![Conductor Slack](https://img.shields.io/badge/Slack-Join%20the%20Community-blueviolet?logo=slack)](https://join.slack.com/t/orkes-conductor/shared_invite/zt-3dpcskdyd-W895bJDm8psAV7viYG3jFA)
+[![Conductor Slack](https://img.shields.io/badge/Slack-Join%20the%20Community-blueviolet?logo=slack)](https://join.slack.com/t/orkes-conductor/shared_invite/zt-4gilmdmpj-Fu_PxACC60BG4ctur8OeDg)
 [![Conductor OSS](https://img.shields.io/badge/Conductor%20OSS-Visit%20Site-blue)](https://conductor-oss.org)
 
 #### Build agents that adapt. Run graphs that endure.
 
-Conductor is an open-source durable execution platform for microservices, AI agents, and adaptive workflow graphs. It turns runtime choices—loops, branching, fan-out, tool calls, approvals, retries, and cancellation—into durable, inspectable execution. It originated at [Netflix](https://netflixtechblog.com/netflix-conductor-a-microservices-orchestrator-2e8d4771bf40) and is actively maintained by [Orkes](https://orkes.io) and the [community](https://join.slack.com/t/orkes-conductor/shared_invite/zt-3dpcskdyd-W895bJDm8psAV7viYG3jFA).
+Conductor is an open-source durable execution platform for microservices, AI agents, and adaptive workflow graphs. It turns runtime choices—loops, branching, fan-out, tool calls, approvals, retries, and cancellation—into durable, inspectable execution. It originated at [Netflix](https://netflixtechblog.com/netflix-conductor-a-microservices-orchestrator-2e8d4771bf40) and is actively maintained by [Orkes](https://orkes.io) and the [community](https://join.slack.com/t/orkes-conductor/shared_invite/zt-4gilmdmpj-Fu_PxACC60BG4ctur8OeDg).
 
 [![conductor_oss_getting_started](https://github.com/user-attachments/assets/6153aa58-8ad1-4ec5-93d1-38ba1b83e3f4)](https://youtu.be/4azDdDlx27M)
 
@@ -28,7 +28,7 @@ Conductor is an open-source durable execution platform for microservices, AI age
 
 # Get Running in 60 Seconds
 
-**Prerequisites:** [Node.js](https://nodejs.org/) v16+ and Java 21+ must be installed.
+**Prerequisites:** [Node.js](https://nodejs.org/) v16+ and Java 25+ must be installed.
 
 ```shell
 npm install -g @conductor-oss/conductor-cli
@@ -37,11 +37,12 @@ conductor server start
 
 Open [http://localhost:8080](http://localhost:8080) — your server is running with the built-in ui-next UI.
 
-> **Upgrading from a previous version?** The CLI caches the server JAR at `~/.conductor-cli/`. If you have an older version cached, force a fresh download:
+<!-- TODO: verify against live server -->
+> **Upgrading from a previous version?** Stop the server, refresh the CLI's cached server JAR, and restart:
 > ```shell
-> conductor server start latest
-> # or delete the cache manually
-> rm ~/.conductor-cli/conductor-server-latest.jar && conductor server start
+> conductor server stop
+> conductor server update
+> conductor server start
 > ```
 
 **Run your first workflow:**
@@ -216,7 +217,7 @@ powershell -c "irm https://conductor-oss.github.io/conductor-skills/install.ps1 
 # Documentation & Community
 
 - **[Documentation](https://conductor-oss.org)** — Architecture, guides, API reference, and cookbook recipes.
-- **[Slack](https://join.slack.com/t/orkes-conductor/shared_invite/zt-3dpcskdyd-W895bJDm8psAV7viYG3jFA)** — Community discussions and support.
+- **[Slack](https://join.slack.com/t/orkes-conductor/shared_invite/zt-4gilmdmpj-Fu_PxACC60BG4ctur8OeDg)** — Community discussions and support.
 - **[Community Forum](https://community.orkes.io/)** — Ask questions and share patterns.
 
 ---
@@ -226,12 +227,12 @@ powershell -c "irm https://conductor-oss.github.io/conductor-skills/install.ps1 
 
 | Backend | Configuration |
 |---------|---------------|
-| Redis + ES7 (default) | [config-redis.properties](docker/server/config/config-redis.properties) |
-| Redis + ES8 | [config-redis-es8.properties](docker/server/config/config-redis-es8.properties) |
+| Redis + ES8 (default) | [config-redis-es8.properties](docker/server/config/config-redis-es8.properties) |
+| Redis + ES7 (legacy) | [config-redis.properties](docker/server/config/config-redis.properties) |
 | Redis + OpenSearch | [config-redis-os.properties](docker/server/config/config-redis-os.properties) |
 | Postgres | [config-postgres.properties](docker/server/config/config-postgres.properties) |
-| Postgres + ES7 | [config-postgres-es7.properties](docker/server/config/config-postgres-es7.properties) |
-| MySQL + ES7 | [config-mysql.properties](docker/server/config/config-mysql.properties) |
+| Postgres + ES7 (legacy) | [config-postgres-es7.properties](docker/server/config/config-postgres-es7.properties) |
+| MySQL + ES8 | [config-mysql.properties](docker/server/config/config-mysql.properties) |
 
 </details>
 
@@ -242,7 +243,7 @@ powershell -c "irm https://conductor-oss.github.io/conductor-skills/install.ps1 
 <details>
 <summary><strong>Requirements and instructions</strong></summary>
 
-**Requirements:** Docker Desktop, Java (JDK) 21+, Node.js 18+ and pnpm (for UI)
+**Requirements:** Docker Desktop, Java (JDK) 25+, Node.js 18+ and pnpm (for UI)
 
 ```shell
 git clone https://github.com/conductor-oss/conductor

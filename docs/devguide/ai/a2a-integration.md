@@ -376,6 +376,8 @@ conductor.a2a.server.exposed-workflows=order_pizza,book_appointment
 
 Exposed agents advertise `capabilities.streaming=true`.
 
+A native agent's card `description` (and its skill's) is the agent's own `introduction`, as the MCP server shows it. Without one, it is the agent's workflow definition description, which the agent compiler writes (for example `Agent workflow for <name>`), or `Conductor agent '<name>' exposed as an A2A agent` when that is empty.
+
 ### Discover and call
 
 ```bash

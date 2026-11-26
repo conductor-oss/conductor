@@ -12,37 +12,71 @@
  */
 package org.conductoross.conductor.common;
 
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.networknt.schema.JsonSchema;
-import com.networknt.schema.JsonSchemaFactory;
-import com.networknt.schema.SpecVersionDetector;
-import com.networknt.schema.ValidationMessage;
+import com.networknt.schema.Error;
+import com.networknt.schema.Schema;
+import com.networknt.schema.SchemaException;
+import com.networknt.schema.SchemaLocation;
+import com.networknt.schema.SchemaRegistry;
+import com.networknt.schema.SpecificationVersion;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 @Component
 @RequiredArgsConstructor
 public class JsonSchemaValidator {
 
+    /**
+     * Dialect used when a schema does not declare one through $schema. Draft 2020-12 matches what
+     * SpecVersionDetector defaulted to for undeclared schemas.
+     */
+    private static final SpecificationVersion DEFAULT_DIALECT = SpecificationVersion.DRAFT_2020_12;
+
     private final ObjectMapper mapper;
 
     @SneakyThrows
-    public JsonSchema getJsonSchema(String schemaContent) {
+    public Schema getJsonSchema(String schemaContent) {
         JsonNode jsonNode = mapper.readTree(schemaContent);
-        JsonSchemaFactory factory =
-                JsonSchemaFactory.getInstance(SpecVersionDetector.detect(jsonNode));
-        return factory.getSchema(jsonNode);
+        SpecificationVersion dialect =
+                SpecificationVersion.fromSchemaNode(jsonNode).orElse(DEFAULT_DIALECT);
+        SchemaRegistry registry = SchemaRegistry.withDefaultDialect(dialect);
+        rejectMalformedSchema(registry, dialect, jsonNode);
+        return registry.getSchema(jsonNode);
     }
 
-    public Set<ValidationMessage> validate(String schemaContent, Map<String, Object> body) {
-        JsonSchema schema = getJsonSchema(schemaContent);
-        schema.initializeValidators();
+    /**
+     * Checks the schema document against its own dialect before it is used.
+     *
+     * <p>Version 1.x refused to build a schema whose keywords were the wrong shape, for example a
+     * numeric "type", and callers relied on that to tell a broken schema apart from a payload that
+     * genuinely does not match. Version 3.x accepts such a document and only reports the problem
+     * later, as if the payload were at fault. Validating against the metaschema restores the
+     * distinction.
+     */
+    private void rejectMalformedSchema(
+            SchemaRegistry registry, SpecificationVersion dialect, JsonNode schemaNode) {
+        List<Error> schemaErrors =
+                registry.getSchema(SchemaLocation.of(dialect.getDialectId())).validate(schemaNode);
+        if (schemaErrors != null && !schemaErrors.isEmpty()) {
+            throw new SchemaException(
+                    "Schema does not conform to "
+                            + dialect.getDialectId()
+                            + ": "
+                            + schemaErrors.stream()
+                                    .map(Error::getMessage)
+                                    .collect(Collectors.joining(", ")));
+        }
+    }
+
+    public List<Error> validate(String schemaContent, Map<String, Object> body) {
+        Schema schema = getJsonSchema(schemaContent);
         JsonNode node = getJsonNode(body);
         return schema.validate(node);
     }

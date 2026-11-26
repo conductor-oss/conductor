@@ -1,3 +1,7 @@
+---
+description: "Pause a deployed Conductor agent at a tool-approval step, collect a human decision, and resume the same agent run from where it paused."
+---
+
 # Agent approval
 
 ```mermaid

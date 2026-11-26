@@ -12,24 +12,39 @@
  */
 package com.netflix.conductor.common.config;
 
-import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
+import org.springframework.boot.jackson.autoconfigure.JsonMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES;
-import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES;
-import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import tools.jackson.databind.cfg.DateTimeFeature;
+
+import static tools.jackson.databind.DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES;
+import static tools.jackson.databind.DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES;
+import static tools.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
+import static tools.jackson.databind.SerializationFeature.FAIL_ON_EMPTY_BEANS;
 
 @Configuration
 public class ObjectMapperBuilderConfiguration {
 
-    /** Disable features like {@link ObjectMapperProvider#getObjectMapper()}. */
+    /**
+     * Keeps the Spring-managed mapper in step with {@link ObjectMapperProvider#getObjectMapper()}.
+     * Jackson 3 mappers cannot be reconfigured after construction, so everything the old
+     * ObjectMapperConfiguration applied afterwards is set on the builder here instead.
+     */
     @Bean
-    public Jackson2ObjectMapperBuilderCustomizer conductorJackson2ObjectMapperBuilderCustomizer() {
+    public JsonMapperBuilderCustomizer conductorJsonMapperBuilderCustomizer() {
         return builder ->
-                builder.featuresToDisable(
-                        FAIL_ON_UNKNOWN_PROPERTIES,
-                        FAIL_ON_IGNORED_PROPERTIES,
-                        FAIL_ON_NULL_FOR_PRIMITIVES);
+                builder.disable(
+                                FAIL_ON_UNKNOWN_PROPERTIES,
+                                FAIL_ON_IGNORED_PROPERTIES,
+                                FAIL_ON_NULL_FOR_PRIMITIVES)
+                        .disable(FAIL_ON_EMPTY_BEANS)
+                        .enable(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS)
+                        .changeDefaultPropertyInclusion(
+                                value ->
+                                        JsonInclude.Value.construct(
+                                                JsonInclude.Include.NON_NULL,
+                                                JsonInclude.Include.ALWAYS));
     }
 }

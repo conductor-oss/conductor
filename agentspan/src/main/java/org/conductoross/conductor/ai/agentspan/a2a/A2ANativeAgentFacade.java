@@ -52,9 +52,9 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.service.TaskService;
 import com.netflix.conductor.service.WorkflowService;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Exposes native Conductor agents (agentspan) as A2A agents (server side). One agent = one A2A
@@ -100,11 +100,12 @@ public class A2ANativeAgentFacade {
     // ---- exposure ----------------------------------------------------------------------------
 
     public boolean isExposed(String agentName) {
-        return agentService.listAgents().stream().anyMatch(s -> s.getName().equals(agentName));
+        return agentService.listAgentsWithoutChecksum().stream()
+                .anyMatch(s -> s.getName().equals(agentName));
     }
 
     public List<AgentSummary> exposedAgents() {
-        return agentService.listAgents();
+        return agentService.listAgentsWithoutChecksum();
     }
 
     // ---- agent card --------------------------------------------------------------------------
@@ -115,10 +116,13 @@ public class A2ANativeAgentFacade {
     }
 
     private AgentCard buildCard(AgentSummary summary, String requestBaseUrl) {
-        String description =
-                summary.getDescription() != null
-                        ? summary.getDescription()
-                        : "Conductor agent '" + summary.getName() + "' exposed as an A2A agent";
+        String description = summary.getIntroduction();
+        if (description == null) {
+            description = summary.getDescription();
+        }
+        if (description == null) {
+            description = "Conductor agent '" + summary.getName() + "' exposed as an A2A agent";
+        }
 
         AgentCard card = new AgentCard();
         card.setName(summary.getName());
@@ -390,7 +394,7 @@ public class A2ANativeAgentFacade {
     // ---- private helpers ---------------------------------------------------------------------
 
     private AgentSummary requireExposed(String agentName) {
-        return agentService.listAgents().stream()
+        return agentService.listAgentsWithoutChecksum().stream()
                 .filter(s -> s.getName().equals(agentName))
                 .findFirst()
                 .orElseThrow(

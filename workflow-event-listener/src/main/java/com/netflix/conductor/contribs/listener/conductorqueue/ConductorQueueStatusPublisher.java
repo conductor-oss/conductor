@@ -23,8 +23,8 @@ import com.netflix.conductor.core.listener.WorkflowStatusListener;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.model.WorkflowModel;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Publishes a {@link Message} containing a {@link WorkflowSummary} to the undlerying {@link
@@ -75,7 +75,7 @@ public class ConductorQueueStatusPublisher implements WorkflowStatusListener {
         WorkflowSummary summary = new WorkflowSummary(workflowModel.toWorkflow());
         try {
             jsonWfSummary = objectMapper.writeValueAsString(summary);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             LOGGER.error(
                     "Failed to convert WorkflowSummary: {} to String. Exception: {}", summary, e);
             throw new RuntimeException(e);

@@ -78,8 +78,6 @@ public class Grok implements AIModel {
                 .frequencyPenalty(input.getFrequencyPenalty())
                 .presencePenalty(input.getPresencePenalty())
                 .toolCallbacks(toolCallbacks)
-                .toolNames(toolNames)
-                .internalToolExecutionEnabled(false)
                 .build();
     }
 

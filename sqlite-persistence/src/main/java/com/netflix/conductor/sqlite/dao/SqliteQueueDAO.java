@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.dao.QueueDAO;
@@ -32,11 +32,11 @@ import com.netflix.conductor.sqlite.config.SqliteProperties;
 import com.netflix.conductor.sqlite.util.ExecutorsUtil;
 import com.netflix.conductor.sqlite.util.Query;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.Uninterruptibles;
 import jakarta.annotation.PreDestroy;
+import tools.jackson.databind.ObjectMapper;
 
 public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
 
@@ -464,8 +464,14 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
     private List<Message> popMessages(
             Connection connection, String queueName, int count, int timeout) {
 
+        // The queue is named on the update too, not only where the ids are chosen: a message id
+        // is unique within a queue (the table's key), and the same id may wait on another queue,
+        // which this pop must neither take nor return.
+        // deliver_on is the time the row was taken. Reset it with the take,
+        // or the unack sweep hands the message out again when it had already
+        // been waiting for more than 60 seconds.
         String POP_QUERY =
-                "UPDATE queue_message SET popped = true WHERE message_id IN ("
+                "UPDATE queue_message SET popped = true, deliver_on = strftime('%Y-%m-%d %H:%M:%f', 'now') WHERE queue_name = ? AND message_id IN ("
                         + "SELECT message_id FROM queue_message WHERE queue_name = ? AND popped = false AND "
                         + "deliver_on <= strftime('%Y-%m-%d %H:%M:%f', 'now') "
                         + "ORDER BY priority DESC, deliver_on, created_on LIMIT ?"
@@ -476,6 +482,7 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
                 POP_QUERY,
                 p ->
                         p.addParameter(queueName)
+                                .addParameter(queueName)
                                 .addParameter(count)
                                 .executeAndFetch(
                                         rs -> {

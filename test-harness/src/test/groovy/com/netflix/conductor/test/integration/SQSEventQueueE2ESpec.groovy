@@ -31,7 +31,6 @@ import com.netflix.conductor.core.exception.ConflictException
 import com.netflix.conductor.test.base.AbstractSpecification
 import com.netflix.conductor.test.config.LocalStackSQSConfiguration
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import groovy.json.JsonSlurper
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
@@ -39,6 +38,7 @@ import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sqs.SqsClient
 import software.amazon.awssdk.services.sqs.model.*
 import spock.lang.Shared
+import tools.jackson.databind.ObjectMapper
 
 @Testcontainers
 @SpringBootTest(classes = ConductorTestApp.class)
