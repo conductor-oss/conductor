@@ -17,7 +17,7 @@ export const fetchForTasksService = async ({
   authHeaders: headers,
   executionId,
   startIndex = 0,
-  rowsPerPage = 15,
+  rowsPerPage = 20,
   filterStatus,
 }: TaskListMachineContext) => {
   const executionTasksPath = `/workflow/${executionId}/tasks${getQueryString({
