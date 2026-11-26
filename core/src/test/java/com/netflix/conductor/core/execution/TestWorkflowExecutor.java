@@ -2590,6 +2590,92 @@ public class TestWorkflowExecutor {
         assertEquals(new HashSet<>(), workflow.getFailedTaskNames());
     }
 
+    /**
+     * A rerun saves the task it runs again as SCHEDULED and queues it. From then on a worker can
+     * take it and finish it; the rerun must not save that task again, or it puts SCHEDULED back
+     * over the worker's COMPLETED, whose update already removed the queue message, and the task
+     * waits for the sweeper.
+     */
+    @Test
+    public void testRerunDoesNotSaveTheTaskItRunsAgainAfterQueueingIt() {
+        IDGenerator idGenerator = new IDGenerator();
+        String workflowId = idGenerator.generate();
+
+        TaskModel task1 = new TaskModel();
+        task1.setTaskType(TaskType.SIMPLE.name());
+        task1.setTaskDefName("task1");
+        task1.setReferenceTaskName("task1_ref");
+        task1.setWorkflowInstanceId(workflowId);
+        task1.setScheduledTime(System.currentTimeMillis());
+        task1.setTaskId(idGenerator.generate());
+        task1.setStatus(TaskModel.Status.COMPLETED);
+        task1.setSeq(1);
+
+        TaskModel task2 = new TaskModel();
+        task2.setTaskType(TaskType.SIMPLE.name());
+        task2.setTaskDefName("task2");
+        task2.setReferenceTaskName("task2_ref");
+        task2.setWorkflowInstanceId(workflowId);
+        task2.setScheduledTime(System.currentTimeMillis());
+        task2.setTaskId(idGenerator.generate());
+        task2.setStatus(TaskModel.Status.FAILED);
+        task2.setSeq(2);
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId(workflowId);
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("workflow");
+        workflowDef.setVersion(1);
+        workflow.setWorkflowDefinition(workflowDef);
+        workflow.setStatus(WorkflowModel.Status.FAILED);
+        workflow.setReasonForIncompletion("task2 failed");
+        workflow.getTasks().addAll(Arrays.asList(task1, task2));
+        when(executionDAOFacade.getWorkflowModel(workflow.getWorkflowId(), true))
+                .thenReturn(workflow);
+
+        // from the moment the task is on its queue, a worker may have finished it
+        java.util.concurrent.atomic.AtomicBoolean queued =
+                new java.util.concurrent.atomic.AtomicBoolean();
+        List<String> savedAfterQueued = new ArrayList<>();
+        doAnswer(
+                        i -> {
+                            if (task2.getTaskId().equals(i.getArgument(1))) {
+                                queued.set(true);
+                            }
+                            return null;
+                        })
+                .when(queueDAO)
+                .push(anyString(), anyString(), anyInt(), anyLong());
+        doAnswer(
+                        i -> {
+                            if (queued.get() && i.getArgument(0) == task2) {
+                                savedAfterQueued.add("updateTask");
+                            }
+                            return null;
+                        })
+                .when(executionDAOFacade)
+                .updateTask(any());
+        doAnswer(
+                        i -> {
+                            List<TaskModel> tasks = i.getArgument(0);
+                            if (queued.get() && tasks.contains(task2)) {
+                                savedAfterQueued.add("updateTasks");
+                            }
+                            return null;
+                        })
+                .when(executionDAOFacade)
+                .updateTasks(any());
+
+        RerunWorkflowRequest rerunWorkflowRequest = new RerunWorkflowRequest();
+        rerunWorkflowRequest.setReRunFromWorkflowId(workflow.getWorkflowId());
+        rerunWorkflowRequest.setReRunFromTaskId(task2.getTaskId());
+        workflowExecutor.rerun(rerunWorkflowRequest);
+
+        assertTrue(queued.get());
+        assertEquals(TaskModel.Status.SCHEDULED, task2.getStatus());
+        assertEquals("the rerun saved the task after queueing it", List.of(), savedAfterQueued);
+    }
+
     @Test
     public void testRerunSubWorkflowWithTaskId() {
         IDGenerator idGenerator = new IDGenerator();
