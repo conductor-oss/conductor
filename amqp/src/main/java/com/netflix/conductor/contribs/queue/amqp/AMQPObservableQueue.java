@@ -64,6 +64,7 @@ public class AMQPObservableQueue implements ObservableQueue {
     private final boolean useExchange;
     private int pollTimeInMS;
     private AMQPConnection amqpConnection;
+    private final AMQPDeliveryChannelRegistry deliveryChannels = new AMQPDeliveryChannelRegistry();
 
     protected LinkedBlockingQueue<Message> messages = new LinkedBlockingQueue<>();
     private volatile boolean running;
@@ -206,13 +207,32 @@ public class AMQPObservableQueue implements ObservableQueue {
     }
 
     public void ackMsg(Message message) throws Exception {
+        AMQPDeliveryChannelRegistry.Delivery delivery = deliveryChannels.get(message);
+        if (delivery != null) {
+            synchronized (delivery) {
+                if (delivery.isSettled()) {
+                    throw new IllegalStateException(
+                            "Message has already been settled: " + message.getId());
+                }
+                ackMsg(message, delivery.channel());
+                delivery.markSettled();
+            }
+            return;
+        }
+        ackMsg(message, null);
+    }
+
+    private void ackMsg(Message message, Channel deliveryChannel) throws Exception {
         int retryIndex = 1;
         while (true) {
             try {
                 LOGGER.info("ACK message with delivery tag {}", message.getReceipt());
                 Channel chn =
-                        amqpConnection.getOrCreateChannel(
-                                ConnectionType.SUBSCRIBER, getSettings().getQueueOrExchangeName());
+                        deliveryChannel != null
+                                ? deliveryChannel
+                                : amqpConnection.getOrCreateChannel(
+                                        ConnectionType.SUBSCRIBER,
+                                        getSettings().getQueueOrExchangeName());
                 chn.basicAck(Long.parseLong(message.getReceipt()), false);
                 LOGGER.info("Ack'ed the message with delivery tag {}", message.getReceipt());
                 break;
@@ -240,36 +260,54 @@ public class AMQPObservableQueue implements ObservableQueue {
     @Override
     public void nack(List<Message> messages) {
         for (final Message message : messages) {
-            int retryIndex = 1;
-            while (true) {
-                try {
-                    LOGGER.info("NACK message with delivery tag {}", message.getReceipt());
-                    Channel chn =
-                            amqpConnection.getOrCreateChannel(
-                                    ConnectionType.SUBSCRIBER,
-                                    getSettings().getQueueOrExchangeName());
-                    chn.basicNack(Long.parseLong(message.getReceipt()), false, false);
-                    LOGGER.info("Nack'ed the message with delivery tag {}", message.getReceipt());
-                    break;
-                } catch (final Exception e) {
-                    AMQPRetryPattern retry = retrySettings;
-                    if (retry == null) {
-                        LOGGER.error(
-                                "Cannot NACK message with delivery tag {}",
-                                message.getReceipt(),
-                                e);
+            AMQPDeliveryChannelRegistry.Delivery delivery = deliveryChannels.get(message);
+            if (delivery != null) {
+                synchronized (delivery) {
+                    if (delivery.isSettled()) {
+                        LOGGER.error("Cannot NACK already settled message {}", message.getId());
+                        continue;
                     }
-                    try {
-                        retry.continueOrPropogate(e, retryIndex);
-                    } catch (Exception ex) {
-                        LOGGER.error(
-                                "Retries completed. Cannot NACK message with delivery tag {}",
-                                message.getReceipt(),
-                                e);
-                        break;
+                    if (nackMsg(message, delivery.channel())) {
+                        delivery.markSettled();
                     }
-                    retryIndex++;
                 }
+            } else {
+                nackMsg(message, null);
+            }
+        }
+    }
+
+    private boolean nackMsg(Message message, Channel deliveryChannel) {
+        int retryIndex = 1;
+        while (true) {
+            try {
+                LOGGER.info("NACK message with delivery tag {}", message.getReceipt());
+                Channel chn =
+                        deliveryChannel != null
+                                ? deliveryChannel
+                                : amqpConnection.getOrCreateChannel(
+                                        ConnectionType.SUBSCRIBER,
+                                        getSettings().getQueueOrExchangeName());
+                chn.basicNack(Long.parseLong(message.getReceipt()), false, false);
+                LOGGER.info("Nack'ed the message with delivery tag {}", message.getReceipt());
+                return true;
+            } catch (final Exception e) {
+                AMQPRetryPattern retry = retrySettings;
+                if (retry == null) {
+                    LOGGER.error(
+                            "Cannot NACK message with delivery tag {}", message.getReceipt(), e);
+                    return false;
+                }
+                try {
+                    retry.continueOrPropogate(e, retryIndex);
+                } catch (Exception ex) {
+                    LOGGER.error(
+                            "Retries completed. Cannot NACK message with delivery tag {}",
+                            message.getReceipt(),
+                            e);
+                    return false;
+                }
+                retryIndex++;
             }
         }
     }
@@ -389,9 +427,11 @@ public class AMQPObservableQueue implements ObservableQueue {
     public long size() {
         Channel chn = null;
         try {
+            deliveryChannels.reapCollectedMessages();
+            // Depth sampling must not replace the consumer channel during automatic recovery.
             chn =
                     amqpConnection.getOrCreateChannel(
-                            ConnectionType.SUBSCRIBER, getSettings().getQueueOrExchangeName());
+                            ConnectionType.PUBLISHER, getSettings().getQueueOrExchangeName());
 
             return switch (settings.getType()) {
                 case EXCHANGE -> chn.messageCount(settings.getExchangeBoundQueueName());
@@ -402,10 +442,10 @@ public class AMQPObservableQueue implements ObservableQueue {
         } finally {
             if (chn != null) {
                 try {
-                    amqpConnection.returnChannel(ConnectionType.SUBSCRIBER, chn);
+                    amqpConnection.returnChannel(ConnectionType.PUBLISHER, chn);
                 } catch (Exception e) {
                     LOGGER.error(
-                            "Failed to return the channel of {}. {}", ConnectionType.SUBSCRIBER, e);
+                            "Failed to return the channel of {}. {}", ConnectionType.PUBLISHER, e);
                 }
             }
         }
@@ -535,6 +575,14 @@ public class AMQPObservableQueue implements ObservableQueue {
         }
     }
 
+    void registerDeliveryChannel(Message message, Channel channel) {
+        deliveryChannels.register(message, channel);
+    }
+
+    int pendingDeliveryCount() {
+        return deliveryChannels.pendingCount();
+    }
+
     private AMQP.Exchange.DeclareOk getOrCreateExchange(ConnectionType connectionType)
             throws Exception {
         return getOrCreateExchange(
@@ -637,12 +685,12 @@ public class AMQPObservableQueue implements ObservableQueue {
 
     private void receiveMessagesFromQueue(String queueName) throws Exception {
         LOGGER.debug("Accessing channel for queue {}", queueName);
+        Channel consumerChannel =
+                amqpConnection.getOrCreateChannel(
+                        ConnectionType.SUBSCRIBER, settings.getQueueOrExchangeName());
 
         Consumer consumer =
-                new DefaultConsumer(
-                        amqpConnection.getOrCreateChannel(
-                                ConnectionType.SUBSCRIBER,
-                                getSettings().getQueueOrExchangeName())) {
+                new DefaultConsumer(consumerChannel) {
 
                     @Override
                     public void handleDelivery(
@@ -658,6 +706,7 @@ public class AMQPObservableQueue implements ObservableQueue {
                                             new GetResponse(
                                                     envelope, properties, body, Integer.MAX_VALUE));
                             if (message != null) {
+                                registerDeliveryChannel(message, consumerChannel);
                                 if (LOGGER.isDebugEnabled()) {
                                     LOGGER.debug(
                                             "Got message with ID {} and receipt {}",
@@ -688,10 +737,7 @@ public class AMQPObservableQueue implements ObservableQueue {
                     }
                 };
 
-        amqpConnection
-                .getOrCreateChannel(
-                        ConnectionType.SUBSCRIBER, getSettings().getQueueOrExchangeName())
-                .basicConsume(queueName, false, consumer);
+        consumerChannel.basicConsume(queueName, false, consumer);
         Monitors.recordEventQueueMessagesProcessed(getType(), queueName, messages.size());
     }
 
@@ -699,11 +745,11 @@ public class AMQPObservableQueue implements ObservableQueue {
             throws Exception {
         LOGGER.debug("Accessing channel for queue {}", queueName);
 
+        Channel consumerChannel =
+                amqpConnection.getOrCreateChannel(
+                        ConnectionType.SUBSCRIBER, settings.getQueueOrExchangeName());
         Consumer consumer =
-                new DefaultConsumer(
-                        amqpConnection.getOrCreateChannel(
-                                ConnectionType.SUBSCRIBER,
-                                getSettings().getQueueOrExchangeName())) {
+                new DefaultConsumer(consumerChannel) {
 
                     @Override
                     public void handleDelivery(
@@ -721,6 +767,7 @@ public class AMQPObservableQueue implements ObservableQueue {
                             if (message == null) {
                                 return;
                             }
+                            registerDeliveryChannel(message, consumerChannel);
                             LOGGER.info(
                                     "Got message with ID {} and receipt {}",
                                     message.getId(),
@@ -758,10 +805,7 @@ public class AMQPObservableQueue implements ObservableQueue {
                                 consumerTag);
                     }
                 };
-        amqpConnection
-                .getOrCreateChannel(
-                        ConnectionType.SUBSCRIBER, getSettings().getQueueOrExchangeName())
-                .basicConsume(queueName, false, consumer);
+        consumerChannel.basicConsume(queueName, false, consumer);
     }
 
     protected void receiveMessages() {

@@ -34,6 +34,7 @@ import com.rabbitmq.client.BlockedListener;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.RecoverableConnection;
 import com.rabbitmq.client.ShutdownListener;
 import com.rabbitmq.client.ShutdownSignalException;
 
@@ -279,7 +280,7 @@ public class AMQPConnection {
         }
     }
 
-    public void close() {
+    public synchronized void close() {
         LOGGER.info("Closing all connections and channels");
         try {
             closeChannelsInMap(ConnectionType.PUBLISHER);
@@ -288,6 +289,7 @@ public class AMQPConnection {
             closeConnection(subscriberConnection);
         } finally {
             availableChannelPool.clear();
+            subscriberReservedChannelPool.clear();
             publisherConnection = null;
             subscriberConnection = null;
         }
@@ -306,14 +308,30 @@ public class AMQPConnection {
     }
 
     private void closeConnection(Connection connection) {
-        if (connection == null || !connection.isOpen()) {
-            LOGGER.warn("Connection is null or closed already. Not closing it again");
-        } else {
+        if (connection == null) {
+            LOGGER.warn("Connection is null. Not closing it");
+            return;
+        }
+        if (connection instanceof RecoverableConnection) {
             try {
-                connection.close();
+                if (connection.isOpen()) {
+                    connection.close();
+                } else {
+                    connection.abort();
+                }
             } catch (Exception e) {
                 LOGGER.warn("Fail to close connection: {}", e.getMessage(), e);
             }
+            return;
+        }
+        if (!connection.isOpen()) {
+            LOGGER.warn("Connection is closed already. Not closing it again");
+            return;
+        }
+        try {
+            connection.close();
+        } catch (Exception e) {
+            LOGGER.warn("Fail to close connection: {}", e.getMessage(), e);
         }
     }
 
