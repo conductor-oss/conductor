@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import com.netflix.conductor.core.events.ScriptEvaluator;
+import com.netflix.conductor.core.exception.TerminateWorkflowException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -70,31 +71,25 @@ class GraalJSConfigurationTest {
     }
 
     @Test
-    void hostAccessIsEnabledByDefaultAndWarnsAtStartup() {
+    void hostAccessIsRestrictedByDefaultAndDoesNotWarn() {
         contextRunner.run(
                 context -> {
                     assertNull(context.getStartupFailure());
-                    // The warning must appear at startup, before any script is evaluated.
-                    assertTransitionWarning();
                     Map<String, Object> input = new HashMap<>();
-                    assertNull(ScriptEvaluator.eval("$.put('value', 1)", input));
-                    assertEquals(1, input.get("value"));
+                    input.put("value", 1);
+                    // Data reads remain available under the restricted default.
+                    assertEquals(1, ScriptEvaluator.eval("$.get('value')", input));
+                    // Arbitrary host method invocation (here, Map mutation) is not exposed.
+                    assertThrows(
+                            TerminateWorkflowException.class,
+                            () -> ScriptEvaluator.eval("$.put('other', 2)", input));
+                    // The unrestricted opt-out warning must NOT fire when restricted is in effect.
+                    assertFalse(
+                            logOutput
+                                    .toString()
+                                    .contains("GraalJS unrestricted Java host access is enabled"),
+                            logOutput.toString());
                 });
-    }
-
-    @Test
-    void unrestrictedHostAccessCanBeExplicitlyRetained() {
-        contextRunner
-                .withPropertyValues("conductor.app.graaljs.restricted-host-access=false")
-                .run(
-                        context -> {
-                            assertNull(context.getStartupFailure());
-                            assertTransitionWarning();
-                            assertEquals(
-                                    "java.util.HashMap",
-                                    ScriptEvaluator.eval(
-                                            "$.getClass().getName()", new HashMap<>()));
-                        });
     }
 
     @Test
@@ -102,16 +97,5 @@ class GraalJSConfigurationTest {
         contextRunner
                 .withPropertyValues("conductor.app.graaljs.restricted-host-access=invalid")
                 .run(context -> assertNotNull(context.getStartupFailure()));
-    }
-
-    private void assertTransitionWarning() {
-        String output = logOutput.toString();
-        assertTrue(
-                output.contains("WARN GraalJS unrestricted Java host access is enabled"), output);
-        assertTrue(output.contains("will be disabled by default in Conductor 3.35"), output);
-        assertTrue(
-                output.contains(
-                        "explicitly set conductor.app.graaljs.restricted-host-access=false"),
-                output);
     }
 }

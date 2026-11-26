@@ -29,7 +29,7 @@ public class ScriptEvaluator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ScriptEvaluator.class);
 
-    public static final boolean DEFAULT_RESTRICTED_HOST_ACCESS = false;
+    public static final boolean DEFAULT_RESTRICTED_HOST_ACCESS = true;
 
     private static final int DEFAULT_MAX_EXECUTION_SECONDS = 4;
     private static final int DEFAULT_CONTEXT_POOL_SIZE = 10;
@@ -93,9 +93,9 @@ public class ScriptEvaluator {
     private ScriptEvaluator() {}
 
     /**
-     * Configure Java host access before the evaluator is initialized. Unrestricted access remains
-     * the compatibility default for this release and must only be used with fully trusted scripts.
-     * Changing policies requires an application restart.
+     * Configure Java host access before the evaluator is initialized. Restricted access is the
+     * default; unrestricted access is an explicit opt-out and must only be used with fully trusted
+     * scripts. Changing policies requires an application restart.
      */
     public static synchronized void configureHostAccess(boolean restrictedHostAccess) {
         HostAccess configuredAccess =
@@ -107,16 +107,15 @@ public class ScriptEvaluator {
         hostAccess = configuredAccess;
         hostAccessConfigured = true;
         if (!restrictedHostAccess) {
-            // Warn during every application startup, even when the policy is already unrestricted.
+            // Warn during every application startup while the policy is the unrestricted opt-out.
             LOGGER.warn(
                     "GraalJS unrestricted Java host access is enabled "
                             + "(conductor.app.graaljs.restricted-host-access=false). "
-                            + "Unrestricted host access will be disabled by default in Conductor 3.35. "
-                            + "To retain it after upgrading, explicitly set "
-                            + "conductor.app.graaljs.restricted-host-access=false. "
-                            + "Set conductor.app.graaljs.restricted-host-access=true to restrict it now. "
-                            + "Scripts may invoke arbitrary Java methods on bound objects; "
-                            + "only use this mode with fully trusted scripts and workflow authors.");
+                            + "Restricted host access is the default as of Conductor 3.35; "
+                            + "this override re-enables arbitrary Java method invocation on bound objects. "
+                            + "Remove the override or set conductor.app.graaljs.restricted-host-access=true "
+                            + "to restrict host access. "
+                            + "Only use unrestricted mode with fully trusted scripts and workflow authors.");
         }
     }
 
