@@ -3,13 +3,19 @@ import { ActorRef } from "xstate";
 import { WorkflowDefinitionEvents } from "./state/types";
 
 /**
- * The code a native workflow's definition is generated from (`Class.method`), or undefined. The
- * SDK registers such a definition again from its code, so the editor shows it read only.
+ * The code a native workflow's definition is generated from, or undefined for a definition made
+ * here. `metadata.native.source` is set by every SDK in its own language's notation (Java
+ * `com.acme.Orders#ship`, Python `orders.flows:ship`); `class` and `method` are what older Java
+ * SDKs set. The SDK registers such a definition again from its code, so the editor shows it read
+ * only.
  */
 export const generatedFrom = (workflow?: any): string | undefined => {
   const native = workflow?.metadata?.native;
   if (!native) {
     return undefined;
+  }
+  if (native.source) {
+    return String(native.source);
   }
   return native.class && native.method
     ? `${native.class}.${native.method}`

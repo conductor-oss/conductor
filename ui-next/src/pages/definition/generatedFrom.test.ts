@@ -16,6 +16,21 @@ describe("generatedFrom", () => {
     );
   });
 
+  it("prefers the source the SDK names, in its language's notation", () => {
+    expect(
+      generatedFrom({
+        name: "orders",
+        metadata: {
+          native: {
+            source: "orders.flows:ship",
+            class: "ignored",
+            method: "ignored",
+          },
+        },
+      }),
+    ).toBe("orders.flows:ship");
+  });
+
   it("is nothing for a definition edited here", () => {
     expect(generatedFrom({ name: "plain", metadata: {} })).toBeUndefined();
     expect(generatedFrom(undefined)).toBeUndefined();

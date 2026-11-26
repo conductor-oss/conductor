@@ -142,4 +142,28 @@ describe("withWhatIsAhead", () => {
     const own = [at("a", 1), at("z", 99)];
     expect(withWhatIsAhead(own, [at("a", 1), at("b", 2)])).toEqual(own);
   });
+
+  it("places the code from an earlier step when the last one is drawn differently", () => {
+    // lanes started inside an if's arms and joined after it: the code drew no fork there
+    const own = [at("a", 1), at("fork", 5, { type: "FORK_JOIN" })];
+    const shown = withWhatIsAhead(own, [at("a", 1), at("b", 3), at("c", 9)]);
+    // b is above the fork, so behind; c is below it, so ahead
+    expect(shown.map((t: any) => t.taskReferenceName)).toEqual([
+      "a",
+      "fork",
+      "c",
+    ]);
+  });
+
+  it("matches a fan-out drawn as a dynamic fork with the fork of the lanes it ran", () => {
+    const own = [at("fanout", 4, { type: "FORK_JOIN" })];
+    const shown = withWhatIsAhead(own, [
+      at("fanout", 4, { type: "FORK_JOIN_DYNAMIC" }),
+      at("next", 6),
+    ]);
+    expect(shown.map((t: any) => t.taskReferenceName)).toEqual([
+      "fanout",
+      "next",
+    ]);
+  });
 });

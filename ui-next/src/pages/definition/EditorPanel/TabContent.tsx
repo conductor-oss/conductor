@@ -39,7 +39,11 @@ interface TabContentProps {
   getTabContentHeight: () => string;
 }
 
-/** Disables every input inside, for a definition generated from code. */
+/**
+ * Disables every input inside, for a definition generated from code, and makes it look disabled:
+ * the fieldset disables the native controls, but MUI only styles a control it was told is
+ * disabled, so the fields are dimmed here and the add / remove buttons hidden.
+ */
 const ReadOnlyFields = ({
   readOnly,
   children,
@@ -48,12 +52,24 @@ const ReadOnlyFields = ({
   children: ReactNode;
 }) =>
   readOnly ? (
-    <fieldset
+    <Box
+      component="fieldset"
       disabled
-      style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}
+      id="native-read-only-fields"
+      sx={{
+        border: 0,
+        margin: 0,
+        padding: 0,
+        minWidth: 0,
+        "& .MuiButton-root, & .MuiIconButton-root": { display: "none" },
+        "& .MuiInputBase-root, & .MuiSwitch-root, & .MuiCheckbox-root": {
+          opacity: 0.6,
+          pointerEvents: "none",
+        },
+      }}
     >
       {children}
-    </fieldset>
+    </Box>
   ) : (
     <>{children}</>
   );

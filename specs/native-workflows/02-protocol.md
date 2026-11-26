@@ -70,7 +70,8 @@ present, which the test harness uses. Shown with the shape of the `DiscoveryTest
 | Key | Written by | Meaning |
 |---|---|---|
 | `inputParameters` | `Registration.inputParameters` | the components of the method's single record parameter, or the parameter names when there are several; empty for a single non-record parameter or none |
-| `metadata.native.class`, `method` | `Registration.skeleton` | the code the definition is generated from; the UI shows the definition read only |
+| `metadata.native.class`, `method` | `Registration.skeleton` | the Java class and method the definition is generated from |
+| `metadata.native.source` | `Registration.skeleton` | where the code is, as a display string in the SDK's own language notation (Java `com.acme.Orders#ship`, Python `orders.flows:ship`, TypeScript `src/orders.ts#ship`). Every SDK sets it; the UI shows it (falling back to `class.method`), and shows the definition read only whenever `metadata.native` is present |
 | `metadata.native.continuationTimeoutSeconds`, `handlers` | `Registration.skeleton` | the continuation lease (default 30), and whether the class has handler methods (the server then keeps a handler lane) |
 | `inputSchema`, `outputSchema`, `enforceSchema` | `Registration.Schemas` from `JsonSchemas` | the workflow method's input and output as JSON Schemas, registered by name (`<workflow>_input`, `_output`) and versioned by content; never enforced. Each worker task's definition, and the inline one in `tasks`, references its own (`<task>_input`, `_output`) the same way |
 | `tasks` | `Replayer.discover` + `Registration.inlineTaskDefinitions` | the discovered graph; every `SIMPLE` entry without a `taskDefinition` gets an inline one (`retryCount` 3, `timeoutSeconds` 0, `responseTimeoutSeconds` 120, `ownerEmail native@conductor.local`), at any depth, so registration validates |

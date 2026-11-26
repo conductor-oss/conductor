@@ -151,8 +151,9 @@ const GraphPanel = ({
 
       {fromCode ? (
         <MuiAlert severity="info" id="generated-from-code-alert">
-          Generated from code: {fromCode}. This definition is read only: change
-          the code, and the SDK registers it again.
+          <strong>Native Workflow Preview. Editing is disabled</strong>
+          <br />
+          Defined in code: <code>{fromCode}</code>
         </MuiAlert>
       ) : null}
 

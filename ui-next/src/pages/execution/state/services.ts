@@ -27,10 +27,32 @@ const childLists = (t: any): any[][] => [
 const refsOf = (list: any[] = []): string[] =>
   list.flatMap((t) => [t.taskReferenceName, ...childLists(t).flatMap(refsOf)]);
 
+/** A call site, `Class.method:line`, as its method and line. */
+const siteOf = (t: any): { method: string; line: number } | undefined => {
+  const site: string | undefined = t?.metadata?.site;
+  const colon = site?.lastIndexOf(":") ?? -1;
+  if (!site || colon < 0) return undefined;
+  const line = Number(site.slice(colon + 1));
+  return Number.isFinite(line)
+    ? { method: site.slice(0, colon), line }
+    : undefined;
+};
+
+/** Whether {@code r} is written below {@code t} in the same method (unknown: assume it is). */
+const below = (r: any, t: any): boolean => {
+  const a = siteOf(r);
+  const b = siteOf(t);
+  return !a || !b || a.method !== b.method || a.line > b.line;
+};
+
+// a fan-out is drawn as a dynamic fork from the code, and as the fork of the lanes it ran
+const kindOf = (t: any): string | undefined =>
+  t?.type === "FORK_JOIN_DYNAMIC" ? "FORK_JOIN" : t?.type;
+
 const sameStep = (a: any, b: any): boolean =>
   a?.metadata?.site != null &&
   a.metadata.site === b?.metadata?.site &&
-  a.type === b?.type;
+  kindOf(a) === kindOf(b);
 
 /**
  * A running native execution's definition with what the code has yet to do: in each list the code
@@ -70,15 +92,31 @@ export const withWhatIsAhead = (own: any[], registered: any[]): any[] => {
   };
   const extend = (list: any[], regList: any[]): any[] => {
     const ran = list.filter((t) => !isPreview(t));
-    const last = ran[ran.length - 1];
+    // the latest step that ran which the registered definition has: usually the last one; an
+    // earlier one when the code drew the last differently (lanes started inside an if's arms and
+    // joined after it), so the preview still shows what comes after
+    let found = ran.length - 1;
     let at = -1;
-    regList.forEach((r, i) => {
-      if (sameStep(r, last)) at = i; // the last: a fork and its join share their site
-    });
+    for (; found >= 0 && at < 0; found--) {
+      regList.forEach((r, i) => {
+        if (sameStep(r, ran[found])) at = i; // the last: a fork and its join share their site
+      });
+    }
+    found++;
     if (at < 0) return list;
+    const last = ran[found];
     // what the code is inside now: the last step, or the fork its join waits for
-    const inside = new Set([last]);
-    if (last.type === "JOIN" && ran.length > 1) inside.add(ran[ran.length - 2]);
+    const inside = new Set(found === ran.length - 1 ? [last] : []);
+    if (found === ran.length - 1 && last.type === "JOIN" && ran.length > 1) {
+      inside.add(ran[ran.length - 2]);
+    }
+    // a registered step whose call site already ran is not ahead; when placed from an earlier
+    // step, neither is one written above the last step that ran in the same method
+    const lastRan = ran[ran.length - 1];
+    const ahead = regList
+      .slice(at + 1)
+      .filter((r) => !ran.some((t) => sameStep(r, t)))
+      .filter((r) => found === ran.length - 1 || below(r, lastRan));
     const out = list.map((t) => {
       const reg = inside.has(t)
         ? regList.find((r) => sameStep(r, t))
@@ -104,7 +142,7 @@ export const withWhatIsAhead = (own: any[], registered: any[]): any[] => {
       if (t.forkTasks) c.forkTasks = t.forkTasks.map(into);
       return c;
     });
-    return [...out, ...regList.slice(at + 1).map(asPreview)];
+    return [...out, ...ahead.map(asPreview)];
   };
   return extend(own, registered);
 };

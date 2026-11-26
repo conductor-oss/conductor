@@ -1,5 +1,6 @@
 import { KeyValueTable, NavLink, Paper } from "components";
 import { type KeyValueTableRow } from "components/KeyValueTable";
+import { generatedFrom } from "pages/definition/generatedFrom";
 import { WorkflowExecution } from "types/Execution";
 import { useFetch } from "utils/query";
 import { continuationsOf, heldReason } from "./held";
@@ -110,6 +111,12 @@ export default function ExecutionSummary({
         label: "Native workflow",
         value: `${codeTypeOf(execution) ?? "code"} · ${appliedContinuations(execution)} continuation(s) applied`,
       },
+      // where its code is, as its SDK names it
+      execution.nativeState &&
+        generatedFrom(execution.workflowDefinition) && {
+          label: "Defined in code",
+          value: generatedFrom(execution.workflowDefinition),
+        },
       first &&
         first.state !== "applied" && {
           label: "First continuation",
