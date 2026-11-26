@@ -279,7 +279,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
         // the message is reserved for responseTimeout (120s) so a running task keeps its queue
         // message and is not redelivered/re-queued mid-execution (issue #1321)
-        1 * queueDAO.setUnackTimeout(queueName, taskId, 120_000L)
+        1 * queueDAO.setUnackTimeout(queueName, taskId, 121_000L) // responseTimeout + 1 s
         1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.COMPLETED }
     }
 
@@ -299,7 +299,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         1 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
         // no responseTimeout set -> falls back to the default (TaskDef.ONE_HOUR = 3600s)
-        1 * queueDAO.setUnackTimeout(queueName, taskId, 3_600_000L)
+        1 * queueDAO.setUnackTimeout(queueName, taskId, 3_601_000L) // the default responseTimeout + 1 s
         1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.COMPLETED }
     }
 
@@ -320,7 +320,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
         // the reserve fails (e.g. transient queue error); the message is still leased at the queue's
         // default unack timeout, so starting the task would risk a parallel re-run on redelivery (#1321)
-        1 * queueDAO.setUnackTimeout(queueName, taskId, 120_000L) >> { throw new RuntimeException("queue unavailable") }
+        1 * queueDAO.setUnackTimeout(queueName, taskId, 121_000L) >> { throw new RuntimeException("queue unavailable") }
         // so the task is NOT started and the message is left to redeliver and retry cleanly
         0 * workflowSystemTask.start(*_)
         0 * workflowSystemTask.execute(*_)
@@ -379,7 +379,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         1 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
         // re-reserved and re-started (self-healing retry), NOT timed out
-        1 * queueDAO.setUnackTimeout(queueName, taskId, 2_000L)
+        1 * queueDAO.setUnackTimeout(queueName, taskId, 3_000L) // the short window + 1 s
         1 * workflowSystemTask.start(workflow, task, workflowExecutor)
         0 * workflowSystemTask.execute(*_)
 
@@ -405,7 +405,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         1 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
         // 2 x systemTaskWorkerCallbackDuration (1s in this spec), not the 3600s responseTimeout
-        1 * queueDAO.setUnackTimeout(queueName, taskId, 2_000L)
+        1 * queueDAO.setUnackTimeout(queueName, taskId, 3_000L) // the short window + 1 s
         1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.COMPLETED }
     }
 

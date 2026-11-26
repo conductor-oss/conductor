@@ -156,8 +156,10 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
     public boolean setUnackTimeout(String queueName, String messageId, long unackTimeout) {
         long updatedOffsetTimeInSecond = unackTimeout / 1000;
 
+        // popped = false: the message is due again at exactly the new time, through the normal
+        // pop, rather than when processAllUnacks next finds it more than 60 s past due.
         final String UPDATE_UNACK_TIMEOUT =
-                "UPDATE queue_message SET offset_time_seconds = ?, deliver_on = TIMESTAMPADD(SECOND, ?, CURRENT_TIMESTAMP) WHERE queue_name = ? AND message_id = ?";
+                "UPDATE queue_message SET popped = false, offset_time_seconds = ?, deliver_on = TIMESTAMPADD(SECOND, ?, CURRENT_TIMESTAMP) WHERE queue_name = ? AND message_id = ?";
 
         return queryWithTransaction(
                         UPDATE_UNACK_TIMEOUT,
@@ -176,8 +178,10 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
 
         // Only update when the proposed deliver_on is earlier than what is already set,
         // mirroring the ZADD LT semantics used by the Redis implementation.
+        // popped = false: the message is due again at exactly the new time, through the normal
+        // pop, rather than when processAllUnacks next finds it more than 60 s past due.
         final String UPDATE_UNACK_TIMEOUT_IF_SHORTER =
-                "UPDATE queue_message SET offset_time_seconds = ?, deliver_on = TIMESTAMPADD(SECOND, ?, CURRENT_TIMESTAMP)"
+                "UPDATE queue_message SET popped = false, offset_time_seconds = ?, deliver_on = TIMESTAMPADD(SECOND, ?, CURRENT_TIMESTAMP)"
                         + " WHERE queue_name = ? AND message_id = ? AND deliver_on > TIMESTAMPADD(SECOND, ?, CURRENT_TIMESTAMP)";
 
         return queryWithTransaction(

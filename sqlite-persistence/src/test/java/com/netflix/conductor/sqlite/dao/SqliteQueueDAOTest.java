@@ -418,6 +418,23 @@ public class SqliteQueueDAOTest {
         }
     }
 
+    /**
+     * An unack timeout of N on a popped message makes it due again after N seconds, as on the Redis
+     * queue, not when processAllUnacks next finds it more than 60 s past due.
+     */
+    @Test
+    public void aPoppedMessageIsDueAgainWhenItsUnackTimeoutRunsOut() {
+        queueDAO.push("unack_timeout", "msg-1", 0);
+        assertEquals(List.of("msg-1"), queueDAO.pop("unack_timeout", 1, 100));
+
+        // two seconds: a deliver_on stored to the whole second (MySQL) is at least one ahead
+        assertTrue(queueDAO.setUnackTimeout("unack_timeout", "msg-1", 2_000));
+        assertEquals(List.of(), queueDAO.pop("unack_timeout", 1, 100));
+
+        await().atMost(6, TimeUnit.SECONDS)
+                .until(() -> queueDAO.pop("unack_timeout", 1, 100).equals(List.of("msg-1")));
+    }
+
     @Test
     public void setUnackTimeoutIfShorterShortensDueTime() {
         String queueName = "setUnackIfShorter_shorten";
