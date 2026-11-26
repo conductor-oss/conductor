@@ -101,8 +101,8 @@ public class WorkerTaskAnnotationScanner implements InitializingBean {
                                 taskType);
 
                         AnnotatedWorkflowSystemTask task =
-                                new AnnotatedWorkflowSystemTask(taskType, method, bean, annotation,
-                                        delegatedTokenInjector);
+                                new AnnotatedWorkflowSystemTask(
+                                        taskType, method, bean, annotation, delegatedTokenInjector);
 
                         // Add to existing asyncSystemTasks collection
                         asyncSystemTasks.add(task);

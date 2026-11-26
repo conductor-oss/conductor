@@ -35,8 +35,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-import tools.jackson.databind.JsonNode;
 import okhttp3.OkHttpClient;
+import tools.jackson.databind.JsonNode;
 
 /**
  * {@link ConductorAgentClient} backed by the OpenAI Assistants API.

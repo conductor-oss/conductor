@@ -28,13 +28,13 @@ import com.azure.core.credential.TokenRequestContext;
 import com.azure.identity.ClientSecretCredentialBuilder;
 import com.azure.identity.DefaultAzureCredentialBuilder;
 import com.azure.identity.ManagedIdentityCredentialBuilder;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * How a call to Microsoft Foundry authenticates, in one of four ways plus an on-behalf-of mode.

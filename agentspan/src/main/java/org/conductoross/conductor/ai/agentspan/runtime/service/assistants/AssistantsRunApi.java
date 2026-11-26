@@ -25,15 +25,15 @@ import org.slf4j.LoggerFactory;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ArrayNode;
-import tools.jackson.databind.node.ObjectNode;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * The OpenAI Assistants thread-and-run protocol, shared by every endpoint that speaks it — OpenAI
@@ -343,12 +343,7 @@ public class AssistantsRunApi {
     }
 
     private JsonNode post(Target target, AssistantsAuth auth, String path, ObjectNode body) {
-        byte[] bytes;
-        try {
-            bytes = MAPPER.writeValueAsBytes(body);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to serialize request body", e);
-        }
+        byte[] bytes = MAPPER.writeValueAsBytes(body);
         return execute(
                 request(target, auth, path, null).post(RequestBody.create(bytes, JSON)).build(),
                 path);

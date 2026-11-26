@@ -17,8 +17,8 @@ import java.lang.reflect.Method;
 import java.util.Optional;
 
 import org.conductoross.conductor.common.spi.DelegatedTokenInjector;
-import org.springframework.lang.Nullable;
 import org.conductoross.conductor.core.execution.tasks.TaskCancellationHandler;
+import org.springframework.lang.Nullable;
 
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
@@ -50,11 +50,13 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
 
     private final AnnotatedMethodResultMapper resultMapper;
 
-    @Nullable
-    private final DelegatedTokenInjector delegatedTokenInjector;
+    @Nullable private final DelegatedTokenInjector delegatedTokenInjector;
 
     public AnnotatedWorkflowSystemTask(
-            String taskType, Method method, Object bean, WorkerTask annotation,
+            String taskType,
+            Method method,
+            Object bean,
+            WorkerTask annotation,
             @Nullable DelegatedTokenInjector delegatedTokenInjector) {
         super(taskType);
         this.method = method;
@@ -102,8 +104,9 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
 
             // Delegated access (approach 2): enterprise injects a stored per-user Bearer token.
             if (delegatedTokenInjector != null) {
-                String failReason = delegatedTokenInjector.resolveToken(
-                        task.getInputData(), workflow.getCreatedBy());
+                String failReason =
+                        delegatedTokenInjector.resolveToken(
+                                task.getInputData(), workflow.getCreatedBy());
                 if (failReason != null) {
                     task.setStatus(TaskModel.Status.FAILED);
                     task.setReasonForIncompletion(failReason);

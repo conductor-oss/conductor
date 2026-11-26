@@ -351,7 +351,7 @@ public class AgentService {
         Map<String, String> values = new java.util.LinkedHashMap<>();
         secretJson
                 .properties()
-                .forEachRemaining(
+                .forEach(
                         field -> {
                             if (field.getValue().isValueNode()) {
                                 values.put(field.getKey(), field.getValue().asText());
