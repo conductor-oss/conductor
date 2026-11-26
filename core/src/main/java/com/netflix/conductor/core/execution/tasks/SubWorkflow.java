@@ -18,10 +18,12 @@ import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.workflow.IdempotencyStrategy;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.exception.TransientException;
@@ -44,11 +46,23 @@ public class SubWorkflow extends WorkflowSystemTask {
 
     private final ObjectMapper objectMapper;
     private final IDGenerator idGenerator;
+    private final boolean sync;
 
     public SubWorkflow(ObjectMapper objectMapper, IDGenerator idGenerator) {
+        this(objectMapper, idGenerator, false);
+    }
+
+    @Autowired
+    public SubWorkflow(
+            ObjectMapper objectMapper, IDGenerator idGenerator, ConductorProperties properties) {
+        this(objectMapper, idGenerator, properties.isSubWorkflowSync());
+    }
+
+    SubWorkflow(ObjectMapper objectMapper, IDGenerator idGenerator, boolean sync) {
         super(TASK_TYPE_SUB_WORKFLOW);
         this.objectMapper = objectMapper;
         this.idGenerator = idGenerator;
+        this.sync = sync;
     }
 
     @SuppressWarnings("unchecked")
@@ -326,7 +340,8 @@ public class SubWorkflow extends WorkflowSystemTask {
 
     @Override
     public boolean isAsync() {
-        return true;
+        // conductor.app.subWorkflowSync: start the child inside the parent's decide.
+        return !sync;
     }
 
     private void updateTaskStatus(WorkflowModel subworkflow, TaskModel task) {
