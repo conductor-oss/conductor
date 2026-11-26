@@ -13,18 +13,18 @@
 package com.netflix.conductor.tasks.http.providers;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 
 import org.apache.hc.client5.http.classic.HttpClient;
-import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.core5.util.TimeValue;
 import org.apache.hc.core5.util.Timeout;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
@@ -32,58 +32,62 @@ import org.springframework.web.client.RestTemplate;
 import com.netflix.conductor.tasks.http.HttpTask;
 
 /**
- * Provider for a customized RestTemplateBuilder. This class provides a default {@link
- * RestTemplateBuilder} which can be configured or extended as needed.
+ * Provides the {@link RestTemplate} for an HTTP task call. All calls share one pooled {@link
+ * HttpClient}; each call's read and connect timeouts are set on its own request.
  */
 @Component
 public class DefaultRestTemplateProvider implements RestTemplateProvider {
 
-    private final ThreadLocal<RestTemplateBuilder> threadLocalRestTemplateBuilder;
+    /** Pool size of the shared client. */
+    private static final int MAX_CONNECTIONS = 500;
 
     private final int defaultReadTimeout;
     private final int defaultConnectTimeout;
 
+    // Built once: a client per call opened a new connection every time, and new converters per
+    // call re-scanned the classpath for Jackson modules.
+    private final HttpClient httpClient =
+            HttpClients.custom()
+                    .setConnectionManager(
+                            PoolingHttpClientConnectionManagerBuilder.create()
+                                    .setMaxConnTotal(MAX_CONNECTIONS)
+                                    .setMaxConnPerRoute(MAX_CONNECTIONS)
+                                    .build())
+                    .evictIdleConnections(TimeValue.ofSeconds(30))
+                    .build();
+    private final List<HttpMessageConverter<?>> messageConverters =
+            new RestTemplate().getMessageConverters();
+
     public DefaultRestTemplateProvider(
             @Value("${conductor.tasks.http.readTimeout:150ms}") Duration readTimeout,
             @Value("${conductor.tasks.http.connectTimeout:100ms}") Duration connectTimeout) {
-        this.threadLocalRestTemplateBuilder = ThreadLocal.withInitial(RestTemplateBuilder::new);
         this.defaultReadTimeout = (int) readTimeout.toMillis();
         this.defaultConnectTimeout = (int) connectTimeout.toMillis();
     }
 
     @Override
     public @NonNull RestTemplate getRestTemplate(@NonNull HttpTask.Input input) {
-        int readTimeoutMillis =
-                Optional.ofNullable(input.getReadTimeOut()).orElse(defaultReadTimeout);
-        int connectTimeoutMillis =
-                Optional.ofNullable(input.getConnectionTimeOut()).orElse(defaultConnectTimeout);
-        Duration readTimeout = Duration.ofMillis(readTimeoutMillis);
-
-        RestTemplate restTemplate =
-                threadLocalRestTemplateBuilder.get().readTimeout(readTimeout).build();
-
-        // The connect timeout belongs on the connection manager rather than the request factory:
-        // Framework 7 dropped HttpComponentsClientHttpRequestFactory.setConnectTimeout, since
-        // HttpClient 5 owns connection establishment.
-        ConnectionConfig connectionConfig =
-                ConnectionConfig.custom()
-                        .setConnectTimeout(Timeout.ofMilliseconds(connectTimeoutMillis))
-                        .setSocketTimeout(Timeout.ofMilliseconds(readTimeoutMillis))
-                        .build();
-        PoolingHttpClientConnectionManager connectionManager =
-                PoolingHttpClientConnectionManagerBuilder.create()
-                        .setDefaultConnectionConfig(connectionConfig)
-                        .build();
-        RequestConfig requestConfig =
-                RequestConfig.custom()
-                        .setResponseTimeout(Timeout.ofMilliseconds(readTimeoutMillis))
-                        .build();
-        HttpClient httpClient =
-                HttpClients.custom()
-                        .setConnectionManager(connectionManager)
-                        .setDefaultRequestConfig(requestConfig)
-                        .build();
-        restTemplate.setRequestFactory(new HttpComponentsClientHttpRequestFactory(httpClient));
+        Timeout readTimeout =
+                Timeout.ofMilliseconds(
+                        Optional.ofNullable(input.getReadTimeOut()).orElse(defaultReadTimeout));
+        Timeout connectTimeout =
+                Timeout.ofMilliseconds(
+                        Optional.ofNullable(input.getConnectionTimeOut())
+                                .orElse(defaultConnectTimeout));
+        RestTemplate restTemplate = new RestTemplate(messageConverters);
+        restTemplate.setRequestFactory(
+                new HttpComponentsClientHttpRequestFactory(httpClient) {
+                    @Override
+                    protected RequestConfig mergeRequestConfig(RequestConfig clientConfig) {
+                        // HttpClient applies both per request, also on a pooled connection. The
+                        // request's connect timeout is deprecated in favor of the connection
+                        // manager's, which is one value for the whole pool; it is still honored.
+                        return RequestConfig.copy(clientConfig)
+                                .setConnectTimeout(connectTimeout)
+                                .setResponseTimeout(readTimeout)
+                                .build();
+                    }
+                });
         return restTemplate;
     }
 }
