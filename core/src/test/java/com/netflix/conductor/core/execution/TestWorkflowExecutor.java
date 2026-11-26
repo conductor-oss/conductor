@@ -844,6 +844,73 @@ public class TestWorkflowExecutor {
         assertEquals(workflowDef, argumentCaptor.getAllValues().get(1).getWorkflowDefinition());
     }
 
+    /**
+     * Restart removes the workflow and creates it again, and createWorkflow stores nothing when it
+     * cannot queue the decider message. The workflow must still be found afterwards, TERMINATED,
+     * and the caller must get the error that stopped the restart.
+     */
+    @Test
+    public void aRestartThatCannotQueueTheWorkflowLeavesItTerminated() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("testDef");
+        workflowDef.setVersion(1);
+        workflowDef.setRestartable(true);
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(workflowDef);
+        workflow.setWorkflowId("restart-push-fails");
+        workflow.setStatus(WorkflowModel.Status.FAILED);
+
+        // The execution store, behind a facade that queues before it stores: a workflow that is
+        // not terminal is not stored when the push fails, and an update needs a stored workflow.
+        Map<String, WorkflowModel> store = new HashMap<>();
+        store.put(workflow.getWorkflowId(), workflow);
+        TransientException pushFailure = new TransientException("queue unavailable");
+        Answer<WorkflowModel> stored =
+                invocation -> {
+                    String workflowId = invocation.getArgument(0);
+                    WorkflowModel found = store.get(workflowId);
+                    if (found == null) {
+                        throw new NotFoundException("No such workflow found by id: %s", workflowId);
+                    }
+                    return found;
+                };
+        when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenAnswer(stored);
+        when(executionDAOFacade.getWorkflowModelFromExecutionDAO(anyString(), anyBoolean()))
+                .thenAnswer(stored);
+        doAnswer(invocation -> store.remove(invocation.<String>getArgument(0)))
+                .when(executionDAOFacade)
+                .resetWorkflow(anyString());
+        when(executionDAOFacade.createWorkflow(any()))
+                .thenAnswer(
+                        invocation -> {
+                            WorkflowModel created = invocation.getArgument(0);
+                            if (!created.getStatus().isTerminal()) {
+                                throw pushFailure;
+                            }
+                            store.put(created.getWorkflowId(), created);
+                            return created.getWorkflowId();
+                        });
+        when(executionDAOFacade.updateWorkflow(any()))
+                .thenAnswer(
+                        invocation -> {
+                            WorkflowModel updated = invocation.getArgument(0);
+                            store.replace(updated.getWorkflowId(), updated);
+                            return updated.getWorkflowId();
+                        });
+
+        TransientException thrown =
+                assertThrows(
+                        TransientException.class,
+                        () -> workflowExecutor.restart(workflow.getWorkflowId(), false));
+
+        assertSame(pushFailure, thrown);
+        WorkflowModel found = store.get(workflow.getWorkflowId());
+        assertNotNull("the workflow must still be stored", found);
+        assertEquals(WorkflowModel.Status.TERMINATED, found.getStatus());
+        assertEquals("Error when restarting the workflow", found.getReasonForIncompletion());
+    }
+
     @Test
     public void testStartWorkflowIdempotentReturnsExistingWorkflowModel() {
         WorkflowDef workflowDef = new WorkflowDef();

@@ -445,6 +445,45 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
                                 == 1);
     }
 
+    /**
+     * Postpones the message in one transaction, so a crash cannot drop it. The row is updated in
+     * place instead of deleted and inserted, because a locking read can skip a row replaced that
+     * way. The message is inserted only when there is no row to update. The payload is cleared.
+     */
+    @Override
+    public boolean postpone(
+            String queueName, String messageId, int priority, long postponeDurationInSeconds) {
+        final String POSTPONE_MESSAGE =
+                "UPDATE queue_message SET payload = NULL, priority = ?, offset_time_seconds = ?, deliver_on = (current_timestamp + (? ||' seconds')::interval), popped = false WHERE queue_name = ? AND message_id = ?";
+        withTransaction(
+                tx -> {
+                    int rowsUpdated =
+                            query(
+                                    tx,
+                                    POSTPONE_MESSAGE,
+                                    q ->
+                                            q.addParameter(priority)
+                                                    .addParameter(postponeDurationInSeconds)
+                                                    .addParameter(postponeDurationInSeconds)
+                                                    .addParameter(queueName)
+                                                    .addParameter(messageId)
+                                                    .executeUpdate());
+                    if (rowsUpdated == 0) {
+                        pushMessage(
+                                tx,
+                                queueName,
+                                messageId,
+                                null,
+                                priority,
+                                postponeDurationInSeconds);
+                    } else if (queueListener != null) {
+                        // the notify trigger ignores updates that leave popped unchanged
+                        execute(tx, "SELECT queue_notify()", q -> q.executeScalar());
+                    }
+                });
+        return true;
+    }
+
     private boolean existsMessage(Connection connection, String queueName, String messageId) {
         final String EXISTS_MESSAGE =
                 "SELECT EXISTS(SELECT 1 FROM queue_message WHERE queue_name = ? AND message_id = ?) FOR SHARE";

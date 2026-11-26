@@ -403,6 +403,42 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
                                 == 1);
     }
 
+    /**
+     * Postpones the message in one transaction, so a crash cannot drop it. The row is updated in
+     * place, and the message is inserted only when there is no row to update. The payload is
+     * cleared.
+     */
+    @Override
+    public boolean postpone(
+            String queueName, String messageId, int priority, long postponeDurationInSeconds) {
+        final String POSTPONE_MESSAGE =
+                "UPDATE queue_message SET payload = NULL, priority = ?, offset_time_seconds = ?, deliver_on = strftime('%Y-%m-%d %H:%M:%f', 'now', '+' || ? || ' seconds'), popped = false WHERE queue_name = ? AND message_id = ?";
+        withTransaction(
+                tx -> {
+                    int rowsUpdated =
+                            query(
+                                    tx,
+                                    POSTPONE_MESSAGE,
+                                    q ->
+                                            q.addParameter(priority)
+                                                    .addParameter(postponeDurationInSeconds)
+                                                    .addParameter(postponeDurationInSeconds)
+                                                    .addParameter(queueName)
+                                                    .addParameter(messageId)
+                                                    .executeUpdate());
+                    if (rowsUpdated == 0) {
+                        pushMessage(
+                                tx,
+                                queueName,
+                                messageId,
+                                null,
+                                priority,
+                                postponeDurationInSeconds);
+                    }
+                });
+        return true;
+    }
+
     private boolean existsMessage(Connection connection, String queueName, String messageId) {
         final String EXISTS_MESSAGE =
                 "SELECT EXISTS(SELECT 1 FROM queue_message WHERE queue_name = ? AND message_id = ?)";

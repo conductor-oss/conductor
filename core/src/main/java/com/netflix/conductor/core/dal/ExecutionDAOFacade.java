@@ -270,13 +270,20 @@ public class ExecutionDAOFacade {
      */
     public String createWorkflow(WorkflowModel workflowModel) {
         externalizeWorkflowData(workflowModel);
+        // The decider message is queued before the workflow is stored, so every stored workflow
+        // that is not terminal has one, and nothing is stored when queueing fails. A stop between
+        // the two writes leaves a message without a workflow, which the sweeper removes when it
+        // finds none. The message waits out the workflow offset before the sweeper takes it. A
+        // start also holds the workflow lock; restart takes no lock and relies on the offset
+        // alone. A terminal workflow, such as a failed restart stored back, gets no message.
+        if (!workflowModel.getStatus().isTerminal()) {
+            queueDAO.push(
+                    DECIDER_QUEUE,
+                    workflowModel.getWorkflowId(),
+                    workflowModel.getPriority(),
+                    properties.getWorkflowOffsetTimeout().getSeconds());
+        }
         executionDAO.createWorkflow(workflowModel);
-        // Add to decider queue
-        queueDAO.push(
-                DECIDER_QUEUE,
-                workflowModel.getWorkflowId(),
-                workflowModel.getPriority(),
-                properties.getWorkflowOffsetTimeout().getSeconds());
         if (properties.isAsyncIndexingEnabled()) {
             indexDAO.asyncIndexWorkflow(new WorkflowSummary(workflowModel.toWorkflow()));
         } else {

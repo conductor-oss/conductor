@@ -35,6 +35,7 @@ import org.testcontainers.shaded.com.fasterxml.jackson.databind.node.ObjectNode;
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.postgres.config.PostgresConfiguration;
 import com.netflix.conductor.postgres.config.PostgresProperties;
+import com.netflix.conductor.postgres.dao.PostgresQueueDAO;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.*;
@@ -52,7 +53,10 @@ import static org.junit.Assert.*;
             "spring.flyway.clean-disabled=false",
             "conductor.database.type=postgres",
             "conductor.postgres.experimentalQueueNotify=true",
-            "conductor.postgres.experimentalQueueNotifyStalePeriod=5000"
+            "conductor.postgres.experimentalQueueNotifyStalePeriod=5000",
+            // queue_notify() reads deliver_on, a timestamp without time zone, as UTC. Pin the
+            // session time zone so what the DAO writes reads back right on any JVM time zone.
+            "spring.datasource.hikari.connection-init-sql=SET TIME ZONE 'UTC'"
         })
 @SpringBootTest
 public class PostgresQueueListenerTest {
@@ -64,6 +68,8 @@ public class PostgresQueueListenerTest {
     private DataSource dataSource;
 
     @Autowired private PostgresProperties properties;
+
+    @Autowired private PostgresQueueDAO queueDAO;
 
     private void clearDb() {
         try (Connection conn = dataSource.getConnection()) {
@@ -175,6 +181,26 @@ public class PostgresQueueListenerTest {
         assertEquals(0, listener.getSize("dummy-task").get().intValue());
         sendNotification("dummy-task", 3, System.currentTimeMillis() + 100);
         assertEquals(3, listener.getSize("dummy-task").get().intValue());
+    }
+
+    /**
+     * Postpone moves a message that is not popped in place, and the notify trigger ignores updates
+     * that leave popped unchanged. The DAO notifies the listener itself, so a message expedited to
+     * now is seen as ready long before the listener would refresh a stale view on its own.
+     */
+    @Test
+    public void postponeOfAWaitingMessageNotifiesTheListener() {
+        queueDAO.push("postponed-task", "postponed-id", 0, 60);
+        await().atMost(1, TimeUnit.SECONDS)
+                .pollInterval(20, TimeUnit.MILLISECONDS)
+                .until(() -> listener.getSize("postponed-task").orElse(0) == 1);
+        assertFalse(listener.hasMessagesReady("postponed-task"));
+
+        queueDAO.postpone("postponed-task", "postponed-id", 0, 0);
+
+        await().atMost(2, TimeUnit.SECONDS)
+                .pollInterval(20, TimeUnit.MILLISECONDS)
+                .until(() -> listener.hasMessagesReady("postponed-task"));
     }
 
     @Test

@@ -22,6 +22,7 @@ import org.junit.Test;
 
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
@@ -32,6 +33,8 @@ import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.service.ExecutionLockService;
 
 import tools.jackson.databind.ObjectMapper;
+
+import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
 
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -215,6 +218,24 @@ public class WorkflowSweeperTest {
         // present, it was NOT re-queued — no second execution.
         verify(queueDAO).containsMessage(TaskType.TASK_TYPE_HTTP, httpTask.getTaskId());
         verify(queueDAO, never()).push(anyString(), anyString(), anyLong());
+        verify(executionLockService).releaseLock(WORKFLOW_ID);
+    }
+
+    /**
+     * The decider message of a new workflow is queued before the workflow is stored, so a server
+     * that stops between the two leaves a message for a workflow that does not exist. The sweep
+     * removes that message.
+     */
+    @Test
+    public void sweepRemovesTheDeciderMessageOfAWorkflowThatDoesNotExist() {
+        when(executionLockService.acquireLock(WORKFLOW_ID)).thenReturn(true);
+        when(workflowExecutor.getWorkflow(WORKFLOW_ID, true))
+                .thenThrow(new NotFoundException("No such workflow found by id: %s", WORKFLOW_ID));
+
+        workflowSweeper.sweep(WORKFLOW_ID);
+
+        verify(queueDAO).remove(DECIDER_QUEUE, WORKFLOW_ID);
+        verify(workflowExecutor, never()).decide(anyString());
         verify(executionLockService).releaseLock(WORKFLOW_ID);
     }
 

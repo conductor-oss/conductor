@@ -37,6 +37,7 @@ import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
+import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.core.execution.TestDeciderService;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.dao.*;
@@ -44,6 +45,8 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
 import tools.jackson.databind.ObjectMapper;
+
+import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
 
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -54,6 +57,7 @@ import static org.mockito.Mockito.*;
 public class ExecutionDAOFacadeTest {
 
     private ExecutionDAO executionDAO;
+    private QueueDAO queueDAO;
     private IndexDAO indexDAO;
     private ExecutionDAOFacade executionDAOFacade;
     private ExternalPayloadStorageUtils externalPayloadStorageUtils;
@@ -63,7 +67,7 @@ public class ExecutionDAOFacadeTest {
     @Before
     public void setUp() {
         executionDAO = mock(ExecutionDAO.class);
-        QueueDAO queueDAO = mock(QueueDAO.class);
+        queueDAO = mock(QueueDAO.class);
         indexDAO = mock(IndexDAO.class);
         externalPayloadStorageUtils = mock(ExternalPayloadStorageUtils.class);
         RateLimitingDAO rateLimitingDao = mock(RateLimitingDAO.class);
@@ -74,6 +78,7 @@ public class ExecutionDAOFacadeTest {
         when(properties.isEventExecutionIndexingEnabled()).thenReturn(true);
         when(properties.isAsyncIndexingEnabled()).thenReturn(true);
         when(properties.isTaskIndexingEnabled()).thenReturn(true);
+        when(properties.getWorkflowOffsetTimeout()).thenReturn(Duration.ofSeconds(30));
         executionDAOFacade =
                 new ExecutionDAOFacade(
                         executionDAO,
@@ -163,6 +168,43 @@ public class ExecutionDAOFacadeTest {
                         "workflowName", "correlationId", true);
         assertNotNull(workflows);
         assertEquals(1, workflows.size());
+    }
+
+    /**
+     * The decider message is queued before the workflow is stored. When it cannot be queued, the
+     * workflow is not stored either, so no stored workflow is left without a message that would get
+     * it decided.
+     */
+    @Test
+    public void aWorkflowIsNotStoredWhenItsDeciderMessageCannotBeQueued() {
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("workflowId");
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+        doThrow(new TransientException("queue unavailable"))
+                .when(queueDAO)
+                .push(eq(DECIDER_QUEUE), eq("workflowId"), anyInt(), anyLong());
+
+        assertThrows(TransientException.class, () -> executionDAOFacade.createWorkflow(workflow));
+
+        verify(executionDAO, never()).createWorkflow(any());
+    }
+
+    /**
+     * A terminal workflow has nothing left to decide, so it is stored without a decider message.
+     */
+    @Test
+    public void aTerminalWorkflowIsStoredWithoutADeciderMessage() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("workflowName");
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(workflowDef);
+        workflow.setWorkflowId("workflowId");
+        workflow.setStatus(WorkflowModel.Status.TERMINATED);
+
+        executionDAOFacade.createWorkflow(workflow);
+
+        verify(executionDAO).createWorkflow(workflow);
+        verify(queueDAO, never()).push(anyString(), anyString(), anyInt(), anyLong());
     }
 
     @Test

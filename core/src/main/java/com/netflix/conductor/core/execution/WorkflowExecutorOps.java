@@ -266,7 +266,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             Monitors.recordWorkflowStartError(
                     workflowDef.getName(), WorkflowContext.get().getClientApp());
             LOGGER.error("Unable to restart workflow: {}", workflowDef.getName(), e);
-            terminateWorkflow(workflowId, "Error when restarting the workflow");
+            terminateFailedRestart(workflow, e);
             throw e;
         }
 
@@ -274,6 +274,30 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         decide(workflowId);
 
         updateAndPushParents(workflow, "restarted");
+    }
+
+    /**
+     * Terminates a workflow whose restart failed. createWorkflow stores nothing when it cannot
+     * queue the decider message, and the reset before it removed the old record, so a workflow that
+     * is not stored is stored back as TERMINATED; a terminal workflow gets no decider message. The
+     * caller gets the restart failure, with any failure of this cleanup added to it.
+     */
+    private void terminateFailedRestart(WorkflowModel workflow, Exception restartFailure) {
+        String reason = "Error when restarting the workflow";
+        try {
+            try {
+                executionDAOFacade.getWorkflowModelFromExecutionDAO(
+                        workflow.getWorkflowId(), false);
+            } catch (NotFoundException notStored) {
+                workflow.setStatus(WorkflowModel.Status.TERMINATED);
+                executionDAOFacade.createWorkflow(workflow);
+                terminateWorkflow(workflow, reason, null);
+                return;
+            }
+            terminateWorkflow(workflow.getWorkflowId(), reason);
+        } catch (Exception cleanupFailure) {
+            restartFailure.addSuppressed(cleanupFailure);
+        }
     }
 
     /**
