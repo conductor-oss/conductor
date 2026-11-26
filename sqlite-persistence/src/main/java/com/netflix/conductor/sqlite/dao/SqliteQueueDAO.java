@@ -42,13 +42,6 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
 
     private static final Long UNACK_SCHEDULE_MS = 60_000L;
 
-    /**
-     * How long a popped message is the popper's: a pop sets its {@code deliver_on} this far ahead,
-     * and once that passes, a pop takes the message again unless it was acked, removed, or given
-     * another unack timeout.
-     */
-    private static final int POP_UNACK_SECONDS = 60;
-
     private final ScheduledExecutorService scheduledExecutorService;
 
     public SqliteQueueDAO(
@@ -319,7 +312,7 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
         getWithRetriedTransactions(
                 tx -> {
                     String LOCK_TASKS =
-                            "SELECT queue_name, message_id FROM queue_message WHERE popped = true AND deliver_on < strftime('%Y-%m-%d %H:%M:%f', 'now') limit 1000";
+                            "SELECT queue_name, message_id FROM queue_message WHERE popped = true AND strftime('%Y-%m-%d %H:%M:%f', deliver_on, '+60 seconds') < strftime('%Y-%m-%d %H:%M:%f', 'now') limit 1000";
 
                     List<QueueMessage> messages =
                             query(
@@ -388,7 +381,7 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
     @Override
     public void processUnacks(String queueName) {
         final String PROCESS_UNACKS =
-                "UPDATE queue_message SET popped = false WHERE queue_name = ? AND popped = true AND deliver_on < strftime('%Y-%m-%d %H:%M:%f', 'now')";
+                "UPDATE queue_message SET popped = false WHERE queue_name = ? AND popped = true AND strftime('%Y-%m-%d %H:%M:%f', 'now', '-60 seconds') > deliver_on";
         executeWithTransaction(PROCESS_UNACKS, q -> q.addParameter(queueName).executeUpdate());
     }
 
@@ -474,15 +467,12 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
         // The queue is named on the update too, not only where the ids are chosen: a message id
         // is unique within a queue (the table's key), and the same id may wait on another queue,
         // which this pop must neither take nor return.
-        // A message is due when its deliver_on has passed, whether or not it was popped before: a
-        // pop moves deliver_on POP_UNACK_SECONDS ahead, so a popped message that was neither acked
-        // nor given another unack timeout is due again once that lease runs out, and an unack
-        // timeout of N seconds means N, not N plus the wait for processAllUnacks.
+        // deliver_on is the time the row was taken. Reset it with the take,
+        // or the unack sweep hands the message out again when it had already
+        // been waiting for more than 60 seconds.
         String POP_QUERY =
-                "UPDATE queue_message SET popped = true, "
-                        + "deliver_on = strftime('%Y-%m-%d %H:%M:%f', 'now', '+' || ? || ' seconds') "
-                        + "WHERE queue_name = ? AND message_id IN ("
-                        + "SELECT message_id FROM queue_message WHERE queue_name = ? AND "
+                "UPDATE queue_message SET popped = true, deliver_on = strftime('%Y-%m-%d %H:%M:%f', 'now') WHERE queue_name = ? AND message_id IN ("
+                        + "SELECT message_id FROM queue_message WHERE queue_name = ? AND popped = false AND "
                         + "deliver_on <= strftime('%Y-%m-%d %H:%M:%f', 'now') "
                         + "ORDER BY priority DESC, deliver_on, created_on LIMIT ?"
                         + ") RETURNING message_id, priority, payload";
@@ -491,8 +481,7 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
                 connection,
                 POP_QUERY,
                 p ->
-                        p.addParameter(POP_UNACK_SECONDS)
-                                .addParameter(queueName)
+                        p.addParameter(queueName)
                                 .addParameter(queueName)
                                 .addParameter(count)
                                 .executeAndFetch(

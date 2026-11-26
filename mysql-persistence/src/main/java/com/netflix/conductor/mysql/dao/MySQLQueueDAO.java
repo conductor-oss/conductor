@@ -38,13 +38,6 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
 
     private static final Long UNACK_SCHEDULE_MS = 60_000L;
 
-    /**
-     * How long a popped message is the popper's: a pop sets its {@code deliver_on} this far ahead,
-     * and once that passes, a pop takes the message again unless it was acked, removed, or given
-     * another unack timeout.
-     */
-    private static final int POP_UNACK_SECONDS = 60;
-
     public MySQLQueueDAO(
             RetryTemplate retryTemplate, ObjectMapper objectMapper, DataSource dataSource) {
         super(retryTemplate, objectMapper, dataSource);
@@ -273,14 +266,14 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
         logger.trace("processAllUnacks started");
 
         final String PROCESS_ALL_UNACKS =
-                "UPDATE queue_message SET popped = false WHERE popped = true AND CURRENT_TIMESTAMP > deliver_on";
+                "UPDATE queue_message SET popped = false WHERE popped = true AND TIMESTAMPADD(SECOND,-60,CURRENT_TIMESTAMP) > deliver_on";
         executeWithTransaction(PROCESS_ALL_UNACKS, Query::executeUpdate);
     }
 
     @Override
     public void processUnacks(String queueName) {
         final String PROCESS_UNACKS =
-                "UPDATE queue_message SET popped = false WHERE queue_name = ? AND popped = true AND CURRENT_TIMESTAMP > deliver_on";
+                "UPDATE queue_message SET popped = false WHERE queue_name = ? AND popped = true AND TIMESTAMPADD(SECOND,-60,CURRENT_TIMESTAMP)  > deliver_on";
         executeWithTransaction(PROCESS_UNACKS, q -> q.addParameter(queueName).executeUpdate());
     }
 
@@ -366,7 +359,7 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
         }
 
         final String PEEK_MESSAGES =
-                "SELECT message_id, priority, payload FROM queue_message use index(combo_queue_message) WHERE queue_name = ? AND deliver_on <= TIMESTAMPADD(MICROSECOND, 1000, CURRENT_TIMESTAMP) ORDER BY priority DESC, deliver_on, created_on LIMIT ?";
+                "SELECT message_id, priority, payload FROM queue_message use index(combo_queue_message) WHERE queue_name = ? AND popped = false AND deliver_on <= TIMESTAMPADD(MICROSECOND, 1000, CURRENT_TIMESTAMP) ORDER BY priority DESC, deliver_on, created_on LIMIT ?";
 
         return query(
                 connection,
@@ -414,24 +407,19 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
             return messages;
         }
 
-        // A message is due when its deliver_on has passed, whether or not it was popped before: a
-        // pop moves deliver_on POP_UNACK_SECONDS ahead, so a popped message that was neither acked
-        // nor given another unack timeout is due again once that lease runs out, and an unack
-        // timeout of N seconds means N, not N plus the wait for processAllUnacks. The update only
-        // takes a message that is still due, so of two pops that peeked the same one, one wins.
         List<Message> poppedMessages = new ArrayList<>();
         for (Message message : messages) {
+            // deliver_on is the time the row was taken. Reset it with the take,
+            // or the unack sweep hands the message out again when it had already
+            // been waiting for more than 60 seconds.
             final String POP_MESSAGE =
-                    "UPDATE queue_message SET popped = true, deliver_on = TIMESTAMPADD(SECOND, ?, CURRENT_TIMESTAMP)"
-                            + " WHERE queue_name = ? AND message_id = ?"
-                            + " AND deliver_on <= TIMESTAMPADD(MICROSECOND, 1000, CURRENT_TIMESTAMP)";
+                    "UPDATE queue_message SET popped = true, deliver_on = CURRENT_TIMESTAMP WHERE queue_name = ? AND message_id = ? AND popped = false";
             int result =
                     query(
                             connection,
                             POP_MESSAGE,
                             q ->
-                                    q.addParameter(POP_UNACK_SECONDS)
-                                            .addParameter(queueName)
+                                    q.addParameter(queueName)
                                             .addParameter(message.getId())
                                             .executeUpdate());
 

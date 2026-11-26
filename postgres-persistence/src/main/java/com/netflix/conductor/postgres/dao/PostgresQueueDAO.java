@@ -40,13 +40,6 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
 
     private static final Long UNACK_SCHEDULE_MS = 60_000L;
 
-    /**
-     * How long a popped message is the popper's: a pop sets its {@code deliver_on} this far ahead,
-     * and once that passes, a pop takes the message again unless it was acked, removed, or given
-     * another unack timeout.
-     */
-    private static final int POP_UNACK_SECONDS = 60;
-
     private final ScheduledExecutorService scheduledExecutorService;
 
     private PostgresQueueListener queueListener;
@@ -360,7 +353,7 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
         getWithRetriedTransactions(
                 tx -> {
                     String LOCK_TASKS =
-                            "SELECT queue_name, message_id FROM queue_message WHERE popped = true AND deliver_on < current_timestamp limit 1000 FOR UPDATE SKIP LOCKED";
+                            "SELECT queue_name, message_id FROM queue_message WHERE popped = true AND (deliver_on + (60 ||' seconds')::interval)  <  current_timestamp limit 1000 FOR UPDATE SKIP LOCKED";
 
                     List<QueueMessage> messages =
                             query(
@@ -430,7 +423,7 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
     @Override
     public void processUnacks(String queueName) {
         final String PROCESS_UNACKS =
-                "UPDATE queue_message SET popped = false WHERE queue_name = ? AND popped = true AND deliver_on < current_timestamp";
+                "UPDATE queue_message SET popped = false WHERE queue_name = ? AND popped = true AND (current_timestamp - (60 ||' seconds')::interval)  > deliver_on";
         executeWithTransaction(PROCESS_UNACKS, q -> q.addParameter(queueName).executeUpdate());
     }
 
@@ -520,27 +513,27 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
             }
         }
 
-        // A message is due when its deliver_on has passed, whether or not it was popped before: a
-        // pop moves deliver_on POP_UNACK_SECONDS ahead, so a popped message that was neither acked
-        // nor given another unack timeout is due again once that lease runs out, and an unack
-        // timeout of N seconds means N, not N plus the wait for processAllUnacks. The row lock
-        // (FOR UPDATE SKIP LOCKED) keeps two pops from taking the same message.
+        // deliver_on is the time the row was taken. The unack sweep releases a
+        // taken row once that time is more than 60 seconds ago. Set it in this
+        // same update. Leaving the original ready time makes a message that
+        // already waited 60 seconds eligible again before this poll deletes it.
         String POP_QUERY =
                 "WITH cte AS ("
                         + "    SELECT queue_name, message_id "
                         + "    FROM queue_message "
                         + "    WHERE queue_name = ? "
+                        + "      AND popped = false "
                         + "      AND deliver_on <= (current_timestamp + (1000 || ' microseconds')::interval) "
                         + "    ORDER BY deliver_on, priority DESC, created_on "
                         + "    LIMIT ? "
                         + "    FOR UPDATE SKIP LOCKED "
                         + ") "
                         + "UPDATE queue_message "
-                        + "   SET popped = true, "
-                        + "       deliver_on = (current_timestamp + (? || ' seconds')::interval) "
+                        + "   SET popped = true, deliver_on = current_timestamp "
                         + "   FROM cte "
                         + "   WHERE queue_message.queue_name = cte.queue_name "
                         + "     AND queue_message.message_id = cte.message_id "
+                        + "     AND queue_message.popped = false "
                         + "   RETURNING queue_message.message_id, queue_message.priority, queue_message.payload";
 
         return query(
@@ -549,7 +542,6 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
                 p ->
                         p.addParameter(queueName)
                                 .addParameter(count)
-                                .addParameter(POP_UNACK_SECONDS)
                                 .executeAndFetch(
                                         rs -> {
                                             List<Message> results = new ArrayList<>();

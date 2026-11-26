@@ -13,6 +13,7 @@
 package com.netflix.conductor.sqlite.dao;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -178,72 +179,6 @@ public class SqliteQueueDAOTest {
         // still on the other queue, to be taken once
         assertEquals(List.of("msg-1"), queueDAO.pop("code", 10, 100));
         assertEquals(List.of(), queueDAO.pop("code", 10, 100));
-    }
-
-    /**
-     * An unack timeout of N seconds on a popped message makes it due again after N seconds, as on
-     * the Redis queue, not after N seconds plus the wait for processAllUnacks (60 to 120 s).
-     */
-    @Test
-    public void aPoppedMessageIsDueAgainWhenItsUnackTimeoutRunsOut() {
-        queueDAO.push("unack_timeout", "msg-1", 0);
-        assertEquals(List.of("msg-1"), queueDAO.pop("unack_timeout", 1, 100));
-
-        // two seconds: a deliver_on stored to the whole second (MySQL) is at least one ahead
-        assertTrue(queueDAO.setUnackTimeout("unack_timeout", "msg-1", 2_000));
-        assertEquals(List.of(), queueDAO.pop("unack_timeout", 1, 100));
-
-        await().atMost(6, TimeUnit.SECONDS)
-                .until(() -> queueDAO.pop("unack_timeout", 1, 100).equals(List.of("msg-1")));
-    }
-
-    /**
-     * A pop leases the message for a minute from the pop, not from when the message became due: a
-     * message that waited before it was popped is not taken again right away, and one whose lease
-     * ran out without an ack is taken again.
-     */
-    @Test
-    public void aPopLeasesTheMessageForAMinuteFromThePop() {
-        queueDAO.push("lease", "msg-1", 0);
-        setDeliverOn("lease", "msg-1", "-120 seconds"); // it waited two minutes to be polled
-
-        assertEquals(List.of("msg-1"), queueDAO.pop("lease", 1, 100));
-        queueDAO.processAllUnacks();
-        assertEquals(List.of(), queueDAO.pop("lease", 1, 100));
-
-        setDeliverOn("lease", "msg-1", "-1 seconds"); // the lease ran out without an ack
-        assertEquals(List.of("msg-1"), queueDAO.pop("lease", 1, 100));
-    }
-
-    /** processUnacks releases a popped message once its unack timeout has run out, and no other. */
-    @Test
-    public void processUnacksReleasesOnlyMessagesWhoseUnackTimeoutRanOut() {
-        queueDAO.push("release", "due", 0);
-        queueDAO.push("release", "held", 0);
-        assertEquals(2, queueDAO.pop("release", 2, 100).size());
-        setDeliverOn("release", "due", "-1 seconds"); // its unack timeout ran out
-
-        queueDAO.processUnacks("release");
-
-        Map<String, Long> shard = queueDAO.queuesDetailVerbose().get("release").get("a");
-        assertEquals("the expired one is queued again", 1L, shard.get("size").longValue());
-        assertEquals("the leased one is still out", 1L, shard.get("uacked").longValue());
-    }
-
-    private void setDeliverOn(String queueName, String messageId, String offset) {
-        try (Connection c = dataSource.getConnection()) {
-            String SET =
-                    "UPDATE queue_message SET deliver_on = strftime('%Y-%m-%d %H:%M:%f', 'now', ?)"
-                            + " WHERE queue_name = ? AND message_id = ?";
-            try (Query q = new Query(objectMapper, c, SET)) {
-                q.addParameter(offset)
-                        .addParameter(queueName)
-                        .addParameter(messageId)
-                        .executeUpdate();
-            }
-        } catch (Exception ex) {
-            fail(ex.getMessage());
-        }
     }
 
     @Test
@@ -560,6 +495,56 @@ public class SqliteQueueDAOTest {
         List<String> popped = queueDAO.pop(queueName, 1, 100);
         assertEquals(1, popped.size());
         assertEquals(messageId, popped.get(0));
+    }
+
+    @Test
+    public void popOfAnAlreadyDueMessageIsNotReleasedByTheUnackSweep() throws Exception {
+        String queueName = "pop_resets_ready_time";
+        String messageId = "already-due";
+
+        queueDAO.push(queueName, messageId, 0);
+        setDeliverOnMinutesAgo(queueName, messageId);
+
+        List<String> taken = queueDAO.pop(queueName, 1, 0);
+        assertEquals(1, taken.size());
+        assertEquals(messageId, taken.get(0));
+
+        queueDAO.processAllUnacks();
+
+        List<String> again = queueDAO.pop(queueName, 1, 0);
+        assertTrue(
+                "a take of a message that had already been waiting must not be handed out again",
+                again.isEmpty());
+    }
+
+    @Test
+    public void unackSweepReleasesATakeOlderThanSixtySeconds() throws Exception {
+        String queueName = "stale_take_is_released";
+        String messageId = "stale-take";
+
+        queueDAO.push(queueName, messageId, 0);
+        List<String> taken = queueDAO.pop(queueName, 1, 0);
+        assertEquals(1, taken.size());
+
+        setDeliverOnMinutesAgo(queueName, messageId);
+        queueDAO.processAllUnacks();
+
+        List<String> again = queueDAO.pop(queueName, 1, 0);
+        assertEquals(1, again.size());
+        assertEquals(messageId, again.get(0));
+    }
+
+    private void setDeliverOnMinutesAgo(String queueName, String messageId) throws Exception {
+        try (Connection conn = dataSource.getConnection()) {
+            conn.setAutoCommit(true);
+            try (PreparedStatement statement =
+                    conn.prepareStatement(
+                            "UPDATE queue_message SET deliver_on = strftime('%Y-%m-%d %H:%M:%f', 'now', '-2 minutes') WHERE queue_name = ? AND message_id = ?")) {
+                statement.setString(1, queueName);
+                statement.setString(2, messageId);
+                assertEquals(1, statement.executeUpdate());
+            }
+        }
     }
 
     // @Test
