@@ -22,12 +22,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
 import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.common.metadata.events.EventExecution;
+import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
@@ -47,6 +49,16 @@ public class PostgresIndexDAO extends PostgresBaseDAO implements IndexDAO {
 
     private static final int CORE_POOL_SIZE = 6;
     private static final long KEEP_ALIVE_TIME = 1L;
+
+    /**
+     * The terminal task statuses as a quoted SQL list, for the task_index upsert. Derived from
+     * {@link Task.Status#isTerminal()} so the terminal set is defined only in the enum.
+     */
+    private static final String TERMINAL_TASK_STATUSES =
+            Arrays.stream(Task.Status.values())
+                    .filter(Task.Status::isTerminal)
+                    .map(status -> "'" + status.name() + "'")
+                    .collect(Collectors.joining(", "));
 
     private boolean onlyIndexOnStatusChange;
 
@@ -165,12 +177,24 @@ public class PostgresIndexDAO extends PostgresBaseDAO implements IndexDAO {
 
     @Override
     public void indexTask(TaskSummary task) {
+        // An update older than the indexed row is dropped, so out-of-order updates keep the
+        // latest. The exception is a terminal status, which replaces a non-terminal one whatever
+        // the times: a terminal update keeps the update time it read, so one that read the task
+        // before a concurrent non-terminal update committed is older here, although it is the last
+        // write in the task table. Dropping it would leave the task unfinished in the index for
+        // good. A stale terminal update still never replaces another terminal status. The outer
+        // parentheses keep the status-change-only condition below applying to both branches.
         String INSERT_TASK_INDEX_SQL =
                 "INSERT INTO task_index (task_id, task_type, task_def_name, status, start_time, end_time, update_time, workflow_type, json_data)"
                         + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?::JSONB) ON CONFLICT (task_id) "
                         + "DO UPDATE SET task_type = EXCLUDED.task_type, task_def_name = EXCLUDED.task_def_name, "
                         + "status = EXCLUDED.status, end_time = EXCLUDED.end_time, update_time = EXCLUDED.update_time, json_data = EXCLUDED.json_data "
-                        + "WHERE EXCLUDED.update_time >= task_index.update_time";
+                        + "WHERE (EXCLUDED.update_time >= task_index.update_time "
+                        + "OR (EXCLUDED.status IN ("
+                        + TERMINAL_TASK_STATUSES
+                        + ") AND task_index.status NOT IN ("
+                        + TERMINAL_TASK_STATUSES
+                        + ")))";
 
         if (onlyIndexOnStatusChange) {
             INSERT_TASK_INDEX_SQL += " AND task_index.status != EXCLUDED.status";

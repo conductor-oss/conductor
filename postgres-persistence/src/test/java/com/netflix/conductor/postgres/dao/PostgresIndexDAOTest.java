@@ -339,6 +339,66 @@ public class PostgresIndexDAOTest {
     }
 
     @Test
+    public void testWhenTerminalTaskUpdateIsOlderThanNonTerminalOneTerminalIsIndexed()
+            throws SQLException {
+        // A terminal update keeps the update time it read, so it can be older than a non-terminal
+        // update that committed just before it.
+        TaskSummary nonTerminalTaskState = getMockTaskSummary("task-id-terminal-older");
+        nonTerminalTaskState.setUpdateTime("2023-02-07T09:43:45Z");
+        nonTerminalTaskState.setStatus(Task.Status.SCHEDULED);
+
+        TaskSummary terminalTaskState = getMockTaskSummary("task-id-terminal-older");
+        terminalTaskState.setUpdateTime("2023-02-07T09:42:45Z");
+
+        indexDAO.indexTask(nonTerminalTaskState);
+
+        compareTaskSummary(nonTerminalTaskState);
+
+        indexDAO.indexTask(terminalTaskState);
+
+        compareTaskSummary(terminalTaskState);
+    }
+
+    @Test
+    public void testWhenNonTerminalTaskUpdatesAreIndexedOutOfOrderOnlyLatestIsIndexed()
+            throws SQLException {
+        TaskSummary olderTaskState = getMockTaskSummary("task-id-non-terminal-out-of-order");
+        olderTaskState.setUpdateTime("2023-02-07T09:42:45Z");
+        olderTaskState.setStatus(Task.Status.SCHEDULED);
+
+        TaskSummary newerTaskState = getMockTaskSummary("task-id-non-terminal-out-of-order");
+        newerTaskState.setUpdateTime("2023-02-07T09:43:45Z");
+        newerTaskState.setStatus(Task.Status.IN_PROGRESS);
+
+        indexDAO.indexTask(newerTaskState);
+
+        compareTaskSummary(newerTaskState);
+
+        indexDAO.indexTask(olderTaskState);
+
+        compareTaskSummary(newerTaskState);
+    }
+
+    @Test
+    public void testWhenNonTerminalTaskUpdateIsOlderThanTerminalOneTerminalIsKept()
+            throws SQLException {
+        TaskSummary terminalTaskState = getMockTaskSummary("task-id-non-terminal-older");
+        terminalTaskState.setUpdateTime("2023-02-07T09:42:45Z");
+
+        TaskSummary nonTerminalTaskState = getMockTaskSummary("task-id-non-terminal-older");
+        nonTerminalTaskState.setUpdateTime("2023-02-07T09:41:45Z");
+        nonTerminalTaskState.setStatus(Task.Status.IN_PROGRESS);
+
+        indexDAO.indexTask(terminalTaskState);
+
+        compareTaskSummary(terminalTaskState);
+
+        indexDAO.indexTask(nonTerminalTaskState);
+
+        compareTaskSummary(terminalTaskState);
+    }
+
+    @Test
     public void testAddTaskExecutionLogs() throws SQLException {
         List<TaskExecLog> logs = new ArrayList<>();
         String taskId = UUID.randomUUID().toString();
