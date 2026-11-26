@@ -24,6 +24,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang3.StringUtils;
+import com.netflix.conductor.common.config.ObjectMapperProvider;
 import org.conductoross.conductor.ai.a2a.A2AService;
 import org.conductoross.conductor.ai.agent.AgentBodies;
 import org.conductoross.conductor.ai.agent.ConductorAgentCancelRequest;

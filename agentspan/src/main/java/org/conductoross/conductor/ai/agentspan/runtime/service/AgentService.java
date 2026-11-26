@@ -350,7 +350,7 @@ public class AgentService {
     private static Map<String, String> credentialValues(JsonNode secretJson) {
         Map<String, String> values = new java.util.LinkedHashMap<>();
         secretJson
-                .fields()
+                .properties()
                 .forEachRemaining(
                         field -> {
                             if (field.getValue().isValueNode()) {
