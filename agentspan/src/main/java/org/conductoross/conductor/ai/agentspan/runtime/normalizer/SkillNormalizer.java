@@ -21,7 +21,9 @@ import org.conductoross.conductor.common.metadata.agent.ToolConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 /**
  * Normalizes agentskills.io skill directories into canonical {@link AgentConfig}.
@@ -491,13 +493,38 @@ public class SkillNormalizer implements AgentConfigNormalizer {
     }
 
     private Map<String, Object> parseFrontmatter(String skillMd) {
+        if (skillMd == null) {
+            return Collections.emptyMap();
+        }
         Matcher matcher = FRONTMATTER_PATTERN.matcher(skillMd);
         if (!matcher.matches()) {
             return Collections.emptyMap();
         }
-        Yaml yaml = new Yaml();
-        Map<String, Object> result = yaml.load(matcher.group(1));
-        return result != null ? result : Collections.emptyMap();
+        try {
+            // Issue #1717: Harden YAML parsing against tag-injection and entity expansion
+            LoaderOptions options = new LoaderOptions();
+            options.setMaxAliasesForCollections(50);
+            Yaml yaml = new Yaml(new SafeConstructor(options));
+            Object value = yaml.load(matcher.group(1));
+            if (value == null) {
+                return Collections.emptyMap();
+            }
+            if (!(value instanceof Map<?, ?> map)) {
+                throw new IllegalArgumentException("SKILL.md frontmatter must be a mapping");
+            }
+            Map<String, Object> result = new LinkedHashMap<>();
+            for (Map.Entry<?, ?> entry : map.entrySet()) {
+                if (entry.getKey() != null) {
+                    result.put(entry.getKey().toString(), entry.getValue());
+                }
+            }
+            return result;
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IllegalArgumentException(
+                    "Invalid SKILL.md frontmatter: " + e.getMessage(), e);
+        }
     }
 
     private String extractBody(String skillMd) {
