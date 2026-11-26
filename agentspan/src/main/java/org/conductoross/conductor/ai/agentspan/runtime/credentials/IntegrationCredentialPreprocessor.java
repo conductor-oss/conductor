@@ -75,6 +75,14 @@ public class IntegrationCredentialPreprocessor implements AgentCredentialPreproc
                                     result.put(e.getKey(), e.getValue().asText());
                                 }
                             });
+            // If the integration has an endpoint and rawConfig doesn't already specify one,
+            // inject it so agent clients (e.g. AzureFoundryAgentClient) can find it without
+            // requiring every workflow task to repeat the value.
+            String integrationEndpoint = result.get("endpoint");
+            if (StringUtils.isNotBlank(integrationEndpoint)
+                    && StringUtils.isBlank((String) rawConfig.get("endpoint"))) {
+                rawConfig.put("endpoint", integrationEndpoint);
+            }
             return result;
         } catch (Exception e) {
             log.warn(
