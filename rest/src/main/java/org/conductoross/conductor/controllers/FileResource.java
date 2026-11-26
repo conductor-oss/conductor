@@ -13,6 +13,7 @@
 package org.conductoross.conductor.controllers;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.conductoross.conductor.core.storage.FileContent;
 import org.conductoross.conductor.core.storage.FileStorageService;
@@ -23,6 +24,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+
+import com.netflix.conductor.common.run.SearchResult;
 
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletRequest;
@@ -51,6 +54,16 @@ public class FileResource {
     @Operation(summary = "Create a file record and get upload URL")
     public FileUploadResponse createFile(@Valid @RequestBody FileUploadRequest request) {
         return fileStorageService.createFile(request);
+    }
+
+    @GetMapping
+    @Operation(summary = "List uploaded files visible to a workflow's family")
+    public SearchResult<FileHandle> listFiles(
+            @RequestParam(value = "workflowId", required = false) String workflowId) {
+        // Optional here so the service's validation answers 400, not a generic 500.
+        List<FileHandle> files = fileStorageService.listFiles(workflowId);
+        // A wrapper, not a bare array, so pagination can be added later without a breaking change.
+        return new SearchResult<>(files.size(), files);
     }
 
     @GetMapping("/{workflowId}/{fileId}/upload-url")
