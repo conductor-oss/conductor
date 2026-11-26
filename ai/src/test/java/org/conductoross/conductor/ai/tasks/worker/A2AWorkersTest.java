@@ -196,7 +196,8 @@ class A2AWorkersTest {
         Method method = A2AWorkers.class.getMethod("agent", A2ACallRequest.class);
         WorkerTask annotation = method.getAnnotation(WorkerTask.class);
         AnnotatedWorkflowSystemTask systemTask =
-                new AnnotatedWorkflowSystemTask(A2AWorkers.AGENT, method, workers, annotation);
+                new AnnotatedWorkflowSystemTask(
+                        A2AWorkers.AGENT, method, workers, annotation, null);
 
         WorkflowModel workflow = new WorkflowModel();
         workflow.setWorkflowId("workflow-1");

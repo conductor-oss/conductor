@@ -2065,7 +2065,7 @@ class MCPWorkersTest {
     private void cancel(Method method, String taskType, TaskModel task) {
         AnnotatedWorkflowSystemTask systemTask =
                 new AnnotatedWorkflowSystemTask(
-                        taskType, method, workers, method.getAnnotation(WorkerTask.class));
+                        taskType, method, workers, method.getAnnotation(WorkerTask.class), null);
         WorkflowModel workflow = new WorkflowModel();
         workflow.setWorkflowId("workflow-1");
         systemTask.cancel(workflow, task, null);
@@ -2094,7 +2094,8 @@ class MCPWorkersTest {
                             "CALL_MCP_TOOL",
                             method,
                             workers,
-                            method.getAnnotation(WorkerTask.class));
+                            method.getAnnotation(WorkerTask.class),
+                            null);
             WorkflowModel workflow = new WorkflowModel();
             workflow.setWorkflowId("workflow-1");
             systemTask.start(workflow, task, null);
@@ -2116,7 +2117,8 @@ class MCPWorkersTest {
                             "CALL_MCP_TOOL",
                             method,
                             instance,
-                            method.getAnnotation(WorkerTask.class));
+                            method.getAnnotation(WorkerTask.class),
+                            null);
             WorkflowModel workflow = new WorkflowModel();
             workflow.setWorkflowId("workflow-1");
             systemTask.execute(workflow, task, null);
@@ -2244,7 +2246,7 @@ class MCPWorkersTest {
     private TaskModel run(String taskType, Method method, Map<String, Object> input) {
         AnnotatedWorkflowSystemTask systemTask =
                 new AnnotatedWorkflowSystemTask(
-                        taskType, method, workers, method.getAnnotation(WorkerTask.class));
+                        taskType, method, workers, method.getAnnotation(WorkerTask.class), null);
         WorkflowModel workflow = new WorkflowModel();
         workflow.setWorkflowId("workflow-1");
         TaskModel task = new TaskModel();
