@@ -17,14 +17,17 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
 import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.common.metadata.events.EventExecution;
+import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
@@ -53,6 +56,16 @@ public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO {
      * in V7 byte for byte, so migrated and newly written rows compare equal.
      */
     private static final String EPOCH_TIMESTAMP = SQLITE_UTC_TIMESTAMP.format(Instant.EPOCH);
+
+    /**
+     * The terminal task statuses as a quoted SQL list, for the task_index upsert. Derived from
+     * {@link Task.Status#isTerminal()} so the terminal set is defined only in the enum.
+     */
+    private static final String TERMINAL_TASK_STATUSES =
+            Arrays.stream(Task.Status.values())
+                    .filter(Task.Status::isTerminal)
+                    .map(status -> "'" + status.name() + "'")
+                    .collect(Collectors.joining(", "));
 
     private boolean onlyIndexOnStatusChange;
 
@@ -175,12 +188,24 @@ public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO {
 
     @Override
     public void indexTask(TaskSummary task) {
+        // An update older than the indexed row is dropped, so out-of-order updates keep the
+        // latest. The exception is a terminal status, which replaces a non-terminal one whatever
+        // the times: a terminal update keeps the update time it read, so one that read the task
+        // before a concurrent non-terminal update committed is older here, although it is the last
+        // write in the task table. Dropping it would leave the task unfinished in the index for
+        // good. A stale terminal update still never replaces another terminal status. The outer
+        // parentheses keep the status-change-only condition below applying to both branches.
         String INSERT_TASK_INDEX_SQL =
                 "INSERT INTO task_index (task_id, task_type, task_def_name, status, start_time, end_time, update_time, workflow_type, json_data)"
                         + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (task_id) "
                         + "DO UPDATE SET task_type = excluded.task_type, task_def_name = excluded.task_def_name, "
                         + "status = excluded.status, end_time = excluded.end_time, update_time = excluded.update_time, json_data = excluded.json_data "
-                        + "WHERE excluded.update_time >= task_index.update_time";
+                        + "WHERE (excluded.update_time >= task_index.update_time "
+                        + "OR (excluded.status IN ("
+                        + TERMINAL_TASK_STATUSES
+                        + ") AND task_index.status NOT IN ("
+                        + TERMINAL_TASK_STATUSES
+                        + ")))";
 
         if (onlyIndexOnStatusChange) {
             INSERT_TASK_INDEX_SQL += " AND task_index.status != excluded.status";

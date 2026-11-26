@@ -133,6 +133,41 @@ public class PostgresIndexDAOStatusChangeOnlyTest {
                 result.get(0).get("update_time").toString());
     }
 
+    private void checkTaskStatusAndDefName(String taskId, String status, String taskDefName)
+            throws SQLException {
+        List<Map<String, Object>> result =
+                queryDb(String.format("SELECT * FROM task_index WHERE task_id = '%s'", taskId));
+        assertEquals("Wrong number of rows returned", 1, result.size());
+        assertEquals("Wrong status returned", status, result.get(0).get("status"));
+        assertEquals(
+                "Task def name does not match", taskDefName, result.get(0).get("task_def_name"));
+    }
+
+    @Test
+    public void testIndexTaskTerminalStatusOlderThanNonTerminalOnlyStatusChange()
+            throws SQLException {
+        String taskId = "task-id-terminal-older-status-change-only";
+        TaskSummary ts = getMockTaskSummary(taskId);
+        indexDAO.indexTask(ts);
+
+        ts.setStatus(Task.Status.IN_PROGRESS);
+        ts.setUpdateTime("2023-02-07T09:44:45Z");
+        indexDAO.indexTask(ts);
+        checkTaskStatusAndDefName(taskId, "IN_PROGRESS", "task-def-name");
+
+        // A newer update that keeps the status is still skipped.
+        ts.setTaskDefName("new-task-def-name");
+        ts.setUpdateTime("2023-02-07T09:45:45Z");
+        indexDAO.indexTask(ts);
+        checkTaskStatusAndDefName(taskId, "IN_PROGRESS", "task-def-name");
+
+        // A terminal update that is older than the indexed IN_PROGRESS one still replaces it.
+        ts.setStatus(Task.Status.COMPLETED);
+        ts.setUpdateTime("2023-02-07T09:43:45Z");
+        indexDAO.indexTask(ts);
+        checkTaskStatusAndDefName(taskId, "COMPLETED", "new-task-def-name");
+    }
+
     @Test
     public void testIndexWorkflowOnlyStatusChange() throws SQLException {
         WorkflowSummary wfs = getMockWorkflowSummary("workflow-id");
