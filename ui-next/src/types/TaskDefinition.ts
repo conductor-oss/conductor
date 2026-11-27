@@ -18,6 +18,12 @@ export type TaskDefinitionDto = {
   retryLogic: string;
   timeoutPolicy: string;
   timeoutSeconds: number;
+  maxRetryDelaySeconds?: number;
+  backoffJitterMs?: number;
+  totalTimeoutSeconds?: number;
+  taskStatusListenerEnabled?: boolean;
+  // Already read by the task definition form; the type had drifted.
+  enforceSchema?: boolean;
   updateTime?: number;
   updatedBy?: string;
   inputSchema?: {

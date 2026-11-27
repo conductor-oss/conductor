@@ -1,4 +1,5 @@
 dependencies {
+    implementation "tools.jackson.core:jackson-databind"
     // Core Conductor dependencies
     implementation project(':conductor-common')
     implementation project(':conductor-core')
@@ -21,11 +22,11 @@ dependencies {
 
     // Test dependencies
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation project(':conductor-common').sourceSets.test.output
+    testImplementation rootProject.project(':conductor-common').sourceSets.test.output
     
 
     // Add Kafka client dependency
-    implementation "org.apache.kafka:kafka-clients:${revKafka}"
+    implementation "org.apache.kafka:kafka-clients"
 
     // Add SLF4J API for logging
     implementation 'org.slf4j:slf4j-api:2.0.9'
@@ -40,4 +41,3 @@ dependencies {
 //         showStandardStreams = true // Enable standard output
 //     }
 // }
-

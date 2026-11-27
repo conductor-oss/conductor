@@ -55,8 +55,6 @@ Read more:
 * [Core Concepts: Workflows](https://orkes.io/content/core-concepts#workflow-definition)
 * [Developer Guides: Workflows](https://orkes.io/content/developer-guides/workflows)
 * [Workflow API Reference](https://orkes.io/content/reference-docs/api/workflow)
-
-Browse our templates to get started with easy examples!
 `;
 
 export default function WorkflowDefinitions() {
@@ -185,6 +183,7 @@ export default function WorkflowDefinitions() {
         id: "restartable",
         name: "restartable",
         label: "Restartable",
+        type: ColumnCustomType.BOOLEAN,
         grow: 0.5,
         tooltip: "Whether the workflow is restartable",
       },
@@ -192,6 +191,7 @@ export default function WorkflowDefinitions() {
         id: "status_listener_enabled",
         name: "workflowStatusListenerEnabled",
         label: "Status listener enabled",
+        type: ColumnCustomType.BOOLEAN,
         grow: 0.5,
         tooltip: "Whether the status listener is enabled",
       },

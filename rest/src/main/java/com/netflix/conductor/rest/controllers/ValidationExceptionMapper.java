@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.conductoross.conductor.core.exception.SchemaValidationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.Ordered;
@@ -53,7 +54,11 @@ public class ValidationExceptionMapper {
 
         HttpStatus httpStatus;
 
-        if (exception instanceof ConstraintViolationException) {
+        if (exception instanceof ConstraintViolationException
+                || exception instanceof SchemaValidationException) {
+            // A schema failure is the caller's payload to fix, like a constraint violation, so it
+            // must not fall into the 500 branch below. This handler runs at highest precedence, so
+            // it — not ApplicationExceptionMapper's status map — decides the schema case.
             httpStatus = HttpStatus.BAD_REQUEST;
         } else {
             httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
@@ -68,7 +73,10 @@ public class ValidationExceptionMapper {
             return constraintViolationExceptionToErrorResponse((ConstraintViolationException) ve);
         } else {
             ErrorResponse result = new ErrorResponse();
-            result.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
+            result.setStatus(
+                    ve instanceof SchemaValidationException
+                            ? HttpStatus.BAD_REQUEST.value()
+                            : HttpStatus.INTERNAL_SERVER_ERROR.value());
             result.setMessage(ve.getMessage());
             result.setInstance(host);
             return result;

@@ -24,12 +24,12 @@ import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.transport.rest_client.RestClientTransport;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -45,7 +45,8 @@ public class QuickV3Test {
         objectMapper = new ObjectMapper();
         restClient = RestClient.builder(new HttpHost("http", "localhost", 9202)).build();
         RestClientTransport transport =
-                new RestClientTransport(restClient, new JacksonJsonpMapper(objectMapper));
+                new RestClientTransport(
+                        restClient, new JacksonJsonpMapper(transportObjectMapper()));
         OpenSearchClient client = new OpenSearchClient(transport);
 
         OpenSearchProperties props = new OpenSearchProperties();
@@ -95,5 +96,20 @@ public class QuickV3Test {
         System.out.println("✓ Removed workflow");
 
         System.out.println("✅ TEST PASSED - os-persistence-v3 works with OpenSearch 3.0.0!");
+    }
+
+    /**
+     * The OpenSearch java client serialises with Jackson 2 and cannot take the Jackson 3 mapper the
+     * DAO uses, so the transport gets its own. Mirrors OpenSearchConfiguration.
+     */
+    private static com.fasterxml.jackson.databind.ObjectMapper transportObjectMapper() {
+        com.fasterxml.jackson.databind.ObjectMapper mapper =
+                new com.fasterxml.jackson.databind.ObjectMapper();
+        mapper.configure(
+                com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
+                false);
+        mapper.setSerializationInclusion(
+                com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL);
+        return mapper;
     }
 }

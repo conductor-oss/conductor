@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.dao.QueueDAO;
@@ -32,11 +32,11 @@ import com.netflix.conductor.sqlite.config.SqliteProperties;
 import com.netflix.conductor.sqlite.util.ExecutorsUtil;
 import com.netflix.conductor.sqlite.util.Query;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.Uninterruptibles;
 import jakarta.annotation.PreDestroy;
+import tools.jackson.databind.ObjectMapper;
 
 public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
 
@@ -144,6 +144,13 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
 
     @Override
     public List<Message> pollMessages(String queueName, int count, int timeout) {
+        // A zero- (or negative-) count poll can never pop a message, so return immediately.
+        // Otherwise the long-poll loop below would block for the full timeout waiting on a message
+        // it would never accept. This preserves the immediate empty return that callers relied on
+        // before issue #142 moved the loop guard onto what was actually popped.
+        if (count <= 0) {
+            return new ArrayList<>();
+        }
         if (timeout < 1) {
             List<Message> messages =
                     getWithTransactionWithOutErrorPropagation(
@@ -155,25 +162,24 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
         }
 
         long start = System.currentTimeMillis();
-        final List<Message> messages = new ArrayList<>();
 
         while (true) {
             List<Message> messagesSlice =
                     getWithTransactionWithOutErrorPropagation(
-                            tx -> popMessages(tx, queueName, count - messages.size(), timeout));
+                            tx -> popMessages(tx, queueName, count, timeout));
             if (messagesSlice == null) {
                 logger.warn(
-                        "Unable to poll {} messages from {} due to tx conflict, only {} popped",
-                        count,
-                        queueName,
-                        messages.size());
-                // conflict could have happened, returned messages popped so far
-                return messages;
+                        "Unable to poll {} messages from {} due to tx conflict", count, queueName);
+                return new ArrayList<>();
             }
 
-            messages.addAll(messagesSlice);
-            if (messages.size() >= count || ((System.currentTimeMillis() - start) > timeout)) {
-                return messages;
+            // Long-poll semantics: return as soon as at least one message is available (up to
+            // count), rather than blocking for the full timeout waiting to fill the whole batch.
+            // The retry is still needed to keep waiting while the queue is empty; there is no
+            // partial batch to accumulate because we return on the first non-empty poll. This
+            // matches the Redis queue behavior and keeps tail latency low under low activity.
+            if (!messagesSlice.isEmpty() || ((System.currentTimeMillis() - start) > timeout)) {
+                return messagesSlice;
             }
             Uninterruptibles.sleepUninterruptibly(100, TimeUnit.MILLISECONDS);
         }
@@ -458,8 +464,14 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
     private List<Message> popMessages(
             Connection connection, String queueName, int count, int timeout) {
 
+        // The queue is named on the update too, not only where the ids are chosen: a message id
+        // is unique within a queue (the table's key), and the same id may wait on another queue,
+        // which this pop must neither take nor return.
+        // deliver_on is the time the row was taken. Reset it with the take,
+        // or the unack sweep hands the message out again when it had already
+        // been waiting for more than 60 seconds.
         String POP_QUERY =
-                "UPDATE queue_message SET popped = true WHERE message_id IN ("
+                "UPDATE queue_message SET popped = true, deliver_on = strftime('%Y-%m-%d %H:%M:%f', 'now') WHERE queue_name = ? AND message_id IN ("
                         + "SELECT message_id FROM queue_message WHERE queue_name = ? AND popped = false AND "
                         + "deliver_on <= strftime('%Y-%m-%d %H:%M:%f', 'now') "
                         + "ORDER BY priority DESC, deliver_on, created_on LIMIT ?"
@@ -470,6 +482,7 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
                 POP_QUERY,
                 p ->
                         p.addParameter(queueName)
+                                .addParameter(queueName)
                                 .addParameter(count)
                                 .executeAndFetch(
                                         rs -> {

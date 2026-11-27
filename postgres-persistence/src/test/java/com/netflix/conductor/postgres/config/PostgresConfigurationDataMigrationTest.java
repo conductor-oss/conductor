@@ -20,7 +20,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
+import org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourcePatternResolver;
@@ -45,7 +45,12 @@ import static org.junit.Assert.assertTrue;
             "conductor.elasticsearch.version=0",
             "conductor.indexing.type=postgres",
             "conductor.postgres.applyDataMigrations=false",
-            "spring.flyway.clean-disabled=false"
+            "spring.flyway.clean-disabled=false",
+            // A database of this test's own. Every other test in this module runs with data
+            // migrations enabled, and on the shared database their applied V13.2/V18.1 rows are
+            // unresolvable once this configuration drops that migration location — so Flyway
+            // fails validation here, depending only on which test class ran first.
+            "spring.datasource.url=jdbc:tc:postgresql:11.15-alpine:///conductordatamigration"
         })
 @SpringBootTest
 public class PostgresConfigurationDataMigrationTest {

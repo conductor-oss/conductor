@@ -101,7 +101,7 @@ export default function AgentDefinitions() {
       {
         id: "workflow_name",
         name: "name",
-        label: "Workflow name",
+        label: "Agent name",
         renderer: (name: string, agent: AgentSummary) => (
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
             <img
@@ -120,55 +120,57 @@ export default function AgentDefinitions() {
             </NavLink>
           </Box>
         ),
-        tooltip: "The name of the workflow",
+        tooltip: "The name of the agent",
       },
       {
         id: "workflow_description",
         name: "description",
         label: "Description",
         grow: 2,
-        tooltip: "The description of the workflow",
+        tooltip: "The description of the agent",
       },
+      ...(tagsEnabled
+        ? ([
+            {
+              id: "workflow_tags",
+              name: "tags",
+              label: "Tags",
+              searchable: true,
+              searchableFunc: (tags: string[]) => (tags || []).join(", "),
+              renderer: (tags: string[], row: AgentSummary) => (
+                <TagList tags={toTagDtos(tags)} name={row.name} />
+              ),
+              grow: 2,
+              tooltip: "The tags associated with the agent",
+            },
+          ] as LegacyColumn[])
+        : []),
       {
         id: "create_time",
         name: "createTime",
         label: "Created time",
         type: ColumnCustomType.DATE,
-        tooltip: "The time the workflow was created",
+        tooltip: "The time the agent was created",
       },
       {
         id: "latest_version",
         name: "version",
         label: "Latest version",
         grow: 0.5,
-        tooltip: "The latest version of the workflow",
+        tooltip: "The latest version of the agent",
       },
       {
         id: "schema_version",
         name: "schemaVersion",
         label: "Schema version",
         grow: 0.5,
-        tooltip: "The schema version of the workflow",
-      },
-      {
-        id: "restartable",
-        name: "restartable",
-        label: "Restartable",
-        grow: 0.5,
-        tooltip: "Whether the workflow is restartable",
-      },
-      {
-        id: "status_listener_enabled",
-        name: "workflowStatusListenerEnabled",
-        label: "Status listener enabled",
-        grow: 0.5,
-        tooltip: "Whether the status listener is enabled",
+        tooltip: "The schema version of the agent's compiled workflow",
       },
       {
         id: "owner_email",
         name: "ownerEmail",
         label: "Owner email",
-        tooltip: "The email of the owner of the workflow",
+        tooltip: "The email of the owner of the agent",
       },
       {
         id: "input_params",
@@ -176,7 +178,7 @@ export default function AgentDefinitions() {
         label: "Input params",
         type: ColumnCustomType.JSON,
         sortable: false,
-        tooltip: "The input parameters of the workflow",
+        tooltip: "The input parameters of the agent",
       },
       {
         id: "output_params",
@@ -184,28 +186,22 @@ export default function AgentDefinitions() {
         label: "Output params",
         type: ColumnCustomType.JSON,
         sortable: false,
-        tooltip: "The output parameters of the workflow",
+        tooltip: "The output parameters of the agent",
       },
       {
         id: "timeout_policy",
         name: "timeoutPolicy",
         label: "Timeout policy",
         grow: 0.5,
-        tooltip: "The timeout policy of the workflow",
+        tooltip: "The timeout policy of the agent's compiled workflow",
       },
       {
         id: "timeout_seconds",
         name: "timeoutSeconds",
         label: "Timeout seconds",
         grow: 0.5,
-        tooltip: "The timeout seconds of the workflow",
-      },
-      {
-        id: "failure_workflow",
-        name: "failureWorkflow",
-        label: "Failure workflow",
-        grow: 1,
-        tooltip: "The compensation workflow",
+        tooltip:
+          "How long the agent may run before the timeout policy applies, in seconds",
       },
       {
         id: "executions_link",
@@ -222,7 +218,7 @@ export default function AgentDefinitions() {
             Query
           </NavLink>
         ),
-        tooltip: "The executions of the workflow",
+        tooltip: "Query executions of this agent",
       },
       {
         id: "actions",
@@ -232,7 +228,7 @@ export default function AgentDefinitions() {
         searchable: false,
         grow: 0.5,
         minWidth: "180px",
-        tooltip: "Actions you can perform on the workflow",
+        tooltip: "Actions you can perform on the agent",
         renderer: (_: string, agent: AgentSummary) => {
           const isExternal = agent.type && EXTERNAL_TYPES.has(agent.type);
           return (
@@ -266,7 +262,7 @@ export default function AgentDefinitions() {
                   </IconButton>
                 </Tooltip>
               )}
-              <Tooltip title="Delete workflow">
+              <Tooltip title="Delete agent">
                 <IconButton
                   id={`delete-${agent.name}-btn`}
                   disabled={isTrialExpired}

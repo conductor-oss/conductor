@@ -1,0 +1,63 @@
+{
+  "schemaVersion" : 3,
+  "request" : {
+    "messages" : [ {
+      "role" : "system",
+      "text" : "You are a math-explainer planner. Plan a workflow that:\n\n1. Computes factorials of 1, 2, 3, 4, 5 in PARALLEL using ``factorial`` (static args).\n2. Writes a short prose summary about factorial growth using ``write_summary``\n   (use a ``generate`` block — the LLM produces the ``text`` arg at run time).\n3. Validates the summary is at least 30 characters via ``check_summary``,\n   with ``success_condition: \"$.passed === true\"``.\n",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "Topic: factorials\n\n## Available tools\n\nYour plan's ``operations[].tool`` field MUST use a tool name from the list below. Any other name will fail plan validation and route to the fallback agent.\n\n- **`factorial`** — Compute n! and return it as a string.\n\nArgs:\n    n: Non-negative integer. Capped at 20 to keep things sane.\n    args: {\"n\": <integer>}\n- **`write_summary`** — Persist a short summary string. Returns it back for the validator.\n    args: {\"text\": <string>}\n- **`check_summary`** — Return JSON ``{passed, length, min_chars}`` for the validator.\n\nArgs:\n    text: The summary to check.\n    min_chars: Minimum acceptable length in characters.\n    args: {\"text\": <string>, \"min_chars\": <integer>}\n\n\n## Plan schema\n\nYour final response MUST end with a ```json fenced block containing a single JSON object with this shape:\n\n```json\n{\n  \"steps\": [\n    {\n      \"id\": \"<unique step id>\",\n      \"depends_on\": [\"<other step id>\"],   // optional; defaults to previous step\n      \"parallel\": false,                      // run operations[] in parallel\n      \"operations\": [\n        // EITHER a static call:\n        {\"tool\": \"<tool>\", \"args\": {<literal arg map>}},\n        // OR an LLM-generated call:\n        {\"tool\": \"<tool>\", \"generate\": {\n          \"instructions\": \"<what the LLM should produce>\",\n          \"output_schema\": \"<JSON shape that becomes the tool's args>\",\n          \"max_tokens\": 4096                  // optional\n        }}\n      ]\n    }\n  ],\n  \"validation\": [                              // optional\n    {\"tool\": \"<validator tool>\", \"args\": {...},\n     \"success_condition\": \"$.passed === true\"} // optional JS, $ = tool output\n  ],\n  \"on_success\": [{\"tool\": \"<tool>\", \"args\": {...}}],   // optional\n  \"on_failure\": [{\"tool\": \"<tool>\", \"args\": {...}}]    // optional\n}\n```\n\nRules:\n- Every ``operations[].tool`` and ``validation[].tool`` MUST be from the Available tools list above. Other names fail plan validation and route to fallback.\n- Use ``args`` when arg values are literals you decide now. Use ``generate`` when an LLM should produce them at run time (e.g., the body of a write_file).\n- ``parallel: true`` runs that step's operations concurrently (FORK_JOIN). Cross-step concurrency is via ``depends_on`` — a step starts when all listed deps complete.\n- The JSON must parse cleanly. Match brackets and escape strings.\n",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    } ],
+    "tools" : [ ],
+    "jsonOutput" : false,
+    "outputSchema" : null,
+    "generationOptions" : {
+      "maxTokens" : 16384,
+      "thinkingTokenLimit" : 0
+    }
+  },
+  "response" : {
+    "metadata" : {
+      "id" : "resp_0d877fdd3251c1e5006aa82b5be12c87d08ea13aae06051f62",
+      "model" : "gpt-5.6-luna",
+      "usage" : {
+        "promptTokens" : 694,
+        "completionTokens" : 1359,
+        "totalTokens" : 2053,
+        "nativeUsage" : null
+      },
+      "rateLimit" : {
+        "requestsLimit" : 0,
+        "requestsRemaining" : 0,
+        "requestsReset" : 0,
+        "tokensLimit" : 0,
+        "tokensRemaining" : 0,
+        "tokensReset" : 0
+      },
+      "promptMetadata" : [ ],
+      "properties" : {
+        "response_id" : "resp_0d877fdd3251c1e5006aa82b5be12c87d08ea13aae06051f62",
+        "reasoning_tokens" : 984
+      }
+    },
+    "results" : [ {
+      "output" : {
+        "text" : "```json\n{\n  \"steps\": [\n    {\n      \"id\": \"compute_factorials\",\n      \"parallel\": true,\n      \"operations\": [\n        {\n          \"tool\": \"factorial\",\n          \"args\": {\n            \"n\": 1\n          }\n        },\n        {\n          \"tool\": \"factorial\",\n          \"args\": {\n            \"n\": 2\n          }\n        },\n        {\n          \"tool\": \"factorial\",\n          \"args\": {\n            \"n\": 3\n          }\n        },\n        {\n          \"tool\": \"factorial\",\n          \"args\": {\n            \"n\": 4\n          }\n        },\n        {\n          \"tool\": \"factorial\",\n          \"args\": {\n            \"n\": 5\n          }\n        }\n      ]\n    },\n    {\n      \"id\": \"write_factorial_summary\",\n      \"depends_on\": [\n        \"compute_factorials\"\n      ],\n      \"operations\": [\n        {\n          \"tool\": \"write_summary\",\n          \"generate\": {\n            \"instructions\": \"Write a concise prose summary about factorial growth. Mention that factorials multiply all positive integers up to n, and include the values 1!, 2!, 3!, 4!, and 5! to illustrate how quickly the results grow. The summary must be at least 30 characters long.\",\n            \"output_schema\": \"{\\\"text\\\":\\\"string\\\"}\",\n            \"max_tokens\": 256\n          }\n        }\n      ]\n    }\n  ],\n  \"validation\": [\n    {\n      \"tool\": \"check_summary\",\n      \"args\": {\n        \"text\": \"$steps.write_factorial_summary.operations[0].result.text\",\n        \"min_chars\": 30\n      },\n      \"success_condition\": \"$.passed === true\"\n    }\n  ]\n}\n```",
+        "metadata" : {
+          "messageType" : "ASSISTANT"
+        },
+        "toolCalls" : [ ],
+        "media" : [ ]
+      },
+      "metadata" : {
+        "finishReason" : "STOP",
+        "contentFilters" : [ ],
+        "properties" : { }
+      }
+    } ]
+  }
+}

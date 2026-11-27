@@ -9,7 +9,10 @@ import TrashIcon from "components/icons/TrashIcon";
 import XCloseIcon from "components/icons/XCloseIcon";
 import fastDeepEqual from "fast-deep-equal";
 import { TaskDefinitionFormMachineEvent } from "pages/definition/task/form/state/types";
-import { TASK_FORM_MACHINE_ID } from "pages/definition/task/state/helpers";
+import {
+  TASK_FORM_MACHINE_ID,
+  isSaveDisabled,
+} from "pages/definition/task/state/helpers";
 import { useTaskDefinition } from "pages/definition/task/state/hook";
 import {
   TaskDefinitionButtonsProps,
@@ -41,18 +44,14 @@ const withFormState =
       [modifiedTaskDefinition, originTaskDefinition],
     );
     const isReset = buttonProps?.role === "reset";
-    const resetDisabledConditions = noChanges;
-    const saveDisabledConditions =
-      (!isNewTaskDef && noChanges) || isTrialExpired;
-    const noDescription = !(modifiedTaskDefinition.description ?? "").trim();
 
     return (
       <ButtonComponent
         {...buttonProps}
         disabled={
           isReset
-            ? resetDisabledConditions
-            : saveDisabledConditions || noDescription
+            ? noChanges
+            : isSaveDisabled({ noChanges, isNewTaskDef, isTrialExpired })
         }
       />
     );
@@ -82,18 +81,19 @@ const withEditorState =
     );
 
     const isReset = buttonProps?.role === "reset";
-    const resetDisabledConditions = noChanges;
-    const saveDisabledConditions =
-      jsonInvalid || (!isNewTaskDef && noChanges) || isTrialExpired;
-    const noDescription = !(modifiedTaskDefinition.description ?? "").trim();
 
     return (
       <ButtonComponent
         {...buttonProps}
         disabled={
           isReset
-            ? resetDisabledConditions
-            : saveDisabledConditions || noDescription
+            ? noChanges
+            : isSaveDisabled({
+                noChanges,
+                isNewTaskDef,
+                isTrialExpired,
+                jsonInvalid,
+              })
         }
       />
     );

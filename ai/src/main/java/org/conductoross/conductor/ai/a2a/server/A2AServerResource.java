@@ -39,10 +39,10 @@ import org.springframework.web.util.UriComponentsBuilder;
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.servlet.http.HttpServletRequest;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * A2A server endpoints — exposes Conductor workflows as A2A agents (one agent per workflow).
@@ -238,7 +238,7 @@ public class A2AServerResource {
         if (properties.getPublicUrl() != null && !properties.getPublicUrl().isBlank()) {
             return properties.getPublicUrl();
         }
-        return UriComponentsBuilder.fromHttpUrl(request.getRequestURL().toString())
+        return UriComponentsBuilder.fromUriString(request.getRequestURL().toString())
                 .replacePath(null)
                 .replaceQuery(null)
                 .build()

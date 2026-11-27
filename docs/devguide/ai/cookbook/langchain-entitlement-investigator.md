@@ -1,3 +1,7 @@
+---
+description: "Build an entitlement investigator agent with LangChain, deploy it with the Conductor SDK, and invoke it from workflows as a durable capability."
+---
+
 # LangChain investigator
 
 ```mermaid

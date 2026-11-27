@@ -18,9 +18,11 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
+import org.conductoross.conductor.ai.agentspan.AgentIntroduction;
 import org.conductoross.conductor.ai.agentspan.runtime.compiler.AgentCompiler;
 import org.conductoross.conductor.ai.agentspan.runtime.compiler.MultiAgentCompiler;
 import org.conductoross.conductor.ai.agentspan.runtime.normalizer.NormalizerRegistry;
@@ -53,9 +55,10 @@ import com.netflix.conductor.service.MetadataService;
 import com.netflix.conductor.service.TaskService;
 import com.netflix.conductor.service.WorkflowService;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 @Component
 @RequiredArgsConstructor
@@ -344,67 +347,18 @@ public class AgentService {
 
     // ── Agent discovery ─────────────────────────────────────────────
 
-    /** List all registered agents (workflow defs with agent_sdk metadata). */
+    /**
+     * Every registered agent (the latest definition per name), with each definition's checksum: the
+     * agent list of the REST API.
+     */
     public List<AgentSummary> listAgents() {
-        // Use the portable getAllWorkflowDefs() (present across Conductor cores, incl. orkes'
-        // vendored oss-core which lacks getAllWorkflowDefsLatestVersions()) and reduce to the
-        // latest version per name ourselves.
-        Map<String, WorkflowDef> latestByName = new HashMap<>();
-        for (WorkflowDef d : metadataDAO.getAllWorkflowDefs()) {
-            latestByName.merge(d.getName(), d, (a, b) -> a.getVersion() >= b.getVersion() ? a : b);
-        }
-        List<WorkflowDef> allDefs = new ArrayList<>(latestByName.values());
-        List<AgentSummary> agents = new ArrayList<>();
-
-        for (WorkflowDef def : allDefs) {
-            Map<String, Object> metadata = def.getMetadata();
-            // A def is an agent when its derived classifier resolves to "agent": either the
-            // Conductor-Agents stamp (agent_sdk/agentDef) is present, or the def carries an
-            // explicit
-            // metadata.classifier=agent tag. An explicit non-agent classifier excludes a def
-            // even if it still carries a stamp.
-            if (!WorkflowClassifiers.isAgent(metadata)) {
-                continue;
-            }
-
-            String checksum;
-            try {
-                String json = MAPPER.writeValueAsString(def);
-                MessageDigest digest = MessageDigest.getInstance("SHA-256");
-                byte[] hash = digest.digest(json.getBytes(StandardCharsets.UTF_8));
-                StringBuilder hex = new StringBuilder();
-                for (byte b : hash) {
-                    hex.append(String.format("%02x", b));
-                }
-                checksum = hex.toString();
-            } catch (Exception e) {
-                log.warn("Failed to compute checksum for workflow {}", def.getName(), e);
-                checksum = null;
-            }
-
-            agents.add(
-                    AgentSummary.builder()
-                            .name(def.getName())
-                            .version(def.getVersion())
-                            .type((String) metadata.get("agent_sdk"))
-                            .createTime(def.getCreateTime())
-                            .updateTime(def.getUpdateTime())
-                            .description(def.getDescription())
-                            .checksum(checksum)
-                            .schemaVersion(def.getSchemaVersion())
-                            .restartable(def.isRestartable())
-                            .workflowStatusListenerEnabled(def.isWorkflowStatusListenerEnabled())
-                            .ownerEmail(def.getOwnerEmail())
-                            .inputParameters(def.getInputParameters())
-                            .outputParameters(def.getOutputParameters())
-                            .timeoutPolicy(
-                                    def.getTimeoutPolicy() == null
-                                            ? null
-                                            : def.getTimeoutPolicy().name())
-                            .timeoutSeconds(def.getTimeoutSeconds())
-                            .failureWorkflow(def.getFailureWorkflow())
-                            .build());
-        }
+        List<AgentSummary> agents = latestAgentDefinitions()
+                .map(def -> {
+                    AgentSummary s = summary(def);
+                    s.setChecksum(checksum(def));
+                    return s;
+                })
+                .collect(Collectors.toCollection(ArrayList::new));
 
         // Discover external agents by scanning all credential secrets.
         // Any secret whose JSON value contains an "endpoint" key is treated as an Azure Foundry
@@ -416,27 +370,16 @@ public class AgentService {
                     try {
                         String secretValue = secretsDAO.getSecret(secretName);
                         if (secretValue == null || secretValue.isBlank()) continue;
-                        com.fasterxml.jackson.databind.JsonNode secretJson =
-                                MAPPER.readTree(secretValue);
+                        JsonNode secretJson = MAPPER.readTree(secretValue);
                         String endpoint = secretJson.path("endpoint").asText(null);
                         String region = secretJson.path("region").asText(null);
-                        if (endpoint != null
-                                && !endpoint.isBlank()
-                                && azureFoundryAgentClient != null) {
-                            agents.addAll(
-                                    azureFoundryAgentClient.listExternalAgents(
-                                            secretName, endpoint));
-                        } else if (region != null
-                                && !region.isBlank()
-                                && bedrockAgentClient != null) {
-                            agents.addAll(
-                                    bedrockAgentClient.listExternalAgents(secretName, region));
+                        if (endpoint != null && !endpoint.isBlank() && azureFoundryAgentClient != null) {
+                            agents.addAll(azureFoundryAgentClient.listExternalAgents(secretName, endpoint));
+                        } else if (region != null && !region.isBlank() && bedrockAgentClient != null) {
+                            agents.addAll(bedrockAgentClient.listExternalAgents(secretName, region));
                         }
                     } catch (Exception e) {
-                        log.debug(
-                                "Skipping secret '{}' for external agent discovery: {}",
-                                secretName,
-                                e.getMessage());
+                        log.debug("Skipping secret '{}' for external agent discovery: {}", secretName, e.getMessage());
                     }
                 }
             } catch (Exception e) {
@@ -445,6 +388,78 @@ public class AgentService {
         }
 
         return agents;
+    }
+
+    /**
+     * Every registered agent without the checksum. For callers that list agents on every request
+     * (MCP {@code tools/list}, the A2A server) or need only the names: the checksum serializes and
+     * hashes every definition.
+     */
+    public List<AgentSummary> listAgentsWithoutChecksum() {
+        return latestAgentDefinitions().map(AgentService::summary).toList();
+    }
+
+    /**
+     * The latest definition of each agent. Uses the portable getAllWorkflowDefs() (present across
+     * Conductor cores, including orkes' vendored oss-core, which lacks
+     * getAllWorkflowDefsLatestVersions()) and keeps the latest version per name. A definition is an
+     * agent when its classifier resolves to "agent": the Conductor-Agents stamp (agent_sdk or
+     * agentDef), or an explicit metadata.classifier=agent; an explicit other classifier excludes it
+     * even with a stamp.
+     */
+    private Stream<WorkflowDef> latestAgentDefinitions() {
+        return metadataDAO.getAllWorkflowDefs().stream()
+                .collect(
+                        Collectors.toMap(
+                                WorkflowDef::getName,
+                                def -> def,
+                                (a, b) -> a.getVersion() >= b.getVersion() ? a : b))
+                .values()
+                .stream()
+                .filter(def -> WorkflowClassifiers.isAgent(def.getMetadata()));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static AgentSummary summary(WorkflowDef def) {
+        Map<String, Object> metadata = def.getMetadata();
+        return AgentSummary.builder()
+                .name(def.getName())
+                .version(def.getVersion())
+                .type((String) metadata.get("agent_sdk"))
+                .tags(
+                        metadata.get("agent_capabilities") instanceof List<?> caps
+                                ? (List<String>) caps
+                                : null)
+                .createTime(def.getCreateTime())
+                .updateTime(def.getUpdateTime())
+                .description(def.getDescription())
+                .introduction(AgentIntroduction.of(def))
+                .schemaVersion(def.getSchemaVersion())
+                .restartable(def.isRestartable())
+                .workflowStatusListenerEnabled(def.isWorkflowStatusListenerEnabled())
+                .ownerEmail(def.getOwnerEmail())
+                .inputParameters(def.getInputParameters())
+                .outputParameters(def.getOutputParameters())
+                .timeoutPolicy(
+                        def.getTimeoutPolicy() == null ? null : def.getTimeoutPolicy().name())
+                .timeoutSeconds(def.getTimeoutSeconds())
+                .failureWorkflow(def.getFailureWorkflow())
+                .build();
+    }
+
+    /** SHA-256 of the definition's JSON, in hex; null when it cannot be computed. */
+    private static String checksum(WorkflowDef def) {
+        try {
+            byte[] hash =
+                    MessageDigest.getInstance("SHA-256")
+                            .digest(
+                                    MAPPER.writeValueAsString(def)
+                                            .getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash);
+        } catch (Exception e) {
+            log.warn("Failed to compute checksum for workflow {}", def.getName(), e);
+            return null;
+        }
     }
 
     /** Search agent executions with optional filters. */
@@ -498,7 +513,7 @@ public class AgentService {
                 workflowNames = List.of(agentName);
             } else {
                 workflowNames =
-                        listAgents().stream()
+                        listAgentsWithoutChecksum().stream()
                                 .map(AgentSummary::getName)
                                 .collect(Collectors.toList());
             }
@@ -657,7 +672,9 @@ public class AgentService {
         String[] terminalStatuses = {"COMPLETED", "FAILED", "TERMINATED", "TIMED_OUT"};
 
         List<String> workflowNames =
-                listAgents().stream().map(AgentSummary::getName).collect(Collectors.toList());
+                listAgentsWithoutChecksum().stream()
+                        .map(AgentSummary::getName)
+                        .collect(Collectors.toList());
         if (workflowNames.isEmpty()) {
             return 0;
         }
@@ -912,8 +929,7 @@ public class AgentService {
                     try {
                         String secretValue = secretsDAO.getSecret(secretName);
                         if (secretValue == null || secretValue.isBlank()) continue;
-                        com.fasterxml.jackson.databind.JsonNode secretJson =
-                                MAPPER.readTree(secretValue);
+                        JsonNode secretJson = MAPPER.readTree(secretValue);
                         String endpoint = secretJson.path("endpoint").asText(null);
                         String region = secretJson.path("region").asText(null);
                         if (endpoint != null

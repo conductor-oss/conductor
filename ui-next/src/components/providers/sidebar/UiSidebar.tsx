@@ -18,7 +18,7 @@ import { Sidebar } from "components/providers/sidebar";
 import { useAnnouncementBanner } from "components/layout/header/bannerUtils";
 import { MenuItemType } from "components/providers/sidebar/types";
 import { pluginRegistry } from "plugins/registry";
-import { FunctionComponent, useContext, useMemo } from "react";
+import { FunctionComponent, useContext, useMemo, type ReactNode } from "react";
 import { FEATURES, featureFlags } from "utils";
 import { SidebarContext } from "./context/SidebarContext";
 import { useAuth } from "components/features/auth";
@@ -31,11 +31,14 @@ type UISidebarProps = {
   /** undefined = loading (skeleton), null = error/unavailable, string = loaded */
   apiVersion?: string | null;
   releaseVersion?: string;
+  /** Replaces the built-in user block in the footer. See Sidebar. */
+  customUserBlock?: ReactNode;
 };
 
 export const UISidebar: FunctionComponent<UISidebarProps> = ({
   apiVersion,
   releaseVersion,
+  customUserBlock,
 }) => {
   const {
     open,
@@ -78,6 +81,7 @@ export const UISidebar: FunctionComponent<UISidebarProps> = ({
         (showBanner && isBannerOpen) || showAiStudioBanner
       }
       onSearchClick={() => setSearchModal(true)}
+      customUserBlock={customUserBlock}
     />
   );
 };

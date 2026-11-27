@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 
 import org.conductoross.conductor.common.metadata.agent.AgentStartRequest;
 import org.conductoross.conductor.common.metadata.agent.AgentStartResponse;
+import org.conductoross.conductor.service.SchemaService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -64,7 +65,7 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.service.ExecutionLockService;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.*;
 import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
@@ -141,6 +142,11 @@ public class TestWorkflowExecutor {
                     task.setStatus(TaskModel.Status.COMPLETED);
                 }
             };
+        }
+
+        @Bean(TASK_TYPE_SWITCH)
+        public Switch switchBean() {
+            return new Switch();
         }
 
         @Bean
@@ -227,7 +233,8 @@ public class TestWorkflowExecutor {
                         systemTaskRegistry,
                         parametersUtils,
                         idGenerator,
-                        Optional.empty());
+                        Optional.empty(),
+                        mock(SchemaService.class));
     }
 
     @Test
@@ -2045,6 +2052,92 @@ public class TestWorkflowExecutor {
         assertEquals(new HashSet<>(), workflow.getFailedTaskNames());
     }
 
+    /**
+     * A rerun saves the task it runs again as SCHEDULED and queues it. From then on a worker can
+     * take it and finish it; the rerun must not save that task again, or it puts SCHEDULED back
+     * over the worker's COMPLETED, whose update already removed the queue message, and the task
+     * waits for the sweeper.
+     */
+    @Test
+    public void testRerunDoesNotSaveTheTaskItRunsAgainAfterQueueingIt() {
+        IDGenerator idGenerator = new IDGenerator();
+        String workflowId = idGenerator.generate();
+
+        TaskModel task1 = new TaskModel();
+        task1.setTaskType(TaskType.SIMPLE.name());
+        task1.setTaskDefName("task1");
+        task1.setReferenceTaskName("task1_ref");
+        task1.setWorkflowInstanceId(workflowId);
+        task1.setScheduledTime(System.currentTimeMillis());
+        task1.setTaskId(idGenerator.generate());
+        task1.setStatus(TaskModel.Status.COMPLETED);
+        task1.setSeq(1);
+
+        TaskModel task2 = new TaskModel();
+        task2.setTaskType(TaskType.SIMPLE.name());
+        task2.setTaskDefName("task2");
+        task2.setReferenceTaskName("task2_ref");
+        task2.setWorkflowInstanceId(workflowId);
+        task2.setScheduledTime(System.currentTimeMillis());
+        task2.setTaskId(idGenerator.generate());
+        task2.setStatus(TaskModel.Status.FAILED);
+        task2.setSeq(2);
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId(workflowId);
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("workflow");
+        workflowDef.setVersion(1);
+        workflow.setWorkflowDefinition(workflowDef);
+        workflow.setStatus(WorkflowModel.Status.FAILED);
+        workflow.setReasonForIncompletion("task2 failed");
+        workflow.getTasks().addAll(Arrays.asList(task1, task2));
+        when(executionDAOFacade.getWorkflowModel(workflow.getWorkflowId(), true))
+                .thenReturn(workflow);
+
+        // from the moment the task is on its queue, a worker may have finished it
+        java.util.concurrent.atomic.AtomicBoolean queued =
+                new java.util.concurrent.atomic.AtomicBoolean();
+        List<String> savedAfterQueued = new ArrayList<>();
+        doAnswer(
+                        i -> {
+                            if (task2.getTaskId().equals(i.getArgument(1))) {
+                                queued.set(true);
+                            }
+                            return null;
+                        })
+                .when(queueDAO)
+                .push(anyString(), anyString(), anyInt(), anyLong());
+        doAnswer(
+                        i -> {
+                            if (queued.get() && i.getArgument(0) == task2) {
+                                savedAfterQueued.add("updateTask");
+                            }
+                            return null;
+                        })
+                .when(executionDAOFacade)
+                .updateTask(any());
+        doAnswer(
+                        i -> {
+                            List<TaskModel> tasks = i.getArgument(0);
+                            if (queued.get() && tasks.contains(task2)) {
+                                savedAfterQueued.add("updateTasks");
+                            }
+                            return null;
+                        })
+                .when(executionDAOFacade)
+                .updateTasks(any());
+
+        RerunWorkflowRequest rerunWorkflowRequest = new RerunWorkflowRequest();
+        rerunWorkflowRequest.setReRunFromWorkflowId(workflow.getWorkflowId());
+        rerunWorkflowRequest.setReRunFromTaskId(task2.getTaskId());
+        workflowExecutor.rerun(rerunWorkflowRequest);
+
+        assertTrue(queued.get());
+        assertEquals(TaskModel.Status.SCHEDULED, task2.getStatus());
+        assertEquals("the rerun saved the task after queueing it", List.of(), savedAfterQueued);
+    }
+
     @Test
     public void testRerunSubWorkflowWithTaskId() {
         IDGenerator idGenerator = new IDGenerator();
@@ -2584,6 +2677,9 @@ public class TestWorkflowExecutor {
 
     @Test
     public void testResumeWorkflow() {
+        when(executionLockService.acquireLock(anyString(), anyLong())).thenReturn(true);
+        doNothing().when(executionLockService).releaseLock(anyString());
+
         String workflowId = "testResumeWorkflowId";
         WorkflowModel workflow = new WorkflowModel();
         workflow.setWorkflowId(workflowId);
@@ -2591,13 +2687,21 @@ public class TestWorkflowExecutor {
         // if workflow is not in PAUSED state
         workflow.setStatus(WorkflowModel.Status.COMPLETED);
         when(executionDAOFacade.getWorkflowModel(workflowId, false)).thenReturn(workflow);
-        try {
-            workflowExecutor.resumeWorkflow(workflowId);
-        } catch (Exception e) {
-            assertTrue(e instanceof IllegalStateException);
-            verify(executionDAOFacade, never()).updateWorkflow(any(WorkflowModel.class));
-            verify(queueDAO, never()).push(anyString(), anyString(), anyInt(), anyLong());
-        }
+        ConflictException e =
+                assertThrows(
+                        ConflictException.class, () -> workflowExecutor.resumeWorkflow(workflowId));
+        assertTrue(e.getMessage().contains("is not PAUSED so cannot resume"));
+        assertTrue(e.getMessage().contains("COMPLETED"));
+        verify(executionDAOFacade, never()).updateWorkflow(any(WorkflowModel.class));
+        verify(queueDAO, never()).push(anyString(), anyString(), anyInt(), anyLong());
+
+        // if workflow is already RUNNING (e.g. a racing resume call already resumed it)
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+        when(executionDAOFacade.getWorkflowModel(workflowId, false)).thenReturn(workflow);
+        workflowExecutor.resumeWorkflow(workflowId);
+        assertEquals(WorkflowModel.Status.RUNNING, workflow.getStatus());
+        verify(executionDAOFacade, never()).updateWorkflow(any(WorkflowModel.class));
+        verify(queueDAO, never()).push(anyString(), anyString(), anyInt(), anyLong());
 
         // if workflow is in PAUSED state
         workflow.setStatus(WorkflowModel.Status.PAUSED);
@@ -2607,6 +2711,69 @@ public class TestWorkflowExecutor {
         assertTrue(workflow.getLastRetriedTime() > 0);
         verify(executionDAOFacade, times(1)).updateWorkflow(any(WorkflowModel.class));
         verify(queueDAO, times(1)).push(anyString(), anyString(), anyInt(), anyLong());
+    }
+
+    private WorkflowModel workflowForSkipTask(String workflowId, WorkflowModel.Status status) {
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setName("simple_task");
+        workflowTask.setTaskReferenceName("t1");
+        workflowTask.setType(TaskType.SIMPLE.name());
+
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("skip_task_workflow");
+        workflowDef.getTasks().add(workflowTask);
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId(workflowId);
+        workflow.setWorkflowDefinition(workflowDef);
+        workflow.setStatus(status);
+        when(executionDAOFacade.getWorkflowModel(workflowId, true)).thenReturn(workflow);
+        return workflow;
+    }
+
+    @Test
+    public void testSkipTaskFromWorkflowNotRunningThrowsConflict() {
+        String workflowId = "testSkipTaskNotRunningId";
+        workflowForSkipTask(workflowId, WorkflowModel.Status.COMPLETED);
+
+        ConflictException e =
+                assertThrows(
+                        ConflictException.class,
+                        () -> workflowExecutor.skipTaskFromWorkflow(workflowId, "t1", null));
+        assertTrue(e.getMessage().contains("is not running"));
+        verify(executionDAOFacade, never()).createTasks(anyList());
+    }
+
+    @Test
+    public void testSkipTaskFromWorkflowUnknownTaskRefThrowsIllegalArgument() {
+        String workflowId = "testSkipTaskUnknownRefId";
+        workflowForSkipTask(workflowId, WorkflowModel.Status.RUNNING);
+
+        IllegalArgumentException e =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () ->
+                                workflowExecutor.skipTaskFromWorkflow(
+                                        workflowId, "does_not_exist", null));
+        assertTrue(e.getMessage().contains("does not exist in the WorkflowDefinition"));
+        verify(executionDAOFacade, never()).createTasks(anyList());
+    }
+
+    @Test
+    public void testSkipTaskFromWorkflowAlreadyProcessedThrowsConflict() {
+        String workflowId = "testSkipTaskAlreadyProcessedId";
+        WorkflowModel workflow = workflowForSkipTask(workflowId, WorkflowModel.Status.RUNNING);
+        TaskModel existing = new TaskModel();
+        existing.setReferenceTaskName("t1");
+        existing.setStatus(TaskModel.Status.IN_PROGRESS);
+        workflow.getTasks().add(existing);
+
+        ConflictException e =
+                assertThrows(
+                        ConflictException.class,
+                        () -> workflowExecutor.skipTaskFromWorkflow(workflowId, "t1", null));
+        assertTrue(e.getMessage().contains("has already been processed"));
+        verify(executionDAOFacade, never()).createTasks(anyList());
     }
 
     @Test
@@ -2660,6 +2827,19 @@ public class TestWorkflowExecutor {
         // And verify that the failure workflow definition was fetched without version
         verify(metadataDAO).getLatestWorkflowDef("failure_workflow");
         assertNull(workflow.getWorkflowDefinition().getFailureWorkflowVersion());
+
+        // And the failure workflow input carries failedWorkflow as a Map, not a raw
+        // WorkflowModel POJO, so nested ${workflow.input.failedWorkflow.<field>} references
+        // are resolvable by JsonPath (issue #1164)
+        ArgumentCaptor<WorkflowModel> failureWorkflowCaptor =
+                ArgumentCaptor.forClass(WorkflowModel.class);
+        verify(executionDAOFacade, atLeastOnce()).createWorkflow(failureWorkflowCaptor.capture());
+        Object failedWorkflowInput =
+                failureWorkflowCaptor.getValue().getInput().get("failedWorkflow");
+        assertTrue(
+                "failedWorkflow input must be a Map, was: " + failedWorkflowInput.getClass(),
+                failedWorkflowInput instanceof Map);
+        assertEquals("1", ((Map<String, Object>) failedWorkflowInput).get("workflowId"));
     }
 
     @Test
@@ -3188,5 +3368,41 @@ public class TestWorkflowExecutor {
         }
 
         return tasks;
+    }
+
+    private TaskModel switchTaskModel(WorkflowModel workflow, String ref, String evaluatorType) {
+        WorkflowTask wt = new WorkflowTask();
+        wt.setType(TASK_TYPE_SWITCH);
+        wt.setName(ref);
+        wt.setTaskReferenceName(ref);
+        wt.setEvaluatorType(evaluatorType);
+        wt.setExpression("route");
+        TaskModel task = new TaskModel();
+        task.setTaskType(TASK_TYPE_SWITCH);
+        task.setTaskDefName(TASK_TYPE_SWITCH);
+        task.setReferenceTaskName(ref);
+        task.setWorkflowInstanceId(workflow.getWorkflowId());
+        task.setTaskId(new IDGenerator().generate());
+        task.setWorkflowTask(wt);
+        return task;
+    }
+
+    /** SWITCH evaluation happens in its mapper, so it is never put on a system-task queue. */
+    @Test
+    public void testDecisionSwitchIsNeverQueued() {
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("sw-decision");
+        WorkflowDef def = new WorkflowDef();
+        def.setName("sw");
+        def.setVersion(1);
+        workflow.setWorkflowDefinition(def);
+        TaskModel regular = switchTaskModel(workflow, "r1", "decision");
+        regular.setStatus(TaskModel.Status.IN_PROGRESS); // as SwitchTaskMapper produces it
+
+        workflowExecutor.scheduleTask(workflow, List.of(regular));
+
+        verify(queueDAO, never()).push(eq(TASK_TYPE_SWITCH), anyString(), anyInt(), anyLong());
+        verify(queueDAO, never()).push(eq(TASK_TYPE_SWITCH), anyString(), anyLong());
+        assertEquals(TaskModel.Status.IN_PROGRESS, regular.getStatus());
     }
 }

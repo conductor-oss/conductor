@@ -38,7 +38,7 @@ import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * System task that compiles an LLM-produced plan (JSON describing tools, args, dependencies, and
@@ -330,11 +330,21 @@ public class PlanAndCompileTask extends WorkflowSystemTask {
         CompileResult result = new CompileResult();
 
         Object stepsObj = plan.get("steps");
-        if (!(stepsObj instanceof List) || ((List<?>) stepsObj).isEmpty()) {
-            result.error = "Plan must have a non-empty steps array";
+        if (stepsObj != null && !(stepsObj instanceof List)) {
+            result.error = "Plan steps must be an array";
             return result;
         }
-        List<Map<String, Object>> steps = (List<Map<String, Object>>) stepsObj;
+        List<Map<String, Object>> steps =
+                stepsObj == null ? List.of() : (List<Map<String, Object>>) stepsObj;
+        // A pure gate plan (no steps, just validation -> on_success/on_failure)
+        // is legitimate, e.g. "request approval, refund only if approved".
+        // Reject only plans with nothing executable at all.
+        if (steps.isEmpty()
+                && !hasEntries(plan.get("validation"))
+                && !hasEntries(plan.get("on_success"))) {
+            result.error = "Plan must have at least one of: steps, validation, on_success";
+            return result;
+        }
 
         // Pass 1 — auto-id missing steps. Done before dependency validation so
         // depends_on can resolve to the auto-ids.
@@ -520,7 +530,7 @@ public class PlanAndCompileTask extends WorkflowSystemTask {
         }
 
         // Validation block tasks.
-        emitValidationTasks(plan, validations, ctx, tasks);
+        emitValidationTasks(plan, validations, ctx, tasks, result.warnings);
 
         // outputParameters: prefer validation aggregator, else last op's
         // terminal ref. Empty fallback if neither (unreachable in practice).
@@ -1248,8 +1258,18 @@ public class PlanAndCompileTask extends WorkflowSystemTask {
             Map<String, Object> plan,
             List<Map<String, Object>> validations,
             CompileCtx ctx,
-            List<Map<String, Object>> tasks) {
-        if (validations.isEmpty()) return;
+            List<Map<String, Object>> tasks,
+            List<String> warnings) {
+        if (validations.isEmpty()) {
+            // No validation means a vacuous pass: run on_success unconditionally
+            // rather than silently dropping it. on_failure is unreachable.
+            tasks.addAll(buildActionTasks(plan.get("on_success"), "ok", ctx));
+            if (hasEntries(plan.get("on_failure"))) {
+                warnings.add(
+                        "on_failure ignored: plan has no validation, so it can never fail validation");
+            }
+            return;
+        }
 
         List<List<Map<String, Object>>> valChains = new ArrayList<>();
         List<String> evalRefs = new ArrayList<>();
@@ -1282,7 +1302,7 @@ public class PlanAndCompileTask extends WorkflowSystemTask {
                 if (singleValidator) {
                     evalExpr =
                             "(function(){"
-                                    + "  var raw = $.toolOut;"
+                                    + "  var raw = ($.toolOut !== null && $.toolOut !== undefined && $.toolOut !== '') ? $.toolOut : $.toolFull;"
                                     + "  var out; try { out = typeof raw === 'string' ? JSON.parse(raw) : (raw || {}); } catch(e) { out = raw; }"
                                     + "  try { var ok = (function($){ return ("
                                     + c
@@ -1292,7 +1312,7 @@ public class PlanAndCompileTask extends WorkflowSystemTask {
                 } else {
                     evalExpr =
                             "(function(){"
-                                    + "  var raw = $.toolOut;"
+                                    + "  var raw = ($.toolOut !== null && $.toolOut !== undefined && $.toolOut !== '') ? $.toolOut : $.toolFull;"
                                     + "  var out; try { out = typeof raw === 'string' ? JSON.parse(raw) : (raw || {}); } catch(e) { out = raw; }"
                                     + "  try { var ok = (function($){ return ("
                                     + c
@@ -1304,7 +1324,7 @@ public class PlanAndCompileTask extends WorkflowSystemTask {
                 if (singleValidator) {
                     evalExpr =
                             "(function(){"
-                                    + "  var raw = $.toolOut;"
+                                    + "  var raw = ($.toolOut !== null && $.toolOut !== undefined && $.toolOut !== '') ? $.toolOut : $.toolFull;"
                                     + "  if (raw == null) return 'failed';"
                                     + "  var d; try { d = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch(e) { d = raw; }"
                                     + "  if (typeof d === 'object' && d !== null && d.passed === false) return 'failed';"
@@ -1314,7 +1334,7 @@ public class PlanAndCompileTask extends WorkflowSystemTask {
                 } else {
                     evalExpr =
                             "(function(){"
-                                    + "  var raw = $.toolOut;"
+                                    + "  var raw = ($.toolOut !== null && $.toolOut !== undefined && $.toolOut !== '') ? $.toolOut : $.toolFull;"
                                     + "  if (raw == null) return {passed: false, reason: 'null output'};"
                                     + "  var d; try { d = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch(e) { d = raw; }"
                                     + "  if (typeof d === 'object' && d !== null && d.passed === false) return {passed: false, reason: d.reason || 'passed=false'};"
@@ -1325,7 +1345,13 @@ public class PlanAndCompileTask extends WorkflowSystemTask {
             }
             Map<String, Object> evalInputs = new LinkedHashMap<>();
             evalInputs.put("evaluatorType", "graaljs");
+            // Tools that return a scalar are wrapped as {result: ...}; tools
+            // that return a map put its fields at the top level of the output.
+            // Read .result first and fall back to the full output (the same
+            // rule step outputs use: simpleResult / fullOutput). Otherwise
+            // every condition on a map-returning tool sees null and fails.
             evalInputs.put("toolOut", "${" + vRef + ".output.result}");
+            evalInputs.put("toolFull", "${" + vRef + ".output}");
             evalInputs.put("expression", evalExpr);
             Map<String, Object> evalTask = new LinkedHashMap<>();
             evalTask.put("name", "INLINE_TASK");
@@ -1408,39 +1434,11 @@ public class PlanAndCompileTask extends WorkflowSystemTask {
             tasks.add(aggTask);
         }
 
-        // Build on_success / on_failure branches.
-        List<Map<String, Object>> onSuccess = new ArrayList<>();
-        Object saObj = plan.get("on_success");
-        if (saObj instanceof List) {
-            for (Map<String, Object> sAct : (List<Map<String, Object>>) saObj) {
-                Map<String, Object> sActArgs = new LinkedHashMap<>();
-                if (sAct.get("args") instanceof Map) {
-                    sActArgs.putAll((Map<String, Object>) sAct.get("args"));
-                }
-                injectAmbient(sActArgs);
-                // on_success actions follow the same toolType routing as
-                // step operations — no silent SIMPLE for agent_tool/mcp/http.
-                Map<String, Object> okTask =
-                        buildToolTask(
-                                String.valueOf(sAct.get("tool")), sActArgs, ctx.uid("ok"), ctx);
-                onSuccess.add(okTask);
-            }
-        }
-        List<Map<String, Object>> onFailure = new ArrayList<>();
-        Object faObj = plan.get("on_failure");
-        if (faObj instanceof List) {
-            for (Map<String, Object> fAct : (List<Map<String, Object>>) faObj) {
-                Map<String, Object> fActArgs = new LinkedHashMap<>();
-                if (fAct.get("args") instanceof Map) {
-                    fActArgs.putAll((Map<String, Object>) fAct.get("args"));
-                }
-                injectAmbient(fActArgs);
-                Map<String, Object> failTask =
-                        buildToolTask(
-                                String.valueOf(fAct.get("tool")), fActArgs, ctx.uid("fail"), ctx);
-                onFailure.add(failTask);
-            }
-        }
+        // Build on_success / on_failure branches. Actions follow the same
+        // toolType routing as step operations — no silent SIMPLE for
+        // agent_tool/mcp/http.
+        List<Map<String, Object>> onSuccess = buildActionTasks(plan.get("on_success"), "ok", ctx);
+        List<Map<String, Object>> onFailure = buildActionTasks(plan.get("on_failure"), "fail", ctx);
         Map<String, Object> termTask = new LinkedHashMap<>();
         termTask.put("name", "TERMINATE_TASK");
         termTask.put("taskReferenceName", ctx.uid("term"));
@@ -1492,6 +1490,29 @@ public class PlanAndCompileTask extends WorkflowSystemTask {
     // -----------------------------------------------------------------------
     //  Helpers
     // -----------------------------------------------------------------------
+
+    private static boolean hasEntries(Object o) {
+        return o instanceof List<?> l && !l.isEmpty();
+    }
+
+    /** Compile an {@code on_success} / {@code on_failure} action list into tool tasks. */
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> buildActionTasks(
+            Object actionsObj, String refPrefix, CompileCtx ctx) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        if (!(actionsObj instanceof List)) return out;
+        for (Object o : (List<?>) actionsObj) {
+            if (!(o instanceof Map)) continue;
+            Map<String, Object> act = (Map<String, Object>) o;
+            Map<String, Object> args = new LinkedHashMap<>();
+            if (act.get("args") instanceof Map) {
+                args.putAll((Map<String, Object>) act.get("args"));
+            }
+            injectAmbient(args);
+            out.add(buildToolTask(String.valueOf(act.get("tool")), args, ctx.uid(refPrefix), ctx));
+        }
+        return out;
+    }
 
     /**
      * Recursively rewrite plan-level {@code {"$ref": "<step_id>"}} markers in a value tree into

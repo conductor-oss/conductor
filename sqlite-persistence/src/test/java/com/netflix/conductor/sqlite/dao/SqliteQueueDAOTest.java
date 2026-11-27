@@ -13,6 +13,7 @@
 package com.netflix.conductor.sqlite.dao;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -32,7 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
+import org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -42,8 +43,8 @@ import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.sqlite.config.SqliteConfiguration;
 import com.netflix.conductor.sqlite.util.Query;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.*;
@@ -154,6 +155,80 @@ public class SqliteQueueDAOTest {
         queueDAO.flush(queueName);
         size = queueDAO.getSize(queueName);
         assertEquals(0, size);
+    }
+
+    /**
+     * Test fix for https://github.com/conductor-oss/conductor/issues/142
+     *
+     * <p>When fewer than {@code count} messages are available, pollMessages should return as soon
+     * as at least one message is available rather than blocking for the full timeout waiting to
+     * fill the whole batch.
+     */
+    /**
+     * A message id is unique within a queue, not across queues: a native workflow's continuation is
+     * offered on the queue of the worker that holds the execution and, as a fallback, on the shared
+     * queue, under the same id. A pop takes it from the queue polled and from no other.
+     */
+    @Test
+    public void popTakesAMessageFromTheQueuePolledOnly() {
+        queueDAO.push("pin-a:code", "msg-1", 0);
+        queueDAO.push("code", "msg-1", 0);
+
+        assertEquals(List.of("msg-1"), queueDAO.pop("pin-a:code", 10, 100));
+
+        // still on the other queue, to be taken once
+        assertEquals(List.of("msg-1"), queueDAO.pop("code", 10, 100));
+        assertEquals(List.of(), queueDAO.pop("code", 10, 100));
+    }
+
+    @Test
+    public void pollMessagesReturnsPromptlyWhenFewerThanCountAvailable() {
+        final String queueName = "issue142_testQueue";
+        // Only one message in the queue...
+        queueDAO.push(queueName, "issue142-msg-0", 0);
+        assertEquals("Queue size mismatch", 1, queueDAO.getSize(queueName));
+
+        // ...but poll asking for a much larger batch with a long timeout.
+        final int requestedCount = 5;
+        final int timeoutMs = 10_000;
+
+        long start = System.currentTimeMillis();
+        List<Message> polled = queueDAO.pollMessages(queueName, requestedCount, timeoutMs);
+        long elapsed = System.currentTimeMillis() - start;
+
+        assertNotNull("Poll was null", polled);
+        assertEquals("Should return the one available message", 1, polled.size());
+        assertTrue(
+                "pollMessages blocked for " + elapsed + "ms; should have returned promptly",
+                elapsed < timeoutMs / 2);
+    }
+
+    /**
+     * Companion to {@link #pollMessagesReturnsPromptlyWhenFewerThanCountAvailable()} for
+     * https://github.com/conductor-oss/conductor/issues/142
+     *
+     * <p>A poll for zero messages must return immediately with an empty result rather than blocking
+     * for the full timeout. The long-poll loop only waits while nothing has been popped, so a
+     * {@code count == 0} request (which can never pop anything) has to short-circuit up front --
+     * even when the queue has messages waiting.
+     */
+    @Test
+    public void pollMessagesReturnsImmediatelyWhenCountIsZero() {
+        final String queueName = "issue142_zeroCountQueue";
+        queueDAO.push(queueName, "issue142-msg-0", 0);
+        assertEquals("Queue size mismatch", 1, queueDAO.getSize(queueName));
+
+        final int timeoutMs = 10_000;
+
+        long start = System.currentTimeMillis();
+        List<Message> polled = queueDAO.pollMessages(queueName, 0, timeoutMs);
+        long elapsed = System.currentTimeMillis() - start;
+
+        assertNotNull("Poll was null", polled);
+        assertTrue("Zero-count poll should return no messages", polled.isEmpty());
+        assertTrue(
+                "pollMessages blocked for " + elapsed + "ms; should have returned immediately",
+                elapsed < timeoutMs / 2);
     }
 
     /**
@@ -420,6 +495,56 @@ public class SqliteQueueDAOTest {
         List<String> popped = queueDAO.pop(queueName, 1, 100);
         assertEquals(1, popped.size());
         assertEquals(messageId, popped.get(0));
+    }
+
+    @Test
+    public void popOfAnAlreadyDueMessageIsNotReleasedByTheUnackSweep() throws Exception {
+        String queueName = "pop_resets_ready_time";
+        String messageId = "already-due";
+
+        queueDAO.push(queueName, messageId, 0);
+        setDeliverOnMinutesAgo(queueName, messageId);
+
+        List<String> taken = queueDAO.pop(queueName, 1, 0);
+        assertEquals(1, taken.size());
+        assertEquals(messageId, taken.get(0));
+
+        queueDAO.processAllUnacks();
+
+        List<String> again = queueDAO.pop(queueName, 1, 0);
+        assertTrue(
+                "a take of a message that had already been waiting must not be handed out again",
+                again.isEmpty());
+    }
+
+    @Test
+    public void unackSweepReleasesATakeOlderThanSixtySeconds() throws Exception {
+        String queueName = "stale_take_is_released";
+        String messageId = "stale-take";
+
+        queueDAO.push(queueName, messageId, 0);
+        List<String> taken = queueDAO.pop(queueName, 1, 0);
+        assertEquals(1, taken.size());
+
+        setDeliverOnMinutesAgo(queueName, messageId);
+        queueDAO.processAllUnacks();
+
+        List<String> again = queueDAO.pop(queueName, 1, 0);
+        assertEquals(1, again.size());
+        assertEquals(messageId, again.get(0));
+    }
+
+    private void setDeliverOnMinutesAgo(String queueName, String messageId) throws Exception {
+        try (Connection conn = dataSource.getConnection()) {
+            conn.setAutoCommit(true);
+            try (PreparedStatement statement =
+                    conn.prepareStatement(
+                            "UPDATE queue_message SET deliver_on = strftime('%Y-%m-%d %H:%M:%f', 'now', '-2 minutes') WHERE queue_name = ? AND message_id = ?")) {
+                statement.setString(1, queueName);
+                statement.setString(2, messageId);
+                assertEquals(1, statement.executeUpdate());
+            }
+        }
     }
 
     // @Test

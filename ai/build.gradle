@@ -13,6 +13,8 @@ dependencies {
     // supplied by the server at runtime.
     compileOnly 'org.springframework.boot:spring-boot-starter-web'
     compileOnly 'org.springframework.boot:spring-boot-autoconfigure'
+    // SchemaValidationException, which this module catches, is a jakarta.validation.ValidationException.
+    compileOnly 'org.springframework.boot:spring-boot-starter-validation'
 
     implementation project(':conductor-common')
     implementation project(':conductor-core')
@@ -28,6 +30,8 @@ dependencies {
 
     api("io.modelcontextprotocol.sdk:mcp-core:${revMCP}")
     api "com.squareup.okhttp3:okhttp:4.12.0"
+    // The MCP server answers with Mono; the version comes from the Spring Boot BOM.
+    api "io.projectreactor:reactor-core"
     api "org.apache.commons:commons-lang3"
 
     // Markdown parsing and PDF generation
@@ -53,6 +57,10 @@ dependencies {
 
 
     testImplementation 'org.springframework.boot:spring-boot-starter-web'
+    // The API only, not spring-boot-starter-validation: the starter puts hibernate-validator on
+    // the test classpath, which switches on Spring's method-validation proxying and breaks the
+    // A2A tests' mock verification. Catching SchemaValidationException only needs the class.
+    testImplementation 'jakarta.validation:jakarta.validation-api'
     testImplementation "com.squareup.okhttp3:mockwebserver:4.12.0"
     testImplementation "org.testcontainers:mongodb:${revTestContainer}"
     testImplementation "org.testcontainers:postgresql:${revTestContainer}"
@@ -60,4 +68,12 @@ dependencies {
     testImplementation "org.apache.commons:commons-compress:${revCommonsCompress}"
     testImplementation "com.h2database:h2:2.4.240"
 
+}
+
+// MCPProtocolHeaders reports this version as clientInfo.version on MCP 2026-07-28 requests.
+jar {
+    manifest {
+        attributes('Implementation-Title': project.name,
+                'Implementation-Version': project.version)
+    }
 }

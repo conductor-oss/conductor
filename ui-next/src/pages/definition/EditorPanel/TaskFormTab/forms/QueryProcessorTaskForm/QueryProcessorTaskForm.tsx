@@ -117,11 +117,6 @@ export const QueryProcessorTaskForm = ({ task, onChange }: TaskFormProps) => {
                   value: QueryProcessorType.METRICS,
                   label: "Conductor Metrics (Prometheus)",
                 },
-                {
-                  value: QueryProcessorType.CONDUCTOR_EVENTS,
-                  label: "Conductor Events",
-                  disabled: true,
-                },
               ]}
               name="queryProcessorType"
               value={queryType}

@@ -5,6 +5,9 @@ import {
   roleHumanTaskManager,
   roleMetaManager,
   roleReadOnly,
+  roleScheduleManager,
+  roleIntegrationManager,
+  roleQueueMonitorViewer,
   roleUser,
   roleWfManager,
 } from "theme/tokens/colors";
@@ -18,32 +21,30 @@ export const roleLabel: { [key: string]: string } = {
   [Role.WORKFLOW_MANAGER]: "Workflow manager",
   [Role.HUMAN_TASK_MANAGER]: "Human task manager",
   [Role.EVENT_HANDLER_MANAGER]: "Event handler manager",
+  [Role.SCHEDULE_MANAGER]: "Schedule manager",
+  [Role.INTEGRATION_MANAGER]: "Integrations manager",
+  [Role.QUEUE_MONITOR_VIEWER]: "Queue monitor viewer",
   [Role.USER_READ_ONLY]: "Read only user",
 };
 
 export const displayRoleName = (role: string) => roleLabel[role] || role;
 
-export const userRoleColorGenerator = (role: string) => {
-  let tagColor;
-  if (role === Role.ADMIN) {
-    tagColor = roleAdmin;
-  } else if (role === Role.USER) {
-    tagColor = roleUser;
-  } else if (role === Role.WORKFLOW_MANAGER) {
-    tagColor = roleWfManager;
-  } else if (role === Role.METADATA_MANAGER) {
-    tagColor = roleMetaManager;
-  } else if (role === Role.USER_READ_ONLY) {
-    tagColor = roleReadOnly;
-  } else if (role === Role.HUMAN_TASK_MANAGER) {
-    tagColor = roleHumanTaskManager;
-  } else if (role === Role.EVENT_HANDLER_MANAGER) {
-    tagColor = roleEventHandlerManager;
-  } else {
-    tagColor = roleCustom;
-  }
-  return { backgroundColor: tagColor };
+const roleColor: { [key: string]: string } = {
+  [Role.ADMIN]: roleAdmin,
+  [Role.USER]: roleUser,
+  [Role.WORKFLOW_MANAGER]: roleWfManager,
+  [Role.METADATA_MANAGER]: roleMetaManager,
+  [Role.USER_READ_ONLY]: roleReadOnly,
+  [Role.HUMAN_TASK_MANAGER]: roleHumanTaskManager,
+  [Role.EVENT_HANDLER_MANAGER]: roleEventHandlerManager,
+  [Role.SCHEDULE_MANAGER]: roleScheduleManager,
+  [Role.INTEGRATION_MANAGER]: roleIntegrationManager,
+  [Role.QUEUE_MONITOR_VIEWER]: roleQueueMonitorViewer,
 };
+
+export const userRoleColorGenerator = (role: string) => ({
+  backgroundColor: roleColor[role] ?? roleCustom,
+});
 
 export const sortRoles = (roles?: AccessRole[]) =>
   (roles ?? []).sort((a: { name: string }, b: { name: string }) => {

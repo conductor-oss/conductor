@@ -42,15 +42,16 @@ import com.azure.core.credential.TokenRequestContext;
 import com.azure.identity.ClientSecretCredentialBuilder;
 import com.azure.identity.DefaultAzureCredentialBuilder;
 import com.azure.identity.ManagedIdentityCredentialBuilder;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 // ConductorAgentClient backed by Azure AI — supports three agent/model types and four auth modes.
 //
@@ -646,7 +647,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         byte[] bytes;
         try {
             bytes = MAPPER.writeValueAsBytes(body);
-        } catch (IOException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException("Failed to serialize request body", e);
         }
         String fullUrl =

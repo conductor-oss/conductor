@@ -216,13 +216,14 @@ import {
 } from "@io-orkes/conductor-javascript";
 import type { Task } from "@io-orkes/conductor-javascript";
 
-@worker({ taskDefName: "greet" })
-async function greet(task: Task) {
-  return {
-    status: "COMPLETED" as const,
-    outputData: { result: `Hello ${task.inputData.name}` },
-  };
-}
+const greet = worker({ taskDefName: "greet" })(
+  async (task: Task) => {
+    return {
+      status: "COMPLETED" as const,
+      outputData: { result: `Hello ${task.inputData?.name}` },
+    };
+  }
+);
 
 async function main() {
   const clients = await OrkesClients.from();
@@ -245,11 +246,11 @@ main();
 <p class="worker-language-guide__heading" role="heading" aria-level="3">3. Run and verify</p>
 
 ```bash
-npx ts-node quickstart.ts
+npx tsx quickstart.ts
 # Hello Conductor
 ```
 
-See the [JavaScript SDK guide](../documentation/clientsdks/js-sdk.md) for TypeScript 5 decorators, worker health, and production configuration.
+See the [JavaScript SDK guide](../documentation/clientsdks/js-sdk.md) for worker health and production configuration.
 
   </section>
 

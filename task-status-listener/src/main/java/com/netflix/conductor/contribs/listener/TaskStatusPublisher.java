@@ -17,9 +17,6 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +25,6 @@ import com.netflix.conductor.core.listener.TaskStatusListener;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
 
-@Singleton
 public class TaskStatusPublisher implements TaskStatusListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TaskStatusPublisher.class);
@@ -102,7 +98,6 @@ public class TaskStatusPublisher implements TaskStatusListener {
         }
     }
 
-    @Inject
     public TaskStatusPublisher(
             RestClientManager rcm,
             ExecutionDAOFacade executionDAOFacade,

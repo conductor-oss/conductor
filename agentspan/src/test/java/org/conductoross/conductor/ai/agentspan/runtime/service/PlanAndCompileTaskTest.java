@@ -298,7 +298,71 @@ class PlanAndCompileTaskTest {
     @Test
     void testEmptyStepsArrayIsRejected() {
         String error = compilePlanExpectError("{\"steps\": []}");
-        assertThat(error).contains("non-empty steps array");
+        assertThat(error).contains("at least one of: steps, validation, on_success");
+    }
+
+    // -----------------------------------------------------------------------
+    //  Validation / on_success semantics
+    // -----------------------------------------------------------------------
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void testValidationEvalFallsBackToFullToolOutput() {
+        // A map-returning worker has no ``result`` key in its output; the
+        // evaluator must still see its fields (previously toolOut was null
+        // and every condition failed).
+        String planJson =
+                """
+                {
+                  "steps": [{"id": "s1", "operations": [{"tool": "noop", "args": {}}]}],
+                  "validation": [{"tool": "request_approval", "args": {},
+                                  "success_condition": "$.approved === true"}]
+                }""";
+        Map<String, Object> wf = compilePlan(planJson);
+        Map<String, Object> eval =
+                allTasks(wf).stream()
+                        .filter(
+                                t ->
+                                        String.valueOf(t.get("taskReferenceName"))
+                                                .startsWith("val_eval"))
+                        .findFirst()
+                        .orElseThrow();
+        Map<String, Object> in = (Map<String, Object>) eval.get("inputParameters");
+        assertThat(String.valueOf(in.get("toolFull"))).endsWith(".output}");
+        assertThat(String.valueOf(in.get("expression"))).contains("$.toolFull");
+    }
+
+    @Test
+    void testOnSuccessWithoutValidationRunsUnconditionally() {
+        String planJson =
+                """
+                {
+                  "steps": [{"id": "refund", "operations": [{"tool": "issue_refund", "args": {}}]}],
+                  "on_success": [{"tool": "send_email", "args": {"to": "a@example.com"}}],
+                  "on_failure": [{"tool": "create_ticket", "args": {}}]
+                }""";
+        Map<String, Object> out = run(planJson, null);
+        assertThat(out.get("error")).isNull();
+        @SuppressWarnings("unchecked")
+        Map<String, Object> wf = (Map<String, Object>) out.get("workflowDef");
+        List<String> names = allTasks(wf).stream().map(t -> String.valueOf(t.get("name"))).toList();
+        assertThat(names).contains("issue_refund", "send_email").doesNotContain("create_ticket");
+        assertThat(String.valueOf(out.get("warnings"))).contains("on_failure ignored");
+    }
+
+    @Test
+    void testPureGatePlanWithEmptyStepsCompiles() {
+        String planJson =
+                """
+                {
+                  "steps": [],
+                  "validation": [{"tool": "request_approval", "args": {},
+                                  "success_condition": "$.approved === true"}],
+                  "on_success": [{"tool": "issue_refund", "args": {}}]
+                }""";
+        Map<String, Object> wf = compilePlan(planJson);
+        List<String> names = allTasks(wf).stream().map(t -> String.valueOf(t.get("name"))).toList();
+        assertThat(names).contains("request_approval", "issue_refund");
     }
 
     // -----------------------------------------------------------------------
@@ -1707,8 +1771,7 @@ class PlanAndCompileTaskTest {
                 List.of("coder", "doc_search", "publish", "approve", "check_word_count");
         List<Map<String, Object>> tools = List.of(coder, mcp, http, human, validator);
 
-        com.fasterxml.jackson.databind.ObjectMapper mapper =
-                new com.fasterxml.jackson.databind.ObjectMapper();
+        tools.jackson.databind.ObjectMapper mapper = new tools.jackson.databind.ObjectMapper();
 
         // Compile 10 times in a tight loop — same input every iteration.
         String reference = null;

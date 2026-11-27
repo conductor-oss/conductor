@@ -330,6 +330,29 @@ export const GRPCTaskForm = ({ task, onChange }: GrpcTaskFormProps) => {
                 <Grid
                   size={{
                     xs: 12,
+                    md: 4,
+                    sm: 12,
+                  }}
+                >
+                  <ConductorAutocompleteVariables
+                    id="grpc-task-compression-codec"
+                    fullWidth
+                    label="Compression codec"
+                    value={task?.inputParameters?.compressionCodec ?? ""}
+                    onChange={(val) =>
+                      onChange(
+                        updateField(
+                          "inputParameters.compressionCodec",
+                          val,
+                          task,
+                        ),
+                      )
+                    }
+                  />
+                </Grid>
+                <Grid
+                  size={{
+                    xs: 12,
                     md: 6,
                     sm: 12,
                   }}

@@ -27,8 +27,9 @@ import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Validator;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_START_WORKFLOW;
 import static com.netflix.conductor.model.TaskModel.Status.COMPLETED;
@@ -40,7 +41,7 @@ public class StartWorkflow extends WorkflowSystemTask {
     private static final Logger LOGGER = LoggerFactory.getLogger(StartWorkflow.class);
 
     private static final String WORKFLOW_ID = "workflowId";
-    private static final String START_WORKFLOW_PARAMETER = "startWorkflow";
+    static final String START_WORKFLOW_PARAMETER = "startWorkflow";
 
     private final ObjectMapper objectMapper;
     private final Validator validator;
@@ -126,7 +127,7 @@ public class StartWorkflow extends WorkflowSystemTask {
                     taskModel.setReasonForIncompletion(reasonForIncompletion.toString());
                     startWorkflowRequest = null;
                 }
-            } catch (IllegalArgumentException e) {
+            } catch (IllegalArgumentException | JacksonException e) {
                 LOGGER.error("Error reading StartWorkflowRequest for {}", taskModel, e);
                 taskModel.setStatus(FAILED);
                 taskModel.setReasonForIncompletion(

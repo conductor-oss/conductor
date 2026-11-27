@@ -40,6 +40,7 @@ nav:
       - Creating Tasks: devguide/how-tos/Tasks/creating-tasks.md
       - Task Inputs: devguide/how-tos/Tasks/task-inputs.md
       - Schema Validation: devguide/how-tos/schema-validation.md
+      - Schema Registry: devguide/how-tos/schema-registry.md
       - Managing Workflow Versions: devguide/how-tos/Workflows/versioning-workflows.md
       - Testing Workflows: devguide/how-tos/Workflows/testing-workflows.md
     - Run:
@@ -112,6 +113,7 @@ nav:
       - Task Timeouts & Retries: devguide/cookbook/task-timeouts-and-retries.md
       - Saga & Compensation: devguide/cookbook/saga-compensation.md
       - Polling a Long-Running Job: devguide/cookbook/http-poll-long-running-job.md
+      - AI Decision Routing: devguide/cookbook/ai-decision-routing.md
       - Scheduled Workflows: devguide/cookbook/workflow-scheduling.md
       - Dynamic Workflows in Code: devguide/cookbook/dynamic-workflows.md
       - Event-Driven Patterns: devguide/cookbook/event-driven.md
@@ -248,11 +250,16 @@ theme:
 
 extra:
   generator: false
+  # GA4 for the OSS docs. Same property as conductor-oss.org. Consent matches
+  # orkes.io: no banner and no Consent Mode defaults, so no extra.consent block.
+  analytics:
+    provider: google
+    property: G-PZHG7RTQP5
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/conductor-oss/conductor
     - icon: fontawesome/brands/slack
-      link: https://join.slack.com/t/orkes-conductor/shared_invite/zt-3dpcskdyd-W895bJDm8psAV7viYG3jFA
+      link: https://join.slack.com/t/orkes-conductor/shared_invite/zt-4gilmdmpj-Fu_PxACC60BG4ctur8OeDg
     - icon: fontawesome/brands/youtube
       link: https://www.youtube.com/@orkesio
 
