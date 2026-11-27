@@ -24,6 +24,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.exception.TransientException;
@@ -428,6 +429,14 @@ public class TestSubWorkflow {
     @Test
     public void testIsAsync() {
         assertTrue(subWorkflow.isAsync());
+        assertTrue(new SubWorkflow(objectMapper, idGenerator, new ConductorProperties()).isAsync());
+    }
+
+    @Test
+    public void testIsSyncWhenSubWorkflowSyncEnabled() {
+        ConductorProperties properties = new ConductorProperties();
+        properties.setSubWorkflowSync(true);
+        assertFalse(new SubWorkflow(objectMapper, idGenerator, properties).isAsync());
     }
 
     @Test

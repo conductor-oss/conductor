@@ -106,6 +106,12 @@ public class ConductorProperties {
     /** Used to enable/disable asynchronous indexing to elasticsearch. */
     private boolean asyncIndexingEnabled = false;
 
+    /**
+     * Start SUB_WORKFLOW children inside the parent's decide, and decide each new child right after
+     * it is created, instead of going through the SUB_WORKFLOW and decider queues.
+     */
+    private boolean subWorkflowSync = false;
+
     /** The number of threads to be used within the threadpool for system task workers. */
     private int systemTaskWorkerThreadCount = Runtime.getRuntime().availableProcessors() * 2;
 
@@ -441,6 +447,14 @@ public class ConductorProperties {
 
     public void setAsyncIndexingEnabled(boolean asyncIndexingEnabled) {
         this.asyncIndexingEnabled = asyncIndexingEnabled;
+    }
+
+    public boolean isSubWorkflowSync() {
+        return subWorkflowSync;
+    }
+
+    public void setSubWorkflowSync(boolean subWorkflowSync) {
+        this.subWorkflowSync = subWorkflowSync;
     }
 
     public int getSystemTaskWorkerThreadCount() {

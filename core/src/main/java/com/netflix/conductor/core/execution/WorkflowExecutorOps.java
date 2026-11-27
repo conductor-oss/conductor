@@ -2872,6 +2872,19 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 workflow.getWorkflowId());
         executionDAOFacade.populateWorkflowAndTaskPayloadData(workflow);
         notifyWorkflowStatusListener(workflow, WorkflowEventType.STARTED);
+        if (properties.isSubWorkflowSync()) {
+            // The caller holds this workflow's lock: decide it now instead of waiting for a
+            // sweeper. createWorkflow left a decider queue entry as the backstop.
+            try {
+                decide(workflow);
+                return;
+            } catch (Exception e) {
+                LOGGER.warn(
+                        "First decide failed for new workflow {}, leaving it to the decider queue",
+                        workflow.getWorkflowId(),
+                        e);
+            }
+        }
         try {
             expediteLazyWorkflowEvaluation(workflow.getWorkflowId());
         } catch (Exception e) {

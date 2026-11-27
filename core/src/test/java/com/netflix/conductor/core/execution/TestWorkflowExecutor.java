@@ -86,6 +86,7 @@ import static org.mockito.Mockito.*;
 public class TestWorkflowExecutor {
 
     private WorkflowExecutorOps workflowExecutor;
+    private ConductorProperties properties;
     private ExecutionDAOFacade executionDAOFacade;
     private MetadataDAO metadataDAO;
     private QueueDAO queueDAO;
@@ -212,7 +213,7 @@ public class TestWorkflowExecutor {
                         Duration.ofMinutes(60));
         MetadataMapperService metadataMapperService = new MetadataMapperService(metadataDAO);
 
-        ConductorProperties properties = mock(ConductorProperties.class);
+        properties = mock(ConductorProperties.class);
         when(properties.getActiveWorkerLastPollTimeout()).thenReturn(Duration.ofSeconds(100));
         when(properties.getTaskExecutionPostponeDuration()).thenReturn(Duration.ofSeconds(60));
         when(properties.getWorkflowOffsetTimeout()).thenReturn(Duration.ofSeconds(30));
@@ -1029,6 +1030,63 @@ public class TestWorkflowExecutor {
         verify(executionDAOFacade).createWorkflow(any());
         verify(executionDAOFacade, never()).getWorkflowModel("new-workflow-id", false);
         verify(executionLockService, atLeastOnce()).releaseLock("new-workflow-id");
+    }
+
+    // WorkflowExecutorOps.EXPEDITED_PRIORITY
+    private static final int EXPEDITED_PRIORITY = 10;
+
+    private StartWorkflowInput newChildInput(String workflowId) {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("child-workflow");
+        workflowDef.setVersion(1);
+
+        StartWorkflowInput input = new StartWorkflowInput();
+        input.setWorkflowDefinition(workflowDef);
+        input.setName(workflowDef.getName());
+        input.setVersion(workflowDef.getVersion());
+        input.setWorkflowInput(Collections.emptyMap());
+        input.setWorkflowId(workflowId);
+
+        when(executionLockService.acquireLock(workflowId)).thenReturn(true);
+        when(executionDAOFacade.getWorkflowModelFromExecutionDAO(workflowId, false))
+                .thenThrow(new NotFoundException("missing"));
+        return input;
+    }
+
+    @Test
+    public void testStartWorkflowIdempotentLeavesFirstDecideToDeciderQueueByDefault() {
+        StartWorkflowInput input = newChildInput("child-default");
+
+        workflowExecutor.startWorkflowIdempotent(input);
+
+        verify(queueDAO).push(DECIDER_QUEUE, "child-default", EXPEDITED_PRIORITY, 0);
+        verify(executionDAOFacade, never()).updateWorkflow(any());
+    }
+
+    @Test
+    public void testStartWorkflowIdempotentDecidesRightAwayWhenEnabled() {
+        when(properties.isSubWorkflowSync()).thenReturn(true);
+        StartWorkflowInput input = newChildInput("child-inline");
+
+        WorkflowModel created = workflowExecutor.startWorkflowIdempotent(input);
+
+        // A definition with no tasks completes on its first decide.
+        assertEquals(WorkflowModel.Status.COMPLETED, created.getStatus());
+        verify(queueDAO, never()).push(DECIDER_QUEUE, "child-inline", EXPEDITED_PRIORITY, 0);
+        verify(queueDAO, never()).postpone(DECIDER_QUEUE, "child-inline", EXPEDITED_PRIORITY, 0);
+    }
+
+    @Test
+    public void testStartWorkflowIdempotentFallsBackToDeciderQueueWhenFirstDecideFails() {
+        when(properties.isSubWorkflowSync()).thenReturn(true);
+        StartWorkflowInput input = newChildInput("child-fallback");
+        doThrow(new TransientException("redis down"))
+                .when(executionDAOFacade)
+                .updateWorkflow(any());
+
+        workflowExecutor.startWorkflowIdempotent(input);
+
+        verify(queueDAO).push(DECIDER_QUEUE, "child-fallback", EXPEDITED_PRIORITY, 0);
     }
 
     @Test
