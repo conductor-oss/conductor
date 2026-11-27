@@ -1,26 +1,37 @@
 import { Grid } from "@mui/material";
-import IconButton from "components/ui/buttons/MuiIconButton";
-import MuiTypography from "components/ui/MuiTypography";
 import { ConductorAutoComplete } from "components/ui/inputs";
-import ConductorInput from "components/ui/inputs/ConductorInput";
 import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
-import XCloseIcon from "components/icons/XCloseIcon";
 import _isEmpty from "lodash/isEmpty";
 import _isUndefined from "lodash/isUndefined";
 import { FocusEvent, useMemo } from "react";
 import { useWorkflowNamesAndVersions } from "utils/query";
 import { Props } from "./common";
+import { usePayloadMapProps } from "../payloadFields";
+import PayloadFieldInput from "../PayloadFieldInput";
 import IdempotencyForm from "pages/runWorkflow/IdempotencyForm";
 import { IdempotencyStrategyEnum } from "pages/runWorkflow/types";
 import { IdempotencyValuesProp } from "pages/definition/RunWorkflow/state";
 
+/**
+ * Shown for an empty version. The server starts the latest definition when
+ * version is null (WorkflowExecutorOps), resolved each time an event fires, so
+ * leaving it empty keeps the handler following new versions. Picking a number
+ * pins it.
+ */
+const LATEST_VERSION = "Latest";
+
+const toStoredVersion = (value?: string | null) =>
+  !value || value.trim().toLowerCase() === LATEST_VERSION.toLowerCase()
+    ? ""
+    : value;
+
 export const StartWorkflowActionForm = ({
-  onRemove,
   index,
   payload,
   handleChangeAction,
 }: Props) => {
   const { start_workflow } = payload;
+  const payloadMapProps = usePayloadMapProps();
   const fetchedNamesAndVersions = useWorkflowNamesAndVersions();
   const options = useMemo(
     () =>
@@ -43,6 +54,32 @@ export const StartWorkflowActionForm = ({
       ? []
       : versions.map((val) => val.toString());
   }, [maybeSelectedWorkflowName, fetchedNamesAndVersions, options]);
+
+  const versionOptions = useMemo(
+    () => [LATEST_VERSION, ...availableVersions],
+    [availableVersions],
+  );
+
+  // A pinned version belongs to the old workflow, so a new name goes back to
+  // Latest. Blur re-sends the same name, which must not clear it.
+  const setWorkflowName = (name?: string | null) =>
+    handleChangeAction(index, {
+      ...payload,
+      start_workflow: {
+        ...start_workflow,
+        name,
+        ...(name !== start_workflow?.name && { version: "" }),
+      },
+    });
+
+  const setVersion = (value?: string | null) =>
+    handleChangeAction(index, {
+      ...payload,
+      start_workflow: {
+        ...start_workflow,
+        version: toStoredVersion(value),
+      },
+    });
 
   const handleIdempotencyValues = (data: IdempotencyValuesProp) => {
     const idempotencyStrategy = () => {
@@ -69,17 +106,7 @@ export const StartWorkflowActionForm = ({
   };
 
   return (
-    <Grid
-      container
-      spacing={4}
-      my={2}
-      sx={{ width: "100%", position: "relative" }}
-    >
-      <Grid size={12}>
-        <MuiTypography fontWeight={800} fontSize={16}>
-          Start Workflow
-        </MuiTypography>
-      </Grid>
+    <Grid container spacing={4} my={2} sx={{ width: "100%" }}>
       <Grid
         size={{
           xs: 12,
@@ -93,26 +120,12 @@ export const StartWorkflowActionForm = ({
           fullWidth
           value={start_workflow?.name}
           options={options}
-          onChange={(_, value) =>
-            handleChangeAction(index, {
-              ...payload,
-              start_workflow: {
-                ...start_workflow,
-                name: value,
-              },
-            })
+          onChange={(_, value) => setWorkflowName(value)}
+          onBlur={(event: FocusEvent<HTMLInputElement>) =>
+            setWorkflowName(event.target.value)
           }
-          onBlur={(event: FocusEvent<HTMLInputElement>) => {
-            handleChangeAction(index, {
-              ...payload,
-              start_workflow: {
-                ...start_workflow,
-                name: event.target.value,
-              },
-            });
-          }}
           conductorInputProps={{
-            placeholder: `\${event.payload.workflow_name}`,
+            placeholder: "e.g. order_fulfillment",
           }}
         />
       </Grid>
@@ -127,29 +140,16 @@ export const StartWorkflowActionForm = ({
           label="Workflow version"
           freeSolo
           fullWidth
-          value={start_workflow?.version}
-          options={availableVersions}
-          onChange={(_, value) =>
-            handleChangeAction(index, {
-              ...payload,
-              start_workflow: {
-                ...start_workflow,
-                version: value,
-              },
-            })
+          value={
+            start_workflow?.version
+              ? String(start_workflow.version)
+              : LATEST_VERSION
           }
-          onBlur={(event: FocusEvent<HTMLInputElement>) => {
-            handleChangeAction(index, {
-              ...payload,
-              start_workflow: {
-                ...start_workflow,
-                version: event.target.value,
-              },
-            });
-          }}
-          conductorInputProps={{
-            placeholder: "latest",
-          }}
+          options={versionOptions}
+          onChange={(_, value) => setVersion(value)}
+          onBlur={(event: FocusEvent<HTMLInputElement>) =>
+            setVersion(event.target.value)
+          }
         />
       </Grid>
       <Grid
@@ -158,10 +158,10 @@ export const StartWorkflowActionForm = ({
           md: 6,
         }}
       >
-        <ConductorInput
+        <PayloadFieldInput
           fullWidth
           label="Workflow correlation id"
-          placeholder={`\${event.payload.correlation_id}`}
+          placeholder={`\${correlationId}`}
           value={start_workflow?.correlationId}
           onTextInputChange={(value) =>
             handleChangeAction(index, {
@@ -202,7 +202,7 @@ export const StartWorkflowActionForm = ({
           valueColumnLabel="Value"
           addItemLabel="Add parameter"
           showFieldTypes
-          enableAutocomplete={false}
+          {...payloadMapProps}
           autoFocusField={false}
         />
       </Grid>
@@ -227,9 +227,6 @@ export const StartWorkflowActionForm = ({
           autoFocusField={false}
         />
       </Grid>
-      <IconButton onClick={onRemove} sx={{ position: "absolute", right: 0 }}>
-        <XCloseIcon size={26} />
-      </IconButton>
     </Grid>
   );
 };

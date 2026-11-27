@@ -324,6 +324,17 @@ export async function getEventHandlers(): Promise<EventHandlerDef[]> {
   return request<EventHandlerDef[]>("GET", "/event");
 }
 
+/**
+ * `GET /event/{event}` looks handlers up by event string, not name, so find
+ * by name in the full list.
+ */
+export async function getEventHandlerByName(
+  name: string,
+): Promise<EventHandlerDef | undefined> {
+  const all = await getEventHandlers();
+  return all.find((h) => h.name === name);
+}
+
 export async function deleteEventHandler(name: string): Promise<void> {
   await request<void>("DELETE", `/event/${encodeURIComponent(name)}`);
 }

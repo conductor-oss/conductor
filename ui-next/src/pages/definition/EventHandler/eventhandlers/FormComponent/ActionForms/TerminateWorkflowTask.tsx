@@ -1,12 +1,8 @@
 import { Grid } from "@mui/material";
-import IconButton from "components/ui/buttons/MuiIconButton";
-import MuiTypography from "components/ui/MuiTypography";
-import ConductorInput from "components/ui/inputs/ConductorInput";
-import XCloseIcon from "components/icons/XCloseIcon";
 import { Props } from "./common";
+import PayloadFieldInput, { WorkflowIdInput } from "../PayloadFieldInput";
 
 export const TerminateWorkflowForm = ({
-  onRemove,
   index,
   payload,
   handleChangeAction,
@@ -24,17 +20,7 @@ export const TerminateWorkflowForm = ({
   };
 
   return (
-    <Grid
-      container
-      spacing={4}
-      my={2}
-      sx={{ width: "100%", position: "relative" }}
-    >
-      <Grid size={12}>
-        <MuiTypography fontWeight={800} fontSize={16}>
-          Terminate Workflow
-        </MuiTypography>
-      </Grid>
+    <Grid container spacing={4} my={2} sx={{ width: "100%" }}>
       <Grid
         size={{
           xs: 12,
@@ -42,10 +28,10 @@ export const TerminateWorkflowForm = ({
           md: 6,
         }}
       >
-        <ConductorInput
+        <WorkflowIdInput
           fullWidth
           label="Workflow ID"
-          placeholder={`\${event.payload.workflow_id}`}
+          placeholder={`\${workflowInstanceId}`}
           value={terminate_workflow?.workflowId}
           onTextInputChange={(value) => handleChange("workflowId", value)}
         />
@@ -57,20 +43,16 @@ export const TerminateWorkflowForm = ({
           md: 6,
         }}
       >
-        <ConductorInput
+        <PayloadFieldInput
           fullWidth
           label="Termination reason"
-          placeholder="abcd"
-          name="taskReference"
+          placeholder="e.g. Order cancelled"
           value={terminate_workflow?.terminationReason}
           onTextInputChange={(value) =>
             handleChange("terminationReason", value)
           }
         />
       </Grid>
-      <IconButton onClick={onRemove} sx={{ position: "absolute", right: 0 }}>
-        <XCloseIcon size={26} />
-      </IconButton>
     </Grid>
   );
 };

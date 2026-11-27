@@ -1,38 +1,31 @@
 import { FormControlLabel, Grid } from "@mui/material";
 import HelperText from "components/ui/inputs/HelperText";
 import MuiCheckbox from "components/ui/MuiCheckbox";
-import IconButton from "components/ui/buttons/MuiIconButton";
-import MuiTypography from "components/ui/MuiTypography";
-import ConductorInput from "components/ui/inputs/ConductorInput";
 import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
-import XCloseIcon from "components/icons/XCloseIcon";
 import { Props } from "./common";
+import { usePayloadMapProps } from "../payloadFields";
+import { WorkflowIdInput } from "../PayloadFieldInput";
 
 export const UpdateWorkflowForm = ({
-  onRemove,
   index,
   payload,
   handleChangeAction,
 }: Props) => {
   const { update_workflow_variables } = payload;
+  const payloadMapProps = usePayloadMapProps();
 
   return (
-    <Grid
-      container
-      spacing={4}
-      my={2}
-      sx={{ width: "100%", position: "relative" }}
-    >
-      <Grid size={12}>
-        <MuiTypography fontWeight={800} fontSize={16}>
-          Update Workflow Variables
-        </MuiTypography>
-      </Grid>
-      <Grid size={12}>
-        <ConductorInput
+    <Grid container spacing={4} my={2} sx={{ width: "100%" }}>
+      <Grid
+        size={{
+          xs: 12,
+          md: 6,
+        }}
+      >
+        <WorkflowIdInput
           fullWidth
           label="Workflow ID"
-          placeholder={`\${event.payload.workflow_id}`}
+          placeholder={`\${workflowInstanceId}`}
           value={update_workflow_variables?.workflowId}
           onTextInputChange={(value) =>
             handleChangeAction(index, {
@@ -83,18 +76,15 @@ export const UpdateWorkflowForm = ({
             });
           }}
           value={{ ...update_workflow_variables?.variables }}
-          title="Output"
+          title="Variables"
           keyColumnLabel="Key"
           valueColumnLabel="Value"
           addItemLabel="Add parameter"
           showFieldTypes
-          enableAutocomplete={false}
+          {...payloadMapProps}
           autoFocusField={false}
         />
       </Grid>
-      <IconButton onClick={onRemove} sx={{ position: "absolute", right: 0 }}>
-        <XCloseIcon size={26} />
-      </IconButton>
     </Grid>
   );
 };

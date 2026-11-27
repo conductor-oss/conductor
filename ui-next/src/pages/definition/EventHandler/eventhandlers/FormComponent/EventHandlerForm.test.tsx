@@ -1,0 +1,597 @@
+/**
+ * The Event tab must write every field Save / the Code tab depend on into the
+ * form machine. Playwright create only fills name (+ description) and relies
+ * on the default template for event/actions — so a miswired control for event,
+ * condition, Active, or Add action would not fail E2E. These assert against
+ * machine context the same way TaskDefinitionForm tests do.
+ */
+import "@testing-library/jest-dom";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
+import { interpret } from "xstate";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { Provider as ThemeProvider } from "theme/material/provider";
+import EventHandlerForm from "./EventHandlerForm";
+import { eventFormMachine } from "./state/machine";
+import { NEW_EVENT_HANDLER_TEMPLATE } from "../eventHandlerSchema";
+import { Action } from "./state/types";
+import {
+  START_AGENT_ACTION,
+  START_WORKFLOW_ACTION,
+} from "../eventHandlerSchema";
+import { actionMeta, templateFor } from "./actionMeta";
+
+vi.mock("utils/hooks/useEventNameSuggestions", () => ({
+  useEventNameSuggestions: () => ["kafka:sampleConfig"],
+}));
+
+vi.mock("components/ui/inputs", () => ({
+  ConductorAutoComplete: ({ label, value, onChange, onInputChange }: any) => (
+    <input
+      aria-label={String(label)}
+      id="event-string-input"
+      value={value ?? ""}
+      onChange={(event) => {
+        onChange?.(null, event.target.value);
+        onInputChange?.(null, event.target.value, "input");
+      }}
+    />
+  ),
+}));
+
+vi.mock("components/ui/inputs/ConductorInput", () => ({
+  default: ({ label, value, onTextInputChange, id, name, helperText }: any) => (
+    <>
+      <input
+        aria-label={label}
+        id={id}
+        name={name}
+        value={value ?? ""}
+        onChange={(event) => onTextInputChange?.(event.target.value)}
+      />
+      {helperText && <span>{helperText}</span>}
+    </>
+  ),
+}));
+
+vi.mock("components/ui/inputs/ConductorSelect", () => ({
+  default: ({ label, value, onChange, name, inputProps }: any) => (
+    <select
+      aria-label={inputProps?.["aria-label"] ?? label}
+      name={name}
+      value={value ?? ""}
+      onChange={(event) =>
+        onChange?.({ target: { value: event.target.value } })
+      }
+    >
+      <option value="">Select</option>
+      <option value="complete_task">Complete Task</option>
+      <option value="fail_task">Fail Task</option>
+      <option value="start_workflow">Start Workflow</option>
+      <option value="start_agent">Start Agent</option>
+      <option value="terminate_workflow">Terminate Workflow</option>
+      <option value="update_workflow_variables">Update Variables</option>
+    </select>
+  ),
+}));
+
+vi.mock("components/ui/inputs/ConductorCodeBlockInput", () => ({
+  ConductorCodeBlockInput: ({ label, value, onChange }: any) => (
+    <textarea
+      aria-label={label}
+      value={value ?? ""}
+      onChange={(event) => onChange?.(event.target.value)}
+    />
+  ),
+}));
+
+// Action sub-forms are covered elsewhere; stub them so this file stays on
+// EventHandlerForm wiring (fields + Add action + Active).
+// Also echoes the payload fields it receives, so the sample payload tests can
+// see what reaches an action form.
+vi.mock("./ActionForms/CompleteTask", async () => {
+  const { usePayloadFields } = await import("./payloadFields");
+  return {
+    CompleteTask: () => (
+      <div>
+        Complete Task body
+        <span data-testid="payload-fields">{usePayloadFields().join(",")}</span>
+      </div>
+    ),
+  };
+});
+vi.mock("./ActionForms/FailTask", () => ({
+  FailTask: () => <div>Fail Task</div>,
+}));
+vi.mock("./ActionForms/StartWorkflowTask", () => ({
+  StartWorkflowActionForm: () => <div>Start Workflow body</div>,
+}));
+vi.mock("./ActionForms/StartAgentTask", () => ({
+  StartAgentActionForm: () => <div>Start Agent</div>,
+}));
+vi.mock("./ActionForms/TerminateWorkflowTask", () => ({
+  TerminateWorkflowForm: () => <div>Terminate Workflow</div>,
+}));
+vi.mock("./ActionForms/UpdateWorkflowTask", () => ({
+  UpdateWorkflowForm: () => <div>Update Variables</div>,
+}));
+
+/** The action union is narrowed per variant; tests poke at it structurally. */
+const actionAt = (definition: { actions?: unknown[] }, index: number) =>
+  (definition.actions ?? [])[index] as any;
+
+const renderForm = (overrides: Record<string, unknown> = {}) => {
+  const eventAsJson = {
+    ...NEW_EVENT_HANDLER_TEMPLATE,
+    active: true,
+    ...overrides,
+  };
+  const service = interpret(
+    eventFormMachine.withContext({
+      eventAsJson,
+      originalSource: { ...eventAsJson },
+    }),
+  ).start();
+
+  render(
+    <ThemeProvider>
+      <EventHandlerForm actor={service as never} />
+    </ThemeProvider>,
+  );
+
+  return {
+    service,
+    definition: () => service.getSnapshot().context.eventAsJson,
+  };
+};
+
+describe("EventHandlerForm — fields write to machine context", () => {
+  it("shows stored values for name, description, event, and condition", () => {
+    renderForm({
+      name: "eh_existing",
+      description: "existing desc",
+      event: "conductor:existing",
+      condition: "true",
+    });
+
+    expect(screen.getByLabelText("Name")).toHaveValue("eh_existing");
+    expect(screen.getByLabelText("Description")).toHaveValue("existing desc");
+    expect(screen.getByLabelText("Event")).toHaveValue("conductor:existing");
+    expect(
+      screen.getByLabelText("Condition (Trigger if evaluated to true)"),
+    ).toHaveValue("true");
+  });
+
+  it("writes name, description, event, and condition into context", () => {
+    const { definition } = renderForm({ actions: [] });
+
+    fireEvent.change(screen.getByLabelText("Name"), {
+      target: { value: "eh_from_form" },
+    });
+    fireEvent.change(screen.getByLabelText("Description"), {
+      target: { value: "wired description" },
+    });
+    fireEvent.change(screen.getByLabelText("Event"), {
+      target: { value: "sqs:myQueue" },
+    });
+    fireEvent.change(
+      screen.getByLabelText("Condition (Trigger if evaluated to true)"),
+      { target: { value: "$.ok === true" } },
+    );
+
+    expect(definition()).toMatchObject({
+      name: "eh_from_form",
+      description: "wired description",
+      event: "sqs:myQueue",
+      condition: "$.ok === true",
+    });
+  });
+
+  it("toggles Active into context", () => {
+    const { definition } = renderForm({ active: true, actions: [] });
+
+    fireEvent.click(screen.getByLabelText("Active"));
+
+    expect(definition().active).toBe(false);
+  });
+
+  it("shows Name is required only after the name has been edited", () => {
+    renderForm({ name: "", actions: [] });
+
+    expect(screen.queryByText("Name is required.")).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "x" } });
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "" } });
+
+    expect(screen.getByText("Name is required.")).toBeInTheDocument();
+  });
+
+  it("shows the action summary only while the card is collapsed", async () => {
+    renderForm();
+
+    expect(screen.queryByText("no task set")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Collapse action"));
+
+    expect(screen.getByText("no task set")).toBeInTheDocument();
+  });
+
+  it("shows an empty state until an action is added", () => {
+    renderForm({ actions: [] });
+
+    expect(screen.getByText(/No actions yet/i)).toBeInTheDocument();
+    expect(screen.getByText("Actions")).toBeInTheDocument();
+  });
+
+  it("adds a Start Workflow action from the Add action menu", () => {
+    const { definition } = renderForm({ actions: [] });
+
+    fireEvent.click(screen.getByRole("button", { name: /Add action/i }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /Start Workflow/i }));
+
+    expect(definition().actions).toEqual([START_WORKFLOW_ACTION]);
+    // Action form stub rendered for the added start_workflow entry.
+    expect(screen.getByText("Start Workflow body")).toBeInTheDocument();
+  });
+
+  // The Actions section is last on the page, so a newly added card can land
+  // below the fold. jsdom has no scrollIntoView, so install one to assert on.
+  it("scrolls the newly added action into view", () => {
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+
+    renderForm({ actions: [] });
+    expect(scrollIntoView).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: /Add action/i }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /Start Workflow/i }));
+
+    expect(scrollIntoView).toHaveBeenCalled();
+  });
+
+  it("removes an action from the action card header", () => {
+    const { definition } = renderForm();
+
+    expect(definition().actions).toHaveLength(1);
+    fireEvent.click(screen.getByLabelText("Remove action"));
+    expect(definition().actions).toEqual([]);
+  });
+
+  it("swaps the action payload when the type is changed in place", () => {
+    const { definition } = renderForm();
+
+    expect(actionAt(definition(), 0).action).toBe(Action.COMPLETE_TASK);
+
+    fireEvent.change(screen.getByLabelText("Action 1 type"), {
+      target: { value: Action.START_WORKFLOW },
+    });
+
+    expect(definition().actions).toEqual([START_WORKFLOW_ACTION]);
+    expect(screen.getByText("Start Workflow body")).toBeInTheDocument();
+    expect(screen.queryByText("Complete Task body")).not.toBeInTheDocument();
+  });
+
+  // Collapse unmounts the body only once its transition ends, so both
+  // directions need waitFor rather than a synchronous assertion.
+  it("collapses and expands an action body", async () => {
+    renderForm();
+
+    expect(screen.getByText("Complete Task body")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("Collapse action"));
+    await waitFor(() =>
+      expect(screen.queryByText("Complete Task body")).not.toBeInTheDocument(),
+    );
+
+    fireEvent.click(screen.getByLabelText("Expand action"));
+    await waitFor(() =>
+      expect(screen.getByText("Complete Task body")).toBeInTheDocument(),
+    );
+  });
+
+  it("changing the type does not write through to the shared template", () => {
+    const { definition } = renderForm();
+
+    fireEvent.change(screen.getByLabelText("Action 1 type"), {
+      target: { value: Action.START_WORKFLOW },
+    });
+
+    actionAt(definition(), 0).start_workflow.name = "mutated";
+
+    expect(START_WORKFLOW_ACTION.start_workflow.name).toBe("");
+  });
+});
+
+// ── Permutations ──────────────────────────────────────────────────────────────
+
+const ALL_ACTIONS = Object.values(Action);
+
+const bodyText: Record<Action, string> = {
+  [Action.COMPLETE_TASK]: "Complete Task body",
+  [Action.FAIL_TASK]: "Fail Task",
+  [Action.START_WORKFLOW]: "Start Workflow body",
+  [Action.START_AGENT]: "Start Agent",
+  [Action.TERMINATE_WORKFLOW]: "Terminate Workflow",
+  [Action.UPDATE_WORKFLOW_VARIABLES]: "Update Variables",
+};
+
+const card = (index: number) =>
+  document.querySelector(`#event-handler-action-${index}`) as HTMLElement;
+
+/** Action type of every rendered card, top to bottom. */
+const renderedTypes = () =>
+  Array.from(document.querySelectorAll('[id^="event-handler-action-"]')).map(
+    (_, index) =>
+      (screen.getByLabelText(`Action ${index + 1} type`) as HTMLSelectElement)
+        .value,
+  );
+
+/** Distinguishable filled-in actions, so a test can tell them apart. */
+const filled = (type: Action, tag: string) => {
+  const action = templateFor(type) as any;
+  action[type] = { ...action[type], marker: tag };
+  return action;
+};
+
+describe("EventHandlerForm — type swap matrix", () => {
+  const pairs = ALL_ACTIONS.flatMap((from) =>
+    ALL_ACTIONS.filter((to) => to !== from).map((to) => ({ from, to })),
+  );
+
+  it.each(pairs)(
+    "swaps the middle action $from → $to, leaving neighbours alone",
+    ({ from, to }) => {
+      const before = filled(Action.COMPLETE_TASK, "first");
+      const after = filled(Action.TERMINATE_WORKFLOW, "last");
+      const { definition } = renderForm({
+        actions: [before, filled(from, "middle"), after],
+      });
+
+      fireEvent.change(screen.getByLabelText("Action 2 type"), {
+        target: { value: to },
+      });
+
+      expect(definition().actions).toEqual([
+        before,
+        actionMeta[to].template,
+        after,
+      ]);
+      expect(renderedTypes()).toEqual([
+        Action.COMPLETE_TASK,
+        to,
+        Action.TERMINATE_WORKFLOW,
+      ]);
+      expect(card(1)).toHaveTextContent(bodyText[to]);
+      // The edited values of the old type do not carry over.
+      expect(JSON.stringify(actionAt(definition(), 1))).not.toContain("middle");
+    },
+  );
+
+  it.each(ALL_ACTIONS)(
+    "a swapped-in %s does not share state with its template",
+    (to) => {
+      const from =
+        to === Action.COMPLETE_TASK ? Action.FAIL_TASK : Action.COMPLETE_TASK;
+      const { definition } = renderForm({ actions: [templateFor(from)] });
+
+      fireEvent.change(screen.getByLabelText("Action 1 type"), {
+        target: { value: to },
+      });
+      actionAt(definition(), 0)[to].mutated = true;
+
+      expect((actionMeta[to].template as any)[to].mutated).toBeUndefined();
+    },
+  );
+});
+
+describe("EventHandlerForm — add action matrix", () => {
+  const existing = [
+    filled(Action.FAIL_TASK, "a"),
+    filled(Action.START_AGENT, "b"),
+  ];
+  const cases = ALL_ACTIONS.flatMap((type) =>
+    [0, 1, 2].map((size) => ({ type, size })),
+  );
+
+  it.each(cases)(
+    "adds $type to a list of $size, prepending it",
+    ({ type, size }) => {
+      const start = existing.slice(0, size);
+      const { definition } = renderForm({ actions: start });
+
+      fireEvent.click(screen.getByRole("button", { name: /Add action/i }));
+      fireEvent.click(
+        screen.getByRole("menuitem", {
+          name: new RegExp(`^${actionMeta[type].label}`),
+        }),
+      );
+
+      expect(definition().actions).toEqual([
+        actionMeta[type].template,
+        ...start,
+      ]);
+      expect(renderedTypes()).toEqual([type, ...start.map((a) => a.action)]);
+      expect(card(0)).toHaveTextContent(bodyText[type]);
+    },
+  );
+
+  it("adding the same type twice gives two independent actions", () => {
+    const { definition } = renderForm({ actions: [] });
+
+    for (let i = 0; i < 2; i++) {
+      fireEvent.click(screen.getByRole("button", { name: /Add action/i }));
+      fireEvent.click(screen.getByRole("menuitem", { name: /^Start Agent/ }));
+    }
+    fireEvent.change(screen.getByLabelText("Action 1 type"), {
+      target: { value: Action.FAIL_TASK },
+    });
+
+    expect(renderedTypes()).toEqual([Action.FAIL_TASK, Action.START_AGENT]);
+    expect(actionAt(definition(), 1)).toEqual(START_AGENT_ACTION);
+  });
+});
+
+describe("EventHandlerForm — remove action matrix", () => {
+  const three = [
+    filled(Action.COMPLETE_TASK, "a"),
+    filled(Action.START_WORKFLOW, "b"),
+    filled(Action.UPDATE_WORKFLOW_VARIABLES, "c"),
+  ];
+
+  it.each([0, 1, 2])("removes the action at index %i", (index) => {
+    const { definition } = renderForm({ actions: three });
+
+    fireEvent.click(screen.getAllByLabelText("Remove action")[index]);
+
+    const expected = three.filter((_, i) => i !== index);
+    expect(definition().actions).toEqual(expected);
+    expect(renderedTypes()).toEqual(expected.map((a) => a.action));
+  });
+
+  it("removing every action one by one ends in the empty state", () => {
+    const { definition } = renderForm({ actions: three });
+
+    for (let i = 0; i < three.length; i++) {
+      fireEvent.click(screen.getAllByLabelText("Remove action")[0]);
+    }
+
+    expect(definition().actions).toEqual([]);
+    expect(screen.getByText(/No actions yet/i)).toBeInTheDocument();
+  });
+});
+
+/**
+ * Cards keep UI state (collapsed or not) keyed by a client-side id. That id
+ * has to follow its action through adds and removes, or a collapsed card's
+ * state would jump to whichever action slides into its slot.
+ */
+describe("EventHandlerForm — card state follows its action", () => {
+  const three = [
+    filled(Action.COMPLETE_TASK, "a"),
+    filled(Action.START_WORKFLOW, "b"),
+    filled(Action.UPDATE_WORKFLOW_VARIABLES, "c"),
+  ];
+  const isCollapsed = (index: number) =>
+    within(card(index)).queryByLabelText("Expand action") !== null;
+
+  const pairs = [0, 1, 2].flatMap((collapsed) =>
+    [0, 1, 2].map((removed) => ({ collapsed, removed })),
+  );
+
+  it.each(pairs)(
+    "collapse $collapsed, remove $removed",
+    ({ collapsed, removed }) => {
+      renderForm({ actions: three });
+
+      fireEvent.click(
+        within(card(collapsed)).getByLabelText("Collapse action"),
+      );
+      fireEvent.click(screen.getAllByLabelText("Remove action")[removed]);
+
+      const remaining = [0, 1, 2].filter((i) => i !== removed);
+      remaining.forEach((original, now) => {
+        expect(isCollapsed(now)).toBe(original === collapsed);
+      });
+    },
+  );
+
+  it.each([0, 1, 2])(
+    "a card collapsed at %i stays collapsed after an add",
+    (collapsed) => {
+      renderForm({ actions: three });
+
+      fireEvent.click(
+        within(card(collapsed)).getByLabelText("Collapse action"),
+      );
+      fireEvent.click(screen.getByRole("button", { name: /Add action/i }));
+      fireEvent.click(screen.getByRole("menuitem", { name: /^Fail Task/ }));
+
+      [0, 1, 2, 3].forEach((index) => {
+        expect(isCollapsed(index)).toBe(index === collapsed + 1);
+      });
+    },
+  );
+
+  it.each([0, 1, 2])("a type swap at %i keeps the card open state", (index) => {
+    renderForm({ actions: three });
+
+    fireEvent.click(within(card(index)).getByLabelText("Collapse action"));
+    fireEvent.change(screen.getByLabelText(`Action ${index + 1} type`), {
+      target: { value: Action.START_AGENT },
+    });
+
+    expect(isCollapsed(index)).toBe(true);
+    expect(card(index)).toHaveTextContent("no agent set");
+  });
+});
+
+describe("EventHandlerForm — sample payload", () => {
+  const SAMPLE = "Sample payload (optional)";
+
+  afterEach(() => localStorage.clear());
+
+  const completeTaskHandler = (event: string) => ({
+    event,
+    actions: [templateFor(Action.COMPLETE_TASK)],
+  });
+
+  it("offers the sample's fields to the action forms", () => {
+    renderForm(completeTaskHandler("conductor:eh_test:emit"));
+
+    fireEvent.change(screen.getByLabelText(SAMPLE), {
+      target: { value: '{"workflowInstanceId":"wf","order":{"id":"A1"}}' },
+    });
+
+    expect(screen.getByTestId("payload-fields")).toHaveTextContent(
+      "${workflowInstanceId},${order},${order.id}",
+    );
+    expect(screen.getByText(/3 fields found/)).toBeInTheDocument();
+  });
+
+  it("offers no payload fields until a sample is pasted", () => {
+    renderForm(completeTaskHandler("conductor:eh_test:emit"));
+
+    expect(screen.getByTestId("payload-fields")).toHaveTextContent("");
+  });
+
+  it("explains invalid JSON and offers no fields", () => {
+    renderForm(completeTaskHandler("conductor:eh_test:emit"));
+
+    fireEvent.change(screen.getByLabelText(SAMPLE), {
+      target: { value: '{"orderId": ' },
+    });
+
+    expect(screen.getByText("Not valid JSON yet.")).toBeInTheDocument();
+    expect(screen.getByTestId("payload-fields")).toHaveTextContent("");
+  });
+
+  it("is not written into the handler definition", () => {
+    const { definition } = renderForm(
+      completeTaskHandler("conductor:eh_test:emit"),
+    );
+    const before = JSON.stringify(definition());
+
+    fireEvent.change(screen.getByLabelText(SAMPLE), {
+      target: { value: '{"orderId":"A1"}' },
+    });
+
+    expect(JSON.stringify(definition())).toBe(before);
+  });
+
+  it("is remembered per event in this browser", () => {
+    const first = renderForm(completeTaskHandler("conductor:eh_test:emit"));
+    fireEvent.change(screen.getByLabelText(SAMPLE), {
+      target: { value: '{"orderId":"A1"}' },
+    });
+    first.service.stop();
+    cleanup();
+
+    renderForm(completeTaskHandler("conductor:eh_test:emit"));
+
+    expect(screen.getByLabelText(SAMPLE)).toHaveValue('{"orderId":"A1"}');
+  });
+});

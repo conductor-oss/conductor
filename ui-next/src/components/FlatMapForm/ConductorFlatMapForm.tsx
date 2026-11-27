@@ -36,6 +36,8 @@ export interface ConductorFlatMapFormProps {
   emptyListMessage?: ReactNode;
   otherOptions?: string[];
   keyOptions?: string[];
+  /** See ConductorAutocompleteVariables. */
+  includeWorkflowOptions?: boolean;
 }
 
 const ConductorFlatMapFormBase: FunctionComponent<
@@ -65,6 +67,7 @@ const ConductorFlatMapFormBase: FunctionComponent<
   emptyListMessage,
   otherOptions = [],
   keyOptions,
+  includeWorkflowOptions = true,
 }: ConductorFlatMapFormProps) => {
   const [valueEntries, entryKeys] = useMemo(() => {
     const entries = Object.entries(value);
@@ -161,6 +164,9 @@ const ConductorFlatMapFormBase: FunctionComponent<
                                   value={val}
                                   fullWidth
                                   otherOptions={otherOptions}
+                                  includeWorkflowOptions={
+                                    includeWorkflowOptions
+                                  }
                                   onChange={(newValue) => {
                                     replaceItem([key, newValue], index);
                                   }}

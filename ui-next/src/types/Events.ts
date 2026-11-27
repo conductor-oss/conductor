@@ -71,20 +71,24 @@ export type StartAgentAction = {
   };
 };
 
+export type EventHandlerAction =
+  | CompleteActionType
+  | FailActionType
+  | UpdateWorkFlowVariableType
+  | StartWorkflowAction
+  | TerminateWorkflowAction
+  | StartAgentAction;
+
+/** The `action` discriminant of every EventHandlerAction variant. */
+export type EventHandlerActionType = EventHandlerAction["action"];
+
 export type ConductorEvent = {
   name: string;
   description?: string;
   event: string;
   evaluatorType: string;
   condition: string;
-  actions: Array<
-    | CompleteActionType
-    | FailActionType
-    | UpdateWorkFlowVariableType
-    | StartWorkflowAction
-    | TerminateWorkflowAction
-    | StartAgentAction
-  >;
+  actions: Array<EventHandlerAction>;
   active: boolean;
   ownerEmail: string;
   tags?: TagDto[];
