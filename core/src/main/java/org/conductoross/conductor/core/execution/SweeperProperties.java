@@ -27,4 +27,5 @@ import lombok.ToString;
 public class SweeperProperties {
     private int sweepBatchSize = 2;
     private int queuePopTimeout = 100;
+    private long shutdownTimeout = 30_000;
 }

@@ -36,6 +36,45 @@ public abstract class LifecycleAwareComponent implements SmartLifecycle {
         doStop();
     }
 
+    /**
+     * Called by Spring's {@code DefaultLifecycleProcessor}, which stops the members of a phase one
+     * after another on a single thread. A component that drains in-flight work returns that drain
+     * from {@link #beginStop()} so it runs on its own thread. Components then drain in parallel,
+     * and {@code spring.lifecycle.timeout-per-shutdown-phase} bounds the total wait.
+     */
+    @Override
+    public final void stop(Runnable callback) {
+        running = false;
+        LOGGER.info("{} stopped.", getClass().getSimpleName());
+        Runnable drain;
+        try {
+            drain = beginStop();
+        } catch (RuntimeException | Error e) {
+            callback.run();
+            throw e;
+        }
+        if (drain == null) {
+            callback.run();
+            return;
+        }
+        Thread.ofPlatform()
+                .name(getClass().getSimpleName() + "-drain")
+                .daemon(true)
+                .start(
+                        () -> {
+                            try {
+                                drain.run();
+                            } catch (Throwable t) {
+                                LOGGER.error(
+                                        "{} failed to drain on stop",
+                                        getClass().getSimpleName(),
+                                        t);
+                            } finally {
+                                callback.run();
+                            }
+                        });
+    }
+
     @Override
     public final boolean isRunning() {
         return running;
@@ -43,5 +82,16 @@ public abstract class LifecycleAwareComponent implements SmartLifecycle {
 
     public void doStart() {}
 
+    /** Synchronous stop, used by {@link #stop()}. Must not return before the stop is complete. */
     public void doStop() {}
+
+    /**
+     * Non-blocking part of the asynchronous stop used by {@link #stop(Runnable)}. Signals the
+     * component to stop and returns the blocking drain to run off Spring's lifecycle thread, or
+     * {@code null} when nothing is left to wait for. The default runs {@link #doStop()} inline.
+     */
+    protected Runnable beginStop() {
+        doStop();
+        return null;
+    }
 }

@@ -104,11 +104,21 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
 
     @Override
     public void doStop() {
-        // Pool worker threads are not daemon threads (BasicThreadFactory falls back to
-        // Executors.defaultThreadFactory() when .daemon() isn't set), but that does NOT keep the
-        // JVM alive on SIGTERM: Runtime.exit() runs shutdown hooks then calls halt(), which does
-        // not wait for ordinary threads. Without draining here, every in-flight task is truncated
-        // instantly on every restart/deploy instead of being given a chance to finish.
+        beginStop().run();
+    }
+
+    /**
+     * Pool worker threads are not daemon threads (BasicThreadFactory falls back to
+     * Executors.defaultThreadFactory() when .daemon() isn't set), but that does NOT keep the JVM
+     * alive on SIGTERM: Runtime.exit() runs shutdown hooks then calls halt(), which does not wait
+     * for ordinary threads. Without draining, every in-flight task is truncated instantly on every
+     * restart/deploy instead of being given a chance to finish.
+     *
+     * <p>Shuts the pools down here and returns the drain, so Spring can run it off its lifecycle
+     * thread and keep stopping the other components meanwhile.
+     */
+    @Override
+    protected Runnable beginStop() {
         Set<ExecutorService> executors = new HashSet<>();
         executors.add(sharedExecutorService);
         queueExecutionConfigMap
@@ -123,6 +133,10 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
         } finally {
             dispatchLock.writeLock().unlock();
         }
+        return () -> awaitDrain(executors, deadline);
+    }
+
+    private void awaitDrain(Set<ExecutorService> executors, long deadline) {
         for (ExecutorService executor : executors) {
             long remainingNanos = deadline - System.nanoTime();
             try {

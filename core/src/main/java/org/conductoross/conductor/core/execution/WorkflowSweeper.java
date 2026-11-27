@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 
@@ -138,10 +139,18 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
                         if (workflowIds.isEmpty()) {
                             sleepWhenIdle();
                         } else {
-                            workflowIds.forEach(
-                                    workflowId ->
-                                            Monitors.getTimer("workflowSweeper")
-                                                    .record(() -> sweep(workflowId)));
+                            for (String workflowId : workflowIds) {
+                                if (stop.get()) {
+                                    // Graceful drain on shutdown (#1819).
+                                    // Popped but unswept ids are redelivered after the unack
+                                    // timeout, so they can safely be left for another instance.
+                                    log.info(
+                                            "Sweeper stopping, skipping remaining workflows in batch");
+                                    return;
+                                }
+                                Monitors.getTimer("workflowSweeper")
+                                        .record(() -> sweep(workflowId));
+                            }
                         }
                     }
                 } catch (Throwable e) {
@@ -369,7 +378,47 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
 
     @Override
     public void doStop() {
+        Runnable drain = beginStop();
+        if (drain != null) {
+            drain.run();
+        }
+    }
+
+    /**
+     * Signals the sweep loops to stop and returns the drain of in-flight sweeps, so Spring can run
+     * it off its lifecycle thread and keep stopping the other components meanwhile. Interrupting a
+     * sweep mid-decide aborts in-progress I/O (e.g. AWS SDK calls fail with AbortedException), so
+     * the executor is only forcibly stopped if the sweeps don't finish within {@link
+     * SweeperProperties#getShutdownTimeout()} ms. Keep that timeout no higher than {@code
+     * spring.lifecycle.timeout-per-shutdown-phase}: past it Spring moves on to destroying beans
+     * while sweeps may still be running.
+     */
+    @Override
+    protected Runnable beginStop() {
         stop.set(true);
-        ((ExecutorService) this.sweeperExecutor).shutdownNow();
+        // Graceful drain on shutdown (#1819).
+        if (!(this.sweeperExecutor instanceof ExecutorService executorService)) {
+            return null;
+        }
+        executorService.shutdown();
+        return () -> awaitDrain(executorService);
+    }
+
+    private void awaitDrain(ExecutorService executorService) {
+        long shutdownTimeout = sweeperProperties.getShutdownTimeout();
+        try {
+            if (executorService.awaitTermination(shutdownTimeout, TimeUnit.MILLISECONDS)) {
+                log.info("Workflow sweeper drained and shut down gracefully");
+            } else {
+                log.warn(
+                        "Workflow sweeper did not drain within {} ms, forcing shutdown",
+                        shutdownTimeout);
+                executorService.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            log.warn("Interrupted while draining workflow sweeper, forcing shutdown");
+            executorService.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
 }
