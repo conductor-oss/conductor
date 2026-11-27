@@ -199,6 +199,14 @@ export default defineConfig(({ mode }) => {
       globals: true,
       environment: "jsdom",
       setupFiles: "./src/setupTests.ts",
+      alias: {
+        // The package's "main" is CJS and pulls in its own copy of
+        // react-router, so useQueryState would read a different router context
+        // than the components around it and one of the two throws "may be used
+        // only in the context of a <Router>". Its ESM build shares ours.
+        "react-router-use-location-state":
+          "react-router-use-location-state/dist/react-router-use-location-state.esm.js",
+      },
       include: ["src/**/*.test.{js,ts,jsx,tsx}"],
       coverage: {
         provider: "v8",
