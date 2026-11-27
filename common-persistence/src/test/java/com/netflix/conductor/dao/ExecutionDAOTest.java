@@ -181,6 +181,46 @@ public abstract class ExecutionDAOTest {
     }
 
     @Test
+    public void testScheduledTaskRemovedOnTerminalState() {
+        String workflowId = UUID.randomUUID().toString();
+
+        TaskModel task = new TaskModel();
+        task.setScheduledTime(1L);
+        task.setSeq(1);
+        task.setTaskId(workflowId + "_t0");
+        task.setReferenceTaskName("scheduled_cleanup_test");
+        task.setRetryCount(0);
+        task.setWorkflowInstanceId(workflowId);
+        task.setTaskDefName("scheduled_cleanup_test_task");
+        task.setStatus(TaskModel.Status.IN_PROGRESS);
+
+        List<TaskModel> created = getExecutionDAO().createTasks(Collections.singletonList(task));
+        assertEquals(1, created.size());
+
+        TaskModel found = getExecutionDAO().getTask(task.getTaskId());
+        found.setStatus(TaskModel.Status.COMPLETED);
+        getExecutionDAO().updateTask(found);
+
+        // A stale task_scheduled row blocks re-scheduling the same workflow/ref/retry key.
+        TaskModel reschedule = new TaskModel();
+        reschedule.setScheduledTime(2L);
+        reschedule.setSeq(2);
+        reschedule.setTaskId(workflowId + "_t0_reschedule");
+        reschedule.setReferenceTaskName("scheduled_cleanup_test");
+        reschedule.setRetryCount(0);
+        reschedule.setWorkflowInstanceId(workflowId);
+        reschedule.setTaskDefName("scheduled_cleanup_test_task");
+        reschedule.setStatus(TaskModel.Status.IN_PROGRESS);
+
+        List<TaskModel> recreated =
+                getExecutionDAO().createTasks(Collections.singletonList(reschedule));
+        assertEquals(
+                "task_scheduled row should be removed when task reaches terminal state",
+                1,
+                recreated.size());
+    }
+
+    @Test
     public void testTaskOps() {
         List<TaskModel> tasks = new LinkedList<>();
         String workflowId = UUID.randomUUID().toString();
