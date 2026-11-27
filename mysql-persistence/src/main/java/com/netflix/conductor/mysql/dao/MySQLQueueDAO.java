@@ -18,6 +18,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -33,24 +34,47 @@ import com.netflix.conductor.mysql.util.Query;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.Uninterruptibles;
+import jakarta.annotation.PreDestroy;
 import tools.jackson.databind.ObjectMapper;
 
 public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
 
     private static final Long UNACK_SCHEDULE_MS = 60_000L;
 
+    private final ScheduledExecutorService scheduledExecutorService;
+
     public MySQLQueueDAO(
             RetryTemplate retryTemplate, ObjectMapper objectMapper, DataSource dataSource) {
         super(retryTemplate, objectMapper, dataSource);
 
-        Executors.newSingleThreadScheduledExecutor(
-                        ExecutorsUtil.newNamedThreadFactory("mysql-queue-"))
-                .scheduleAtFixedRate(
-                        this::runScheduledProcessAllUnacks,
-                        UNACK_SCHEDULE_MS,
-                        UNACK_SCHEDULE_MS,
-                        TimeUnit.MILLISECONDS);
+        this.scheduledExecutorService =
+                Executors.newSingleThreadScheduledExecutor(
+                        ExecutorsUtil.newNamedThreadFactory("mysql-queue-"));
+        this.scheduledExecutorService.scheduleAtFixedRate(
+                this::runScheduledProcessAllUnacks,
+                UNACK_SCHEDULE_MS,
+                UNACK_SCHEDULE_MS,
+                TimeUnit.MILLISECONDS);
         logger.debug(MySQLQueueDAO.class.getName() + " is ready to serve");
+    }
+
+    @PreDestroy
+    public void destroy() {
+        try {
+            this.scheduledExecutorService.shutdown();
+            if (scheduledExecutorService.awaitTermination(30, TimeUnit.SECONDS)) {
+                logger.debug("tasks completed, shutting down");
+            } else {
+                logger.warn("Forcing shutdown after waiting for 30 seconds");
+                scheduledExecutorService.shutdownNow();
+            }
+        } catch (InterruptedException ie) {
+            logger.warn(
+                    "Shutdown interrupted, invoking shutdownNow on scheduledExecutorService for processAllUnacks",
+                    ie);
+            scheduledExecutorService.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
 
     @Override
