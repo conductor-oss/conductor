@@ -28,11 +28,11 @@ import org.mockito.quality.Strictness;
 import com.azure.identity.ClientSecretCredential;
 import com.azure.identity.DefaultAzureCredential;
 import com.azure.identity.ManagedIdentityCredential;
+import okhttp3.OkHttpClient;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
-import okhttp3.OkHttpClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

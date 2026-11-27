@@ -352,13 +352,15 @@ public class AgentService {
      * agent list of the REST API.
      */
     public List<AgentSummary> listAgents() {
-        List<AgentSummary> agents = latestAgentDefinitions()
-                .map(def -> {
-                    AgentSummary s = summary(def);
-                    s.setChecksum(checksum(def));
-                    return s;
-                })
-                .collect(Collectors.toCollection(ArrayList::new));
+        List<AgentSummary> agents =
+                latestAgentDefinitions()
+                        .map(
+                                def -> {
+                                    AgentSummary s = summary(def);
+                                    s.setChecksum(checksum(def));
+                                    return s;
+                                })
+                        .collect(Collectors.toCollection(ArrayList::new));
 
         // Discover external agents by scanning all credential secrets.
         // Any secret whose JSON value contains an "endpoint" key is treated as an Azure Foundry
@@ -373,13 +375,23 @@ public class AgentService {
                         JsonNode secretJson = MAPPER.readTree(secretValue);
                         String endpoint = secretJson.path("endpoint").asText(null);
                         String region = secretJson.path("region").asText(null);
-                        if (endpoint != null && !endpoint.isBlank() && azureFoundryAgentClient != null) {
-                            agents.addAll(azureFoundryAgentClient.listExternalAgents(secretName, endpoint));
-                        } else if (region != null && !region.isBlank() && bedrockAgentClient != null) {
-                            agents.addAll(bedrockAgentClient.listExternalAgents(secretName, region));
+                        if (endpoint != null
+                                && !endpoint.isBlank()
+                                && azureFoundryAgentClient != null) {
+                            agents.addAll(
+                                    azureFoundryAgentClient.listExternalAgents(
+                                            secretName, endpoint));
+                        } else if (region != null
+                                && !region.isBlank()
+                                && bedrockAgentClient != null) {
+                            agents.addAll(
+                                    bedrockAgentClient.listExternalAgents(secretName, region));
                         }
                     } catch (Exception e) {
-                        log.debug("Skipping secret '{}' for external agent discovery: {}", secretName, e.getMessage());
+                        log.debug(
+                                "Skipping secret '{}' for external agent discovery: {}",
+                                secretName,
+                                e.getMessage());
                     }
                 }
             } catch (Exception e) {
