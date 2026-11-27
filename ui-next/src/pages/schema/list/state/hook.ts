@@ -125,24 +125,30 @@ export const useSchemaList = () => {
   );
 
   /**
-   * Deletes every version under the name. A row stands for the schema, so the
-   * row's delete retires the schema; a single version is deleted from the
-   * editor, where the version being viewed is unambiguous.
+   * A row stands for the schema rather than one of its versions, so the dialog asks which
+   * version to retire. `undefined` retires the schema and every version under it.
    */
-  const handleDeleteSchema = useCallback(() => {
-    if (!confirmDeleteDialogData) {
-      return;
-    }
-    deleteSchemaAction.mutate({
-      method: "delete",
-      path: `/schema/${encodeURIComponent(confirmDeleteDialogData.name)}`,
-    });
-    handleCloseConfirmDeleteDialog();
-  }, [
-    confirmDeleteDialogData,
-    deleteSchemaAction,
-    handleCloseConfirmDeleteDialog,
-  ]);
+  const handleDeleteSchema = useCallback(
+    (version?: number) => {
+      if (!confirmDeleteDialogData) {
+        return;
+      }
+      const name = encodeURIComponent(confirmDeleteDialogData.name);
+      deleteSchemaAction.mutate({
+        method: "delete",
+        path:
+          version === undefined
+            ? `/schema/${name}`
+            : `/schema/${name}/${version}`,
+      });
+      handleCloseConfirmDeleteDialog();
+    },
+    [
+      confirmDeleteDialogData,
+      deleteSchemaAction,
+      handleCloseConfirmDeleteDialog,
+    ],
+  );
 
   /**
    * A clone starts its own history at version 1 rather than inheriting the

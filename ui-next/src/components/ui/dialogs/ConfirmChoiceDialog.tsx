@@ -1,3 +1,13 @@
+/**
+ * The product's confirmation dialog: a question, an optional type-the-name gate, and two
+ * buttons.
+ *
+ * The theme paints DialogTitle and DialogActions grey. The newer dialogs
+ * (UnsavedChangesDialog, ConfirmModal) each opted out of that per instance; this one does
+ * the same, so every confirmation in the product reads the same way. Destructive
+ * confirmations additionally get a trash badge and a red confirm button, because "Confirm"
+ * with a save icon gave a delete the same weight as saving a form.
+ */
 import {
   Box,
   Dialog,
@@ -5,28 +15,15 @@ import {
   DialogContent,
   DialogTitle,
 } from "@mui/material";
-import ConductorInput from "components/ui/inputs/ConductorInput";
-import SaveIcon from "components/icons/SaveIcon";
-import XCloseIcon from "components/icons/XCloseIcon";
 import { ReactNode, useState } from "react";
+
+import SaveIcon from "components/icons/SaveIcon";
+import TrashIcon from "components/icons/TrashIcon";
 import { Button, Text } from "components/index";
 import ActionButton from "components/ui/buttons/ActionButton";
+import ConductorInput from "components/ui/inputs/ConductorInput";
 
-const style = {
-  confirmationMessage: {
-    opacity: 0.8,
-    paddingLeft: "10px",
-    fontSize: "15px",
-    lineHeight: 1.5,
-    "& p": {
-      fontSize: "15px",
-      fontWeight: "normal",
-    },
-    "& svg": {
-      fontSize: "15px",
-    },
-  },
-};
+import { CONFIRM_FIELD_ID, confirmDialogStyle } from "./confirmDialogStyle";
 
 export default function ConfirmChoiceDialog({
   header = "Confirmation",
@@ -41,8 +38,10 @@ export default function ConfirmChoiceDialog({
   hideCancelBtn,
   id = "confirm-choice-dialog",
   isConfirmLoading = false,
+  destructive,
+  inputLabel,
 }: {
-  header?: string;
+  header?: ReactNode;
   message?: string | ReactNode;
   handleConfirmationValue: (b: boolean) => void;
   valueToBeDeleted?: string;
@@ -54,8 +53,17 @@ export default function ConfirmChoiceDialog({
   hideCancelBtn?: boolean;
   id?: string;
   isConfirmLoading?: boolean;
+  /**
+   * Red confirm button and a trash badge. Defaults to `isInputConfirmation`, which is how
+   * the button colour was already chosen, so existing callers keep the treatment they had.
+   */
+  destructive?: boolean;
+  /** Sits directly above the typed-name field, 6px up, as its label. */
+  inputLabel?: ReactNode;
 }) {
   const [inputValue, setInputValue] = useState("");
+
+  const isDestructive = destructive ?? !!isInputConfirmation;
 
   const onClose = (
     event: Event,
@@ -74,46 +82,55 @@ export default function ConfirmChoiceDialog({
       maxWidth="sm"
       open
       onClose={onClose}
-      sx={{
-        "& .MuiDialog-paperWidthSm": {
-          maxWidth: "690px",
-        },
-      }}
+      sx={{ "& .MuiDialog-paperWidthSm": confirmDialogStyle.paper }}
       disableEscapeKeyDown={disableEscapeKeyDown}
-      PaperProps={{
-        id,
-      }}
+      PaperProps={{ id }}
     >
-      <DialogTitle>{header}</DialogTitle>
-      <DialogContent>
-        <Box mt={4}>
-          <Text
-            sx={style.confirmationMessage}
-            style={{ marginRight: 10 }}
-            component="div"
-          >
+      <DialogTitle sx={confirmDialogStyle.title}>
+        {isDestructive && (
+          <Box id="choice-dialog-icon" sx={confirmDialogStyle.badge}>
+            <TrashIcon />
+          </Box>
+        )}
+        {header}
+      </DialogTitle>
+
+      <DialogContent sx={confirmDialogStyle.content}>
+        <Box sx={confirmDialogStyle.body}>
+          <Text sx={confirmDialogStyle.message} component="div">
             {message}
           </Text>
           {isInputConfirmation && (
-            <ConductorInput
-              sx={{ mt: 2, pr: 5 }}
-              id="choice-dialog-confirmation-field"
-              value={inputValue}
-              onTextInputChange={(value) => setInputValue(value)}
-              fullWidth
-              color="secondary"
-              autoFocus
-            />
+            <Box>
+              {inputLabel && (
+                <Box
+                  component="label"
+                  htmlFor={CONFIRM_FIELD_ID}
+                  sx={confirmDialogStyle.inputLabel}
+                >
+                  {inputLabel}
+                </Box>
+              )}
+              <ConductorInput
+                id={CONFIRM_FIELD_ID}
+                value={inputValue}
+                onTextInputChange={(value) => setInputValue(value)}
+                fullWidth
+                color="secondary"
+                autoFocus
+              />
+            </Box>
           )}
         </Box>
       </DialogContent>
-      <DialogActions>
+
+      <DialogActions sx={confirmDialogStyle.actions}>
         {!hideCancelBtn && (
           <Button
             id="choice-dialog-cancel-btn"
-            variant="text"
+            variant="outlined"
+            sx={confirmDialogStyle.cancelButton}
             onClick={() => handleConfirmationValue(false)}
-            startIcon={cancelBtnLabel ? null : <XCloseIcon />}
             disabled={isConfirmLoading}
           >
             {cancelBtnLabel ? cancelBtnLabel : "Cancel"}
@@ -121,10 +138,18 @@ export default function ConfirmChoiceDialog({
         )}
         <ActionButton
           id="choice-dialog-confirm-btn"
+          variant="contained"
+          color={isDestructive ? "error" : "primary"}
+          sx={isDestructive ? confirmDialogStyle.destructiveButton : undefined}
           onClick={() => handleConfirmationValue(true)}
           disabled={isInputConfirmation && inputValue !== valueToBeDeleted}
-          color={isInputConfirmation ? "error" : "primary"}
-          startIcon={confirmBtnLabel ? null : <SaveIcon />}
+          startIcon={
+            isDestructive ? (
+              <TrashIcon />
+            ) : confirmBtnLabel ? null : (
+              <SaveIcon />
+            )
+          }
           progress={isConfirmLoading}
         >
           {confirmBtnLabel ? confirmBtnLabel : "Confirm"}
