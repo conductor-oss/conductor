@@ -14,7 +14,7 @@
         "embeddingModelProvider": "openai",
         "embeddingModel": "text-embedding-3-small",
         "query": "${workflow.input.question}",
-        "llmMaxResults": 3
+        "maxResults": 3
       }
     },
     {
