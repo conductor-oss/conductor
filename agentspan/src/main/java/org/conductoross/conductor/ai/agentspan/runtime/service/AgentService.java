@@ -29,6 +29,7 @@ import org.conductoross.conductor.ai.agentspan.runtime.normalizer.NormalizerRegi
 import org.conductoross.conductor.ai.agentspan.runtime.util.AgentExecutionTokenUsageAggregator;
 import org.conductoross.conductor.ai.agentspan.runtime.util.WorkflowClassifiers;
 import org.conductoross.conductor.common.metadata.agent.*;
+import org.conductoross.conductor.dao.SecretsDAO;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -56,6 +57,7 @@ import com.netflix.conductor.service.WorkflowService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 @Component
@@ -79,6 +81,9 @@ public class AgentService {
     private final AgentStreamRegistry streamRegistry;
     private final SkillRegistryService skillRegistryService;
     private final MetadataService metadataService;
+    private final AzureFoundryAgentClient azureFoundryAgentClient;
+    private final BedrockAgentClient bedrockAgentClient;
+    private final SecretsDAO secretsDAO;
 
     /**
      * Compile an agent config into a WorkflowDef and return it. Supports both native AgentConfig
@@ -347,14 +352,54 @@ public class AgentService {
      * agent list of the REST API.
      */
     public List<AgentSummary> listAgents() {
-        return latestAgentDefinitions()
-                .map(
-                        def -> {
-                            AgentSummary summary = summary(def);
-                            summary.setChecksum(checksum(def));
-                            return summary;
-                        })
-                .toList();
+        List<AgentSummary> agents =
+                latestAgentDefinitions()
+                        .map(
+                                def -> {
+                                    AgentSummary s = summary(def);
+                                    s.setChecksum(checksum(def));
+                                    return s;
+                                })
+                        .collect(Collectors.toCollection(ArrayList::new));
+
+        // Discover external agents by scanning all credential secrets.
+        // Any secret whose JSON value contains an "endpoint" key is treated as an Azure Foundry
+        // credential; one with a "region" key is treated as an AWS Bedrock credential.
+        if (secretsDAO != null) {
+            try {
+                List<String> secretNames = secretsDAO.listSecretNames();
+                for (String secretName : secretNames) {
+                    try {
+                        String secretValue = secretsDAO.getSecret(secretName);
+                        if (secretValue == null || secretValue.isBlank()) continue;
+                        JsonNode secretJson = MAPPER.readTree(secretValue);
+                        String endpoint = secretJson.path("endpoint").asText(null);
+                        String region = secretJson.path("region").asText(null);
+                        if (endpoint != null
+                                && !endpoint.isBlank()
+                                && azureFoundryAgentClient != null) {
+                            agents.addAll(
+                                    azureFoundryAgentClient.listExternalAgents(
+                                            secretName, endpoint));
+                        } else if (region != null
+                                && !region.isBlank()
+                                && bedrockAgentClient != null) {
+                            agents.addAll(
+                                    bedrockAgentClient.listExternalAgents(secretName, region));
+                        }
+                    } catch (Exception e) {
+                        log.debug(
+                                "Skipping secret '{}' for external agent discovery: {}",
+                                secretName,
+                                e.getMessage());
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Failed to scan secrets for external agent discovery: {}", e.getMessage());
+            }
+        }
+
+        return agents;
     }
 
     /**
@@ -828,11 +873,12 @@ public class AgentService {
         }
         if (StringUtils.isNotBlank(request.getPrompt())
                 || hasMedia(request.getMedia())
-                || isNotEmpty(request.getContext())) {
+                || isNotEmpty(request.getContext())
+                || hasInputPayload(request.getRawConfig())) {
             return;
         }
         throw new IllegalArgumentException(
-                "Agent execution requires a non-empty prompt, at least one media item, or non-empty context.");
+                "Agent execution requires a non-empty prompt, at least one media item, non-empty context, or rawConfig.inputPayload.");
     }
 
     private void validateStartSource(AgentStartRequest request) {
@@ -867,28 +913,65 @@ public class AgentService {
         return map != null && !map.isEmpty();
     }
 
+    private boolean hasInputPayload(Map<String, Object> rawConfig) {
+        if (rawConfig == null) return false;
+        Object v = rawConfig.get("inputPayload");
+        return v != null && !(v instanceof String s && s.isBlank());
+    }
+
     @SuppressWarnings("unchecked")
     public Map<String, Object> getAgentDef(String name, Integer version) {
-        WorkflowDef def;
-        if (version != null) {
-            def =
-                    metadataDAO
-                            .getWorkflowDef(name, version)
-                            .orElseThrow(
-                                    () ->
-                                            new NotFoundException(
-                                                    "Agent not found: " + name + " v" + version));
-        } else {
-            def =
-                    metadataDAO
-                            .getLatestWorkflowDef(name)
-                            .orElseThrow(() -> new NotFoundException("Agent not found: " + name));
+        Optional<WorkflowDef> defOpt =
+                version != null
+                        ? metadataDAO.getWorkflowDef(name, version)
+                        : metadataDAO.getLatestWorkflowDef(name);
+
+        if (defOpt.isPresent()) {
+            Map<String, Object> metadata = defOpt.get().getMetadata();
+            if (metadata != null && metadata.get("agentDef") instanceof Map) {
+                return (Map<String, Object>) metadata.get("agentDef");
+            }
+            throw new NotFoundException("No agent definition found for: " + name);
         }
-        Map<String, Object> metadata = def.getMetadata();
-        if (metadata != null && metadata.get("agentDef") instanceof Map) {
-            return (Map<String, Object>) metadata.get("agentDef");
+
+        // Not a conductor agent — try external providers by scanning secrets
+        if (secretsDAO != null) {
+            try {
+                for (String secretName : secretsDAO.listSecretNames()) {
+                    try {
+                        String secretValue = secretsDAO.getSecret(secretName);
+                        if (secretValue == null || secretValue.isBlank()) continue;
+                        JsonNode secretJson = MAPPER.readTree(secretValue);
+                        String endpoint = secretJson.path("endpoint").asText(null);
+                        String region = secretJson.path("region").asText(null);
+                        if (endpoint != null
+                                && !endpoint.isBlank()
+                                && azureFoundryAgentClient != null) {
+                            Map<String, Object> def =
+                                    azureFoundryAgentClient.getExternalAgentDef(
+                                            name, secretName, endpoint);
+                            if (def != null) return def;
+                        } else if (region != null
+                                && !region.isBlank()
+                                && bedrockAgentClient != null) {
+                            Map<String, Object> def =
+                                    bedrockAgentClient.getExternalAgentDef(
+                                            name, secretName, region);
+                            if (def != null) return def;
+                        }
+                    } catch (Exception e) {
+                        log.debug(
+                                "Skipping secret '{}' for external agent def lookup: {}",
+                                secretName,
+                                e.getMessage());
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Failed to scan secrets for external agent def: {}", e.getMessage());
+            }
         }
-        throw new NotFoundException("No agent definition found for: " + name);
+
+        throw new NotFoundException("Agent not found: " + name);
     }
 
     public void deleteAgent(String name, Integer version) {

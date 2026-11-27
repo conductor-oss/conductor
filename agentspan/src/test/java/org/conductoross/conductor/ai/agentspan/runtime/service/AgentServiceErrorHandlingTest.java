@@ -16,6 +16,7 @@ import org.conductoross.conductor.ai.agentspan.runtime.compiler.AgentCompiler;
 import org.conductoross.conductor.ai.agentspan.runtime.normalizer.NormalizerRegistry;
 import org.conductoross.conductor.ai.agentspan.runtime.util.AgentExecutionTokenUsageAggregator;
 import org.conductoross.conductor.common.metadata.agent.AgentStartRequest;
+import org.conductoross.conductor.dao.SecretsDAO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -61,7 +62,10 @@ class AgentServiceErrorHandlingTest {
                         mock(WorkflowExecutor.class),
                         mock(AgentStreamRegistry.class),
                         mock(SkillRegistryService.class),
-                        mock(MetadataService.class));
+                        mock(MetadataService.class),
+                        mock(AzureFoundryAgentClient.class),
+                        mock(BedrockAgentClient.class),
+                        mock(SecretsDAO.class));
     }
 
     // ── stop / signal with unknown execution ID ──────────────────────

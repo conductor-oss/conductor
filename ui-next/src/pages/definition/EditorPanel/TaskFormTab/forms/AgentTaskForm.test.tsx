@@ -185,6 +185,30 @@ describe("AgentTaskForm metadata resolution", () => {
     });
   });
 
+  it("shows useCallerIdentity toggle only for azure-foundry and saves the flag", async () => {
+    render(
+      <Harness
+        initialTask={{
+          name: "agent",
+          taskReferenceName: "agent_ref",
+          type: TaskType.AGENT,
+          inputParameters: { agentType: "azure-foundry", agentUrl: "https://foundry.example" },
+        }}
+      />,
+    );
+
+    expect(screen.getByLabelText(/Use caller identity/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText(/Use caller identity/));
+    expect(savedTask().inputParameters?.useCallerIdentity).toBe(true);
+
+    // A2A does not expose the toggle
+    fireEvent.change(screen.getByLabelText("agentType"), {
+      target: { value: "a2a" },
+    });
+    expect(screen.queryByLabelText(/Use caller identity/)).not.toBeInTheDocument();
+  });
+
   it("invalidates changed sources and never resolves dynamic expressions", async () => {
     render(
       <Harness
