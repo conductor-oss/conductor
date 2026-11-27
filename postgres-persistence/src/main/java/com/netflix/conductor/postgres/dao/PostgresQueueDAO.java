@@ -218,8 +218,10 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
     public boolean setUnackTimeout(String queueName, String messageId, long unackTimeout) {
         long updatedOffsetTimeInSecond = unackTimeout / 1000;
 
+        // popped = false: the message is due again at exactly the new time, through the normal
+        // pop, rather than when processAllUnacks next finds it more than 60 s past due.
         final String UPDATE_UNACK_TIMEOUT =
-                "UPDATE queue_message SET offset_time_seconds = ?, deliver_on = (current_timestamp + (? ||' seconds')::interval) WHERE queue_name = ? AND message_id = ?";
+                "UPDATE queue_message SET popped = false, offset_time_seconds = ?, deliver_on = (current_timestamp + (? ||' seconds')::interval) WHERE queue_name = ? AND message_id = ?";
 
         return queryWithTransaction(
                         UPDATE_UNACK_TIMEOUT,
@@ -238,8 +240,10 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
 
         // Only update when the proposed deliver_on is earlier than what is already set,
         // mirroring the ZADD LT semantics used by the Redis implementation.
+        // popped = false: the message is due again at exactly the new time, through the normal
+        // pop, rather than when processAllUnacks next finds it more than 60 s past due.
         final String UPDATE_UNACK_TIMEOUT_IF_SHORTER =
-                "UPDATE queue_message SET offset_time_seconds = ?, deliver_on = (current_timestamp + (? ||' seconds')::interval)"
+                "UPDATE queue_message SET popped = false, offset_time_seconds = ?, deliver_on = (current_timestamp + (? ||' seconds')::interval)"
                         + " WHERE queue_name = ? AND message_id = ? AND deliver_on > (current_timestamp + (? ||' seconds')::interval)";
 
         return queryWithTransaction(
@@ -513,6 +517,10 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
             }
         }
 
+        // deliver_on is the time the row was taken. The unack sweep releases a
+        // taken row once that time is more than 60 seconds ago. Set it in this
+        // same update. Leaving the original ready time makes a message that
+        // already waited 60 seconds eligible again before this poll deletes it.
         String POP_QUERY =
                 "WITH cte AS ("
                         + "    SELECT queue_name, message_id "
@@ -525,7 +533,7 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
                         + "    FOR UPDATE SKIP LOCKED "
                         + ") "
                         + "UPDATE queue_message "
-                        + "   SET popped = true "
+                        + "   SET popped = true, deliver_on = current_timestamp "
                         + "   FROM cte "
                         + "   WHERE queue_message.queue_name = cte.queue_name "
                         + "     AND queue_message.message_id = cte.message_id "

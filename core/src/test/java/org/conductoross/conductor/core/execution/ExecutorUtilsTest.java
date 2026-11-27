@@ -166,7 +166,10 @@ public class ExecutorUtilsTest {
         assertEquals(30, result.getSeconds());
     }
 
-    /** Boundary: SCHEDULED task whose poll window has already elapsed → remaining = 0. */
+    /**
+     * Boundary: SCHEDULED task whose poll window has already elapsed → the soonest re-check, one
+     * second.
+     */
     @Test
     public void computePostponeScheduledElapsedExceedsTimeout() {
         TaskModel task = newTask(TaskType.TASK_TYPE_SIMPLE, TaskModel.Status.SCHEDULED);
@@ -183,14 +186,17 @@ public class ExecutorUtilsTest {
                 ExecutorUtils.computePostpone(
                         workflow, Duration.ofSeconds(30), Duration.ofSeconds(3600));
 
-        // Elapsed >> pollTimeout: remaining = 0, clamped to 0
+        // Elapsed >> pollTimeout: remaining = 0, raised to the one-second minimum
         assertEquals(
-                "When poll window is already elapsed, postpone should be 0",
-                0L,
+                "When poll window is already elapsed, postpone should be the 1 s minimum",
+                1L,
                 result.getSeconds());
     }
 
-    /** Boundary: IN_PROGRESS task whose response window has already elapsed → remaining = 0. */
+    /**
+     * Boundary: IN_PROGRESS task whose response window has already elapsed → the soonest re-check,
+     * one second.
+     */
     @Test
     public void computePostponeInProgressElapsedExceedsResponseTimeout() {
         TaskModel task = newTask(TaskType.TASK_TYPE_SIMPLE, TaskModel.Status.IN_PROGRESS);
@@ -204,9 +210,40 @@ public class ExecutorUtilsTest {
                         workflow, Duration.ofSeconds(30), Duration.ofSeconds(3600));
 
         assertEquals(
-                "When response window is already elapsed, postpone should be 0",
-                0L,
+                "When response window is already elapsed, postpone should be the 1 s minimum",
+                1L,
                 result.getSeconds());
+    }
+
+    /**
+     * A WAIT with less than a second left is checked again once it has ended, not at once: a
+     * postpone of 0 would sweep the workflow in a loop until the wait completes.
+     */
+    @Test
+    public void computePostponeRoundsAWaitWithLessThanASecondLeftUp() {
+        TaskModel wait = newTask(TaskType.TASK_TYPE_WAIT, TaskModel.Status.IN_PROGRESS);
+        wait.setWaitTimeout(System.currentTimeMillis() + 400);
+
+        WorkflowModel workflow = newWorkflow(Arrays.asList(wait), 0);
+        Duration result =
+                ExecutorUtils.computePostpone(
+                        workflow, Duration.ofSeconds(30), Duration.ofSeconds(3600));
+
+        assertEquals(1L, result.getSeconds());
+    }
+
+    /** A WAIT that is already past its end is checked again after a second, not at once. */
+    @Test
+    public void computePostponeGivesAnOverdueWaitTheOneSecondMinimum() {
+        TaskModel wait = newTask(TaskType.TASK_TYPE_WAIT, TaskModel.Status.IN_PROGRESS);
+        wait.setWaitTimeout(System.currentTimeMillis() - 5_000);
+
+        WorkflowModel workflow = newWorkflow(Arrays.asList(wait), 0);
+        Duration result =
+                ExecutorUtils.computePostpone(
+                        workflow, Duration.ofSeconds(30), Duration.ofSeconds(3600));
+
+        assertEquals(1L, result.getSeconds());
     }
 
     /**

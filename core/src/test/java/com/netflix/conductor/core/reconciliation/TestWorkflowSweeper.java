@@ -129,9 +129,12 @@ public class TestWorkflowSweeper {
         when(properties.getMaxPostponeDurationSeconds())
                 .thenReturn(Duration.ofSeconds(defaulMmaxPostponeDurationSeconds));
         workflowSweeper.unack(workflowModel, defaultPostPoneOffSetSeconds);
+        // the time left, rounded up to whole seconds
         verify(queueDAO)
                 .setUnackTimeout(
-                        DECIDER_QUEUE, workflowModel.getWorkflowId(), (waitTimeout / 1000) * 1000);
+                        DECIDER_QUEUE,
+                        workflowModel.getWorkflowId(),
+                        ((waitTimeout + 999) / 1000) * 1000);
     }
 
     @Test
@@ -148,9 +151,8 @@ public class TestWorkflowSweeper {
         when(properties.getWorkflowOffsetTimeout())
                 .thenReturn(Duration.ofSeconds(defaultPostPoneOffSetSeconds));
         workflowSweeper.unack(workflowModel, defaultPostPoneOffSetSeconds);
-        verify(queueDAO)
-                .setUnackTimeout(
-                        DECIDER_QUEUE, workflowModel.getWorkflowId(), (waitTimeout / 1000) * 1000);
+        // checked again once the wait has ended, not at once
+        verify(queueDAO).setUnackTimeout(DECIDER_QUEUE, workflowModel.getWorkflowId(), 1000);
     }
 
     @Test
@@ -167,9 +169,8 @@ public class TestWorkflowSweeper {
         when(properties.getWorkflowOffsetTimeout())
                 .thenReturn(Duration.ofSeconds(defaultPostPoneOffSetSeconds));
         workflowSweeper.unack(workflowModel, defaultPostPoneOffSetSeconds);
-        verify(queueDAO)
-                .setUnackTimeout(
-                        DECIDER_QUEUE, workflowModel.getWorkflowId(), (waitTimeout / 1000) * 1000);
+        // a wait that has ended is checked again after the one-second minimum, not at once
+        verify(queueDAO).setUnackTimeout(DECIDER_QUEUE, workflowModel.getWorkflowId(), 1000);
     }
 
     @Test

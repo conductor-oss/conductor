@@ -498,6 +498,23 @@ public class PostgresQueueDAOTest {
         }
     }
 
+    /**
+     * An unack timeout of N on a popped message makes it due again after N seconds, as on the Redis
+     * queue, not when processAllUnacks next finds it more than 60 s past due.
+     */
+    @Test
+    public void aPoppedMessageIsDueAgainWhenItsUnackTimeoutRunsOut() {
+        queueDAO.push("unack_timeout", "msg-1", 0);
+        assertEquals(List.of("msg-1"), queueDAO.pop("unack_timeout", 1, 100));
+
+        // two seconds: a deliver_on stored to the whole second (MySQL) is at least one ahead
+        assertTrue(queueDAO.setUnackTimeout("unack_timeout", "msg-1", 2_000));
+        assertEquals(List.of(), queueDAO.pop("unack_timeout", 1, 100));
+
+        await().atMost(6, TimeUnit.SECONDS)
+                .until(() -> queueDAO.pop("unack_timeout", 1, 100).equals(List.of("msg-1")));
+    }
+
     @Test
     public void setUnackTimeoutIfShorterShortensDueTime() {
         String queueName = "setUnackIfShorter_shorten";
@@ -591,6 +608,57 @@ public class PostgresQueueDAOTest {
         List<String> popped = queueDAO.pop(queueName, 1, 100);
         assertEquals(1, popped.size());
         assertEquals(messageId, popped.get(0));
+    }
+
+    @Test
+    public void popOfAnAlreadyDueMessageIsNotReleasedByTheUnackSweep() throws Exception {
+        String queueName = "pop_resets_ready_time";
+        String messageId = "already-due";
+
+        queueDAO.push(queueName, messageId, 0);
+        setDeliverOnMinutesAgo(queueName, messageId);
+
+        List<String> taken = queueDAO.pop(queueName, 1, 0);
+        assertEquals(1, taken.size());
+        assertEquals(messageId, taken.get(0));
+
+        queueDAO.processAllUnacks();
+
+        List<String> again = queueDAO.pop(queueName, 1, 0);
+        assertTrue(
+                "a take of a message that had already been waiting must not be handed out again",
+                again.isEmpty());
+    }
+
+    @Test
+    public void unackSweepReleasesATakeOlderThanSixtySeconds() throws Exception {
+        String queueName = "stale_take_is_released";
+        String messageId = "stale-take";
+
+        queueDAO.push(queueName, messageId, 0);
+        List<String> taken = queueDAO.pop(queueName, 1, 0);
+        assertEquals(1, taken.size());
+
+        setDeliverOnMinutesAgo(queueName, messageId);
+        queueDAO.processAllUnacks();
+
+        List<String> again = queueDAO.pop(queueName, 1, 0);
+        assertEquals(1, again.size());
+        assertEquals(messageId, again.get(0));
+    }
+
+    private void setDeliverOnMinutesAgo(String queueName, String messageId) throws Exception {
+        try (Connection conn = dataSource.getConnection()) {
+            conn.setAutoCommit(false);
+            try (PreparedStatement statement =
+                    conn.prepareStatement(
+                            "UPDATE queue_message SET deliver_on = current_timestamp - interval '2 minutes' WHERE queue_name = ? AND message_id = ?")) {
+                statement.setString(1, queueName);
+                statement.setString(2, messageId);
+                assertEquals(1, statement.executeUpdate());
+            }
+            conn.commit();
+        }
     }
 
     @Test

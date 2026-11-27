@@ -206,8 +206,10 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
     public boolean setUnackTimeout(String queueName, String messageId, long unackTimeout) {
         long updatedOffsetTimeInSecond = unackTimeout / 1000;
 
+        // popped = false: the message is due again at exactly the new time, through the normal
+        // pop, rather than when processAllUnacks next finds it more than 60 s past due.
         final String UPDATE_UNACK_TIMEOUT =
-                "UPDATE queue_message SET offset_time_seconds = ?, deliver_on = strftime('%Y-%m-%d %H:%M:%f', 'now', '+' || ? || ' seconds') WHERE queue_name = ? AND message_id = ?";
+                "UPDATE queue_message SET popped = false, offset_time_seconds = ?, deliver_on = strftime('%Y-%m-%d %H:%M:%f', 'now', '+' || ? || ' seconds') WHERE queue_name = ? AND message_id = ?";
 
         return queryWithTransaction(
                         UPDATE_UNACK_TIMEOUT,
@@ -226,8 +228,10 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
 
         // Only update when the proposed deliver_on is earlier than what is already set,
         // mirroring the ZADD LT semantics used by the Redis implementation.
+        // popped = false: the message is due again at exactly the new time, through the normal
+        // pop, rather than when processAllUnacks next finds it more than 60 s past due.
         final String UPDATE_UNACK_TIMEOUT_IF_SHORTER =
-                "UPDATE queue_message SET offset_time_seconds = ?, deliver_on = strftime('%Y-%m-%d %H:%M:%f', 'now', '+' || ? || ' seconds')"
+                "UPDATE queue_message SET popped = false, offset_time_seconds = ?, deliver_on = strftime('%Y-%m-%d %H:%M:%f', 'now', '+' || ? || ' seconds')"
                         + " WHERE queue_name = ? AND message_id = ? AND deliver_on > strftime('%Y-%m-%d %H:%M:%f', 'now', '+' || ? || ' seconds')";
 
         return queryWithTransaction(
@@ -467,8 +471,11 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
         // The queue is named on the update too, not only where the ids are chosen: a message id
         // is unique within a queue (the table's key), and the same id may wait on another queue,
         // which this pop must neither take nor return.
+        // deliver_on is the time the row was taken. Reset it with the take,
+        // or the unack sweep hands the message out again when it had already
+        // been waiting for more than 60 seconds.
         String POP_QUERY =
-                "UPDATE queue_message SET popped = true WHERE queue_name = ? AND message_id IN ("
+                "UPDATE queue_message SET popped = true, deliver_on = strftime('%Y-%m-%d %H:%M:%f', 'now') WHERE queue_name = ? AND message_id IN ("
                         + "SELECT message_id FROM queue_message WHERE queue_name = ? AND popped = false AND "
                         + "deliver_on <= strftime('%Y-%m-%d %H:%M:%f', 'now') "
                         + "ORDER BY priority DESC, deliver_on, created_on LIMIT ?"

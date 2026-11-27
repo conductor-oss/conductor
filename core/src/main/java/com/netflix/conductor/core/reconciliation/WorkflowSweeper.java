@@ -148,10 +148,11 @@ public class WorkflowSweeper {
                     if (taskModel.getWaitTimeout() == 0) {
                         candidateSeconds = workflowOffsetTimeout;
                     } else {
-                        // waitTimeout is an absolute epoch ms; compute remaining seconds.
-                        long deltaInSeconds =
-                                (taskModel.getWaitTimeout() - System.currentTimeMillis()) / 1000;
-                        candidateSeconds = (deltaInSeconds > 0) ? deltaInSeconds : 0;
+                        // waitTimeout is an absolute epoch ms; compute remaining seconds, rounded
+                        // up so that a wait with half a second left is checked after it ends.
+                        long deltaInMillis =
+                                taskModel.getWaitTimeout() - System.currentTimeMillis();
+                        candidateSeconds = (deltaInMillis > 0) ? (deltaInMillis + 999) / 1000 : 0;
                     }
                 } else if (taskModel.getTaskType().equals(TaskType.TASK_TYPE_HUMAN)) {
                     candidateSeconds = workflowOffsetTimeout;
@@ -199,8 +200,11 @@ public class WorkflowSweeper {
                 postponeDurationSeconds = candidateSeconds;
             }
         }
-        // Default to immediate re-evaluation if no eligible task delay is found.
-        long unackSeconds = (postponeDurationSeconds != null) ? postponeDurationSeconds : 0;
+        // Default to the soonest re-evaluation if no eligible task delay is found. Never 0: that
+        // makes the decider message due at once, and the workflow would be swept in a loop until
+        // the task that owns the deadline acts on it.
+        long unackSeconds =
+                Math.max(1, (postponeDurationSeconds != null) ? postponeDurationSeconds : 0);
         queueDAO.setUnackTimeout(DECIDER_QUEUE, workflowModel.getWorkflowId(), unackSeconds * 1000);
     }
 
