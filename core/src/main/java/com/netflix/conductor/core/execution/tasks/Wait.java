@@ -49,6 +49,14 @@ public class Wait extends WorkflowSystemTask {
             WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
         long timeOut = task.getWaitTimeout();
         if (timeOut == 0) {
+            // Signal-wait task has woken up (callback clamped by workflow timeout in
+            // WaitTaskMapper). If the workflow-level timeout has elapsed, cancel this task so
+            // the ensuing decide() can enforce the workflow timeout policy (#1779).
+            if (hasWorkflowTimeoutElapsed(workflow)) {
+                task.setStatus(CANCELED);
+                task.setReasonForIncompletion("Workflow timeout exceeded while waiting for signal");
+                return true;
+            }
             return false;
         }
         if (System.currentTimeMillis() > timeOut) {
@@ -57,6 +65,23 @@ public class Wait extends WorkflowSystemTask {
         }
 
         return false;
+    }
+
+    private boolean hasWorkflowTimeoutElapsed(WorkflowModel workflow) {
+        if (workflow == null || workflow.getWorkflowDefinition() == null) {
+            return false;
+        }
+        long timeoutSeconds = workflow.getWorkflowDefinition().getTimeoutSeconds();
+        if (timeoutSeconds <= 0) {
+            return false;
+        }
+        long start =
+                workflow.getLastRetriedTime() > 0
+                        ? workflow.getLastRetriedTime()
+                        : workflow.getCreateTime() != null
+                                ? workflow.getCreateTime()
+                                : System.currentTimeMillis();
+        return (System.currentTimeMillis() - start) >= timeoutSeconds * 1000L;
     }
 
     @Override
