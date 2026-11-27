@@ -371,6 +371,11 @@ public class GeminiChatModel implements ChatModel {
             outputTok =
                     usageMeta.candidatesTokenCount() != null ? usageMeta.candidatesTokenCount() : 0;
             thoughtsTok = usageMeta.thoughtsTokenCount();
+            // candidatesTokenCount excludes thinking tokens, which Gemini bills as output
+            // (totalTokenCount = prompt + candidates + thoughts), so count them as completion.
+            if (thoughtsTok != null) {
+                outputTok += thoughtsTok;
+            }
         }
         DefaultUsage springUsage = new DefaultUsage(inputTok, outputTok, inputTok + outputTok);
 
