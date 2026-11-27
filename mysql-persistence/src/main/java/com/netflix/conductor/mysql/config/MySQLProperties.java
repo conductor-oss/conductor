@@ -13,14 +13,19 @@
 package com.netflix.conductor.mysql.config;
 
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.convert.DurationUnit;
 
 @ConfigurationProperties("conductor.mysql")
 public class MySQLProperties {
 
     /** The time (in seconds) after which the in-memory task definitions cache will be refreshed */
     private Duration taskDefCacheRefreshInterval = Duration.ofSeconds(60);
+
+    @DurationUnit(ChronoUnit.MILLIS)
+    private Duration pollDataFlushInterval = Duration.ZERO;
 
     private Integer deadlockRetryMax = 3;
 
@@ -38,5 +43,13 @@ public class MySQLProperties {
 
     public void setDeadlockRetryMax(Integer deadlockRetryMax) {
         this.deadlockRetryMax = deadlockRetryMax;
+    }
+
+    public Duration getPollDataFlushInterval() {
+        return pollDataFlushInterval;
+    }
+
+    public void setPollDataFlushInterval(Duration pollDataFlushInterval) {
+        this.pollDataFlushInterval = pollDataFlushInterval;
     }
 }
