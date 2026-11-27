@@ -2,6 +2,7 @@ import React, { useCallback } from "react";
 import { IdempotencyValuesProp } from "../../definition/RunWorkflow/state";
 import { IdempotencyStrategyEnum } from "../../runWorkflow/types";
 import { ScheduleType } from "../Schedule";
+import { validateScheduleName } from "../utils/scheduleValidation";
 
 export interface UseScheduleFormHandlersReturn {
   setScheduleNewState: (key: string, value: string) => void;
@@ -16,8 +17,6 @@ export interface UseScheduleFormHandlersReturn {
   getHighlightedPart: (value: string, selectionStart: number) => void;
 }
 
-const scheduleNamePattern = /^[a-zA-Z0-9_]+$/;
-
 export function useScheduleFormHandlers(
   scheduleState: ScheduleType,
   setScheduleState: React.Dispatch<React.SetStateAction<ScheduleType>>,
@@ -31,17 +30,11 @@ export function useScheduleFormHandlers(
     (key: string, value: string) => {
       // Validate name field
       if (key === "name") {
-        if (!value.trim()) {
-          // Set error for empty name
+        const nameError = validateScheduleName(value);
+        if (nameError) {
           setErrors((prevErrors: any) => ({
             ...prevErrors,
-            name: "Name is required",
-          }));
-        } else if (!scheduleNamePattern.test(value)) {
-          // Set error for invalid name pattern
-          setErrors((prevErrors: any) => ({
-            ...prevErrors,
-            name: "Name can only contain letters, numbers, and underscores.",
+            name: nameError,
           }));
         } else {
           // Clear error if name is valid
