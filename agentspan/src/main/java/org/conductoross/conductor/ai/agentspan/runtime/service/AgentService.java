@@ -844,11 +844,12 @@ public class AgentService {
         }
         if (StringUtils.isNotBlank(request.getPrompt())
                 || hasMedia(request.getMedia())
-                || isNotEmpty(request.getContext())) {
+                || isNotEmpty(request.getContext())
+                || hasInputPayload(request.getRawConfig())) {
             return;
         }
         throw new IllegalArgumentException(
-                "Agent execution requires a non-empty prompt, at least one media item, or non-empty context.");
+                "Agent execution requires a non-empty prompt, at least one media item, non-empty context, or rawConfig.inputPayload.");
     }
 
     private void validateStartSource(AgentStartRequest request) {
@@ -881,6 +882,12 @@ public class AgentService {
 
     private boolean isNotEmpty(Map<String, Object> map) {
         return map != null && !map.isEmpty();
+    }
+
+    private boolean hasInputPayload(Map<String, Object> rawConfig) {
+        if (rawConfig == null) return false;
+        Object v = rawConfig.get("inputPayload");
+        return v != null && !(v instanceof String s && s.isBlank());
     }
 
     @SuppressWarnings("unchecked")

@@ -149,7 +149,8 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         }
         ObjectNode user = messages.addObject();
         user.put("role", "user");
-        user.put("content", request.getPrompt());
+        user.put("content", resolveUserContent(request));
+        injectResponseFormat(request, body, false);
 
         // Azure ML scoring endpoints are the full URL — no extra path or api-version appended.
         // Foundry serverless /models endpoints use /chat/completions with api-version.
@@ -202,7 +203,8 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         ArrayNode input = body.putArray("input");
         ObjectNode userMsg = input.addObject();
         userMsg.put("role", "user");
-        userMsg.put("content", request.getPrompt());
+        userMsg.put("content", resolveUserContent(request));
+        injectResponseFormat(request, body, true);
 
         JsonNode response =
                 post(endpoint + "/openai/responses", body, auth, FOUNDRY_PROJECT_API_VERSION);
@@ -234,7 +236,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
 
         ObjectNode msgBody = MAPPER.createObjectNode();
         msgBody.put("role", "user");
-        msgBody.put("content", request.getPrompt());
+        msgBody.put("content", resolveUserContent(request));
         post(endpoint + "/threads/" + threadId + "/messages", msgBody, auth, apiVersion);
 
         ObjectNode runBody = MAPPER.createObjectNode();
@@ -723,6 +725,42 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
     private String resolveApiVersion(ConductorAgentStartRequest request) {
         String v = rawConfig(request, "apiVersion");
         return StringUtils.isBlank(v) ? DEFAULT_API_VERSION : v;
+    }
+
+    private static String resolveUserContent(ConductorAgentStartRequest request) {
+        String inputPayload = rawConfig(request, "inputPayload");
+        return StringUtils.isNotBlank(inputPayload) ? inputPayload : request.getPrompt();
+    }
+
+    // Injects response_format (chat/completions) or text.format (Responses API) for JSON schema
+    // output. Requires rawConfig.responseSchema (name) + rawConfig.responseSchemaData (the schema
+    // Map). No-op when either is absent.
+    @SuppressWarnings("unchecked")
+    private static void injectResponseFormat(
+            ConductorAgentStartRequest request, ObjectNode body, boolean isResponsesApi) {
+        String schemaName = rawConfig(request, "responseSchema");
+        if (StringUtils.isBlank(schemaName)) return;
+        Map<String, Object> rawConfig = request.getRawConfig();
+        if (rawConfig == null) return;
+        Object schemaData = rawConfig.get("responseSchemaData");
+        if (!(schemaData instanceof Map)) return;
+
+        if (isResponsesApi) {
+            // Foundry Responses API: text.format.{type,name,schema,strict}
+            ObjectNode format = body.putObject("text").putObject("format");
+            format.put("type", "json_schema");
+            format.put("name", schemaName);
+            format.set("schema", MAPPER.valueToTree(schemaData));
+            format.put("strict", true);
+        } else {
+            // Chat Completions API: response_format.{type,json_schema.{name,schema,strict}}
+            ObjectNode responseFormat = body.putObject("response_format");
+            responseFormat.put("type", "json_schema");
+            ObjectNode jsonSchema = responseFormat.putObject("json_schema");
+            jsonSchema.put("name", schemaName);
+            jsonSchema.set("schema", MAPPER.valueToTree(schemaData));
+            jsonSchema.put("strict", true);
+        }
     }
 
     private static String rawConfig(ConductorAgentStartRequest request, String key) {
