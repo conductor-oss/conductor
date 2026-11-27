@@ -28,6 +28,13 @@ import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_WAI
 @Slf4j
 public class ExecutorUtils {
 
+    /**
+     * The soonest a workflow is checked again. A postpone of 0 makes the decider message due at
+     * once, so a workflow whose deadline has just passed, or is less than a second away, would be
+     * swept again and again until the task that owns the deadline acts on it.
+     */
+    private static final long MIN_POSTPONE_SECONDS = 1;
+
     private static boolean isActiveSubWorkflow(TaskModel taskModel) {
         return TaskType.TASK_TYPE_SUB_WORKFLOW.equals(taskModel.getTaskType())
                 && (taskModel.getStatus() == TaskModel.Status.SCHEDULED
@@ -58,7 +65,7 @@ public class ExecutorUtils {
      *               <li>{@code waitTimeout == 0} (indefinite wait): candidate = {@code
      *                   workflowOffsetTimeout}.
      *               <li>{@code waitTimeout > 0}: candidate = remaining milliseconds until {@code
-     *                   waitTimeout} converted to seconds, floored at 0.
+     *                   waitTimeout} rounded up to whole seconds, floored at 0.
      *             </ul>
      *         <li><b>IN_PROGRESS / HUMAN task</b>: candidate = {@code workflowOffsetTimeout}.
      *         <li><b>IN_PROGRESS / all other tasks</b>
@@ -79,6 +86,8 @@ public class ExecutorUtils {
      *       is re-checked as soon as the soonest task needs attention.
      *   <li>If no eligible tasks produced a candidate (e.g. all tasks are terminal), fall back to
      *       {@code workflowOffsetTimeout}.
+     *   <li>The result is at least one second: a postpone of 0 would make the workflow due again at
+     *       once and sweep it in a loop until the task that owns the deadline acts on it.
      * </ol>
      *
      * @param workflowModel the workflow whose tasks are inspected
@@ -109,9 +118,9 @@ public class ExecutorUtils {
                     if (taskModel.getWaitTimeout() == 0) {
                         candidateSeconds = workflowOffsetTimeoutSeconds;
                     } else {
-                        long deltaInSeconds =
-                                (taskModel.getWaitTimeout() - currentTimeMillis) / 1000;
-                        candidateSeconds = (deltaInSeconds > 0) ? deltaInSeconds : 0;
+                        long deltaInMillis = taskModel.getWaitTimeout() - currentTimeMillis;
+                        // rounded up: a wait with half a second left is checked after it ends
+                        candidateSeconds = (deltaInMillis > 0) ? (deltaInMillis + 999) / 1000 : 0;
                     }
                 } else if (taskModel.getTaskType().equals(TaskType.TASK_TYPE_HUMAN)) {
                     candidateSeconds = workflowOffsetTimeoutSeconds;
@@ -176,7 +185,7 @@ public class ExecutorUtils {
                 unackSeconds,
                 workflowOffsetTimeoutSeconds,
                 workflowModel.getWorkflowId());
-        return Duration.ofSeconds(Math.max(0, unackSeconds));
+        return Duration.ofSeconds(Math.max(MIN_POSTPONE_SECONDS, unackSeconds));
     }
 
     /**

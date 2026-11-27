@@ -180,6 +180,15 @@ public class AsyncSystemTaskExecutor {
                             task.getTaskType(),
                             task.getTaskId());
                 } else {
+                    if (scheduled) {
+                        // Persist startTime before the reserve, so the reserve runs from after
+                        // updateTime: the message cannot come back before updateTime +
+                        // responseTimeout, and a redelivery of a run that overran is always seen
+                        // as one by hasExceededResponseTimeout (#1321). The pop's lease covers
+                        // this write. Status is left unchanged for start()'s SCHEDULED branch.
+                        task.setStartTime(System.currentTimeMillis());
+                        executionDAOFacade.updateTask(task);
+                    }
                     // Keep the message present but invisible for the run so repair can't re-queue
                     // this running task (#1321). If the reserve fails, the message stays leased at
                     // the queue's default unack timeout and would redeliver and run in parallel, so
@@ -189,6 +198,10 @@ public class AsyncSystemTaskExecutor {
                                 "Could not reserve in-flight message for {}/{}; skipping execution, will retry on redelivery",
                                 task.getTaskType(),
                                 task.getTaskId());
+                        if (scheduled) {
+                            // not started: the redelivery must not read it as an overrun
+                            task.setStartTime(0);
+                        }
                         return;
                     }
                     Map<String, Object> literalInput = task.getInputData();
@@ -203,10 +216,6 @@ public class AsyncSystemTaskExecutor {
                     task.setInputData(parametersUtils.substituteSecrets(literalInput));
                     try {
                         if (scheduled) {
-                            task.setStartTime(System.currentTimeMillis());
-                            // Persist startTime before invoking so a redelivery can detect an
-                            // overrun (status left unchanged for start()'s SCHEDULED branch).
-                            executionDAOFacade.updateTask(task);
                             Monitors.recordQueueWaitTime(
                                     task.getTaskType(), task.getQueueWaitTime());
                             systemTask.start(workflow, task, workflowExecutor);
@@ -272,7 +281,11 @@ public class AsyncSystemTaskExecutor {
      */
     private boolean reserveInflightMessage(String queueName, TaskModel task) {
         try {
-            queueDAO.setUnackTimeout(queueName, task.getTaskId(), reserveSeconds(task) * 1000L);
+            // One second more than the run is allowed: a queue that stores its due time to the
+            // whole second (MySQL) can otherwise give the message back just before
+            // hasExceededResponseTimeout sees the run as overrun.
+            queueDAO.setUnackTimeout(
+                    queueName, task.getTaskId(), (reserveSeconds(task) + 1) * 1000L);
             return true;
         } catch (Exception e) {
             LOGGER.error(
