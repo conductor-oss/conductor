@@ -26,9 +26,9 @@ import org.springframework.stereotype.Component;
  * <p>Lookup order:
  *
  * <ol>
- *   <li>Application property: {@code agentspan.model-context-windows.<model-name>}
+ *   <li>Application property: {@code conductor.ai.model-context-windows.<model-name>}
  *   <li>Static defaults (prefix matching)
- *   <li>Default override property: {@code agentspan.default-context-window}
+ *   <li>Default override property: {@code conductor.ai.default-context-window}
  *   <li>Empty — caller falls back to reactive-only condensation
  * </ol>
  *
@@ -121,7 +121,7 @@ public class ModelContextWindows {
 
         // 1. Check property override (exact match)
         if (environment != null) {
-            String prop = environment.getProperty("agentspan.model-context-windows." + model);
+            String prop = environment.getProperty("conductor.ai.model-context-windows." + model);
             if (prop != null) {
                 try {
                     return OptionalInt.of(Integer.parseInt(prop.trim()));
@@ -139,7 +139,7 @@ public class ModelContextWindows {
 
         // 3. Check default override property
         if (environment != null) {
-            String defaultProp = environment.getProperty("agentspan.default-context-window");
+            String defaultProp = environment.getProperty("conductor.ai.default-context-window");
             if (defaultProp != null) {
                 try {
                     return OptionalInt.of(Integer.parseInt(defaultProp.trim()));

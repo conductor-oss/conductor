@@ -38,9 +38,11 @@ import org.conductoross.conductor.ai.agentspan.runtime.service.AgentService;
 import org.conductoross.conductor.common.metadata.agent.AgentStartRequest;
 import org.conductoross.conductor.common.metadata.agent.AgentStartResponse;
 import org.conductoross.conductor.common.metadata.agent.AgentSummary;
+import org.conductoross.conductor.config.A2AServerEnabledCondition;
+import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -61,12 +63,10 @@ import tools.jackson.databind.node.ObjectNode;
  * agent card served at /api/a2a/agent/{name}. Mirrors A2AWorkflowAgent but drives agents via
  * AgentService instead of WorkflowService.startWorkflow(). Since agents compile down to workflows,
  * execution tracking (getTask, cancelTask, stream) reuses the same workflow-state mapping. Gated on
- * conductor.a2a.server.enabled=true and agentspan.embedded=true.
+ * conductor.a2a.server.enabled=true and conductor.integrations.ai.enabled=true.
  */
 @Component
-@ConditionalOnProperty(
-        name = {"conductor.a2a.server.enabled", "agentspan.embedded"},
-        havingValue = "true")
+@Conditional({A2AServerEnabledCondition.class, AIIntegrationEnabledCondition.class})
 public class A2ANativeAgentFacade {
 
     private static final Logger log = LoggerFactory.getLogger(A2ANativeAgentFacade.class);

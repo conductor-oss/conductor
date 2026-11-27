@@ -517,9 +517,8 @@ class MCPServerWorkflowEndToEndTest {
     }
 
     /**
-     * This server runs without embedded AgentSpan, so there is no agent source. An agent definition
-     * in the store (from a standalone AgentSpan, say) is not a workflow tool even when opted in:
-     * its compiler-written description would name the kind, and it is started with a prompt.
+     * An agent definition is not a workflow tool even when opted in: it is listed once, by the
+     * agent source, and started with a prompt.
      */
     @Test
     void agentDefinitionIsNotAWorkflowTool_evenWhenOptedIn() throws Exception {
@@ -529,14 +528,16 @@ class MCPServerWorkflowEndToEndTest {
         def.setMetadata(Map.of("mcp.enabled", true, "agent_sdk", "conductor"));
         metadataService.updateWorkflowDef(List.of(def));
 
-        String tools = rpc("tools/list", mapper.createObjectNode(), null, false).toString();
-        assertFalse(tools.contains(agent), tools);
+        // Listed once, as an agent tool: the prompt schema, not the workflow's input.
+        JsonNode properties = listedSchema(agent).get("properties");
+        assertTrue(properties.has("prompt"), String.valueOf(properties));
+        assertFalse(properties.has("name"), String.valueOf(properties));
 
         ObjectNode params = mapper.createObjectNode();
         params.put("name", agent);
         params.putObject("arguments").put("name", "World");
-        JsonNode error = rpc("tools/call", params, agent, true).get("error");
-        assertEquals(-32602, error.get("code").asInt(), String.valueOf(error));
+        JsonNode result = rpc("tools/call", params, agent, true).get("result");
+        assertTrue(result.get("isError").asBoolean(), String.valueOf(result));
         assertTrue(executionService.getRunningWorkflows(agent, 1).isEmpty());
     }
 

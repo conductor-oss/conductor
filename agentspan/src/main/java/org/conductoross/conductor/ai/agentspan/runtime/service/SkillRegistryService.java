@@ -108,11 +108,11 @@ public class SkillRegistryService {
 
     @Autowired
     public SkillRegistryService(
-            @Value("${agentspan.skills.max-package-bytes:52428800}") long maxPackageBytes,
-            @Value("${agentspan.skills.max-preview-bytes:1048576}") long maxPreviewBytes,
-            @Value("${agentspan.skills.max-uncompressed-bytes:209715200}")
+            @Value("${conductor.ai.skills.max-package-bytes:52428800}") long maxPackageBytes,
+            @Value("${conductor.ai.skills.max-preview-bytes:1048576}") long maxPreviewBytes,
+            @Value("${conductor.ai.skills.max-uncompressed-bytes:209715200}")
                     long maxUncompressedBytes,
-            @Value("${agentspan.skills.max-file-count:2000}") int maxFileCount,
+            @Value("${conductor.ai.skills.max-file-count:2000}") int maxFileCount,
             ObjectProvider<SkillPackageStore> packageStore,
             ObjectProvider<SkillMetadataDAO> metadataDao) {
         this.maxPackageBytes = maxPackageBytes;

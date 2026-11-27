@@ -118,7 +118,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
             "conductor.app.sweeperThreadCount=1",
             "conductor.app.sweeper.sweepBatchSize=1",
             "conductor.integrations.ai.enabled=true",
-            "agentspan.skills.enabled=true",
+            "conductor.ai.skills.enabled=true",
             "conductor.ai.outbound.allow-private-networks=true",
             "conductor.external-payload-storage.type=s3",
             "conductor.external-payload-storage.s3.bucketName="

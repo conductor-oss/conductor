@@ -19,12 +19,13 @@ import java.util.Optional;
 import org.conductoross.conductor.ai.agentspan.AgentIntroduction;
 import org.conductoross.conductor.ai.agentspan.runtime.service.AgentService;
 import org.conductoross.conductor.ai.agentspan.runtime.util.WorkflowClassifiers;
-import org.conductoross.conductor.ai.mcp.server.MCPServerProperties;
 import org.conductoross.conductor.ai.mcp.server.MCPTool;
 import org.conductoross.conductor.ai.mcp.server.MCPToolArgumentsException;
 import org.conductoross.conductor.ai.mcp.server.MCPToolSource;
 import org.conductoross.conductor.common.metadata.agent.AgentStartRequest;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
+import org.conductoross.conductor.config.MCPServerEnabledCondition;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
@@ -38,12 +39,11 @@ import tools.jackson.databind.node.ObjectNode;
 /**
  * Deployed AgentSpan agents as MCP tools. As in the A2A agent server, every deployed agent is
  * exposed once the MCP server is on; there is no opt-in. Gated on {@code
- * conductor.mcp.server.enabled=true} and {@code agentspan.embedded=true}.
+ * conductor.mcp.server.enabled=true} and {@code conductor.integrations.ai.enabled=true}, which
+ * provides {@link AgentService}.
  */
 @Component
-@ConditionalOnProperty(
-        name = {MCPServerProperties.ENABLED, "agentspan.embedded"},
-        havingValue = "true")
+@Conditional({MCPServerEnabledCondition.class, AIIntegrationEnabledCondition.class})
 public class AgentToolSource implements MCPToolSource {
 
     /** The agent tool's only argument: the schema and {@link #start} both name it. */
