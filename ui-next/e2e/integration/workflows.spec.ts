@@ -213,10 +213,9 @@ test("navigating to /newWorkflowDef opens an empty editor", async ({
   // WorkflowMetaBar only mounts once the machine reaches "ready" state.
   await expect(page.locator("#workflow-name-display")).toBeVisible();
 
-  // The new-workflow template names the definition "NewWorkflow_<random>".
-  // Matching this prefix confirms we have a fresh scaffold, not an existing def.
+  // A fresh workflow gets a generated snake_case name.
   await expect(page.locator("#workflow-name-display")).toHaveText(
-    /NewWorkflow_/,
+    /^new_workflow_[a-z0-9]+$/,
   );
 
   // Switch to the Code tab to inspect the raw JSON — the most direct way to
