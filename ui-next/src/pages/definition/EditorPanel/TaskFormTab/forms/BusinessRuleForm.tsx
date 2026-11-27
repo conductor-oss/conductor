@@ -12,6 +12,7 @@ import TaskFormSection from "./TaskFormSection";
 import { TaskFormProps } from "./types";
 import { useGetSetHandler } from "./useGetSetHandler";
 import ConductorInput from "components/ui/inputs/ConductorInput";
+import { RuleFileField } from "./RuleFileField";
 
 const EXECUTION_STRATEGY_OPTIONS = ["FIRE_FIRST", "FIRE_ALL"];
 
@@ -40,16 +41,11 @@ export const BusinessRuleForm = (props: TaskFormProps) => {
     <Box width="100%">
       <TaskFormSection accordionAdditionalProps={{ defaultExpanded: true }}>
         <Grid container sx={{ width: "100%" }} spacing={2} mt={3}>
-          <Grid
-            size={{
-              xs: 12,
-              md: 6,
-              sm: 12,
-            }}
-          >
-            <ConductorAutocompleteVariables
+          {/* Full width: the rule file field changes height with its source and its state, so
+              sharing a row would leave whatever sat beside it stranded against dead space. */}
+          <Grid size={12}>
+            <RuleFileField
               value={_get(task, ruleFileLocationPath)}
-              label="Rule file location"
               onChange={(changes) =>
                 onChange(updateField(ruleFileLocationPath, changes, task))
               }
@@ -61,6 +57,9 @@ export const BusinessRuleForm = (props: TaskFormProps) => {
               md: 6,
               sm: 12,
             }}
+            // The rule file block above ends in a bordered panel, so it needs room to read as
+            // a separate control rather than part of the same group.
+            sx={{ marginTop: "16px" }}
           >
             <ConductorAutocompleteVariables
               onChange={handlerExecutionStrategy}
