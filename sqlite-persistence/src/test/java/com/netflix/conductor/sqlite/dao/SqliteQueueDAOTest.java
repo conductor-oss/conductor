@@ -18,7 +18,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
@@ -562,6 +568,67 @@ public class SqliteQueueDAOTest {
                 assertEquals(1, statement.executeUpdate());
             }
         }
+    }
+
+    @Test
+    public void postponeMovesTheMessageAndSetsItsPriority() {
+        String queueName = "postpone_moves_message";
+        String messageId = "postponed";
+        queueDAO.push(queueName, messageId, 1, 0);
+
+        assertTrue(queueDAO.postpone(queueName, messageId, 5, 3600));
+        assertEquals(1, queueDAO.getSize(queueName));
+        assertTrue(
+                "a message postponed by an hour must not be due",
+                queueDAO.pop(queueName, 1, 0).isEmpty());
+
+        assertTrue(queueDAO.postpone(queueName, messageId, 7, 0));
+        assertEquals(1, queueDAO.getSize(queueName));
+        List<Message> due = queueDAO.pollMessages(queueName, 1, 0);
+        assertEquals(1, due.size());
+        assertEquals(messageId, due.get(0).getId());
+        assertEquals(7, due.get(0).getPriority());
+    }
+
+    /**
+     * A postpone must not take the message out of the queue, even for a moment: a server that stops
+     * at that moment loses it. One thread postpones the same message again and again while another
+     * keeps checking that it is there.
+     */
+    @Test
+    public void postponeNeverLeavesTheQueueWithoutTheMessage() throws Exception {
+        String queueName = "postpone_keeps_message";
+        String messageId = "always-there";
+        queueDAO.push(queueName, messageId, 0, 0);
+
+        AtomicBoolean postponing = new AtomicBoolean(true);
+        AtomicInteger missing = new AtomicInteger();
+        CountDownLatch checking = new CountDownLatch(1);
+        ExecutorService reader = Executors.newSingleThreadExecutor();
+        try {
+            Future<?> checks =
+                    reader.submit(
+                            () -> {
+                                while (postponing.get()) {
+                                    if (!queueDAO.containsMessage(queueName, messageId)) {
+                                        missing.incrementAndGet();
+                                    }
+                                    checking.countDown();
+                                }
+                            });
+            assertTrue(checking.await(30, TimeUnit.SECONDS));
+            for (int i = 0; i < 300; i++) {
+                queueDAO.postpone(queueName, messageId, i % 10, 60);
+            }
+            postponing.set(false);
+            checks.get(30, TimeUnit.SECONDS);
+        } finally {
+            postponing.set(false);
+            reader.shutdownNow();
+        }
+
+        assertEquals("checks that found no message", 0, missing.get());
+        assertEquals(1, queueDAO.getSize(queueName));
     }
 
     // @Test
