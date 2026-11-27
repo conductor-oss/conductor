@@ -18,14 +18,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.conductoross.conductor.common.spi.DelegatedTokenInjector;
 import org.conductoross.conductor.core.execution.mapper.AnnotatedSystemTaskMapper;
 import org.conductoross.conductor.core.execution.tasks.AnnotatedSystemTaskWorker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
@@ -49,6 +52,10 @@ public class WorkerTaskAnnotationScanner implements InitializingBean {
     private final Map<String, TaskMapper> taskMappers = new HashMap<>();
     private final ParametersUtils parametersUtils;
     private final MetadataDAO metadataDAO;
+
+    @Autowired(required = false)
+    @Nullable
+    private DelegatedTokenInjector delegatedTokenInjector;
 
     public WorkerTaskAnnotationScanner(
             List<AnnotatedSystemTaskWorker> annotatedSystemTaskWorkers,
@@ -94,7 +101,8 @@ public class WorkerTaskAnnotationScanner implements InitializingBean {
                                 taskType);
 
                         AnnotatedWorkflowSystemTask task =
-                                new AnnotatedWorkflowSystemTask(taskType, method, bean, annotation);
+                                new AnnotatedWorkflowSystemTask(
+                                        taskType, method, bean, annotation, delegatedTokenInjector);
 
                         // Add to existing asyncSystemTasks collection
                         asyncSystemTasks.add(task);

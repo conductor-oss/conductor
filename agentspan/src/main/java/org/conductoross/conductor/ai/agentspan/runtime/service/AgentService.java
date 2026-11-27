@@ -29,6 +29,7 @@ import org.conductoross.conductor.ai.agentspan.runtime.normalizer.NormalizerRegi
 import org.conductoross.conductor.ai.agentspan.runtime.util.AgentExecutionTokenUsageAggregator;
 import org.conductoross.conductor.ai.agentspan.runtime.util.WorkflowClassifiers;
 import org.conductoross.conductor.common.metadata.agent.*;
+import org.conductoross.conductor.dao.SecretsDAO;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -56,6 +57,7 @@ import com.netflix.conductor.service.WorkflowService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 @Component
@@ -79,6 +81,10 @@ public class AgentService {
     private final AgentStreamRegistry streamRegistry;
     private final SkillRegistryService skillRegistryService;
     private final MetadataService metadataService;
+    private final AzureFoundryAgentClient azureFoundryAgentClient;
+    private final BedrockAgentClient bedrockAgentClient;
+    private final BedrockAgentCoreAgentClient bedrockAgentCoreAgentClient;
+    private final SecretsDAO secretsDAO;
 
     /**
      * Compile an agent config into a WorkflowDef and return it. Supports both native AgentConfig
@@ -338,6 +344,20 @@ public class AgentService {
                         + def.getName()
                         + " v"
                         + def.getVersion());
+    }
+
+    /** The flat string fields of a credential secret, which is what the clients consume. */
+    private static Map<String, String> credentialValues(JsonNode secretJson) {
+        Map<String, String> values = new java.util.LinkedHashMap<>();
+        secretJson
+                .properties()
+                .forEach(
+                        field -> {
+                            if (field.getValue().isValueNode()) {
+                                values.put(field.getKey(), field.getValue().asText());
+                            }
+                        });
+        return values;
     }
 
     // ── Agent discovery ─────────────────────────────────────────────
@@ -869,26 +889,66 @@ public class AgentService {
 
     @SuppressWarnings("unchecked")
     public Map<String, Object> getAgentDef(String name, Integer version) {
-        WorkflowDef def;
-        if (version != null) {
-            def =
-                    metadataDAO
-                            .getWorkflowDef(name, version)
-                            .orElseThrow(
-                                    () ->
-                                            new NotFoundException(
-                                                    "Agent not found: " + name + " v" + version));
-        } else {
-            def =
-                    metadataDAO
-                            .getLatestWorkflowDef(name)
-                            .orElseThrow(() -> new NotFoundException("Agent not found: " + name));
+        Optional<WorkflowDef> defOpt =
+                version != null
+                        ? metadataDAO.getWorkflowDef(name, version)
+                        : metadataDAO.getLatestWorkflowDef(name);
+
+        if (defOpt.isPresent()) {
+            Map<String, Object> metadata = defOpt.get().getMetadata();
+            if (metadata != null && metadata.get("agentDef") instanceof Map) {
+                return (Map<String, Object>) metadata.get("agentDef");
+            }
+            throw new NotFoundException("No agent definition found for: " + name);
         }
-        Map<String, Object> metadata = def.getMetadata();
-        if (metadata != null && metadata.get("agentDef") instanceof Map) {
-            return (Map<String, Object>) metadata.get("agentDef");
+
+        // Not a conductor agent — try external providers by scanning secrets
+        if (secretsDAO != null) {
+            try {
+                for (String secretName : secretsDAO.listSecretNames()) {
+                    try {
+                        String secretValue = secretsDAO.getSecret(secretName);
+                        if (secretValue == null || secretValue.isBlank()) continue;
+                        JsonNode secretJson = MAPPER.readTree(secretValue);
+                        String endpoint = secretJson.path("endpoint").asText(null);
+                        String agentcoreRegion = secretJson.path("agentcoreRegion").asText(null);
+                        String region = secretJson.path("region").asText(null);
+                        // Discovery is a control-plane scan with no task behind it, so this is the
+                        // one place that reads secrets directly — the clients are handed values.
+                        Map<String, String> credentials = credentialValues(secretJson);
+                        if (endpoint != null
+                                && !endpoint.isBlank()
+                                && azureFoundryAgentClient != null) {
+                            Map<String, Object> def =
+                                    azureFoundryAgentClient.getExternalAgentDef(
+                                            name, credentials, endpoint);
+                            if (def != null) return def;
+                        } else if (agentcoreRegion != null
+                                && !agentcoreRegion.isBlank()
+                                && bedrockAgentCoreAgentClient != null) {
+                            // AgentCore runtimes are identified by ARN (endpoint field on summary)
+                            // rather than a resolvable name, so skip the def lookup here.
+                        } else if (region != null
+                                && !region.isBlank()
+                                && bedrockAgentClient != null) {
+                            Map<String, Object> def =
+                                    bedrockAgentClient.getExternalAgentDef(
+                                            name, credentials, region);
+                            if (def != null) return def;
+                        }
+                    } catch (Exception e) {
+                        log.debug(
+                                "Skipping secret '{}' for external agent def lookup: {}",
+                                secretName,
+                                e.getMessage());
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Failed to scan secrets for external agent def: {}", e.getMessage());
+            }
         }
-        throw new NotFoundException("No agent definition found for: " + name);
+
+        throw new NotFoundException("Agent not found: " + name);
     }
 
     public void deleteAgent(String name, Integer version) {

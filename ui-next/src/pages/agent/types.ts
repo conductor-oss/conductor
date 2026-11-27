@@ -7,6 +7,8 @@ export interface AgentSummary {
   name: string;
   version: number;
   type?: string;
+  /** Provider-specific connection target: Foundry project URL, Bedrock region, etc. */
+  endpoint?: string;
   tags?: string[];
   createTime?: number;
   updateTime?: number;

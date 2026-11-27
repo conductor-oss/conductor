@@ -12,62 +12,102 @@
  */
 package org.conductoross.conductor.ai.agentspan.runtime.service;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.a2a.A2AService;
+import org.conductoross.conductor.ai.agent.AgentBodies;
 import org.conductoross.conductor.ai.agent.ConductorAgentCancelRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentClient;
+import org.conductoross.conductor.ai.agent.ConductorAgentRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentRespondRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentStartRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentStartResponse;
 import org.conductoross.conductor.ai.agent.ConductorAgentState;
 import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
-import org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService;
+import org.conductoross.conductor.common.metadata.agent.AgentSummary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
+import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.interceptor.Context;
+import software.amazon.awssdk.core.interceptor.ExecutionAttributes;
+import software.amazon.awssdk.core.interceptor.ExecutionInterceptor;
+import software.amazon.awssdk.http.SdkHttpRequest;
+import software.amazon.awssdk.http.auth.scheme.NoAuthAuthScheme;
+import software.amazon.awssdk.http.auth.spi.scheme.AuthSchemeOption;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.bedrockagentruntime.BedrockAgentRuntimeAsyncClient;
+import software.amazon.awssdk.services.bedrockagentruntime.BedrockAgentRuntimeAsyncClientBuilder;
 import software.amazon.awssdk.services.bedrockagentruntime.model.ContentBody;
+import software.amazon.awssdk.services.bedrockagentruntime.model.InvocationInputMember;
 import software.amazon.awssdk.services.bedrockagentruntime.model.InvokeAgentRequest;
 import software.amazon.awssdk.services.bedrockagentruntime.model.InvokeAgentResponseHandler;
 import software.amazon.awssdk.services.bedrockagentruntime.model.ReturnControlPayload;
 import software.amazon.awssdk.services.bedrockagentruntime.model.SessionState;
+import software.amazon.awssdk.services.sts.StsClient;
+import software.amazon.awssdk.services.sts.auth.StsAssumeRoleCredentialsProvider;
+import software.amazon.awssdk.services.sts.model.AssumeRoleRequest;
 
 /**
  * {@link ConductorAgentClient} backed by AWS Bedrock Agent Runtime.
  *
- * <p>Bedrock agents use a streaming invoke model — there is no separate status API. Each call to
- * {@code startAgent} or {@code respond} streams the response and buffers it into an in-memory
- * {@link ExecutionState}. Subsequent {@code getAgentStatus} calls read from that state.
+ * <p>Bedrock has no status API. {@code InvokeAgent} streams the whole turn, so by the time {@code
+ * startAgent} or {@code respond} returns, the agent has either finished or blocked on a tool call.
+ * Both therefore report the outcome directly — {@code startAgent} through {@link
+ * ConductorAgentStartResponse#getState()}, {@code respond} through {@link
+ * #respondWithStatus(ConductorAgentRespondRequest)} — which puts the result in the owning task's
+ * output. Nothing is buffered here, so there is no poll for a later replica to get wrong and no
+ * result to lose on restart.
+ *
+ * <p>The conversation itself lives in Bedrock, keyed by the session id this client returns as the
+ * executionId. Continuing it needs only that id plus the task input, so {@code respond} works on
+ * any replica.
  *
  * <p>Activated by {@code conductor.integrations.ai.enabled=true}, like the other agent clients.
- * Credentials are resolved per request from {@code credentialRef}, falling back to the default AWS
- * credential chain, so the client registers whether or not Bedrock is configured; an unconfigured
- * runtime fails only if a workflow routes to it.
+ * Credentials arrive as values on the request, falling back to the default AWS credential chain, so
+ * the client registers whether or not Bedrock is configured; an unconfigured runtime fails only if
+ * a workflow routes to it.
  */
 @Component
 @ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
 public class BedrockAgentClient implements ConductorAgentClient {
 
+    /** Keys this client can authenticate with; anything else in the map is not a credential. */
+    private static final Set<String> AWS_AUTH_KEYS =
+            Set.of(
+                    "apiKey",
+                    "api_key",
+                    "accessKeyId",
+                    "secretAccessKey",
+                    "roleArn",
+                    "roleSessionName",
+                    "externalId");
+
     private static final Logger log = LoggerFactory.getLogger(BedrockAgentClient.class);
     private static final String DEFAULT_REGION = "us-east-1";
 
-    private final CredentialResolutionService credentialResolutionService;
-    private final ConcurrentHashMap<String, ExecutionState> executions = new ConcurrentHashMap<>();
+    // One SDK client per credential and region, not per execution. Each owns Netty event loops and
+    // a connection pool, so building one per invocation leaked both: the map held every execution
+    // ever started and nothing removed a completed one.
+    private final ConcurrentHashMap<ClientKey, BedrockAgentRuntimeAsyncClient> runtimeClients =
+            new ConcurrentHashMap<>();
 
-    public BedrockAgentClient(CredentialResolutionService credentialResolutionService) {
-        this.credentialResolutionService = credentialResolutionService;
-    }
+    public BedrockAgentClient() {}
 
     @Override
     public String agentType() {
@@ -76,78 +116,74 @@ public class BedrockAgentClient implements ConductorAgentClient {
 
     @Override
     public ConductorAgentStartResponse startAgent(ConductorAgentStartRequest request) {
+        BedrockTarget target =
+                target(request.getCredentials(), request.getAgentUrl(), request.getRawConfig());
         String sessionId =
                 StringUtils.defaultIfBlank(request.getSessionId(), UUID.randomUUID().toString());
 
-        String agentId = rawConfig(request, "agentId");
-        String agentAliasId = rawConfig(request, "agentAliasId");
-        String region = StringUtils.defaultIfBlank(rawConfig(request, "region"), DEFAULT_REGION);
-
-        BedrockAgentRuntimeAsyncClient runtimeClient = buildRuntimeClient(request, region);
         InvokeAgentRequest invokeRequest =
                 InvokeAgentRequest.builder()
-                        .agentId(agentId)
-                        .agentAliasId(agentAliasId)
+                        .agentId(target.agentId())
+                        .agentAliasId(target.agentAliasId())
                         .sessionId(sessionId)
                         .inputText(request.getPrompt())
                         .build();
 
-        ExecutionState state = new ExecutionState(sessionId, runtimeClient, agentId, agentAliasId);
-        executions.put(sessionId, state);
-        invokeAndUpdateState(invokeRequest, state);
+        Turn turn = invoke(target, invokeRequest);
 
         return ConductorAgentStartResponse.builder()
                 .executionId(sessionId)
-                .agentName(agentId)
+                .agentName(target.agentId())
                 .requiredWorkers(Collections.emptyList())
+                .state(turn.state())
+                .output(turn.output())
+                .pendingTool(turn.pendingTool())
+                .pendingTools(turn.pendingTools())
+                .pendingToolName(turn.pendingToolName())
                 .build();
     }
 
+    /**
+     * Bedrock cannot be polled — a turn is over before the call that started it returns, and its
+     * result is already in the task output. Reaching here means the task was requeued after the
+     * result was recorded, so the honest answer is the terminal state that no longer needs polling.
+     */
     @Override
-    public ConductorAgentStatusResponse getAgentStatus(String executionId) {
-        ExecutionState state = executions.get(executionId);
-        if (state == null) {
-            return ConductorAgentStatusResponse.builder()
-                    .executionId(executionId)
-                    .status(ConductorAgentState.FAILED)
-                    .complete(true)
-                    .reasonForIncompletion("No execution found for id: " + executionId)
-                    .build();
-        }
-        ConductorAgentState agentState = state.state.get();
+    public ConductorAgentStatusResponse getAgentStatus(
+            String executionId, ConductorAgentRequest request) {
         return ConductorAgentStatusResponse.builder()
                 .executionId(executionId)
-                .status(agentState)
-                .complete(
-                        agentState == ConductorAgentState.COMPLETED
-                                || agentState == ConductorAgentState.FAILED)
-                .running(agentState == ConductorAgentState.RUNNING)
-                .waiting(agentState == ConductorAgentState.WAITING)
-                .output(state.output)
-                .pendingTool(state.pendingTool)
-                .pendingToolName(state.pendingToolName)
+                .status(ConductorAgentState.COMPLETED)
+                .complete(true)
                 .build();
     }
 
     @Override
     public void respond(ConductorAgentRespondRequest request) {
-        ExecutionState state = executions.get(request.getExecutionId());
-        if (state == null) {
-            throw new IllegalStateException(
-                    "No execution found for id: " + request.getExecutionId());
+        respondWithStatus(request);
+    }
+
+    @Override
+    public ConductorAgentStatusResponse respondWithStatus(ConductorAgentRespondRequest request) {
+        String sessionId = request.getExecutionId();
+        BedrockTarget target = target(request.getCredentials(), request.getRawConfig());
+
+        // The action group to answer comes from the pending tool the last turn reported, carried on
+        // the request rather than remembered here.
+        String actionGroup = pendingToolName(request);
+        if (StringUtils.isBlank(actionGroup)) {
+            throw new IllegalArgumentException(
+                    "Bedrock respond requires the pending tool's name; none was carried on the request");
         }
 
-        // Build the returnControlInvocationResults from the respond body
-        String toolResult = request.getBody() != null ? request.getBody().toString() : "";
-        ContentBody contentBody = ContentBody.builder().body(toolResult).build();
-
+        ContentBody contentBody = ContentBody.builder().body(AgentBodies.toJson(request)).build();
         SessionState sessionState =
                 SessionState.builder()
                         .returnControlInvocationResults(
                                 rb ->
                                         rb.apiResult(
                                                 ar ->
-                                                        ar.actionGroup(state.pendingToolName)
+                                                        ar.actionGroup(actionGroup)
                                                                 .apiPath("/invoke")
                                                                 .httpMethod("POST")
                                                                 .responseBody(
@@ -158,34 +194,168 @@ public class BedrockAgentClient implements ConductorAgentClient {
 
         InvokeAgentRequest invokeRequest =
                 InvokeAgentRequest.builder()
-                        .agentId(state.agentId)
-                        .agentAliasId(state.agentAliasId)
-                        .sessionId(request.getExecutionId())
+                        .agentId(target.agentId())
+                        .agentAliasId(target.agentAliasId())
+                        .sessionId(sessionId)
                         .sessionState(sessionState)
                         .build();
 
-        invokeAndUpdateState(invokeRequest, state);
+        Turn turn = invoke(target, invokeRequest);
+        return ConductorAgentStatusResponse.builder()
+                .executionId(sessionId)
+                .status(turn.state())
+                .complete(turn.state() == ConductorAgentState.COMPLETED)
+                .waiting(turn.state() == ConductorAgentState.WAITING)
+                .output(turn.output())
+                .pendingTool(turn.pendingTool())
+                .pendingTools(turn.pendingTools())
+                .pendingToolName(turn.pendingToolName())
+                .build();
     }
 
     @Override
     public void cancelAgent(ConductorAgentCancelRequest request) {
-        // Bedrock has no cancel API — clean up local state and log
+        // Bedrock Agent Runtime has no cancel API, and this client holds nothing to clean up.
         log.warn(
-                "Bedrock agent runtime does not support cancellation; removing local state for executionId={}",
+                "Bedrock agent runtime does not support cancellation; ignoring cancel for executionId={}",
                 request.getExecutionId());
-        executions.remove(request.getExecutionId());
     }
 
     @Override
     public void close() {
-        executions.values().forEach(s -> s.runtimeClient.close());
-        executions.clear();
+        runtimeClients.values().forEach(BedrockAgentRuntimeAsyncClient::close);
+        runtimeClients.clear();
     }
 
-    private void invokeAndUpdateState(InvokeAgentRequest invokeRequest, ExecutionState state) {
-        state.state.set(ConductorAgentState.RUNNING);
-        state.pendingTool = null;
-        state.pendingToolName = null;
+    // --- discovery ----------------------------------------------------------------------------
+
+    /**
+     * The Bedrock agents visible with this credential, so they appear in the agent list alongside
+     * agents defined in Conductor. Discovery is best effort: a credential that cannot list returns
+     * nothing rather than failing the whole listing.
+     */
+    public List<AgentSummary> listExternalAgents(Map<String, String> credentials, String region) {
+        String resolvedRegion = StringUtils.defaultIfBlank(region, DEFAULT_REGION);
+        try (software.amazon.awssdk.services.bedrockagent.BedrockAgentClient management =
+                managementClient(credentials, resolvedRegion)) {
+            List<AgentSummary> agents = new ArrayList<>();
+            String nextToken = null;
+            do {
+                var request =
+                        software.amazon.awssdk.services.bedrockagent.model.ListAgentsRequest
+                                .builder()
+                                .maxResults(100);
+                if (nextToken != null) {
+                    request.nextToken(nextToken);
+                }
+                var response = management.listAgents(request.build());
+                for (var agent : response.agentSummaries()) {
+                    agents.add(
+                            AgentSummary.builder()
+                                    .name(agent.agentName())
+                                    .version(1)
+                                    .type(A2AService.AGENT_TYPE_BEDROCK)
+                                    .description(agent.description())
+                                    .updateTime(
+                                            agent.updatedAt() != null
+                                                    ? agent.updatedAt().toEpochMilli()
+                                                    : 0L)
+                                    .build());
+                }
+                nextToken = response.nextToken();
+            } while (nextToken != null);
+            log.debug("Discovered {} Bedrock agent(s) in {}", agents.size(), resolvedRegion);
+            return agents;
+        } catch (Exception e) {
+            log.warn("Failed to list Bedrock agents in {}: {}", resolvedRegion, e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+    /**
+     * The full definition of one Bedrock agent by name, or null when this credential cannot see it.
+     * Bedrock addresses agents by id, so the name is resolved through a listing first.
+     */
+    public Map<String, Object> getExternalAgentDef(
+            String agentName, Map<String, String> credentials, String region) {
+        String resolvedRegion = StringUtils.defaultIfBlank(region, DEFAULT_REGION);
+        try (software.amazon.awssdk.services.bedrockagent.BedrockAgentClient management =
+                managementClient(credentials, resolvedRegion)) {
+            String agentId = null;
+            String nextToken = null;
+            while (agentId == null) {
+                var request =
+                        software.amazon.awssdk.services.bedrockagent.model.ListAgentsRequest
+                                .builder()
+                                .maxResults(100);
+                if (nextToken != null) {
+                    request.nextToken(nextToken);
+                }
+                var response = management.listAgents(request.build());
+                for (var agent : response.agentSummaries()) {
+                    if (agentName.equals(agent.agentName())) {
+                        agentId = agent.agentId();
+                        break;
+                    }
+                }
+                nextToken = response.nextToken();
+                if (nextToken == null) {
+                    break;
+                }
+            }
+            if (agentId == null) {
+                return null;
+            }
+
+            var agent =
+                    management
+                            .getAgent(
+                                    software.amazon.awssdk.services.bedrockagent.model
+                                            .GetAgentRequest.builder()
+                                            .agentId(agentId)
+                                            .build())
+                            .agent();
+
+            Map<String, Object> definition = new LinkedHashMap<>();
+            definition.put("agentId", agent.agentId());
+            definition.put("agentName", agent.agentName());
+            definition.put("description", agent.description());
+            definition.put("instruction", agent.instruction());
+            definition.put("foundationModel", agent.foundationModel());
+            definition.put(
+                    "agentStatus",
+                    agent.agentStatus() != null ? agent.agentStatus().toString() : null);
+            definition.put("agentArn", agent.agentArn());
+            definition.put("idleSessionTTLInSeconds", agent.idleSessionTTLInSeconds());
+            definition.put(
+                    "createdAt",
+                    agent.createdAt() != null ? agent.createdAt().toEpochMilli() : null);
+            definition.put(
+                    "updatedAt",
+                    agent.updatedAt() != null ? agent.updatedAt().toEpochMilli() : null);
+            definition.put("provider", A2AService.AGENT_TYPE_BEDROCK);
+            definition.put("region", resolvedRegion);
+            return definition;
+        } catch (Exception e) {
+            log.warn(
+                    "Failed to fetch Bedrock agent '{}' in {}: {}",
+                    agentName,
+                    resolvedRegion,
+                    e.getMessage());
+            return null;
+        }
+    }
+
+    private software.amazon.awssdk.services.bedrockagent.BedrockAgentClient managementClient(
+            Map<String, String> credentials, String region) {
+        return software.amazon.awssdk.services.bedrockagent.BedrockAgentClient.builder()
+                .region(Region.of(region))
+                .credentialsProvider(credentialsFor(credentials, region))
+                .build();
+    }
+
+    /** Runs one InvokeAgent turn to completion and reduces the stream to its outcome. */
+    private Turn invoke(BedrockTarget target, InvokeAgentRequest invokeRequest) {
         StringBuilder textBuffer = new StringBuilder();
         AtomicReference<ReturnControlPayload> returnControl = new AtomicReference<>();
 
@@ -205,77 +375,260 @@ public class BedrockAgentClient implements ConductorAgentClient {
                                         .build())
                         .build();
 
-        state.runtimeClient.invokeAgent(invokeRequest, handler).join();
+        runtimeClient(target).invokeAgent(invokeRequest, handler).join();
 
-        if (returnControl.get() != null) {
-            ReturnControlPayload payload = returnControl.get();
-            state.state.set(ConductorAgentState.WAITING);
-            // Store the first invocation input as the pending tool — callers inspect this
-            if (payload.invocationInputs() != null && !payload.invocationInputs().isEmpty()) {
-                String toolName =
-                        payload.invocationInputs().get(0).apiInvocationInput() != null
-                                ? payload.invocationInputs()
-                                        .get(0)
-                                        .apiInvocationInput()
-                                        .actionGroup()
-                                : "unknown";
-                state.pendingToolName = toolName;
-                state.pendingTool = Map.of("tool_name", toolName, "payload", payload.toString());
-            }
-        } else {
-            state.state.set(ConductorAgentState.COMPLETED);
-            state.output = Map.of("result", textBuffer.toString());
+        ReturnControlPayload payload = returnControl.get();
+        if (payload == null) {
+            return new Turn(
+                    ConductorAgentState.COMPLETED,
+                    Map.of("result", textBuffer.toString()),
+                    null,
+                    List.of(),
+                    null);
         }
+        return toolTurn(payload);
     }
 
-    private BedrockAgentRuntimeAsyncClient buildRuntimeClient(
-            ConductorAgentStartRequest request, String region) {
-        String credentialRef = request.getCredentialRef();
-        if (StringUtils.isNotBlank(credentialRef)) {
-            String accessKeyId =
-                    credentialResolutionService.resolve(credentialRef + ".accessKeyId");
-            String secretAccessKey =
-                    credentialResolutionService.resolve(credentialRef + ".secretAccessKey");
-            if (StringUtils.isNotBlank(accessKeyId) && StringUtils.isNotBlank(secretAccessKey)) {
-                return BedrockAgentRuntimeAsyncClient.builder()
-                        .region(Region.of(region))
-                        .credentialsProvider(
-                                StaticCredentialsProvider.create(
-                                        AwsBasicCredentials.create(accessKeyId, secretAccessKey)))
+    /**
+     * Reduces a return-control payload to the tools the agent is waiting on. Extracted so the
+     * fan-out is testable without an AWS round trip.
+     */
+    static Turn toolTurn(ReturnControlPayload payload) {
+        // Every input the agent handed back, not just the first: a model may ask for several
+        // independent tools in one turn, and reporting one leaves the rest unrunnable.
+        List<Map<String, Object>> pendingTools = new ArrayList<>();
+        if (payload.invocationInputs() != null) {
+            int index = 0;
+            for (InvocationInputMember input : payload.invocationInputs()) {
+                String toolName =
+                        input.apiInvocationInput() != null
+                                ? input.apiInvocationInput().actionGroup()
+                                : "unknown";
+                Map<String, Object> entry = new LinkedHashMap<>();
+                entry.put("tool_name", toolName);
+                // Bedrock names no call id, so derive a stable one per position in the turn.
+                entry.put("tool_call_id", toolName + "#" + index++);
+                entry.put("payload", input.toString());
+                pendingTools.add(entry);
+            }
+        }
+        if (pendingTools.isEmpty()) {
+            Map<String, Object> unknown = new LinkedHashMap<>();
+            unknown.put("tool_name", "unknown");
+            unknown.put("tool_call_id", "unknown#0");
+            unknown.put("payload", payload.toString());
+            pendingTools.add(unknown);
+        }
+        return new Turn(
+                ConductorAgentState.WAITING,
+                null,
+                pendingTools.get(0),
+                pendingTools,
+                String.valueOf(pendingTools.get(0).get("tool_name")));
+    }
+
+    private BedrockAgentRuntimeAsyncClient runtimeClient(BedrockTarget target) {
+        return runtimeClients.computeIfAbsent(target.clientKey(), this::buildClient);
+    }
+
+    // Visible for tests: proves one SDK client is shared per credential and region rather than
+    // created per execution, which is what used to leak a Netty pool per agent invocation.
+    int openRuntimeClients() {
+        return runtimeClients.size();
+    }
+
+    // Visible for tests: resolves and warms the shared client the way an invoke would, without
+    // performing one.
+    void warmRuntimeClient(Map<String, String> credentials, Map<String, Object> rawConfig) {
+        runtimeClient(target(credentials, rawConfig));
+    }
+
+    private BedrockAgentRuntimeAsyncClient buildClient(ClientKey key) {
+        var builder = BedrockAgentRuntimeAsyncClient.builder().region(Region.of(key.region()));
+        String apiKey = AgentCredentials.apiKey(key.credentials());
+        return StringUtils.isNotBlank(apiKey)
+                ? bearerAuth(builder, apiKey).build()
+                : builder.credentialsProvider(credentialsFor(key.credentials(), key.region()))
+                        .build();
+    }
+
+    /**
+     * Points the client at a Bedrock API key instead of SigV4.
+     *
+     * <p>A Bedrock API key is a bearer token, and this service's model declares only {@code
+     * aws.auth#sigv4}, so the SDK would otherwise sign the request and ignore the key. Resolving to
+     * {@code smithy.api#noAuth} stops the signer running, anonymous credentials stop the default
+     * credential chain being probed, and the interceptor carries the key — the standard way to
+     * bearer-authenticate a service whose model has no bearer scheme.
+     */
+    static BedrockAgentRuntimeAsyncClientBuilder bearerAuth(
+            BedrockAgentRuntimeAsyncClientBuilder builder, String apiKey) {
+        return builder.credentialsProvider(AnonymousCredentialsProvider.create())
+                .putAuthScheme(NoAuthAuthScheme.create())
+                .authSchemeProvider(
+                        params ->
+                                List.of(
+                                        AuthSchemeOption.builder()
+                                                .schemeId(NoAuthAuthScheme.SCHEME_ID)
+                                                .build()))
+                .overrideConfiguration(
+                        override -> override.addExecutionInterceptor(bearerHeader(apiKey)));
+    }
+
+    /** Adds {@code Authorization: Bearer <key>} to every request the client makes. */
+    static ExecutionInterceptor bearerHeader(String apiKey) {
+        return new ExecutionInterceptor() {
+            @Override
+            public SdkHttpRequest modifyHttpRequest(
+                    Context.ModifyHttpRequest context, ExecutionAttributes attributes) {
+                return context.httpRequest().toBuilder()
+                        .putHeader("Authorization", "Bearer " + apiKey)
                         .build();
             }
-        }
-        // Fall back to the default credential chain (instance role, env vars, ~/.aws/credentials)
-        return BedrockAgentRuntimeAsyncClient.builder().region(Region.of(region)).build();
+        };
     }
 
-    private static String rawConfig(ConductorAgentStartRequest request, String key) {
-        if (request.getRawConfig() == null) return null;
-        Object value = request.getRawConfig().get(key);
+    /**
+     * AWS credentials from the values the engine substituted into the task input, first match wins:
+     *
+     * <ol>
+     *   <li>static {@code accessKeyId} + {@code secretAccessKey}
+     *   <li>{@code roleArn} — assumed via STS, the SDK refreshing the temporary credentials; {@code
+     *       roleSessionName} and {@code externalId} are honored when present
+     *   <li>the SDK default chain — environment, instance or task role, {@code ~/.aws/credentials}
+     *       — but only for a task that supplied no credentials at all. A task that supplied some
+     *       and reached this point has a broken secret, and the default chain would run the agent
+     *       under the server's own role instead of failing.
+     * </ol>
+     *
+     * <p>An {@code apiKey} does not appear here: a bearer key replaces SigV4 signing rather than
+     * supplying credentials to it, so {@link #buildClient} handles it before this is reached.
+     */
+    AwsCredentialsProvider credentialsFor(Map<String, String> credentials, String region) {
+        String accessKeyId = AgentCredentials.value(credentials, "accessKeyId");
+        String secretAccessKey = AgentCredentials.value(credentials, "secretAccessKey");
+        if (StringUtils.isNoneBlank(accessKeyId, secretAccessKey)) {
+            return StaticCredentialsProvider.create(
+                    AwsBasicCredentials.create(accessKeyId, secretAccessKey));
+        }
+
+        String roleArn = AgentCredentials.value(credentials, "roleArn");
+        if (StringUtils.isNotBlank(roleArn)) {
+            AssumeRoleRequest.Builder assumeRole =
+                    AssumeRoleRequest.builder()
+                            .roleArn(roleArn)
+                            .roleSessionName(
+                                    StringUtils.defaultIfBlank(
+                                            AgentCredentials.value(credentials, "roleSessionName"),
+                                            "conductor-bedrock"));
+            String externalId = AgentCredentials.value(credentials, "externalId");
+            if (StringUtils.isNotBlank(externalId)) {
+                assumeRole.externalId(externalId);
+            }
+            return StsAssumeRoleCredentialsProvider.builder()
+                    .stsClient(StsClient.builder().region(Region.of(region)).build())
+                    .refreshRequest(assumeRole.build())
+                    .build();
+        }
+        AgentCredentials.rejectPartiallyResolved(credentials, AWS_AUTH_KEYS, "AWS");
+        return DefaultCredentialsProvider.create();
+    }
+
+    private BedrockTarget target(Map<String, String> credentials, Map<String, Object> rawConfig) {
+        return target(credentials, null, rawConfig);
+    }
+
+    /**
+     * Everything needed to reach the agent, rebuilt from the originating task input on every call.
+     * The agent may be named in {@code rawConfig} or as a {@code bedrock://AGENTID/ALIASID}
+     * agentUrl, so every agent type can use the same top-level field.
+     */
+    private BedrockTarget target(
+            Map<String, String> credentials, String agentUrl, Map<String, Object> rawConfig) {
+        String agentId = rawConfig(rawConfig, "agentId");
+        String agentAliasId = rawConfig(rawConfig, "agentAliasId");
+        String region = rawConfig(rawConfig, "region");
+
+        if (StringUtils.isAnyBlank(agentId, agentAliasId) && StringUtils.isNotBlank(agentUrl)) {
+            String[] coordinates = coordinatesFromUrl(agentUrl);
+            agentId = StringUtils.defaultIfBlank(agentId, coordinates[0]);
+            agentAliasId = StringUtils.defaultIfBlank(agentAliasId, coordinates[1]);
+            region = StringUtils.defaultIfBlank(region, coordinates[2]);
+        }
+
+        if (StringUtils.isAnyBlank(agentId, agentAliasId)) {
+            throw new IllegalArgumentException(
+                    "The agent must be named, either as rawConfig.agentId and rawConfig.agentAliasId"
+                            + " or as agentUrl bedrock://AGENTID/ALIASID");
+        }
+        return new BedrockTarget(
+                agentId,
+                agentAliasId,
+                new ClientKey(StringUtils.defaultIfBlank(region, DEFAULT_REGION), credentials));
+    }
+
+    /**
+     * Splits {@code bedrock://AGENTID/ALIASID} — optionally {@code ?region=} — into agent id, alias
+     * id, and region. Region is null when the URL does not carry one.
+     */
+    static String[] coordinatesFromUrl(String agentUrl) {
+        if (!StringUtils.startsWith(agentUrl, "bedrock://")) {
+            throw new IllegalArgumentException(
+                    "A Bedrock agentUrl must look like bedrock://AGENTID/ALIASID"
+                            + " (optionally with ?region=<region>), got: "
+                            + agentUrl);
+        }
+        String path = agentUrl.substring("bedrock://".length());
+        String region = null;
+        int query = path.indexOf('?');
+        if (query >= 0) {
+            for (String param : path.substring(query + 1).split("&")) {
+                if (param.startsWith("region=")) {
+                    region = StringUtils.trimToNull(param.substring("region=".length()));
+                }
+            }
+            path = path.substring(0, query);
+        }
+        String[] parts = path.split("/", 2);
+        if (StringUtils.isBlank(parts[0])) {
+            throw new IllegalArgumentException("Bedrock agentUrl names no agent: " + agentUrl);
+        }
+        if (parts.length < 2 || StringUtils.isBlank(parts[1])) {
+            throw new IllegalArgumentException(
+                    "Bedrock agentUrl names no alias: "
+                            + agentUrl
+                            + " — use bedrock://AGENTID/ALIASID");
+        }
+        return new String[] {parts[0], parts[1], region};
+    }
+
+    private static String pendingToolName(ConductorAgentRespondRequest request) {
+        if (request.getPendingTool() == null) {
+            return null;
+        }
+        Object toolName = request.getPendingTool().get("tool_name");
+        return toolName != null ? toolName.toString() : null;
+    }
+
+    private static String rawConfig(Map<String, Object> rawConfig, String key) {
+        if (rawConfig == null) return null;
+        Object value = rawConfig.get(key);
         return value != null ? value.toString() : null;
     }
 
-    /** Per-execution mutable state buffered from the Bedrock streaming response. */
-    private static class ExecutionState {
-        final String sessionId;
-        final BedrockAgentRuntimeAsyncClient runtimeClient;
-        final String agentId;
-        final String agentAliasId;
-        final AtomicReference<ConductorAgentState> state =
-                new AtomicReference<>(ConductorAgentState.RUNNING);
-        volatile Map<String, Object> output;
-        volatile Map<String, Object> pendingTool;
-        volatile String pendingToolName;
+    /** Outcome of a single InvokeAgent turn. Package-private so the reduction can be tested. */
+    record Turn(
+            ConductorAgentState state,
+            Map<String, Object> output,
+            Map<String, Object> pendingTool,
+            List<Map<String, Object>> pendingTools,
+            String pendingToolName) {}
 
-        ExecutionState(
-                String sessionId,
-                BedrockAgentRuntimeAsyncClient runtimeClient,
-                String agentId,
-                String agentAliasId) {
-            this.sessionId = sessionId;
-            this.runtimeClient = runtimeClient;
-            this.agentId = agentId;
-            this.agentAliasId = agentAliasId;
-        }
-    }
+    private record BedrockTarget(String agentId, String agentAliasId, ClientKey clientKey) {}
+
+    /**
+     * Identity of a shareable SDK client — one per region and credential, so a client is reused
+     * rather than built per invocation.
+     */
+    private record ClientKey(String region, Map<String, String> credentials) {}
 }

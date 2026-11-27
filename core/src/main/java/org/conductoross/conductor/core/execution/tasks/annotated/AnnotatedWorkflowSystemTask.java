@@ -16,7 +16,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Optional;
 
+import org.conductoross.conductor.common.spi.DelegatedTokenInjector;
 import org.conductoross.conductor.core.execution.tasks.TaskCancellationHandler;
+import org.springframework.lang.Nullable;
 
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
@@ -48,20 +50,19 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
 
     private final AnnotatedMethodResultMapper resultMapper;
 
-    /**
-     * Creates a new AnnotatedWorkflowSystemTask.
-     *
-     * @param taskType The task type name
-     * @param method The annotated method to invoke
-     * @param bean The Spring bean instance containing the method
-     * @param annotation The @WorkerTask annotation metadata
-     */
+    @Nullable private final DelegatedTokenInjector delegatedTokenInjector;
+
     public AnnotatedWorkflowSystemTask(
-            String taskType, Method method, Object bean, WorkerTask annotation) {
+            String taskType,
+            Method method,
+            Object bean,
+            WorkerTask annotation,
+            @Nullable DelegatedTokenInjector delegatedTokenInjector) {
         super(taskType);
         this.method = method;
         this.bean = bean;
         this.annotation = annotation;
+        this.delegatedTokenInjector = delegatedTokenInjector;
         this.parameterMapper = new AnnotatedMethodParameterMapper();
         this.resultMapper = new AnnotatedMethodResultMapper();
     }
@@ -91,6 +92,27 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
                     "Executing annotated task {} for workflow {}",
                     getTaskType(),
                     workflow.getWorkflowId());
+
+            // OBO (approach 1): inject caller's Entra token as userAssertion for OBO exchange.
+            String callerEntraToken = workflow.getCallerEntraToken();
+            if (callerEntraToken != null
+                    && !callerEntraToken.isBlank()
+                    && Boolean.TRUE.equals(task.getInputData().get("useCallerIdentity"))
+                    && task.getInputData().get("userAssertion") == null) {
+                task.getInputData().put("userAssertion", callerEntraToken);
+            }
+
+            // Delegated access (approach 2): enterprise injects a stored per-user Bearer token.
+            if (delegatedTokenInjector != null) {
+                String failReason =
+                        delegatedTokenInjector.resolveToken(
+                                task.getInputData(), workflow.getCreatedBy());
+                if (failReason != null) {
+                    task.setStatus(TaskModel.Status.FAILED);
+                    task.setReasonForIncompletion(failReason);
+                    return true;
+                }
+            }
 
             // Map task parameters to method parameters
             Object[] parameters = parameterMapper.mapParameters(task, method);

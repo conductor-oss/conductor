@@ -14,6 +14,7 @@ vi.mock("plugins/fetch", () => ({
 vi.mock("utils/query", () => ({
   useAuthHeaders: () => ({ "X-Authorization": "ui-token" }),
   useFetch: () => ({ data: [{ name: "researcher", version: 2 }] }),
+  useSecretNames: () => ["AZURE_CRED", "OPENAI_KEY"],
 }));
 
 vi.mock("components/FlatMapForm/ConductorAutocompleteVariables", () => ({
@@ -39,13 +40,19 @@ vi.mock("components/ui/inputs/RadioButtonGroup", () => ({
   ),
 }));
 
+// helperText and required are rendered, not dropped: a form telling the author a field is required
+// is behaviour worth asserting, and a mock that swallowed it would hide exactly that.
 vi.mock("components/ui/inputs/ConductorInput", () => ({
-  default: ({ label, value, onTextInputChange }: any) => (
-    <textarea
-      aria-label={label}
-      value={value ?? ""}
-      onChange={(event) => onTextInputChange?.(event.target.value)}
-    />
+  default: ({ label, value, onTextInputChange, required, helperText }: any) => (
+    <>
+      <textarea
+        aria-label={label}
+        aria-required={required ? "true" : undefined}
+        value={value ?? ""}
+        onChange={(event) => onTextInputChange?.(event.target.value)}
+      />
+      {helperText && <span>{helperText}</span>}
+    </>
   ),
 }));
 
@@ -183,6 +190,136 @@ describe("AgentTaskForm metadata resolution", () => {
       resolved: false,
       source: { url: "https://agent.example" },
     });
+  });
+
+  it("shows useCallerIdentity toggle only for microsoft-foundry and saves the flag", async () => {
+    render(
+      <Harness
+        initialTask={{
+          name: "agent",
+          taskReferenceName: "agent_ref",
+          type: TaskType.AGENT,
+          inputParameters: {
+            agentType: "microsoft-foundry",
+            agentUrl: "https://foundry.example",
+          },
+        }}
+      />,
+    );
+
+    expect(
+      screen.getByLabelText(/Run as the person who triggered the workflow/),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByLabelText(/Run as the person who triggered the workflow/),
+    );
+    expect(savedTask().inputParameters?.useCallerIdentity).toBe(true);
+
+    // A2A does not expose the toggle
+    fireEvent.change(screen.getByLabelText("agentType"), {
+      target: { value: "a2a" },
+    });
+    expect(
+      screen.queryByLabelText(/Run as the person who triggered the workflow/),
+    ).not.toBeInTheDocument();
+  });
+
+  it("hides the token scope when the agent authenticates with an API key", () => {
+    // An API key rides as a header, so there is no token and nothing to scope. Offering the field
+    // there invites the author to configure something the client will never read.
+    const { unmount } = render(
+      <Harness
+        initialTask={{
+          name: "agent",
+          taskReferenceName: "agent_ref",
+          type: TaskType.AGENT,
+          inputParameters: {
+            agentType: "microsoft-foundry",
+            credentials: { apiKey: "${workflow.secrets.AZURE_KEY}" },
+          },
+        }}
+      />,
+    );
+    expect(
+      screen.queryByLabelText("Token scope (optional)"),
+    ).not.toBeInTheDocument();
+
+    // A service principal does mint a token, so the override comes back. Rendered fresh: the
+    // harness seeds its task once, so a rerender would keep the API-key state.
+    unmount();
+    render(
+      <Harness
+        initialTask={{
+          name: "agent",
+          taskReferenceName: "agent_ref",
+          type: TaskType.AGENT,
+          inputParameters: {
+            agentType: "microsoft-foundry",
+            credentials: {
+              client_id: "a",
+              client_secret: "b",
+              tenant_id: "c",
+            },
+          },
+        }}
+      />,
+    );
+    expect(screen.getByLabelText("Token scope (optional)")).toBeInTheDocument();
+  });
+
+  it("flags a missing prompt on a hosted runtime, which the server rejects at save", () => {
+    const { unmount } = render(
+      <Harness
+        initialTask={{
+          name: "agent",
+          taskReferenceName: "agent_ref",
+          type: TaskType.AGENT,
+          inputParameters: { agentType: "microsoft-foundry" },
+        }}
+      />,
+    );
+    expect(
+      screen.getByText(/Required\. This runtime reads the message/),
+    ).toBeInTheDocument();
+    unmount();
+
+    // With a prompt, no complaint.
+    const withPrompt = render(
+      <Harness
+        initialTask={{
+          name: "agent",
+          taskReferenceName: "agent_ref",
+          type: TaskType.AGENT,
+          inputParameters: {
+            agentType: "microsoft-foundry",
+            prompt: "hi there",
+          },
+        }}
+      />,
+    );
+    expect(
+      screen.queryByText(/Required\. This runtime reads the message/),
+    ).not.toBeInTheDocument();
+    withPrompt.unmount();
+
+    // A2A carries the message in any of four fields, so prompt alone is not the rule there.
+    render(
+      <Harness
+        initialTask={{
+          name: "agent",
+          taskReferenceName: "agent_ref",
+          type: TaskType.AGENT,
+          inputParameters: {
+            agentType: "a2a",
+            agentUrl: "https://agent.example",
+          },
+        }}
+      />,
+    );
+    expect(
+      screen.queryByText(/Required\. This runtime reads the message/),
+    ).not.toBeInTheDocument();
   });
 
   it("invalidates changed sources and never resolves dynamic expressions", async () => {

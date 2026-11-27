@@ -4,7 +4,7 @@ import _last from "lodash/last";
 import _identity from "lodash/identity";
 import _isNil from "lodash/isNil";
 import { taskToNode } from "./common";
-import { DoWhileTaskDef, Crumb, CommonTaskDef } from "types";
+import { DoWhileTaskDef, Crumb, CommonTaskDef, TaskType } from "types";
 import { NodeData, EdgeData } from "reaflow";
 
 // When DO_WHILE has children ELK treats it as a compound node and computes its
@@ -14,7 +14,14 @@ import { NodeData, EdgeData } from "reaflow";
 const DO_WHILE_ELK_HORIZONTAL_PADDING = 110; // (570_min_width - 350_default_child) / 2
 const DO_WHILE_ELK_DEFAULT_VERTICAL_PADDING = 50; // keep reaflow default
 
-type DoWhileTaskDefWithMaybeExecutionData = DoWhileTaskDef & {
+/**
+ * Anything drawn as a container of child tasks.
+ *
+ * DO_WHILE is the original, and an AGENT that ran tools has the same shape: a task whose children
+ * belong inside it rather than after it.
+ */
+type ContainerTaskDefWithMaybeExecutionData = Omit<DoWhileTaskDef, "type"> & {
+  type: DoWhileTaskDef["type"] | TaskType.AGENT;
   executionData?: any;
 };
 
@@ -41,7 +48,7 @@ type NodesEdgesAndCrumbs = {
   crumbs: Crumb[];
 };
 export const processDoWhile = async (
-  doWhileTask: DoWhileTaskDefWithMaybeExecutionData,
+  doWhileTask: ContainerTaskDefWithMaybeExecutionData,
   crumbs: Crumb[],
   taskWalkerFn: any,
 ): Promise<NodesEdgesAndCrumbs> => {
