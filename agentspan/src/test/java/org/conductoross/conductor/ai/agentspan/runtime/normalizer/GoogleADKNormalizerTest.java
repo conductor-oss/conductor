@@ -127,6 +127,18 @@ class GoogleADKNormalizerTest {
                 .anyMatch(task -> task.getTaskReferenceName().equals("support_triage_final"));
     }
 
+    @Test
+    void agentWithoutModelDefaultsToACurrentGeminiModel() {
+        AgentConfig config =
+                normalizer.normalize(
+                        Map.of(
+                                "_type", "LlmAgent",
+                                "name", "no_model_agent",
+                                "instruction", "Answer briefly."));
+
+        assertThat(config.getModel()).isEqualTo("google_gemini/gemini-3.8-flash");
+    }
+
     private static List<WorkflowTask> flatten(List<WorkflowTask> tasks) {
         List<WorkflowTask> result = new ArrayList<>();
         for (WorkflowTask task : tasks) {
