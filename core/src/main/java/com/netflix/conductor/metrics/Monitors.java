@@ -259,6 +259,19 @@ public class Monitors {
                 .record(count);
     }
 
+    public static void recordNativeFragmentRejected(String workflowName, String reason) {
+        counter("native_fragment_rejected", "workflowName", workflowName, "reason", reason);
+    }
+
+    /** A continuation handed back to run again; {@code reason} says why. */
+    public static void recordNativeCompletionDeferred(String workflowName, String reason) {
+        counter("native_completion_deferred", "workflowName", workflowName, "reason", reason);
+    }
+
+    public static void recordNativeStaleCompletion(String workflowName) {
+        counter("native_stale_completion", "workflowName", workflowName);
+    }
+
     public static void recordTaskTimeout(String taskType) {
         counter("task_timeout", "taskType", taskType);
     }

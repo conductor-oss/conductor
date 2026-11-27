@@ -2,6 +2,9 @@ import LaunchIcon from "@mui/icons-material/Launch";
 import { Box, Stack, Tooltip } from "@mui/material";
 import { AutoRefreshButton, Button, Heading, LinearProgress } from "components";
 import StatusBadge from "components/StatusBadge";
+import TagChip from "components/ui/TagChip";
+import { heldReason } from "./held";
+import { useWaitingForWorker } from "./useWaitingForWorker";
 import Agent from "components/features/agent/Agent";
 import { AgentDisplayMode } from "components/features/agent/agent-types";
 import {
@@ -233,7 +236,9 @@ const ExecutionAlert = ({
   if (
     execution?.rateLimited ||
     (execution?.reasonForIncompletion &&
-      execution?.status !== WorkflowExecutionStatus.COMPLETED)
+      execution?.status !== WorkflowExecutionStatus.COMPLETED &&
+      // a held run is explained by its chip and summary
+      !heldReason(execution))
   ) {
     return (
       <MuiAlert
@@ -378,6 +383,7 @@ export default function Execution() {
   };
 
   const isExecutionView = location.pathname.startsWith("/execution/");
+  const waitingForWorker = useWaitingForWorker(execution);
 
   const failureWorkflowId = isFailure(execution);
 
@@ -556,6 +562,7 @@ export default function Execution() {
               workflowStatus={execution?.status as string}
               doWhileSelection={doWhileSelection}
               workflowDefinition={execution?.workflowDefinition}
+              execution={execution}
             />
           </Box>
         )
@@ -707,6 +714,29 @@ export default function Execution() {
                   <StatusBadge
                     status={execution?.status as unknown as TaskStatus}
                   />
+                  {heldReason(execution) ? (
+                    <Tooltip title={heldReason(execution)}>
+                      <TagChip
+                        style={{ backgroundColor: "#F5BF42" }}
+                        label="Waiting for compatible code"
+                        id="held-chip"
+                      />
+                    </Tooltip>
+                  ) : null}
+                  {waitingForWorker ? (
+                    <Tooltip title={waitingForWorker}>
+                      <TagChip
+                        style={{ backgroundColor: "#F5BF42" }}
+                        label="Waiting for a worker"
+                        id="waiting-for-worker-chip"
+                      />
+                    </Tooltip>
+                  ) : null}
+                  {execution.codePreview ? (
+                    <Tooltip title="The code has not run yet: the diagram previews what it calls, read from the registered definition">
+                      <TagChip label="Preview" id="code-preview-chip" />
+                    </Tooltip>
+                  ) : null}
                 </Stack>
               }
               breadcrumbItems={[

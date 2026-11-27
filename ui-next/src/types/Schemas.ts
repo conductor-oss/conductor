@@ -419,7 +419,7 @@ export const switchTaskSchema = {
     taskReferenceName: { $ref: taskReferenceName.$id },
     type: { const: TaskType.SWITCH },
     evaluatorType: {
-      enum: ["javascript", "value-param", "graaljs"],
+      enum: ["javascript", "value-param", "graaljs", "native-code"],
       type: "string",
     },
     expression: {
@@ -1667,6 +1667,7 @@ export const schemasByType = {
   [TaskType.JDBC]: jdbcTaskSchema,
   [TaskType.IA_TASK]: genericSchema,
   [TaskType.SWITCH_JOIN]: genericSchema, // Pseudo task does not really exist
+  [TaskType.HELD_STEP]: genericSchema, // Pseudo task does not really exist
   [TaskType.LLM_TEXT_COMPLETE]: genericSchema,
   [TaskType.LLM_GENERATE_EMBEDDINGS]: genericSchema,
   [TaskType.LLM_GET_EMBEDDINGS]: genericSchema,

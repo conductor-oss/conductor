@@ -155,6 +155,75 @@ public class ConductorProperties {
      */
     private Map<String, TaskWorkerConfig> taskWorkerConfigs = new HashMap<>();
 
+    /** Limits and switches for native (code-first) workflows; see {@link NativeWorkflow}. */
+    private NativeWorkflow nativeWorkflow = new NativeWorkflow();
+
+    /**
+     * Native workflows grow an execution's definition one continuation completion at a time. These
+     * limits bound a single fragment and the definition it is appended to. Bound as {@code
+     * conductor.app.nativeWorkflow.*}.
+     */
+    public static class NativeWorkflow {
+
+        /** Refuse to register native (code-first) workflow definitions when false. */
+        private boolean enabled = true;
+
+        /** Maximum serialized size of one fragment. */
+        private DataSize maxFragmentBytes = DataSize.ofMegabytes(1);
+
+        /** Maximum number of tasks, nested ones included, in an execution's definition. */
+        private int maxDefinitionTasks = 5000;
+
+        /**
+         * How long the worker that holds an execution in memory has to take a continuation offered
+         * to it, and then again to complete it, before any worker of the code type may take it and
+         * replay. It bounds the delay a worker that died or stalled adds to an execution pinned to
+         * it; a continuation that takes its worker longer than this to complete is run by another
+         * worker as well, and the first completion applies.
+         */
+        private Duration pinTimeout = Duration.ofSeconds(5);
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public DataSize getMaxFragmentBytes() {
+            return maxFragmentBytes;
+        }
+
+        public void setMaxFragmentBytes(DataSize maxFragmentBytes) {
+            this.maxFragmentBytes = maxFragmentBytes;
+        }
+
+        public int getMaxDefinitionTasks() {
+            return maxDefinitionTasks;
+        }
+
+        public void setMaxDefinitionTasks(int maxDefinitionTasks) {
+            this.maxDefinitionTasks = maxDefinitionTasks;
+        }
+
+        public Duration getPinTimeout() {
+            return pinTimeout;
+        }
+
+        public void setPinTimeout(Duration pinTimeout) {
+            this.pinTimeout = pinTimeout;
+        }
+    }
+
+    public NativeWorkflow getNativeWorkflow() {
+        return nativeWorkflow;
+    }
+
+    public void setNativeWorkflow(NativeWorkflow nativeWorkflow) {
+        this.nativeWorkflow = nativeWorkflow;
+    }
+
     public static class TaskWorkerConfig {
 
         /**

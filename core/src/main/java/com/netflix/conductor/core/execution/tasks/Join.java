@@ -12,7 +12,9 @@
  */
 package com.netflix.conductor.core.execution.tasks;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,10 +26,13 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.annotations.VisibleForTesting;
+import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.core.execution.NativeDefinitionEdits;
+import com.netflix.conductor.core.execution.NativeWorkflows;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
@@ -50,6 +55,12 @@ public class Join extends WorkflowSystemTask {
 
     private final ConductorProperties properties;
 
+    /** Native JOIN metadata: completes at once, leaving its fork's lanes running on their own. */
+    public static final String DETACHED = "detached";
+
+    /** Native JOIN metadata: the ids of the lanes to wait for, instead of the fork before it. */
+    public static final String WAIT_FOR = "waitFor";
+
     public Join(ConductorProperties properties) {
         super(TASK_TYPE_JOIN);
         this.properties = properties;
@@ -62,13 +73,22 @@ public class Join extends WorkflowSystemTask {
         StringBuilder failureReason = new StringBuilder();
         StringBuilder optionalTaskFailures = new StringBuilder();
         boolean agentExecution = isAgentExecution(workflow);
-        List<String> joinOn = (List<String>) task.getInputData().get("joinOn");
-        if (task.isLoopOverTask()) {
-            // If join is part of loop over task, wait for specific iteration to get complete
-            joinOn =
-                    joinOn.stream()
-                            .map(name -> TaskUtils.appendIteration(name, task.getIteration()))
-                            .toList();
+        if (NativeWorkflows.isNative(workflow)
+                && task.getWorkflowTask() != null
+                && Boolean.TRUE.equals(task.getWorkflowTask().getMetadata().get(DETACHED))) {
+            // lanes nothing waits for yet: the code goes on while they run
+            task.setStatus(TaskModel.Status.COMPLETED);
+            return true;
+        }
+        List<String> joinOn = joinTargets(workflow, task);
+        if (joinOn == null) {
+            // The JOIN can be evaluated from a copy of the workflow loaded before the decide
+            // that appended its fork was saved; the fork is then not in the definition yet.
+            // Wait for the next evaluation rather than completing with no targets.
+            return false;
+        }
+        if (hasLiveTargets(workflow, task) && !NativeWorkflows.lanesSettled(workflow, joinOn)) {
+            return false;
         }
 
         boolean allTasksTerminal =
@@ -97,10 +117,7 @@ public class Join extends WorkflowSystemTask {
             // Determine if the join task fails immediately due to a non-optional, non-permissive
             // task failure,
             // or waits for all tasks to be terminal if the failed task is permissive.
-            var isJoinFailure =
-                    !taskStatus.isSuccessful()
-                            && !forkedTask.getWorkflowTask().isOptional()
-                            && (!forkedTask.getWorkflowTask().isPermissive() || allTasksTerminal);
+            var isJoinFailure = failsJoin(forkedTask, allTasksTerminal);
             if (isJoinFailure) {
                 final String failureReasons =
                         joinOn.stream()
@@ -213,6 +230,169 @@ public class Join extends WorkflowSystemTask {
             }
         }
         return Collections.unmodifiableMap(compact);
+    }
+
+    /**
+     * Live targets: a JOIN after a FORK_JOIN that names no targets joins on whatever each branch
+     * currently ends with. Native workflows grow fork branches at run time, so the targets cannot
+     * be fixed when the JOIN is scheduled.
+     */
+    @SuppressWarnings("unchecked")
+    private static boolean hasLiveTargets(WorkflowModel workflow, TaskModel joinTask) {
+        List<String> joinOn = (List<String>) joinTask.getInputData().get("joinOn");
+        return (joinOn == null || joinOn.isEmpty())
+                && !joinTask.isLoopOverTask()
+                && NativeWorkflows.isNative(workflow);
+    }
+
+    /**
+     * The reference names of the tasks the JOIN waits for; null when they are not known yet (the
+     * fork of a JOIN with live targets is not in this copy of the definition).
+     */
+    @SuppressWarnings("unchecked")
+    private static List<String> joinTargets(WorkflowModel workflow, TaskModel joinTask) {
+        if (hasLiveTargets(workflow, joinTask)) {
+            return liveJoinTargets(workflow, joinTask);
+        }
+        List<String> joinOn = (List<String>) joinTask.getInputData().get("joinOn");
+        if (joinOn == null) {
+            return List.of();
+        }
+        if (joinTask.isLoopOverTask()) {
+            // If join is part of loop over task, wait for specific iteration to get complete
+            return joinOn.stream()
+                    .map(name -> TaskUtils.appendIteration(name, joinTask.getIteration()))
+                    .toList();
+        }
+        return joinOn;
+    }
+
+    /**
+     * Whether the failure of a task fails the JOIN that waits for it: the task is not optional, and
+     * it is not permissive or all the tasks the JOIN waits for have ended.
+     */
+    private static boolean failsJoin(TaskModel forkedTask, boolean allTasksTerminal) {
+        return !forkedTask.getStatus().isSuccessful()
+                && !forkedTask.getWorkflowTask().isOptional()
+                && (!forkedTask.getWorkflowTask().isPermissive() || allTasksTerminal);
+    }
+
+    /**
+     * Whether an evaluation of the JOIN now ends it: the tasks it waits for have all ended, or one
+     * of them fails it. For a JOIN with live targets, each lane must also have no code left to run.
+     */
+    public static boolean isReady(WorkflowModel workflow, TaskModel joinTask) {
+        List<String> targets = joinTargets(workflow, joinTask);
+        if (targets == null) {
+            return false;
+        }
+        if (hasLiveTargets(workflow, joinTask)) {
+            return NativeWorkflows.lanesSettled(workflow, targets);
+        }
+        List<TaskModel> tasks = targets.stream().map(workflow::getTaskByRefName).toList();
+        return tasks.stream().allMatch(t -> t != null && t.getStatus().isTerminal())
+                || tasks.stream().anyMatch(t -> t != null && failsJoin(t, false));
+    }
+
+    /**
+     * The reference name of the last task of each branch of the FORK_JOIN that precedes this JOIN
+     * in the execution's definition, read at evaluation time; null when that fork is not in the
+     * definition yet.
+     */
+    private static List<String> liveJoinTargets(WorkflowModel workflow, TaskModel joinTask) {
+        if (joinTask.getWorkflowTask() == null || workflow.getWorkflowDefinition() == null) {
+            return List.of();
+        }
+        String joinRef = joinTask.getWorkflowTask().getTaskReferenceName();
+        if (workflow.getWorkflowDefinition().getTaskByRefName(joinRef) == null) {
+            // stale copy: the fragment that holds this JOIN is not in the definition yet
+            return null;
+        }
+        if (joinTask.getWorkflowTask().getMetadata().get(WAIT_FOR) instanceof List<?> lanes) {
+            return targetsOfLanes(workflow, lanes);
+        }
+        WorkflowTask fork =
+                NativeDefinitionEdits.previousTask(
+                        workflow.getWorkflowDefinition(),
+                        joinTask.getWorkflowTask().getTaskReferenceName());
+        if (fork == null || !TaskType.FORK_JOIN.name().equals(fork.getType())) {
+            return List.of();
+        }
+        List<String> targets = new ArrayList<>();
+        for (List<WorkflowTask> branch : fork.getForkTasks()) {
+            addBranchTargets(workflow, branch, targets);
+        }
+        return targets;
+    }
+
+    /** What the named lanes end with; null when one is not in this copy of the definition yet. */
+    private static List<String> targetsOfLanes(WorkflowModel workflow, List<?> lanes) {
+        List<String> targets = new ArrayList<>();
+        Set<Object> found = new HashSet<>();
+        for (WorkflowTask task : workflow.getWorkflowDefinition().collectTasks()) {
+            if (TaskType.FORK_JOIN.name().equals(task.getType())) {
+                for (List<WorkflowTask> branch : task.getForkTasks()) {
+                    Object lane = branch.isEmpty() ? null : branch.get(0).getMetadata().get("lane");
+                    if (lane != null && lanes.contains(lane)) {
+                        found.add(lane);
+                        addBranchTargets(workflow, branch, targets);
+                    }
+                }
+            }
+        }
+        return found.size() == lanes.size() ? targets : null;
+    }
+
+    /** What a branch ends with, and what any fork it started ends with. */
+    private static void addBranchTargets(
+            WorkflowModel workflow, List<WorkflowTask> branch, List<String> targets) {
+        if (branch.isEmpty()) {
+            return;
+        }
+        for (WorkflowTask task : branch) {
+            addForksStartedBy(workflow, task, targets);
+        }
+        String tail = lastTaskRef(workflow, branch);
+        if (!targets.contains(tail)) {
+            targets.add(tail);
+        }
+    }
+
+    /** What the forks an entry started end with: its own, and any in the switch case it took. */
+    private static void addForksStartedBy(
+            WorkflowModel workflow, WorkflowTask task, List<String> targets) {
+        for (List<WorkflowTask> inner : task.getForkTasks()) {
+            addBranchTargets(workflow, inner, targets);
+        }
+        for (WorkflowTask inCase : takenCase(workflow, task)) {
+            addForksStartedBy(workflow, inCase, targets);
+        }
+    }
+
+    /** The tasks of the case a SWITCH took; empty until it has chosen, or for any other task. */
+    private static List<WorkflowTask> takenCase(WorkflowModel workflow, WorkflowTask task) {
+        if (!TaskType.SWITCH.name().equals(task.getType())) {
+            return List.of();
+        }
+        TaskModel taken = workflow.getTaskByRefName(task.getTaskReferenceName());
+        if (taken == null || !taken.getStatus().isTerminal()) {
+            return List.of();
+        }
+        Object selected = taken.getOutputData().get("selectedCase");
+        List<WorkflowTask> caseTasks =
+                task.getDecisionCases()
+                        .getOrDefault(String.valueOf(selected), task.getDefaultCase());
+        return caseTasks == null ? List.of() : caseTasks;
+    }
+
+    /**
+     * The task a branch currently ends with. A SWITCH finishes as soon as it has chosen, so a list
+     * that ends in one really ends with the last task of the case it took.
+     */
+    private static String lastTaskRef(WorkflowModel workflow, List<WorkflowTask> tasks) {
+        WorkflowTask last = tasks.get(tasks.size() - 1);
+        List<WorkflowTask> caseTasks = takenCase(workflow, last);
+        return caseTasks.isEmpty() ? last.getTaskReferenceName() : lastTaskRef(workflow, caseTasks);
     }
 
     @Override

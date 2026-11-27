@@ -45,6 +45,7 @@ import { useActionWithPath, useWorkflowDefs } from "utils/query";
 import { createSearchableTags, tryToJson } from "utils/utils";
 import { getUniqueWorkflows } from "utils/workflow";
 import CloneWorkflowDialog from "./dialog/CloneWorkflowDialog";
+import { generatedFrom } from "pages/definition/generatedFrom";
 
 const INTRO_CONTENT = `A **workflow definition** is a blueprint that defines the sequence of tasks, their dependencies, and how data flows between them.
 
@@ -298,23 +299,26 @@ export default function WorkflowDefinitions() {
                 </IconButton>
               </Tooltip>
 
-              <Tooltip title={"Clone Workflow"}>
-                <IconButton
-                  onClick={() =>
-                    setSelectedWorkflowWithAction({
-                      selectedWorkflow: workflowRowData,
-                      action: "clone",
-                    })
-                  }
-                  disabled={isTrialExpired}
-                  size="small"
-                  sx={{
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  <CopyIcon size={20} />
-                </IconButton>
-              </Tooltip>
+              {/* a native workflow's definition comes from its code: a copy would not run */}
+              {generatedFrom(workflowRowData) == null && (
+                <Tooltip title={"Clone Workflow"}>
+                  <IconButton
+                    onClick={() =>
+                      setSelectedWorkflowWithAction({
+                        selectedWorkflow: workflowRowData,
+                        action: "clone",
+                      })
+                    }
+                    disabled={isTrialExpired}
+                    size="small"
+                    sx={{
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    <CopyIcon size={20} />
+                  </IconButton>
+                </Tooltip>
+              )}
               {tagsEnabled && (
                 <Tooltip title={"Add/Edit tags"}>
                   <IconButton

@@ -13,6 +13,10 @@ export type ExecutedData = {
   collapsedTasksStatus?: string[];
   outputData?: Record<string, any>;
   parentLoop?: TaskDef;
+  /** Why native workflow code is held at this task, when it is. */
+  held?: string;
+  /** The task a held step comes after. */
+  pausedOn?: string;
   /**
    * Tasks that ran inside this workflow for this task without being steps of the definition — a
    * guardrail detector, say. Drawn beside the task rather than in the flow, because the workflow
@@ -74,6 +78,35 @@ export interface ExecutionTask<
   workerId?: string;
   correlationId?: string;
   queueWaitTime?: number;
+  /** Native (code-first) workflows: set on a task the workflow code paused on. */
+  continuation?: TaskContinuation;
+}
+
+/**
+ * Where a native workflow's code paused: when the task finishes, the server hands the continuation
+ * its entry names (`metadata.lane`, `metadata.continuation`) to a host of the code, which appends
+ * what the code does next after the task. The marker holds only that continuation's progress.
+ */
+export interface TaskContinuation {
+  /** Offered to a worker and not yet applied or handed back. */
+  leased?: boolean;
+  /** How many times it was offered again after an attempt that did not apply. */
+  retryCount?: number;
+  /** When it applied; absent until then. */
+  endTime?: number;
+  /** Whether it ended its lane. */
+  done?: boolean;
+  recorded?: Record<string, unknown>;
+  resumedWith?: Record<string, unknown>;
+  /** The handler lane's run number; absent on other markers. */
+  n?: number;
+}
+
+/** The engine's state of a native (code-first) workflow execution. */
+export interface NativeState {
+  bootstrap?: TaskContinuation;
+  handlers?: TaskContinuation;
+  replies?: Record<string, unknown>;
 }
 
 // @deprecated use WorkflowExecution instead
@@ -93,6 +126,10 @@ export enum WorkflowExecutionStatus {
 
 export interface WorkflowExecution {
   tasks: ExecutionTask[];
+  /** Set by the UI: the code has not run yet and the definition shown is the registered one. */
+  codePreview?: boolean;
+  /** Set by the UI: what the code has yet to do is previewed from the registered definition. */
+  codeAhead?: boolean;
   workflowDefinition: WorkflowDef;
   correlationId: string;
   createdBy: string;
@@ -120,6 +157,8 @@ export interface WorkflowExecution {
   idempotencyKey?: string;
   event?: string;
   variables?: Record<string, unknown>;
+  /** Native (code-first) workflows only. */
+  nativeState?: NativeState;
   workflowIntrospection?: WorkflowIntrospectionRecord[];
   aggregateTokenUsage?: {
     promptTokens: number;

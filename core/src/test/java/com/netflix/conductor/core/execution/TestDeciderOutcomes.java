@@ -36,11 +36,14 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.util.unit.DataSize;
 
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
+import com.netflix.conductor.common.metadata.tasks.TaskContinuation;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.core.dal.ExecutionDAOFacade;
+import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.DeciderService.DeciderOutcome;
 import com.netflix.conductor.core.execution.evaluators.Evaluator;
 import com.netflix.conductor.core.execution.mapper.DecisionTaskMapper;
@@ -65,6 +68,7 @@ import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -105,6 +109,8 @@ import static org.mockito.Mockito.when;
 public class TestDeciderOutcomes {
 
     private DeciderService deciderService;
+
+    private NativeContinuationService nativeContinuationService;
 
     @Autowired private Map<String, Evaluator> evaluators;
 
@@ -178,6 +184,9 @@ public class TestDeciderOutcomes {
         taskMappers.put(WAIT.name(), new WaitTaskMapper(parametersUtils));
         taskMappers.put(HTTP.name(), new HTTPTaskMapper(parametersUtils, metadataDAO));
 
+        this.nativeContinuationService =
+                WorkflowDriversFixture.nativeContinuationService(
+                        objectMapper, new ConductorProperties(), metadataDAO, taskMappers);
         this.deciderService =
                 new DeciderService(
                         new IDGenerator(),
@@ -185,6 +194,14 @@ public class TestDeciderOutcomes {
                         metadataDAO,
                         externalPayloadStorageUtils,
                         systemTaskRegistry,
+                        WorkflowDriversFixture.drivers(
+                                parametersUtils,
+                                externalPayloadStorageUtils,
+                                nativeContinuationService,
+                                metadataDAO,
+                                mock(ExecutionDAOFacade.class),
+                                mock(QueueDAO.class),
+                                systemTaskRegistry),
                         taskMappers,
                         new HashMap<>(),
                         Duration.ofMinutes(60));
@@ -370,6 +387,305 @@ public class TestDeciderOutcomes {
         assertEquals(task.getTaskId(), task.getInputData().get("taskId"));
         assertNotSame(task1Id, task.getTaskId());
         assertEquals(task1Id, task.getRetriedTaskId());
+    }
+
+    /**
+     * The failure matrix: for each terminal status, with and without optional, in a standard and in
+     * a native workflow, whether the task is retried, what status it ends with, and whether the
+     * workflow ends or continues to the next task.
+     */
+    private static final class Outcome {
+        boolean retried;
+        boolean terminated;
+        TaskModel.Status finalStatus;
+        Object failedStatus;
+        String next;
+    }
+
+    private Outcome failOnce(boolean nativeWf, boolean optional, TaskModel.Status status) {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("matrix");
+        def.setSchemaVersion(2);
+        if (nativeWf) {
+            def.getMetadata().put("native", Map.of("sdk", "test"));
+        }
+        TaskDef retries = new TaskDef("t0def");
+        retries.setRetryCount(1);
+        WorkflowTask t0 = new WorkflowTask();
+        t0.setName("t0def");
+        t0.setType("SIMPLE");
+        t0.setTaskReferenceName("t0");
+        t0.setOptional(optional);
+        t0.setTaskDefinition(retries);
+        WorkflowTask t1 = new WorkflowTask();
+        t1.setName("t1def");
+        t1.setType("SIMPLE");
+        t1.setTaskReferenceName("t1");
+        t1.setTaskDefinition(new TaskDef("t1def"));
+        def.getTasks().add(t0);
+        def.getTasks().add(t1);
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(def);
+        workflow.setCreateTime(System.currentTimeMillis());
+        DeciderOutcome outcome = deciderService.decide(workflow);
+        workflow.getTasks().addAll(outcome.tasksToBeScheduled);
+        TaskModel task = workflow.getTasks().get(0);
+        task.setStatus(status);
+
+        Outcome result = new Outcome();
+        try {
+            outcome = deciderService.decide(workflow);
+        } catch (TerminateWorkflowException e) {
+            result.terminated = true;
+            result.finalStatus = task.getStatus();
+            result.failedStatus = task.getOutputData().get("conductor.failedStatus");
+            return result;
+        }
+        result.retried =
+                outcome.tasksToBeScheduled.stream()
+                        .anyMatch(t -> "t0".equals(t.getReferenceTaskName()));
+        if (result.retried) {
+            // exhaust the retry with the same status
+            workflow.getTasks().addAll(outcome.tasksToBeScheduled);
+            task = workflow.getTasks().get(workflow.getTasks().size() - 1);
+            task.setStatus(status);
+            try {
+                outcome = deciderService.decide(workflow);
+            } catch (TerminateWorkflowException e) {
+                result.terminated = true;
+                result.finalStatus = task.getStatus();
+                result.failedStatus = task.getOutputData().get("conductor.failedStatus");
+                return result;
+            }
+        }
+        result.finalStatus = task.getStatus();
+        result.failedStatus = task.getOutputData().get("conductor.failedStatus");
+        result.next =
+                outcome.tasksToBeScheduled.isEmpty()
+                        ? null
+                        : outcome.tasksToBeScheduled.get(0).getReferenceTaskName();
+        return result;
+    }
+
+    @Test
+    public void failureMatrixForNativeWorkflows() {
+        // native tasks are optional: retried if retriable, then COMPLETED_WITH_ERRORS, with how it
+        // failed in the output, and the next task (the continuation, which raises TaskFailure) runs
+        for (TaskModel.Status status :
+                List.of(TaskModel.Status.FAILED, TaskModel.Status.TIMED_OUT)) {
+            Outcome o = failOnce(true, true, status);
+            assertTrue(status + " retried", o.retried);
+            assertFalse(o.terminated);
+            assertEquals(TaskModel.Status.COMPLETED_WITH_ERRORS, o.finalStatus);
+            assertEquals(status.name(), o.failedStatus);
+            assertEquals("t1", o.next);
+        }
+        Outcome terminal = failOnce(true, true, TaskModel.Status.FAILED_WITH_TERMINAL_ERROR);
+        assertFalse("terminal errors are not retried", terminal.retried);
+        assertFalse(terminal.terminated);
+        assertEquals(TaskModel.Status.COMPLETED_WITH_ERRORS, terminal.finalStatus);
+        assertEquals("FAILED_WITH_TERMINAL_ERROR", terminal.failedStatus);
+        assertEquals("t1", terminal.next);
+        // a non-optional task in a native workflow (a CODE task) still ends the workflow
+        Outcome code = failOnce(true, false, TaskModel.Status.FAILED_WITH_TERMINAL_ERROR);
+        assertFalse(code.retried);
+        assertTrue(code.terminated);
+    }
+
+    @Test
+    public void nativeWorkflowRetriesAnOptionalTaskThenCompletesItWithErrors() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("native-test");
+        def.getMetadata().put("native", Map.of("sdk", "test"));
+
+        TaskDef retryTwice = new TaskDef("task0");
+        retryTwice.setRetryCount(2);
+        WorkflowTask task1 = new WorkflowTask();
+        task1.setName("task0");
+        task1.setType("SIMPLE");
+        task1.setTaskReferenceName("t0");
+        task1.setOptional(true);
+        task1.setTaskDefinition(retryTwice);
+
+        WorkflowTask task2 = new WorkflowTask();
+        task2.setName("task1");
+        task2.setType("SIMPLE");
+        task2.setTaskReferenceName("t1");
+        task2.setTaskDefinition(new TaskDef("task1"));
+
+        def.getTasks().add(task1);
+        def.getTasks().add(task2);
+        def.setSchemaVersion(2);
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(def);
+        workflow.setCreateTime(System.currentTimeMillis());
+        DeciderOutcome outcome = deciderService.decide(workflow);
+
+        // two retries, like any task
+        for (int i = 0; i < 2; i++) {
+            workflow.getTasks().addAll(outcome.tasksToBeScheduled);
+            workflow.getTasks()
+                    .get(workflow.getTasks().size() - 1)
+                    .setStatus(TaskModel.Status.FAILED);
+            outcome = deciderService.decide(workflow);
+            assertEquals("t0", outcome.tasksToBeScheduled.get(0).getReferenceTaskName());
+            assertEquals(i + 1, outcome.tasksToBeScheduled.get(0).getRetryCount());
+        }
+
+        // retries exhausted: the next task is scheduled, and the task completes with errors
+        workflow.getTasks().addAll(outcome.tasksToBeScheduled);
+        TaskModel last = workflow.getTasks().get(workflow.getTasks().size() - 1);
+        last.setStatus(TaskModel.Status.FAILED);
+        outcome = deciderService.decide(workflow);
+        assertEquals(TaskModel.Status.COMPLETED_WITH_ERRORS, last.getStatus());
+        assertEquals("FAILED", last.getOutputData().get("conductor.failedStatus"));
+        assertEquals(1, outcome.tasksToBeScheduled.size());
+        assertEquals("t1", outcome.tasksToBeScheduled.get(0).getReferenceTaskName());
+        assertFalse(outcome.isComplete);
+    }
+
+    @Test
+    public void aNativeWorkflowWhoseCodeThrewIsNotCompletedBeforeItIsEnded() {
+        // the completion that recorded the throw was saved; the server stopped before ending it
+        WorkflowModel workflow = nativeWorkflowPausedOn(TaskModel.Status.COMPLETED);
+        TaskContinuation marker = marker(workflow, workflow.getTasks().get(0));
+        marker.setEndTime(1);
+        marker.setDone(true);
+        workflow.setReasonForIncompletion("boom");
+        assertFalse(deciderService.checkForWorkflowCompletion(workflow));
+
+        workflow.setReasonForIncompletion(null); // had the code returned
+        assertTrue(deciderService.checkForWorkflowCompletion(workflow));
+    }
+
+    /** A native execution with one finished task the code paused on. */
+    private WorkflowModel nativeWorkflowPausedOn(TaskModel.Status taskStatus) {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("native-test");
+        def.setSchemaVersion(2);
+        def.getMetadata().put("native", Map.of("protocol", 2, "codeType", "native-test.v1.code"));
+        WorkflowTask entry = new WorkflowTask();
+        entry.setName("task0");
+        entry.setType("SIMPLE");
+        entry.setTaskReferenceName("t0");
+        entry.setOptional(true);
+        entry.getMetadata().put("lane", "main");
+        entry.getMetadata().put("continuation", 2);
+        entry.setTaskDefinition(new TaskDef("task0"));
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("wf-native");
+        workflow.setWorkflowDefinition(def);
+        workflow.setCreateTime(System.currentTimeMillis());
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+        nativeContinuationService.initialize(workflow); // starts the execution's copy empty
+        workflow.getNativeState().getBootstrap().setEndTime(1);
+        def.getTasks().add(entry); // ... which the bootstrap continuation then grew by one entry
+
+        TaskModel task = new TaskModel();
+        task.setTaskId("t0-id");
+        task.setReferenceTaskName("t0");
+        task.setTaskType("task0");
+        task.setTaskDefName("task0");
+        task.setWorkflowTask(entry);
+        task.setStatus(taskStatus);
+        setMarker(workflow, task, new TaskContinuation());
+        workflow.getTasks().add(task);
+        return workflow;
+    }
+
+    @Test
+    public void nativeWorkflowWithNoTasksYetIsNotCompleteAndSchedulesNothing() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("native-empty");
+        def.setSchemaVersion(2);
+        def.getMetadata().put("native", Map.of("protocol", 2));
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("wf-empty");
+        workflow.setWorkflowDefinition(def);
+        workflow.setCreateTime(System.currentTimeMillis());
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+        nativeContinuationService.initialize(workflow);
+
+        DeciderOutcome outcome = deciderService.decide(workflow);
+
+        assertFalse(outcome.isComplete); // the bootstrap continuation appends the first tasks
+        assertTrue(outcome.tasksToBeScheduled.isEmpty());
+        assertEquals(WorkflowModel.Status.RUNNING, workflow.getStatus());
+    }
+
+    @Test
+    public void evaluatingTheTaskTheCodePausedOnWakesItsContinuation() {
+        WorkflowModel workflow = nativeWorkflowPausedOn(TaskModel.Status.COMPLETED);
+        TaskModel task = workflow.getTasks().get(0);
+
+        DeciderOutcome outcome = deciderService.decide(workflow);
+
+        assertTrue(task.isExecuted());
+        assertTrue(outcome.tasksToBeUpdated.contains(task));
+        assertFalse(outcome.isComplete); // every task is terminal, but the code has not returned
+        assertTrue(outcome.tasksToBeScheduled.isEmpty());
+        // the executor wakes it in the same decide
+        assertEquals(
+                List.of(task.getTaskId()),
+                nativeContinuationService.repairAndWake(workflow).offers.stream()
+                        .map(NativeContinuationService.Offer::messageId)
+                        .toList());
+        assertTrue(marker(workflow, task).isLeased());
+    }
+
+    @Test
+    public void aNativeWorkflowCompletesOnlyAfterWhatItsLastContinuationAppendedHasRun() {
+        // the code returned (marker done) and appended one more task after the task it paused on
+        WorkflowModel workflow = nativeWorkflowPausedOn(TaskModel.Status.COMPLETED);
+        TaskModel task = workflow.getTasks().get(0);
+        marker(workflow, task).setEndTime(1);
+        marker(workflow, task).setDone(true);
+        workflow.setOutput(Map.of("answer", 42)); // set when the code's return applied
+        WorkflowTask trailing = new WorkflowTask();
+        trailing.setName("task1");
+        trailing.setType("SIMPLE");
+        trailing.setTaskReferenceName("t1");
+        trailing.getMetadata().put("lane", "main");
+        trailing.setTaskDefinition(new TaskDef("task1"));
+        workflow.getWorkflowDefinition().getTasks().add(trailing);
+        task.setExecuted(false); // the completion re-evaluates the task the code paused on
+
+        DeciderOutcome outcome = deciderService.decide(workflow);
+
+        assertFalse(outcome.isComplete); // t1 still has to run
+        assertEquals(
+                List.of("t1"),
+                outcome.tasksToBeScheduled.stream().map(TaskModel::getReferenceTaskName).toList());
+
+        // t1 finished: now the workflow completes, with the code's return value as its output
+        TaskModel t1 = outcome.tasksToBeScheduled.get(0);
+        t1.setStatus(TaskModel.Status.COMPLETED);
+        workflow.getTasks().add(t1);
+        outcome = deciderService.decide(workflow);
+        assertTrue(outcome.isComplete);
+        assertEquals(Map.of("answer", 42), workflow.getOutput());
+    }
+
+    @Test
+    public void aRetriedAttemptWaitsOnTheSameContinuation() {
+        WorkflowModel workflow = nativeWorkflowPausedOn(TaskModel.Status.FAILED);
+        workflow.getTasks().get(0).getWorkflowTask().getTaskDefinition().setRetryCount(1);
+
+        DeciderOutcome outcome = deciderService.decide(workflow);
+
+        TaskModel retry =
+                outcome.tasksToBeScheduled.stream()
+                        .filter(t -> "t0".equals(t.getReferenceTaskName()))
+                        .findFirst()
+                        .orElseThrow();
+        assertEquals(1, retry.getRetryCount());
+        // the same entry, so the same continuation, not run yet
+        assertEquals(workflow.getTasks().get(0).getWorkflowTask(), retry.getWorkflowTask());
+        // its marker, the one before reset, is given by the decide that schedules it
+        assertEquals(workflow.getTasks().get(0).getTaskId(), retry.getRetriedTaskId());
     }
 
     @Test
@@ -685,5 +1001,24 @@ public class TestDeciderOutcomes {
         assertEquals(
                 Collections.singletonList("odd"),
                 outcome.tasksToBeScheduled.get(0).getOutputData().get("caseOutput"));
+    }
+
+    private static com.netflix.conductor.common.metadata.tasks.TaskContinuation marker(
+            WorkflowModel workflow, TaskModel task) {
+        return NativeWorkflows.markerOf(workflow, task);
+    }
+
+    private static void setMarker(
+            WorkflowModel workflow,
+            TaskModel task,
+            com.netflix.conductor.common.metadata.tasks.TaskContinuation marker) {
+        if (workflow.getNativeState() == null) {
+            workflow.setNativeState(new com.netflix.conductor.common.run.NativeState());
+        }
+        if (marker == null) {
+            workflow.getNativeState().getMarkers().remove(task.getTaskId());
+        } else {
+            workflow.getNativeState().getMarkers().put(task.getTaskId(), marker);
+        }
     }
 }

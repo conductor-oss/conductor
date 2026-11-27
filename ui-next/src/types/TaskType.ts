@@ -37,7 +37,8 @@ export interface SwitchTaskDef extends CommonTaskDef {
   type: TaskType.SWITCH;
   decisionCases: Record<string, CommonTaskDef[]>;
   defaultCase: CommonTaskDef[];
-  evaluatorType: "value-param" | "javascript";
+  // native-code: a native workflow's code decided, and the switch reads the case it took
+  evaluatorType: "value-param" | "javascript" | "graaljs" | "native-code";
   expression: string;
 }
 

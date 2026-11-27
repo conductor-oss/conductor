@@ -49,11 +49,13 @@ const ConfirmSaveEditorWithActor: FunctionComponent<
 interface CodeTabWithActorProps {
   codeTabActor: ActorRef<CodeMachineEvents>;
   editorTheme: "vs-dark" | "vs-light";
+  readOnly?: boolean;
 }
 
 const CodeTabWithActor: FunctionComponent<CodeTabWithActorProps> = ({
   codeTabActor,
   editorTheme,
+  readOnly = false,
 }) => {
   const monacoObjects = useRef(null);
   const [
@@ -228,7 +230,7 @@ const CodeTabWithActor: FunctionComponent<CodeTabWithActorProps> = ({
             value={editorChanges}
             beforeMount={handleEditorWillMount}
             onMount={editorDidMount}
-            options={editorState.editorOptions}
+            options={{ ...editorState.editorOptions, readOnly }}
             onChange={(maybeText) => {
               if (typeof maybeText === "string") {
                 handleEditChanges!(maybeText);
@@ -245,10 +247,13 @@ const CodeTabWithActor: FunctionComponent<CodeTabWithActorProps> = ({
 export interface CodeTabProps {
   codeTabActor?: ActorRef<CodeMachineEvents>;
   saveChangesActor?: ActorRef<SaveWorkflowEvents>;
+  /** A definition generated from code: shown, not edited. */
+  readOnly?: boolean;
 }
 export const CodeTab: FunctionComponent<CodeTabProps> = ({
   codeTabActor,
   saveChangesActor,
+  readOnly = false,
 }) => {
   const { mode } = useContext(ColorModeContext);
   const editorTheme = mode === "dark" ? "vs-dark" : "vs-light";
@@ -272,6 +277,7 @@ export const CodeTab: FunctionComponent<CodeTabProps> = ({
           <CodeTabWithActor
             codeTabActor={codeTabActor}
             editorTheme={editorTheme}
+            readOnly={readOnly}
           />
         )}
         {saveChangesActor && (

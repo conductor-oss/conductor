@@ -19,6 +19,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.run.NativeState;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.utils.Utils;
 
@@ -107,6 +108,9 @@ public class WorkflowModel {
     private String failedTaskId;
 
     private Status previousStatus;
+
+    /** Engine state of a native (code-defined) workflow; null for other workflows. */
+    private NativeState nativeState;
 
     @JsonIgnore private Map<String, Object> input = new HashMap<>();
 
@@ -573,6 +577,13 @@ public class WorkflowModel {
         workflow.setStatus(Workflow.WorkflowStatus.valueOf(this.status.name()));
         workflow.setTasks(tasks.stream().map(TaskModel::toTask).collect(Collectors.toList()));
         workflow.setUpdateTime(this.updatedTime);
+        if (nativeState != null) {
+            // a native workflow's markers are kept with the workflow; shown on their tasks
+            for (com.netflix.conductor.common.metadata.tasks.Task task : workflow.getTasks()) {
+                task.setContinuation(nativeState.getMarkers().get(task.getTaskId()));
+            }
+            workflow.setNativeState(nativeState.withoutMarkers());
+        }
 
         // ensure that input/output is properly represented
         if (externalInputPayloadStoragePath != null) {
@@ -602,5 +613,13 @@ public class WorkflowModel {
         if (outputData != null) {
             this.output.putAll(outputData);
         }
+    }
+
+    public NativeState getNativeState() {
+        return nativeState;
+    }
+
+    public void setNativeState(NativeState nativeState) {
+        this.nativeState = nativeState;
     }
 }

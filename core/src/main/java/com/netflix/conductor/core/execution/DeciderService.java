@@ -30,8 +30,6 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.utils.ExternalPayloadStorage.Operation;
-import com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType;
 import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
@@ -62,12 +60,12 @@ public class DeciderService {
 
     private final IDGenerator idGenerator;
     private final ParametersUtils parametersUtils;
-    private final ExternalPayloadStorageUtils externalPayloadStorageUtils;
     private final MetadataDAO metadataDAO;
     private final SystemTaskRegistry systemTaskRegistry;
     private final long taskPendingTimeThresholdMins;
 
     private final Map<String, TaskMapper> taskMappers;
+    private final WorkflowDrivers drivers;
 
     public DeciderService(
             IDGenerator idGenerator,
@@ -75,15 +73,16 @@ public class DeciderService {
             MetadataDAO metadataDAO,
             ExternalPayloadStorageUtils externalPayloadStorageUtils,
             SystemTaskRegistry systemTaskRegistry,
+            WorkflowDrivers drivers,
             @Qualifier("taskMappersByTaskType") Map<String, TaskMapper> taskMappers,
             @Qualifier("annotatedTaskSystems") Map<String, TaskMapper> annotatedTaskSystems,
             @Value("${conductor.app.taskPendingTimeThreshold:60m}")
                     Duration taskPendingTimeThreshold) {
         this.idGenerator = idGenerator;
+        this.drivers = drivers;
         this.metadataDAO = metadataDAO;
         this.parametersUtils = parametersUtils;
         this.taskMappers = taskMappers;
-        this.externalPayloadStorageUtils = externalPayloadStorageUtils;
         this.taskPendingTimeThresholdMins = taskPendingTimeThreshold.toMinutes();
         this.systemTaskRegistry = systemTaskRegistry;
         LOGGER.info("taskMappers: {}", taskMappers.keySet());
@@ -231,7 +230,7 @@ public class DeciderService {
                 } else if (!(pendingTask.getWorkflowTask() != null
                         && pendingTask.getWorkflowTask().isPermissive()
                         && !pendingTask.getWorkflowTask().isOptional())) {
-                    pendingTask.setStatus(COMPLETED_WITH_ERRORS);
+                    drivers.of(workflow).completeWithErrors(pendingTask);
                 }
             }
 
@@ -357,8 +356,7 @@ public class DeciderService {
         if (workflow.getReRunFromWorkflowId() == null || tasks.isEmpty()) {
 
             if (workflowDef.getTasks().isEmpty()) {
-                throw new TerminateWorkflowException(
-                        "No tasks found to be executed", WorkflowModel.Status.COMPLETED);
+                return drivers.of(workflow).startWithNoTasks();
             }
 
             WorkflowTask taskToSchedule =
@@ -408,57 +406,16 @@ public class DeciderService {
      *     specified in the workflow definition
      */
     void updateWorkflowOutput(final WorkflowModel workflow, TaskModel task) {
-        List<TaskModel> allTasks = workflow.getTasks();
-        if (allTasks.isEmpty()) {
-            return;
-        }
-
-        Map<String, Object> output = new HashMap<>();
-        Optional<TaskModel> optionalTask =
-                allTasks.stream()
-                        .filter(
-                                t ->
-                                        TaskType.TERMINATE.name().equals(t.getTaskType())
-                                                && t.getStatus().isTerminal()
-                                                && t.getStatus().isSuccessful())
-                        .findFirst();
-        if (optionalTask.isPresent()) {
-            TaskModel terminateTask = optionalTask.get();
-            if (StringUtils.isNotBlank(terminateTask.getExternalOutputPayloadStoragePath())) {
-                output =
-                        externalPayloadStorageUtils.downloadPayload(
-                                terminateTask.getExternalOutputPayloadStoragePath());
-                Monitors.recordExternalPayloadStorageUsage(
-                        terminateTask.getTaskDefName(),
-                        Operation.READ.toString(),
-                        PayloadType.TASK_OUTPUT.toString());
-            } else if (!terminateTask.getOutputData().isEmpty()) {
-                output = terminateTask.getOutputData();
-            }
-        } else {
-            TaskModel last = Optional.ofNullable(task).orElse(allTasks.get(allTasks.size() - 1));
-            WorkflowDef workflowDef = workflow.getWorkflowDefinition();
-            if (workflowDef.getOutputParameters() != null
-                    && !workflowDef.getOutputParameters().isEmpty()) {
-                output =
-                        parametersUtils.getTaskInput(
-                                workflowDef.getOutputParameters(), workflow, null, null);
-            } else if (StringUtils.isNotBlank(last.getExternalOutputPayloadStoragePath())) {
-                output =
-                        externalPayloadStorageUtils.downloadPayload(
-                                last.getExternalOutputPayloadStoragePath());
-                Monitors.recordExternalPayloadStorageUsage(
-                        last.getTaskDefName(),
-                        Operation.READ.toString(),
-                        PayloadType.TASK_OUTPUT.toString());
-            } else {
-                output = last.getOutputData();
-            }
-        }
-        workflow.setOutput(output);
+        drivers.of(workflow).updateOutput(workflow, task);
     }
 
     public boolean checkForWorkflowCompletion(final WorkflowModel workflow)
+            throws TerminateWorkflowException {
+        return drivers.of(workflow)
+                .isComplete(workflow, () -> checkTasksForWorkflowCompletion(workflow));
+    }
+
+    private boolean checkTasksForWorkflowCompletion(final WorkflowModel workflow)
             throws TerminateWorkflowException {
 
         Map<String, TaskModel.Status> taskStatusMap = new HashMap<>();

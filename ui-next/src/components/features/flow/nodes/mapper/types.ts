@@ -16,6 +16,8 @@ export interface NodeTaskData<T extends CommonTaskDef = CommonTaskDef> {
   originalTask?: T;
   selected?: boolean;
   attempts?: number;
+  /** Why native workflow code is held at this task, when it is. */
+  held?: string;
   withinExpandedSubWorkflow?: boolean;
   outputData?: Record<string, unknown>;
   parentLoop?: ExecutionTask;

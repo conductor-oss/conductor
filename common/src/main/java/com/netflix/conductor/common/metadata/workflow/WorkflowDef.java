@@ -26,6 +26,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskType;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
@@ -51,7 +52,6 @@ public class WorkflowDef extends Auditable {
 
     @ProtoField(id = 4)
     @NotNull
-    @NotEmpty(message = "WorkflowTask list cannot be empty")
     private List<@Valid WorkflowTask> tasks = new LinkedList<>();
 
     @ProtoField(id = 5)
@@ -592,5 +592,16 @@ public class WorkflowDef extends Auditable {
     public enum TimeoutPolicy {
         TIME_OUT_WF,
         ALERT_ONLY
+    }
+
+    /**
+     * A workflow needs at least one task, except a native (code-defined) one, whose tasks are
+     * appended by its code as the execution runs.
+     */
+    @JsonIgnore
+    @AssertTrue(message = "WorkflowTask list cannot be empty")
+    public boolean isTaskListValid() {
+        return (tasks != null && !tasks.isEmpty())
+                || (metadata != null && metadata.containsKey("native"));
     }
 }

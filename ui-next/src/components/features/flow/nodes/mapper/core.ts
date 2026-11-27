@@ -108,6 +108,25 @@ export const tasksAsNodes: TaskWalkerFn = async (
       type,
     });
 
+    // A native JOIN that does not wait is only there because the engine needs one after a fork:
+    // nothing is drawn for it, and the path goes on from the fork itself.
+    if (
+      isJoinTask(currentTask) &&
+      acc.previousTask &&
+      isForkableTask(acc.previousTask) &&
+      (currentTask as { metadata?: { detached?: boolean } }).metadata?.detached
+    ) {
+      acc = {
+        ...acc,
+        crumbs,
+        previousTask: {
+          ...acc.previousTask,
+          detachedFork: true,
+        } as CommonTaskDef,
+      };
+      continue;
+    }
+
     let processedResult: Accumulator = {
       nodes: acc.nodes,
       edges: acc.edges,
