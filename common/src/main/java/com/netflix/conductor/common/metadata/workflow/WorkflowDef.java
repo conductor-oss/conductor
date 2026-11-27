@@ -119,6 +119,16 @@ public class WorkflowDef extends Auditable {
     @ProtoField(id = 24)
     private List<String> maskedFields = new ArrayList<>();
 
+    private List<DelegationRequirement> requiredDelegations = new ArrayList<>();
+
+    public List<DelegationRequirement> getRequiredDelegations() {
+        return requiredDelegations;
+    }
+
+    public void setRequiredDelegations(List<DelegationRequirement> requiredDelegations) {
+        this.requiredDelegations = requiredDelegations;
+    }
+
     public static String getKey(String name, int version) {
         return name + "." + version;
     }

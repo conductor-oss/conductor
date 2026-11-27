@@ -14,7 +14,7 @@ import {
   IdempotencyStrategyEnum,
   IdempotencyValuesProp,
 } from "pages/definition/RunWorkflow/state";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet";
 import { useLocation, useNavigate } from "react-router";
 import { useQueryState } from "react-router-use-location-state";
@@ -32,9 +32,12 @@ import {
   RunWorkflowApiSearchModal,
 } from "./RunWorkflowApiSearchModal";
 import { getTemplateFromInputParams } from "./runWorkflowUtils";
+import { DelegatedAuthSection } from "./DelegatedAuthSection";
+import { DelegationRequirement } from "types/WorkflowDef";
 
 type InputParameterType = {
   inputParameters: string[];
+  requiredDelegations?: DelegationRequirement[];
 };
 
 type CommonProperties = {
@@ -238,6 +241,12 @@ export function RunWorkflow() {
     useState<RunWorkflowState>(memorizedState);
   const [errorMessage, setErrorMessage] = useState("");
   const [showCodeDialog, setShowCodeDialog] = useQueryState("displayCode", "");
+  const [delegations, setDelegations] = useState<DelegationRequirement[]>([]);
+  const [delegationsAuthorized, setDelegationsAuthorized] = useState(true);
+
+  const handleDelegationAuthChange = useCallback((allAuthorized: boolean) => {
+    setDelegationsAuthorized(allAuthorized);
+  }, []);
 
   const runWorkflowAction = useAction(
     "/workflow",
@@ -327,6 +336,7 @@ export function RunWorkflow() {
         workflowInputParams: def["inputParameters"],
         workflowInputTemplate: templateFromInputParams,
       };
+      setDelegations(def["requiredDelegations"] || []);
     }
 
     setRunWorkflowState({
@@ -354,6 +364,7 @@ export function RunWorkflow() {
     const templateFromInputParams = getTemplateFromInputParams(
       def["inputParameters"],
     );
+    setDelegations(def["requiredDelegations"] || []);
     setRunWorkflowState({
       ...runWorkflowState,
       workflowVersion: workflowVersion,
@@ -569,7 +580,7 @@ export function RunWorkflow() {
                       },
                     ]}
                     primaryOnClick={runThisWorkflow}
-                    disabled={isTrialExpired}
+                    disabled={isTrialExpired || (delegations.length > 0 && !delegationsAuthorized)}
                   >
                     Run workflow
                   </SplitButton>
@@ -655,6 +666,14 @@ export function RunWorkflow() {
                         value={runWorkflowState.workflowVersion}
                       />
                     </Grid>
+                    {delegations.length > 0 && (
+                      <Grid size={12}>
+                        <DelegatedAuthSection
+                          delegations={delegations}
+                          onAuthStateChange={handleDelegationAuthChange}
+                        />
+                      </Grid>
+                    )}
                     <Grid size={12}>
                       <ConductorCodeBlockInput
                         label="Input params"

@@ -36,14 +36,23 @@ export const agentRuntimeType = (input: unknown): AgentRuntimeType => {
   const t = input.agentType;
   if (t === "conductor") return "conductor";
   if (t === "bedrock") return "bedrock";
-  if (t === "azure-foundry") return "azure-foundry";
+  if (t === "microsoft-foundry") return "microsoft-foundry";
   return "a2a";
 };
 
 export const agentSourceIdentity = (input: unknown): string => {
   if (!isRecord(input)) return "";
-  const identity =
-    agentRuntimeType(input) === "conductor" ? input.name : input.agentUrl;
+  const type = agentRuntimeType(input);
+  let identity: unknown;
+  if (type === "conductor") {
+    identity = input.name;
+  } else if (type === "microsoft-foundry") {
+    identity =
+      (isRecord(input.rawConfig) ? input.rawConfig.assistantId : undefined) ||
+      input.agentUrl;
+  } else {
+    identity = input.agentUrl;
+  }
   return String(identity ?? "").trim();
 };
 
@@ -185,7 +194,9 @@ export async function resolveAgentSnapshot(
     return createUnresolvedAgentSnapshot(input);
   }
 
-  if (agentRuntimeType(input) === "conductor") {
+  const type = agentRuntimeType(input);
+
+  if (type === "conductor") {
     const version =
       "version" in input && typeof input.version === "number"
         ? `?version=${encodeURIComponent(input.version)}`
@@ -194,6 +205,16 @@ export async function resolveAgentSnapshot(
       `/agent/definitions/${encodeURIComponent(identity)}${version}`,
     )) as AgentWorkflowDefinition;
     return buildConductorAgentSnapshot(input, definition);
+  }
+
+  if (type === "microsoft-foundry") {
+    return {
+      schemaVersion: AGENT_SNAPSHOT_SCHEMA_VERSION,
+      agentType: "microsoft-foundry",
+      displayName: identity,
+      source: { url: identity },
+      resolved: true,
+    };
   }
 
   const inputRecord = input as unknown as Record<string, unknown>;
@@ -259,7 +280,7 @@ export async function resolveAgentSnapshotsInWorkflow(
 }
 
 export interface AgentTaskPresentation {
-  badge: "A2A AGENT" | "CONDUCTOR AGENT" | "BEDROCK AGENT" | "AZURE FOUNDRY AGENT";
+  badge: "A2A AGENT" | "CONDUCTOR AGENT" | "BEDROCK AGENT" | "MICROSOFT FOUNDRY AGENT";
   name: string;
   taskReferenceName: string;
 }
@@ -268,14 +289,14 @@ const AGENT_RUNTIME_BADGE: Record<AgentRuntimeType, AgentTaskPresentation["badge
   conductor: "CONDUCTOR AGENT",
   a2a: "A2A AGENT",
   bedrock: "BEDROCK AGENT",
-  "azure-foundry": "AZURE FOUNDRY AGENT",
+  "microsoft-foundry": "MICROSOFT FOUNDRY AGENT",
 };
 
 const AGENT_RUNTIME_DISPLAY_NAME: Record<AgentRuntimeType, string> = {
   conductor: "Conductor agent",
   a2a: "A2A agent",
   bedrock: "Bedrock agent",
-  "azure-foundry": "Azure Foundry agent",
+  "microsoft-foundry": "Microsoft Foundry agent",
 };
 
 // Resolution only ever runs through the workflow editor's save flow — a workflow

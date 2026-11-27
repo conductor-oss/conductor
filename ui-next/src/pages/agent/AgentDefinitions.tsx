@@ -35,11 +35,11 @@ import { tryToJson } from "utils/utils";
 import CloneAgentDialog from "./CloneAgentDialog";
 import { AgentSummary } from "./types";
 
-const EXTERNAL_TYPES = new Set(["azure-foundry", "bedrock"]);
+const EXTERNAL_TYPES = new Set(["microsoft-foundry", "bedrock"]);
 
 function providerLabel(type?: string | null): string {
   switch (type) {
-    case "azure-foundry": return "Azure Foundry";
+    case "microsoft-foundry": return "Microsoft Foundry";
     case "bedrock": return "Bedrock";
     default: return "Conductor";
   }
@@ -47,7 +47,7 @@ function providerLabel(type?: string | null): string {
 
 function providerColor(type?: string | null): string {
   switch (type) {
-    case "azure-foundry": return "#0078d4";
+    case "microsoft-foundry": return "#0078d4";
     case "bedrock": return "#e07730";
     default: return "#1565c0";
   }
@@ -55,7 +55,7 @@ function providerColor(type?: string | null): string {
 
 function providerIcon(type?: string | null): string {
   switch (type) {
-    case "azure-foundry": return AzureIcon;
+    case "microsoft-foundry": return AzureIcon;
     case "bedrock": return BedrockIcon;
     default: return OrkesIcon;
   }

@@ -84,7 +84,7 @@ public class A2AService {
     public static final String AGENT_TYPE_BEDROCK = "bedrock";
 
     /** Selects the Azure AI Foundry runtime (Entra ID auth, A2A protocol). */
-    public static final String AGENT_TYPE_AZURE_FOUNDRY = "azure-foundry";
+    public static final String AGENT_TYPE_AZURE_FOUNDRY = "microsoft-foundry";
 
     /** Whether {@code agentType} selects the A2A runtime — null/blank defaults to A2A. */
     public static boolean isA2aAgentType(String agentType) {

@@ -7,6 +7,10 @@ export interface AgentSummary {
   name: string;
   version: number;
   type?: string;
+  /** Provider-specific connection target: Foundry project URL, Bedrock region, etc. */
+  endpoint?: string;
+  /** Conductor secret name used to authenticate with this agent's provider. */
+  credentialRef?: string;
   tags?: string[];
   createTime?: number;
   updateTime?: number;
