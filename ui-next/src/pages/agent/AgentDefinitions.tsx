@@ -23,17 +23,27 @@ import AzureIcon from "images/svg/azure-icon.svg";
 import BedrockIcon from "images/svg/bedrock-icon.svg";
 import OrkesIcon from "images/svg/orkes-icon.svg";
 import { PopoverMessage } from "types/Messages";
+import { TagDto } from "types/Tag";
 import {
   AGENT_DEFINITION_URL,
   AGENT_EXECUTIONS_URL,
   RUN_AGENT_URL,
 } from "utils/constants/route";
+import { featureFlags, FEATURES } from "utils/flags";
 import useCustomPagination from "utils/hooks/useCustomPagination";
 import { logger } from "utils/logger";
 import { useActionWithPath, useFetch } from "utils/query";
 import { tryToJson } from "utils/utils";
+import TagList from "components/ui/TagList";
 import CloneAgentDialog from "./CloneAgentDialog";
 import { AgentSummary } from "./types";
+
+const toTagDtos = (tags?: string[]): TagDto[] =>
+  (tags || []).map((tag) => ({
+    key: "capability",
+    value: tag,
+    type: "METADATA",
+  }));
 
 const EXTERNAL_TYPES = new Set(["azure-foundry", "bedrock"]);
 
@@ -69,6 +79,7 @@ No agents deployed yet? Use **Create Agent** for a copy-and-run SDK guide.`;
 export default function AgentDefinitions() {
   const navigate = useNavigate();
   const { isTrialExpired } = useAuth();
+  const tagsEnabled = featureFlags.isEnabled(FEATURES.TAG_VISIBILITY);
   const { data, isFetching, refetch } = useFetch<AgentSummary[]>("/agent/list");
   const { setMessage } = useContext(MessageContext);
   const [toastMessage, setToastMessage] = useState<PopoverMessage | null>(null);

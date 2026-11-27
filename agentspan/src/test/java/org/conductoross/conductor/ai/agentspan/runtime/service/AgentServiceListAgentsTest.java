@@ -51,7 +51,10 @@ class AgentServiceListAgentsTest {
                     mock(WorkflowExecutor.class),
                     mock(AgentStreamRegistry.class),
                     mock(SkillRegistryService.class),
-                    mock(MetadataService.class));
+                    mock(MetadataService.class),
+                    mock(AzureFoundryAgentClient.class),
+                    mock(BedrockAgentClient.class),
+                    null);
 
     private static WorkflowDef agent(String name, int version, String introduction) {
         Map<String, Object> agentDef = new HashMap<>();
