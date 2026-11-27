@@ -22,6 +22,15 @@ import com.netflix.conductor.common.run.ExternalStorageLocation;
  */
 public interface ExternalPayloadStorage {
 
+    /**
+     * Indicates whether this implementation represents a configured external payload backend.
+     *
+     * @return {@code true} when the backend can be used for external payloads
+     */
+    default boolean isConfigured() {
+        return true;
+    }
+
     enum Operation {
         READ,
         WRITE
