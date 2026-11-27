@@ -1,10 +1,14 @@
+import {
+  availableIntegrationApis,
+  IntegrationApiDefinition,
+} from "utils/integrationApis";
 import { useMemo } from "react";
 import { FEATURES } from "utils/flags";
 import { useFetch } from "utils/query";
 
 export const useIntegrationProviders = () => {
   const integrationsUrl = `/integrations/def`;
-  const providersUrl = `/integrations/provider?category=MCP&activeOnly=false`;
+  const providersUrl = `/integrations/provider?category=MCP&activeOnly=true`;
 
   const { data: integrationsData, isLoading: isLoadingIntegrations } = useFetch(
     integrationsUrl,
@@ -52,15 +56,6 @@ export const useIntegrationProviders = () => {
   };
 };
 
-type IntegrationApiDefinition = {
-  api: string;
-  inputSchema?: {
-    data?: {
-      "x-integration-configuration"?: Record<string, unknown>;
-    };
-  };
-};
-
 export const useIntegrationApis = (
   integrationName?: string,
   configuration?: Record<string, unknown>,
@@ -80,12 +75,7 @@ export const useIntegrationApis = (
 
   // Match schema requirements against saved settings; unrestricted operations stay available.
   const availableTools = useMemo(
-    () =>
-      (tools || []).filter((tool) =>
-        Object.entries(
-          tool.inputSchema?.data?.["x-integration-configuration"] || {},
-        ).every(([field, value]) => configuration?.[field] === value),
-      ),
+    () => availableIntegrationApis(tools ?? [], configuration),
     [tools, configuration],
   );
 

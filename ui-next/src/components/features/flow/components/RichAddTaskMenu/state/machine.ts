@@ -98,6 +98,7 @@ export const richAddTaskMenuMachine = createMachine<
               [RichAddTaskMenuEventTypes.SWITCH_TO_INTEGRATIONS]: {
                 actions: [
                   "clearSearchQuery",
+                  "openProviderConnections",
                   "switchToAdvancedMenu",
                   "switchSelectedTabToIntegrations",
                 ],

@@ -15,6 +15,7 @@ import {
   IntegrationMenuItem,
   FetchIntegrationToolsEvent,
   UpdateIntegrationDrillDownEvent,
+  SwitchToIntegrationsEvent,
 } from "./types";
 import { TaskType } from "types/common";
 import _first from "lodash/first";
@@ -28,6 +29,7 @@ interface RawIntegrationData {
   description?: string;
   type: string;
   iconName?: string;
+  configuration?: Record<string, unknown>;
   category?: string;
 }
 
@@ -139,6 +141,7 @@ export const persistIntegrations = assign<
           description: integration.description ?? "",
           type: TaskType.INTEGRATION,
           integrationType: integration.type,
+          configuration: integration.configuration,
           iconName:
             data?.supportedIntegrations?.find(
               (supportedIntegration) =>
@@ -269,6 +272,18 @@ export const persistIntegrationDrillDown = assign<
   UpdateIntegrationDrillDownEvent
 >({
   integrationDrillDownMenu: (_context, event) => event.data,
+});
+
+export const openProviderConnections = assign<
+  RichAddTaskMenuMachineContext,
+  SwitchToIntegrationsEvent
+>({
+  integrationDrillDownMenu: (_, event) => ({
+    isOpen: true,
+    selectedRootIntegration: event.provider,
+    selectedIntegration: null,
+    level: "integrations",
+  }),
 });
 
 export const switchToAdvancedMenu = raise<

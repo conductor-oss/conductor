@@ -41,6 +41,7 @@ import {
   IntegrationDef,
   SubWorkflowTaskDef,
 } from "types";
+import snakeCase from "lodash/snakeCase";
 import { getSequentiallySuffix } from "utils/strings";
 import { pluralizeResults } from "utils/helpers";
 import { getInitials } from "utils/utils";
@@ -234,7 +235,7 @@ const AddTaskSidebar = ({
       if (Array.isArray(newTask)) {
         newTask = newTask.map((task) => {
           const sequentialName = getSequentiallySuffix({
-            name: task.taskReferenceName,
+            name: snakeCase(task.taskReferenceName),
             refNames: taskRefNames,
           });
 
@@ -249,7 +250,7 @@ const AddTaskSidebar = ({
       }
 
       const sequentialName = getSequentiallySuffix({
-        name: newTask.taskReferenceName,
+        name: snakeCase(newTask.taskReferenceName),
         refNames: taskRefNames,
       });
 

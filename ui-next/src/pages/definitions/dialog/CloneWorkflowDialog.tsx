@@ -12,6 +12,7 @@ import { MessageContext } from "components/providers/messageContext";
 import ReactHookFormDropdown from "components/ui/react-hook-form/ReactHookFormDropdown";
 import ReactHookFormInput from "components/ui/react-hook-form/ReactHookFormInput";
 import _last from "lodash/last";
+import snakeCase from "lodash/snakeCase";
 import { getWorkflowDefinitionByNameAndVersion } from "pages/definition/commonService";
 import { useContext, useMemo } from "react";
 import { DefaultValues, SubmitHandler, useForm } from "react-hook-form";
@@ -84,7 +85,7 @@ const CloneWorkflowDialog = ({
   );
 
   const { name: suffixedWfName } = getSequentiallySuffix({
-    name: selectedWorkflow.name,
+    name: snakeCase(selectedWorkflow.name),
     refNames: workflowNames,
   });
 

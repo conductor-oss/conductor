@@ -1,3 +1,4 @@
+import snakeCase from "lodash/snakeCase";
 import { randomChars as dynamicTaskSuffixGenerator } from "utils";
 import {
   BusinessRuleTaskDef,
@@ -71,7 +72,7 @@ const generateNameAndTaskReference = (
   const suffix = suffixGenerator();
   return {
     name: `${aParam}_task_${suffix}`,
-    taskReferenceName: `${aParam}_task_${suffix}_ref`,
+    taskReferenceName: `${snakeCase(aParam)}_task_${suffix}_ref`,
   };
 };
 
