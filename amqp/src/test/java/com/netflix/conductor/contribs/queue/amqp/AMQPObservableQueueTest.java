@@ -14,6 +14,7 @@ package com.netflix.conductor.contribs.queue.amqp;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -22,6 +23,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -37,6 +42,7 @@ import com.netflix.conductor.contribs.queue.amqp.config.AMQPEventQueueProperties
 import com.netflix.conductor.contribs.queue.amqp.config.AMQPRetryPattern;
 import com.netflix.conductor.contribs.queue.amqp.util.AMQPConstants;
 import com.netflix.conductor.contribs.queue.amqp.util.AMQPSettings;
+import com.netflix.conductor.contribs.queue.amqp.util.ConnectionType;
 import com.netflix.conductor.contribs.queue.amqp.util.RetryType;
 import com.netflix.conductor.core.events.queue.Message;
 
@@ -50,6 +56,7 @@ import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Consumer;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.GetResponse;
+import com.rabbitmq.client.RecoverableConnection;
 import com.rabbitmq.client.impl.AMQImpl;
 import rx.Observable;
 import rx.observers.Subscribers;
@@ -59,6 +66,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -158,6 +166,24 @@ public class AMQPObservableQueueTest {
             queue.add(response);
         }
         return queue;
+    }
+
+    private Message createDeliveryMessage(AMQPSettings settings, long deliveryTag)
+            throws Exception {
+        AMQP.BasicProperties properties = mock(AMQP.BasicProperties.class);
+        when(properties.getMessageId()).thenReturn("message-id");
+        Envelope envelope = mock(Envelope.class);
+        when(envelope.getDeliveryTag()).thenReturn(deliveryTag);
+        GetResponse response = mock(GetResponse.class);
+        when(response.getProps()).thenReturn(properties);
+        when(response.getEnvelope()).thenReturn(envelope);
+        when(response.getBody()).thenReturn("payload".getBytes());
+
+        Method asMessage =
+                AMQPObservableQueue.class.getDeclaredMethod(
+                        "asMessage", AMQPSettings.class, GetResponse.class);
+        asMessage.setAccessible(true);
+        return (Message) asMessage.invoke(null, settings, response);
     }
 
     Channel mockBaseChannel() throws IOException, TimeoutException {
@@ -461,6 +487,346 @@ public class AMQPObservableQueueTest {
         assertNotNull(failedMessages);
         assertTrue(failedMessages.isEmpty());
         verify(channel, times(1)).basicAck(1L, false);
+    }
+
+    @Test
+    public void testAckAndNackUseTheOriginalDeliveryChannel() throws Exception {
+        String queueName = RandomStringUtils.randomAlphabetic(30);
+        AMQPSettings settings = new AMQPSettings(properties).fromURI("amqp_queue:" + queueName);
+        Channel originalChannel = mockBaseChannel();
+        Channel replacementChannel = mockBaseChannel();
+        Connection subscriberConnection = mockGoodConnection(replacementChannel);
+        ConnectionFactory factory = mock(ConnectionFactory.class);
+        when(factory.newConnection(eq(addresses), Mockito.endsWith("Subscriber")))
+                .thenReturn(subscriberConnection);
+
+        AMQPObservableQueue observableQueue =
+                new AMQPObservableQueue(
+                        factory, addresses, false, settings, null, batchSize, pollTimeMs);
+        try {
+            AMQPConnection.getInstance(factory, addresses, null)
+                    .getOrCreateChannel(ConnectionType.SUBSCRIBER, queueName);
+
+            Message ackMessage = createDeliveryMessage(settings, 1);
+            Message nackMessage = createDeliveryMessage(settings, 2);
+            observableQueue.registerDeliveryChannel(ackMessage, originalChannel);
+            observableQueue.registerDeliveryChannel(nackMessage, originalChannel);
+
+            Message equalMessage = new Message("message-id", "payload", "1");
+            assertEquals(Message.class, ackMessage.getClass());
+            assertEquals(ackMessage, equalMessage);
+            assertEquals(ackMessage.hashCode(), equalMessage.hashCode());
+            assertEquals(2, observableQueue.pendingDeliveryCount());
+
+            assertTrue(observableQueue.ack(Collections.singletonList(ackMessage)).isEmpty());
+            assertEquals(1, observableQueue.pendingDeliveryCount());
+            assertEquals(
+                    Collections.singletonList("1"),
+                    observableQueue.ack(Collections.singletonList(ackMessage)));
+            observableQueue.nack(Collections.singletonList(nackMessage));
+            observableQueue.nack(Collections.singletonList(nackMessage));
+            assertEquals(0, observableQueue.pendingDeliveryCount());
+
+            verify(originalChannel, times(1)).basicAck(1L, false);
+            verify(originalChannel, times(1)).basicNack(2L, false, false);
+            verify(replacementChannel, never()).basicAck(anyLong(), anyBoolean());
+            verify(replacementChannel, never()).basicNack(anyLong(), anyBoolean(), anyBoolean());
+        } finally {
+            observableQueue.close();
+        }
+    }
+
+    @Test
+    public void testDeliveryMetadataUsesIdentityForEqualMessages() {
+        Message first = new Message("same-id", "same-payload", "same-receipt");
+        Message second = new Message("same-id", "same-payload", "same-receipt");
+        Channel firstChannel = mock(Channel.class);
+        Channel secondChannel = mock(Channel.class);
+        AMQPDeliveryChannelRegistry registry = new AMQPDeliveryChannelRegistry();
+
+        assertEquals(first, second);
+        assertEquals(first.hashCode(), second.hashCode());
+        registry.register(first, firstChannel);
+        registry.register(second, secondChannel);
+
+        assertSame(firstChannel, registry.get(first).channel());
+        assertSame(secondChannel, registry.get(second).channel());
+    }
+
+    @Test
+    public void testNackRetryExhaustionKeepsDeliveryChannelAndReturns() throws Exception {
+        String queueName = RandomStringUtils.randomAlphabetic(30);
+        AMQPSettings settings = new AMQPSettings(properties).fromURI("amqp_queue:" + queueName);
+        Channel originalChannel = mockBaseChannel();
+        Channel replacementChannel = mockBaseChannel();
+        Connection subscriberConnection = mockGoodConnection(replacementChannel);
+        ConnectionFactory factory = mock(ConnectionFactory.class);
+        when(factory.newConnection(eq(addresses), Mockito.endsWith("Subscriber")))
+                .thenReturn(subscriberConnection);
+
+        AMQPObservableQueue observableQueue =
+                new AMQPObservableQueue(
+                        factory,
+                        addresses,
+                        false,
+                        settings,
+                        new AMQPRetryPattern(1, 0, RetryType.REGULARINTERVALS),
+                        batchSize,
+                        pollTimeMs);
+        try {
+            Message message = createDeliveryMessage(settings, 3);
+            observableQueue.registerDeliveryChannel(message, originalChannel);
+            doThrow(new IOException("NACK failed"))
+                    .when(originalChannel)
+                    .basicNack(3L, false, false);
+
+            observableQueue.nack(Collections.singletonList(message));
+
+            verify(originalChannel, times(2)).basicNack(3L, false, false);
+            verify(replacementChannel, never()).basicNack(anyLong(), anyBoolean(), anyBoolean());
+            assertEquals(1, observableQueue.pendingDeliveryCount());
+        } finally {
+            observableQueue.close();
+        }
+    }
+
+    @Test
+    public void testNackFailureWithoutRetryKeepsOriginalDeliveryChannel() throws Exception {
+        String queueName = RandomStringUtils.randomAlphabetic(30);
+        AMQPSettings settings = new AMQPSettings(properties).fromURI("amqp_queue:" + queueName);
+        Channel originalChannel = mockBaseChannel();
+        Channel replacementChannel = mockBaseChannel();
+        Connection subscriberConnection = mockGoodConnection(replacementChannel);
+        ConnectionFactory factory = mock(ConnectionFactory.class);
+        when(factory.newConnection(eq(addresses), Mockito.endsWith("Subscriber")))
+                .thenReturn(subscriberConnection);
+
+        AMQPObservableQueue observableQueue =
+                new AMQPObservableQueue(
+                        factory, addresses, false, settings, null, batchSize, pollTimeMs);
+        try {
+            Message message = createDeliveryMessage(settings, 7);
+            observableQueue.registerDeliveryChannel(message, originalChannel);
+            doThrow(new IOException("NACK failed"))
+                    .doNothing()
+                    .when(originalChannel)
+                    .basicNack(7L, false, false);
+
+            observableQueue.nack(Collections.singletonList(message));
+
+            assertEquals(1, observableQueue.pendingDeliveryCount());
+            observableQueue.nack(Collections.singletonList(message));
+
+            verify(originalChannel, times(2)).basicNack(7L, false, false);
+            verify(replacementChannel, never()).basicNack(anyLong(), anyBoolean(), anyBoolean());
+            assertEquals(0, observableQueue.pendingDeliveryCount());
+        } finally {
+            observableQueue.close();
+        }
+    }
+
+    @Test
+    public void testAckRetryUsesOriginalDeliveryChannel() throws Exception {
+        String queueName = RandomStringUtils.randomAlphabetic(30);
+        AMQPSettings settings = new AMQPSettings(properties).fromURI("amqp_queue:" + queueName);
+        Channel originalChannel = mockBaseChannel();
+        Channel replacementChannel = mockBaseChannel();
+        Connection subscriberConnection = mockGoodConnection(replacementChannel);
+        ConnectionFactory factory = mock(ConnectionFactory.class);
+        when(factory.newConnection(eq(addresses), Mockito.endsWith("Subscriber")))
+                .thenReturn(subscriberConnection);
+
+        AMQPObservableQueue observableQueue =
+                new AMQPObservableQueue(
+                        factory,
+                        addresses,
+                        false,
+                        settings,
+                        new AMQPRetryPattern(1, 0, RetryType.REGULARINTERVALS),
+                        batchSize,
+                        pollTimeMs);
+        try {
+            Message message = createDeliveryMessage(settings, 6);
+            observableQueue.registerDeliveryChannel(message, originalChannel);
+            doThrow(new IOException("ACK retry"))
+                    .doNothing()
+                    .when(originalChannel)
+                    .basicAck(6L, false);
+
+            assertTrue(observableQueue.ack(Collections.singletonList(message)).isEmpty());
+
+            verify(originalChannel, times(2)).basicAck(6L, false);
+            verify(replacementChannel, never()).basicAck(anyLong(), anyBoolean());
+            assertEquals(0, observableQueue.pendingDeliveryCount());
+        } finally {
+            observableQueue.close();
+        }
+    }
+
+    @Test
+    public void testQueueSamplingCompletesWhileAckIsInProgress() throws Exception {
+        String queueName = RandomStringUtils.randomAlphabetic(30);
+        AMQPSettings settings = new AMQPSettings(properties).fromURI("amqp_queue:" + queueName);
+        Channel originalChannel = mockBaseChannel();
+        Channel publisherChannel = mockBaseChannel();
+        when(publisherChannel.messageCount(eq(queueName))).thenReturn(0L);
+        Connection publisherConnection = mockGoodConnection(publisherChannel);
+        ConnectionFactory factory = mock(ConnectionFactory.class);
+        when(factory.newConnection(eq(addresses), Mockito.endsWith("Publisher")))
+                .thenReturn(publisherConnection);
+
+        AMQPObservableQueue observableQueue =
+                new AMQPObservableQueue(
+                        factory, addresses, false, settings, null, batchSize, pollTimeMs);
+        CountDownLatch ackStarted = new CountDownLatch(1);
+        CountDownLatch releaseAck = new CountDownLatch(1);
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            Message message = createDeliveryMessage(settings, 4);
+            observableQueue.registerDeliveryChannel(message, originalChannel);
+            doAnswer(
+                            invocation -> {
+                                ackStarted.countDown();
+                                assertTrue(
+                                        "ACK was not released",
+                                        releaseAck.await(5, TimeUnit.SECONDS));
+                                return null;
+                            })
+                    .when(originalChannel)
+                    .basicAck(4L, false);
+
+            Future<List<String>> acknowledgement =
+                    executor.submit(() -> observableQueue.ack(Collections.singletonList(message)));
+            assertTrue("ACK did not enter the channel", ackStarted.await(5, TimeUnit.SECONDS));
+
+            assertEquals(0, observableQueue.size());
+            verify(publisherChannel).messageCount(queueName);
+            verify(originalChannel, never()).messageCount(queueName);
+
+            releaseAck.countDown();
+            assertTrue(acknowledgement.get(5, TimeUnit.SECONDS).isEmpty());
+            verify(originalChannel).basicAck(4L, false);
+        } finally {
+            releaseAck.countDown();
+            executor.shutdownNow();
+            observableQueue.close();
+        }
+    }
+
+    @Test
+    public void testQueueSamplingCompletesWhileNackIsInProgress() throws Exception {
+        String queueName = RandomStringUtils.randomAlphabetic(30);
+        AMQPSettings settings = new AMQPSettings(properties).fromURI("amqp_queue:" + queueName);
+        Channel originalChannel = mockBaseChannel();
+        Channel publisherChannel = mockBaseChannel();
+        when(publisherChannel.messageCount(eq(queueName))).thenReturn(0L);
+        Connection publisherConnection = mockGoodConnection(publisherChannel);
+        ConnectionFactory factory = mock(ConnectionFactory.class);
+        when(factory.newConnection(eq(addresses), Mockito.endsWith("Publisher")))
+                .thenReturn(publisherConnection);
+
+        AMQPObservableQueue observableQueue =
+                new AMQPObservableQueue(
+                        factory, addresses, false, settings, null, batchSize, pollTimeMs);
+        CountDownLatch nackStarted = new CountDownLatch(1);
+        CountDownLatch releaseNack = new CountDownLatch(1);
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            Message message = createDeliveryMessage(settings, 5);
+            observableQueue.registerDeliveryChannel(message, originalChannel);
+            doAnswer(
+                            invocation -> {
+                                nackStarted.countDown();
+                                assertTrue(
+                                        "NACK was not released",
+                                        releaseNack.await(5, TimeUnit.SECONDS));
+                                return null;
+                            })
+                    .when(originalChannel)
+                    .basicNack(5L, false, false);
+
+            Future<?> acknowledgement =
+                    executor.submit(() -> observableQueue.nack(Collections.singletonList(message)));
+            assertTrue("NACK did not enter the channel", nackStarted.await(5, TimeUnit.SECONDS));
+
+            assertEquals(0, observableQueue.size());
+            verify(publisherChannel).messageCount(queueName);
+            verify(originalChannel, never()).messageCount(queueName);
+
+            releaseNack.countDown();
+            acknowledgement.get(5, TimeUnit.SECONDS);
+            verify(originalChannel).basicNack(5L, false, false);
+            assertEquals(0, observableQueue.pendingDeliveryCount());
+        } finally {
+            releaseNack.countDown();
+            executor.shutdownNow();
+            observableQueue.close();
+        }
+    }
+
+    @Test
+    public void testQueueDepthSamplingDoesNotReplaceRecoveringSubscriberChannel() throws Exception {
+        String queueName = RandomStringUtils.randomAlphabetic(30);
+        AMQPSettings settings = new AMQPSettings(properties).fromURI("amqp_queue:" + queueName);
+        Channel subscriberChannel = mockBaseChannel();
+        when(subscriberChannel.isOpen()).thenReturn(true, false);
+        Channel replacementSubscriberChannel = mockBaseChannel();
+        Channel publisherChannel = mockBaseChannel();
+        when(publisherChannel.messageCount(eq(queueName))).thenReturn(0L);
+        Connection subscriberConnection = mockGoodConnection(subscriberChannel);
+        when(subscriberConnection.createChannel())
+                .thenReturn(subscriberChannel, replacementSubscriberChannel);
+        Connection publisherConnection = mockGoodConnection(publisherChannel);
+        ConnectionFactory factory = mock(ConnectionFactory.class);
+        when(factory.newConnection(eq(addresses), Mockito.endsWith("Subscriber")))
+                .thenReturn(subscriberConnection);
+        when(factory.newConnection(eq(addresses), Mockito.endsWith("Publisher")))
+                .thenReturn(publisherConnection);
+
+        AMQPObservableQueue observableQueue =
+                new AMQPObservableQueue(
+                        factory, addresses, false, settings, null, batchSize, pollTimeMs);
+        try {
+            AMQPConnection.getInstance(factory, addresses, null)
+                    .getOrCreateChannel(ConnectionType.SUBSCRIBER, queueName);
+
+            assertEquals(0, observableQueue.size());
+
+            verify(subscriberConnection, times(1)).createChannel();
+            verify(publisherChannel).messageCount(queueName);
+            verify(subscriberChannel, never()).messageCount(queueName);
+        } finally {
+            observableQueue.close();
+        }
+    }
+
+    @Test
+    public void testCloseClosesRecoverableConnectionsEvenWhenNotOpen() throws Exception {
+        Channel subscriberChannel = mockBaseChannel();
+        Channel publisherChannel = mockBaseChannel();
+        RecoverableConnection subscriberConnection = mock(RecoverableConnection.class);
+        RecoverableConnection publisherConnection = mock(RecoverableConnection.class);
+        when(subscriberConnection.isOpen()).thenReturn(true, false);
+        when(publisherConnection.isOpen()).thenReturn(true, true);
+        when(subscriberConnection.createChannel()).thenReturn(subscriberChannel);
+        when(publisherConnection.createChannel()).thenReturn(publisherChannel);
+        ConnectionFactory factory = mock(ConnectionFactory.class);
+        when(factory.newConnection(eq(addresses), Mockito.endsWith("Subscriber")))
+                .thenReturn(subscriberConnection);
+        when(factory.newConnection(eq(addresses), Mockito.endsWith("Publisher")))
+                .thenReturn(publisherConnection);
+
+        AMQPConnection connection = AMQPConnection.getInstance(factory, addresses, null);
+        connection.getOrCreateChannel(ConnectionType.SUBSCRIBER, "subscriber-queue");
+        connection.getOrCreateChannel(ConnectionType.PUBLISHER, "publisher-queue");
+
+        connection.close();
+        connection.close();
+
+        verify(subscriberConnection, times(1)).abort();
+        verify(subscriberConnection, never()).close();
+        verify(publisherConnection, times(1)).close();
+        verify(publisherConnection, never()).abort();
     }
 
     private void testGetMessagesFromExchangeAndDefaultConfiguration(
